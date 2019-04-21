@@ -1,0 +1,9 @@
+chainer>=5.0.0b3
+daz>=0.0.1
+matplotlib>=2.0.0
+networkx>=2.1
+numpy>=1.14.2
+numpy-stl>=2.8.0
+scipy>=1.1.0
+scikit-learn>=0.19.1
+pandas>=0.23.1
