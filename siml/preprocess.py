@@ -50,7 +50,7 @@ def convert_raw_data(
         file_type: str, optional ['fistr']
             File type to be read.
         required_file_names: list of str,
-                optional ['*.msh', '*.cnt', '*.res.0.1']
+                optional [['*.msh', '*.cnt', '*.res.0.1']]
             Required file names.
         read_npy: bool, optional [False]
             If True, read .npy files instead of original files if exists.
@@ -126,21 +126,78 @@ def preprocess_interim_data(
         output_base_directory='data/preprocessed',
         force_renew=False, finished_file='preprocessed',
         required_file_names=['converted']):
+    """Preprocess interim data with preprocessing e.g. standardization and then
+    save them.
+
+    Args:
+        interim_directory: str or pathlib.Path
+            Input base directory.
+        preprocess_methods: dict
+            Dict of variable name to preprocess method.
+        output_base_directory: str or pathlib.Path,
+                optional ['data/preprocessed']
+            Output base directory.
+        force_renew: bool, optional [False]
+            If True, renew npy files even if they are alerady exist.
+        finished_file: str, optional ['preprocessed']
+            File name to indicate that the preprocessing is finished.
+        required_file_names: list of str, optional [['converted']]
+            Required file names.
+    Returns:
+        None
+    """
     interim_directory = Path(interim_directory)
     output_base_directory = Path(output_base_directory)
     interim_directories = collect_data_directories(
         interim_directory, required_file_names=required_file_names)
+
+    # Preprocess data variable by variable
     for variable_name, preprocess_method in preprocess_methods.items():
         preprocess_single_variable(
             interim_directory, output_base_directory, interim_directories,
-            variable_name, preprocess_method, str_replace='interim')
+            variable_name, preprocess_method, str_replace='interim',
+            finished_file=finished_file, force_renew=force_renew)
 
     return
 
 
 def preprocess_single_variable(
         data_base_directory, output_base_directory, data_directories,
-        variable_name, preprocess_method, str_replace='interim'):
+        variable_name, preprocess_method, *, str_replace='interim',
+        finished_file='preprocessed', force_renew=False):
+    """Preprocess single variable.
+
+    Args:
+        data_base_directory: pathlib.Path
+            Input base directory.
+        output_base_directory: pathlib.Path
+            Output base directory.
+        data_directories: list of pathlib.Path
+            Data directories.
+        variable_name: str
+            The name of the variable.
+        preprocess_method: str
+            Preprocess method name.
+        str_replace: str, optional ['interim']
+            Name to replace the input data base directory with.
+        finished_file: str, optional ['preprocessed']
+            File name to indicate that the preprocessing is finished.
+        force_renew: bool, optional [False]
+            If True, renew npy files even if they are alerady exist.
+    Returns:
+        None
+    """
+
+    # Check if data already exists
+    if not force_renew and np.any(
+            files_exist(
+                determine_output_directory(
+                    data_directory, output_base_directory, str_replace),
+                (variable_name + '.*'))
+            for data_directory in data_directories):
+        raise ValueError(f"Data already exists in {output_base_directory}")
+
+    # Prepare preprocessor
     data_files = [
         data_directory / (variable_name + '.npy')
         for data_directory in data_directories]
@@ -151,12 +208,16 @@ def preprocess_single_variable(
     elif preprocess_method == 'std_scale':
         preprocessor = util.StandardScaler.lazy_read_files(data_files)
 
+    # Transform and save data
     for data_directory in data_directories:
         transformed_data = preprocessor.transform(
             load_variable(data_directory, variable_name))
         output_directory = determine_output_directory(
             data_directory, output_base_directory, str_replace)
         save_variable(output_directory, variable_name, transformed_data)
+        (output_directory / finished_file).touch()
+
+    return
 
 
 def collect_data_directories(base_directory, *, required_file_names=None):
@@ -281,6 +342,15 @@ def load_variable(data_directory, file_basename):
 
 
 def files_exist(directory, file_names):
+    """Check if files exist in the specified directory.
+
+    Args:
+        directory: pathlib.Path
+        file_names: list of str
+    Returns:
+        files_exist: bool
+            True if all files exist. Otherwise False.
+    """
     a = np.all([
         len(list(directory.glob(file_name))) > 0
         for file_name in file_names])
