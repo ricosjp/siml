@@ -16,6 +16,19 @@ class Trainer():
     def read_settings(
             cls, settings_yaml, output_directory, *,
             gpu_id=-1):
+        """Read settings.yaml to generate Trainer object.
+
+        Args:
+            settings_yaml: str or pathlib.Path
+                setting.yaml file name.
+            output_directory: str or pathlib.Path
+                Output directory name.
+            gpu_id: int, optional [-1]
+                GPU ID. Specify non negative value to use GPU. -1 Meaning CPU.
+        Returns:
+            trainer: siml.Trainer
+                Generater Trainer object.
+        """
         dict_settings = util.load_yaml_file(settings_yaml)
         model = networks.Network(dict_settings['model'])
         return cls(
@@ -40,6 +53,52 @@ class Trainer():
             compute_accuracy=False, batch_size=10, n_epoch=1000, gpu_id=-1,
             log_trigger_epoch=1, stop_trigger_epoch=10,
             optuna_trial=None, prune=False):
+        """Initialize Trainer object.
+
+        Args:
+            model: siml.network.Network object
+                Model to be trained.
+            x_variable_names: list of str
+                Variable names of inputs.
+            y_variable_names: list of str
+                Variable names of outputs.
+            train_directories: list of str or pathlib.Path
+                Training data directories.
+            output_directory: str or pathlib.Path
+                Output directory name.
+            validation_directories, list of str or pathlib.Path, optional [[]]
+                Validation data directories.
+            restart_directory: str or pathlib.Path, optional [None]
+                Directory name to be used for restarting.
+            pretrain_diectory: str or pathlib.Path, optional [None]
+                Pretrained directory name.
+            loss_function: chainer.FunctionNode,
+                    optional [chainer.functions.mean_squared_error]
+                Loss function to be used for training.
+            optimizer: chainer.Optimizer,
+                    optional [chainer.optimizers.Adam]
+                Optimizer to be used for training.
+            compute_accuracy: bool, optional [False]
+                If True, compute accuracy.
+            batch_size: int, optional [10]
+                Batch size.
+            n_epoch: int, optional [1000]
+                The number of epochs.
+            gpu_id: int, optional [-1]
+                GPU ID. Specify non negative value to use GPU. -1 Meaning CPU.
+            log_trigger_epoch: int, optional [1]
+                The interval of logging of training. It is used for logging,
+                plotting, and saving snapshots.
+            stop_trigger_epoch: int, optional [10]
+                The interval to check if training should be stopped. It is used
+                for early stopping and pruning.
+            optuna_trial: optuna.Trial [None]
+                Trial object used to perform optuna hyper parameter tuning.
+            prune: bool [False]
+                If True and optuna_trial is given, prining would be performed.
+        Returns:
+            None
+        """
 
         # Define model
         self.model = model
@@ -60,7 +119,7 @@ class Trainer():
         self.prune = prune
         if self.optuna_trial is None and self.prune:
             raise ValueError(f"Cannot prune without optuna_trial. Feed it.")
-        if self.is_gpu_supporting():
+        if self._is_gpu_supporting():
             self.gpu_id = gpu_id
         else:
             if gpu_id != -1:
@@ -76,7 +135,20 @@ class Trainer():
             x_variable_names, y_variable_names,
             self.train_directories, self.validation_directories)
 
-    def is_gpu_supporting(self):
+    def train(self):
+        """Perform training.
+
+        Args:
+            None
+        Returns:
+            loss: float
+                Overall loss value.
+        """
+        self.trainer.run()
+        loss = self.log_report_extension.log[-1]['validation/main/loss']
+        return loss
+
+    def _is_gpu_supporting(self):
         return ch.cuda.available
 
     def _generate_trainer(
@@ -167,8 +239,3 @@ class Trainer():
                 f"{len(unconcatenatable_variables)} "
                 'unconcatenatable variables found.\n'
                 'Must be less than 2.')
-
-    def train(self):
-        self.trainer.run()
-        loss = self.log_report_extension.log[-1]['validation/main/loss']
-        return loss

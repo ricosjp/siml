@@ -45,7 +45,6 @@ class MLP(ch.ChainList):
             y: numpy.ndarray or cupy.ndarray
                 Output of the NN.
         """
-        print(x)
         h = x
         for link, dropout_ratio, activation in zip(
                 self, self.dropout_ratios, self.activations):
@@ -108,7 +107,6 @@ class Network(ch.ChainList):
     }
 
     def __init__(self, block_definitions):
-        print(block_definitions)
         super().__init__(*[
             self.DICT_BLOCKS[block_definition['name']](block_definition)
             for block_definition in block_definitions])

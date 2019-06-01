@@ -187,13 +187,14 @@ def preprocess_single_variable(
     """
 
     # Check if data already exists
-    if not force_renew and np.any(
+    if not force_renew and np.any([
             util.files_exist(
                 determine_output_directory(
                     data_directory, output_base_directory, str_replace),
-                (variable_name + '.*'))
-            for data_directory in data_directories):
-        raise ValueError(f"Data already exists in {output_base_directory}")
+                [variable_name + '.*'])
+            for data_directory in data_directories]):
+        print(f"Data already exists in {output_base_directory}. Skipped.")
+        exit()
 
     # Prepare preprocessor
     data_files = [
