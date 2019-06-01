@@ -13,8 +13,6 @@ from . import util
 DTYPE = np.float32
 FEMIO_FILE = 'femio_npy_saved.npy'
 
-SPARSE_DATA_NAMES = ['adj', 'nadj']
-
 
 def convert_raw_data(
         raw_directory, mandatory_variables, *, optional_variables,
@@ -77,7 +75,7 @@ def convert_raw_data(
     raw_directory = Path(raw_directory)
     output_base_directory = Path(output_base_directory)
     if recursive:
-        raw_directories = collect_data_directories(
+        raw_directories = util.collect_data_directories(
             raw_directory)
         convert_raw_data(
             raw_directories, mandatory_variables,
@@ -95,7 +93,7 @@ def convert_raw_data(
         raw_directory, output_base_directory, 'raw')
 
     # Guard
-    if not files_exist(raw_directory, required_file_names):
+    if not util.files_exist(raw_directory, required_file_names):
         return
     if (output_directory / finished_file).exists() and not force_renew:
         print(f"Already converted. Skipped conversion: {raw_directory}")
@@ -148,7 +146,7 @@ def preprocess_interim_data(
     """
     interim_directory = Path(interim_directory)
     output_base_directory = Path(output_base_directory)
-    interim_directories = collect_data_directories(
+    interim_directories = util.collect_data_directories(
         interim_directory, required_file_names=required_file_names)
 
     # Preprocess data variable by variable
@@ -190,7 +188,7 @@ def preprocess_single_variable(
 
     # Check if data already exists
     if not force_renew and np.any(
-            files_exist(
+            util.files_exist(
                 determine_output_directory(
                     data_directory, output_base_directory, str_replace),
                 (variable_name + '.*'))
@@ -211,42 +209,13 @@ def preprocess_single_variable(
     # Transform and save data
     for data_directory in data_directories:
         transformed_data = preprocessor.transform(
-            load_variable(data_directory, variable_name))
+            util.load_variable(data_directory, variable_name))
         output_directory = determine_output_directory(
             data_directory, output_base_directory, str_replace)
-        save_variable(output_directory, variable_name, transformed_data)
+        util.save_variable(output_directory, variable_name, transformed_data)
         (output_directory / finished_file).touch()
 
     return
-
-
-def collect_data_directories(base_directory, *, required_file_names=None):
-    """Collect data directories recursively from the base directory.
-
-    Args:
-        base_directory: pathlib.Path
-            Base directory to search directory from.
-        required_file_names: list of str
-            If given, only return directories which have required files.
-    Returns:
-        found_directories: list of pathlib.Path
-            All found directories.
-    """
-    new_found_directories = [
-        directory
-        for directory in base_directory.iterdir()
-        if directory.is_dir()]
-
-    for new_found_directory in new_found_directories:
-        new_found_directories += collect_data_directories(new_found_directory)
-
-    if required_file_names is None:
-        return new_found_directories
-    else:
-        return [
-            new_found_directory
-            for new_found_directory in new_found_directories
-            if files_exist(new_found_directory, required_file_names)]
 
 
 def extract_variables(
@@ -289,72 +258,8 @@ def save_dict_data(output_directory, dict_data, *, dtype=np.float32):
         None
     """
     for key, value in dict_data.items():
-        save_variable(output_directory, key, value, dtype=dtype)
+        util.save_variable(output_directory, key, value, dtype=dtype)
     return
-
-
-def save_variable(
-        output_directory, file_basename, data, *, dtype=np.float32):
-    """Save variable data.
-
-    Args:
-        output_directory: pathlib.Path
-            Save directory path.
-        file_basename: str
-            Save file base name without extenstion.
-        data: np.ndarray or scipy.sparse.coo_matrix
-            Data to be saved.
-        dtype: type, optional [np.float32]
-            Data type to be saved.
-    Returns:
-        None
-    """
-    if not output_directory.exists():
-        output_directory.mkdir(parents=True)
-    if isinstance(data, np.ndarray):
-        save_file_path = output_directory / (file_basename + '.npy')
-        np.save(output_directory / (file_basename + '.npy'), data)
-    elif isinstance(data, sp.coo_matrix):
-        save_file_path = output_directory / (file_basename + '.npz')
-        sp.save_npz(save_file_path, data)
-    else:
-        raise ValueError(f"{file_basename} has unknown type: {data.__class__}")
-
-    print(f"{file_basename} is saved in: {save_file_path}")
-    return
-
-
-def load_variable(data_directory, file_basename):
-    """Load variable data.
-
-    Args:
-        output_directory: pathlib.Path
-            Directory path.
-        file_basename: str
-            File base name without extenstion.
-    Returns:
-        data: numpy.ndarray or scipy.sparse.coo_matrix
-    """
-    if file_basename in SPARSE_DATA_NAMES:
-        return sp.load_npz(data_directory / (file_basename + '.npz'))
-    else:
-        return np.load(data_directory / (file_basename + '.npy'))
-
-
-def files_exist(directory, file_names):
-    """Check if files exist in the specified directory.
-
-    Args:
-        directory: pathlib.Path
-        file_names: list of str
-    Returns:
-        files_exist: bool
-            True if all files exist. Otherwise False.
-    """
-    a = np.all([
-        len(list(directory.glob(file_name))) > 0
-        for file_name in file_names])
-    return a
 
 
 def determine_output_directory(
@@ -387,11 +292,10 @@ def determine_output_directory(
 
     replace_index = replace_indices[0]
     if replace_index + 1 == len(input_directory.parts):
-        raise ValueError(
-            f"{str_replace} is at the end of {input_directory}. "
-            'Place it in a subdirectory.')
-    output_directory = output_base_directory / '/'.join(
-        input_directory.parts[replace_index + 1:])
+        output_directory = output_base_directory
+    else:
+        output_directory = output_base_directory / '/'.join(
+            input_directory.parts[replace_index + 1:])
     return output_directory
 
 

@@ -13,6 +13,11 @@ from .femio import FEMData, FEMAttribute
 
 
 INFERENCE_FLAG_FILE = 'inference'
+SPARSE_DATA_NAMES = ['adj', 'nadj']
+
+
+def date_string():
+    return dt.datetime.now().isoformat().replace('T', '_').replace(':', '-')
 
 
 def load_yaml_file(file_name):
@@ -28,6 +33,106 @@ def load_yaml_file(file_name):
     with open(file_name, 'r') as f:
         dict_data = yaml.load(f, Loader=yaml.SafeLoader)
     return dict_data
+
+
+def save_variable(
+        output_directory, file_basename, data, *, dtype=np.float32):
+    """Save variable data.
+
+    Args:
+        output_directory: pathlib.Path
+            Save directory path.
+        file_basename: str
+            Save file base name without extenstion.
+        data: np.ndarray or scipy.sparse.coo_matrix
+            Data to be saved.
+        dtype: type, optional [np.float32]
+            Data type to be saved.
+    Returns:
+        None
+    """
+    if not output_directory.exists():
+        output_directory.mkdir(parents=True)
+    if isinstance(data, np.ndarray):
+        save_file_path = output_directory / (file_basename + '.npy')
+        np.save(
+            output_directory / (file_basename + '.npy'), data.astype(dtype))
+    elif isinstance(data, sp.coo_matrix):
+        save_file_path = output_directory / (file_basename + '.npz')
+        sp.save_npz(save_file_path, data)
+    else:
+        raise ValueError(f"{file_basename} has unknown type: {data.__class__}")
+
+    print(f"{file_basename} is saved in: {save_file_path}")
+    return
+
+
+def load_variable(data_directory, file_basename):
+    """Load variable data.
+
+    Args:
+        output_directory: pathlib.Path
+            Directory path.
+        file_basename: str
+            File base name without extenstion.
+    Returns:
+        data: numpy.ndarray or scipy.sparse.coo_matrix
+    """
+    if file_basename in SPARSE_DATA_NAMES:
+        return sp.load_npz(data_directory / (file_basename + '.npz'))
+    else:
+        return np.load(data_directory / (file_basename + '.npy'))
+
+
+def collect_data_directories(base_directory, *, required_file_names=None):
+    """Collect data directories recursively from the base directory.
+
+    Args:
+        base_directory: pathlib.Path
+            Base directory to search directory from.
+        required_file_names: list of str
+            If given, only return directories which have required files.
+    Returns:
+        found_directories: list of pathlib.Path
+            All found directories.
+    """
+    new_found_directories = [
+        directory
+        for directory in base_directory.iterdir()
+        if directory.is_dir()]
+
+    for new_found_directory in new_found_directories:
+        new_found_directories += collect_data_directories(new_found_directory)
+
+    if required_file_names is None:
+        return new_found_directories
+    else:
+        return [
+            new_found_directory
+            for new_found_directory in new_found_directories
+            if files_exist(new_found_directory, required_file_names)]
+
+
+def files_exist(directory, file_names):
+    """Check if files exist in the specified directory.
+
+    Args:
+        directory: pathlib.Path
+        file_names: list of str
+    Returns:
+        files_exist: bool
+            True if all files exist. Otherwise False.
+    """
+    try:
+        a = np.all([
+            len(list(directory.glob(file_name))) > 0
+            for file_name in file_names])
+    except:
+        raise ValueError(directory.glob('*.npy'))
+        raise ValueError([
+            len(list(directory.glob(file_name))) > 0
+            for file_name in file_names])
+    return a
 
 
 class IdentityConverter():
@@ -66,16 +171,8 @@ class Standardizer():
         if len(data_files) == 1:
             return obj
 
-        print(data_files[0])
-        d = np.load(data_files[0])
-        print(np.mean(d))
-        print(obj.mean_square)
         for data_file in data_files[1:]:
-            d = np.load(data_file)
             obj.update(np.load(data_file))
-            print(data_file)
-            print(np.mean(d))
-            print(obj.mean_square)
         return obj
 
     def update(self, data):
