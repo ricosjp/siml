@@ -150,6 +150,9 @@ class IdentityConverter():
     def inverse(self, data):
         return data
 
+    def save(self, file_name):
+        np.save(file_name, None)
+
 
 class Standardizer():
     """Class to perform standardization."""
@@ -202,6 +205,9 @@ class Standardizer():
     def inverse(self, data):
         return (data * (self.std + self.EPSILON)) + self.mean
 
+    def save(self, file_name):
+        np.save(file_name, {'std': self.std, 'mean': self.mean})
+
 
 class StandardScaler(Standardizer):
     """Class to perform scaling with standard deviation."""
@@ -211,6 +217,9 @@ class StandardScaler(Standardizer):
 
     def inverse(self, data):
         return data * (self.std + self.EPSILON)
+
+    def save(self, file_name):
+        np.save(file_name, {'std': self.std})
 
 
 def diagonalize(data, rotations):

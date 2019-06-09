@@ -8,6 +8,7 @@ import scipy.sparse as sp
 
 from . import femio
 from . import util
+from . import setting
 
 
 DTYPE = np.float32
@@ -76,7 +77,7 @@ def convert_raw_data(
     output_base_directory = Path(output_base_directory)
     if recursive:
         raw_directories = util.collect_data_directories(
-            raw_directory)
+            raw_directory, add_base=False)
         convert_raw_data(
             raw_directories, mandatory_variables,
             optional_variables=optional_variables,
@@ -119,106 +120,108 @@ def convert_raw_data(
     return
 
 
-def preprocess_interim_data(
-        interim_directory, preprocess_methods, *,
-        output_base_directory='data/preprocessed',
-        force_renew=False, finished_file='preprocessed',
-        required_file_names=['converted']):
-    """Preprocess interim data with preprocessing e.g. standardization and then
-    save them.
+class Preprocessor:
 
-    Args:
-        interim_directory: str or pathlib.Path
-            Input base directory.
-        preprocess_methods: dict
-            Dict of variable name to preprocess method.
-        output_base_directory: str or pathlib.Path,
-                optional ['data/preprocessed']
-            Output base directory.
-        force_renew: bool, optional [False]
-            If True, renew npy files even if they are alerady exist.
-        finished_file: str, optional ['preprocessed']
-            File name to indicate that the preprocessing is finished.
-        required_file_names: list of str, optional [['converted']]
-            Required file names.
-    Returns:
-        None
-    """
-    interim_directory = Path(interim_directory)
-    output_base_directory = Path(output_base_directory)
-    interim_directories = util.collect_data_directories(
-        interim_directory, required_file_names=required_file_names)
+    REQUIRED_FILE_NAMES = ['converted']
+    FINISHED_FILE = 'preprocessed'
 
-    # Preprocess data variable by variable
-    for variable_name, preprocess_method in preprocess_methods.items():
-        preprocess_single_variable(
-            interim_directory, output_base_directory, interim_directories,
-            variable_name, preprocess_method, str_replace='interim',
-            finished_file=finished_file, force_renew=force_renew)
+    @classmethod
+    def read_settings(cls, settings_yaml):
+        preprocess_setting = setting.PreprocessSetting.read_settings_yaml(
+            settings_yaml)
+        return cls(preprocess_setting)
 
-    return
+    def __init__(self, setting):
+        self.setting = setting
 
+    def preprocess_interim_data(self, force_renew=False):
+        """Preprocess interim data with preprocessing e.g. standardization and then
+        save them.
 
-def preprocess_single_variable(
-        data_base_directory, output_base_directory, data_directories,
-        variable_name, preprocess_method, *, str_replace='interim',
-        finished_file='preprocessed', force_renew=False):
-    """Preprocess single variable.
+        Args:
+            force_renew: bool, optional [False]
+                If True, renew npy files even if they are alerady exist.
+        Returns:
+            None
+        """
+        interim_directories = util.collect_data_directories(
+            self.setting.data.interim,
+            required_file_names=self.REQUIRED_FILE_NAMES, add_base=False)
 
-    Args:
-        data_base_directory: pathlib.Path
-            Input base directory.
-        output_base_directory: pathlib.Path
-            Output base directory.
-        data_directories: list of pathlib.Path
-            Data directories.
-        variable_name: str
-            The name of the variable.
-        preprocess_method: str
-            Preprocess method name.
-        str_replace: str, optional ['interim']
-            Name to replace the input data base directory with.
-        finished_file: str, optional ['preprocessed']
-            File name to indicate that the preprocessing is finished.
-        force_renew: bool, optional [False]
-            If True, renew npy files even if they are alerady exist.
-    Returns:
-        None
-    """
+        # Preprocess data variable by variable
+        for variable_name, preprocess_method \
+                in self.setting.preprocess.items():
+            self.preprocess_single_variable(
+                interim_directories, variable_name, preprocess_method,
+                str_replace='interim', force_renew=force_renew)
+        return
 
-    # Check if data already exists
-    if not force_renew and np.any([
-            util.files_exist(
-                determine_output_directory(
-                    data_directory, output_base_directory, str_replace),
-                [variable_name + '.*'])
-            for data_directory in data_directories]):
-        print(f"Data already exists in {output_base_directory}. Skipped.")
-        exit()
+    def preprocess_single_variable(
+            self, data_directories, variable_name, preprocess_method, *,
+            str_replace='interim', force_renew=False):
+        """Preprocess single variable.
 
-    # Prepare preprocessor
-    data_files = [
-        data_directory / (variable_name + '.npy')
-        for data_directory in data_directories]
-    if preprocess_method is 'identity':
-        preprocessor = util.IdentityConverter()
-    elif preprocess_method == 'standardize':
-        preprocessor = util.Standardizer.lazy_read_files(data_files)
-    elif preprocess_method == 'std_scale':
-        preprocessor = util.StandardScaler.lazy_read_files(data_files)
-    else:
-        raise ValueError(f"Unknown preprocessing method: {preprocess_method}")
+        Args:
+            data_directories: list of pathlib.Path
+                Data directories.
+            variable_name: str
+                The name of the variable.
+            preprocess_method: str
+                Preprocess method name.
+            str_replace: str, optional ['interim']
+                Name to replace the input data base directory with.
+            force_renew: bool, optional [False]
+                If True, renew npy files even if they are alerady exist.
+        Returns:
+            None
+        """
 
-    # Transform and save data
-    for data_directory in data_directories:
-        transformed_data = preprocessor.transform(
-            util.load_variable(data_directory, variable_name))
-        output_directory = determine_output_directory(
-            data_directory, output_base_directory, str_replace)
-        util.save_variable(output_directory, variable_name, transformed_data)
-        (output_directory / finished_file).touch()
+        # Check if data already exists
+        if not force_renew and np.any([
+                util.files_exist(
+                    determine_output_directory(
+                        self.setting.data.interim,
+                        self.setting.data.preprocessed, str_replace),
+                    [variable_name + '.*'])
+                for data_directory in data_directories]):
+            print(
+                'Data already exists in '
+                f"{self.setting.data.preprocessed}. Skipped.")
+            exit()
 
-    return
+        # Prepare preprocessor
+        data_files = [
+            data_directory / (variable_name + '.npy')
+            for data_directory in data_directories]
+        if preprocess_method == 'identity':
+            preprocessor = util.IdentityConverter()
+        elif preprocess_method == 'standardize':
+            preprocessor = util.Standardizer.lazy_read_files(data_files)
+        elif preprocess_method == 'std_scale':
+            preprocessor = util.StandardScaler.lazy_read_files(data_files)
+        else:
+            raise ValueError(
+                f"Unknown preprocessing method: {preprocess_method}")
+
+        # Transform and save data
+        for data_directory in data_directories:
+            transformed_data = preprocessor.transform(
+                util.load_variable(data_directory, variable_name))
+            output_directory = determine_output_directory(
+                data_directory, self.setting.data.preprocessed, str_replace)
+            util.save_variable(
+                output_directory, variable_name, transformed_data)
+
+            yaml_file = output_directory / 'settings.yaml'
+            if not yaml_file.exists():
+                setting.write_yaml(self.setting, yaml_file)
+            (output_directory / self.FINISHED_FILE).touch()
+
+        # Save preprocessor parameters
+        preprocessor.save(
+            self.setting.data.preprocessed
+            / ('preprocessor_' + variable_name + '.npy'))
+        return
 
 
 def extract_variables(

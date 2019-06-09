@@ -181,32 +181,47 @@ class MainSetting:
         return cls(
             data=data_setting, trainer=trainer_setting, model=model_setting)
 
-    def write_yaml(self, file_name):
-        """Write YAML file of self.
 
-        Args:
-            file_name: str or pathlib.Path
-                YAML file name to write.
-        Returns:
-            None
-        """
-        file_name = Path(file_name)
-        if file_name.exists():
-            raise ValueError(f"{file_name} already exists")
+@dc.dataclass
+class PreprocessSetting:
+    data: DataSetting
+    preprocess: dict
 
-        dict_data = dc.asdict(self)
-        standardized_dict_data = self._standardize_data(dict_data)
+    @classmethod
+    def read_settings_yaml(cls, settings_yaml):
+        dict_settings = util.load_yaml_file(settings_yaml)
+        data = DataSetting(**dict_settings['data'])
+        preprocess = dict_settings['preprocess']
+        return cls(data=data, preprocess=preprocess)
 
-        with open(file_name, 'w') as f:
-            yaml.dump(standardized_dict_data, f)
-        return
 
-    def _standardize_data(self, data):
-        if isinstance(data, list):
-            return [self._standardize_data(d) for d in data]
-        elif isinstance(data, dict):
-            return {k: self._standardize_data(v) for k, v in data.items()}
-        elif isinstance(data, Path):
-            return str(data)
-        else:
-            return data
+def write_yaml(data_class, file_name):
+    """Write YAML file of the specified dataclass object.
+
+    Args:
+        file_name: str or pathlib.Path
+            YAML file name to write.
+    Returns:
+        None
+    """
+    file_name = Path(file_name)
+    if file_name.exists():
+        raise ValueError(f"{file_name} already exists")
+
+    dict_data = dc.asdict(data_class)
+    standardized_dict_data = _standardize_data(dict_data)
+
+    with open(file_name, 'w') as f:
+        yaml.dump(standardized_dict_data, f)
+    return
+
+
+def _standardize_data(data):
+    if isinstance(data, list):
+        return [_standardize_data(d) for d in data]
+    elif isinstance(data, dict):
+        return {k: _standardize_data(v) for k, v in data.items()}
+    elif isinstance(data, Path):
+        return str(data)
+    else:
+        return data
