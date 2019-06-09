@@ -200,12 +200,14 @@ def preprocess_single_variable(
     data_files = [
         data_directory / (variable_name + '.npy')
         for data_directory in data_directories]
-    if preprocess_method is None:
+    if preprocess_method is 'identity':
         preprocessor = util.IdentityConverter()
     elif preprocess_method == 'standardize':
         preprocessor = util.Standardizer.lazy_read_files(data_files)
     elif preprocess_method == 'std_scale':
         preprocessor = util.StandardScaler.lazy_read_files(data_files)
+    else:
+        raise ValueError(f"Unknown preprocessing method: {preprocess_method}")
 
     # Transform and save data
     for data_directory in data_directories:

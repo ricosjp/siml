@@ -84,7 +84,8 @@ def load_variable(data_directory, file_basename):
         return np.load(data_directory / (file_basename + '.npy'))
 
 
-def collect_data_directories(base_directory, *, required_file_names=None):
+def collect_data_directories(
+        base_directory, *, required_file_names=None, add_base=True):
     """Collect data directories recursively from the base directory.
 
     Args:
@@ -92,25 +93,30 @@ def collect_data_directories(base_directory, *, required_file_names=None):
             Base directory to search directory from.
         required_file_names: list of str
             If given, only return directories which have required files.
+        add_base: bool, optional [True]
+            Add base directory to the collection.
     Returns:
         found_directories: list of pathlib.Path
             All found directories.
     """
-    new_found_directories = [
+    found_directories = [
         directory
         for directory in base_directory.iterdir()
         if directory.is_dir()]
 
-    for new_found_directory in new_found_directories:
-        new_found_directories += collect_data_directories(new_found_directory)
+    for found_directory in found_directories:
+        found_directories += collect_data_directories(
+            found_directory, add_base=False)
 
+    if add_base:
+        found_directories += [base_directory]
     if required_file_names is None:
-        return new_found_directories
+        return found_directories
     else:
         return [
-            new_found_directory
-            for new_found_directory in new_found_directories
-            if files_exist(new_found_directory, required_file_names)]
+            found_directory
+            for found_directory in found_directories
+            if files_exist(found_directory, required_file_names)]
 
 
 def files_exist(directory, file_names):

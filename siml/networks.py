@@ -5,6 +5,7 @@ DICT_ACTIVATIONS = {
     'identity': ch.functions.identity,
     'relu': ch.functions.relu,
     'sigmoid': ch.functions.sigmoid,
+    'tanh': ch.functions.tanh,
 }
 
 
@@ -60,25 +61,23 @@ class AdjustableMLP(ch.ChainList):
     are sample size, dimension, feature, and converted feature,
     respectively."""
 
-    def __init__(self, block_definition):
+    def __init__(self, block_setting):
         """Initialize the NN.
 
         Args:
-            node_numbers: list of int
-                The number of nodes in each hidden layer.
-            dropout: Bool, optional [False]
-                If True, apply dropout excluding the output layer.
+            block_setting: siml.setting.BlockSetting
+                BlockSetting object.
         """
 
-        nodes = block_definition['nodes']
+        nodes = block_setting.nodes
         super().__init__(*[
             ch.links.Linear(n1, n2)
             for n1, n2 in zip(nodes[:-1], nodes[1:])])
         self.activations = [
             DICT_ACTIVATIONS[activation]
-            for activation in block_definition['activations']]
+            for activation in block_setting.activations]
         self.dropout_ratios = [
-            dropout_ratio for dropout_ratio in block_definition['dropouts']]
+            dropout_ratio for dropout_ratio in block_setting.dropouts]
 
     def __call__(self, x):
         """Execute the NN's forward computation.
@@ -106,10 +105,10 @@ class Network(ch.ChainList):
         'adjustable_mlp': AdjustableMLP,
     }
 
-    def __init__(self, block_definitions):
+    def __init__(self, model_setting):
         super().__init__(*[
-            self.DICT_BLOCKS[block_definition['name']](block_definition)
-            for block_definition in block_definitions])
+            self.DICT_BLOCKS[block.name](block)
+            for block in model_setting.blocks])
 
     def __call__(self, x):
         h = x
