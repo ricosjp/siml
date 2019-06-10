@@ -1,11 +1,14 @@
+
 import chainer as ch
 import daz
 import numpy as np
 import optuna
+import pandas as pd
 
 # from femio import FEMData
 from . import util
 from . import networks
+from . import prepost
 from . import setting
 
 
@@ -37,6 +40,7 @@ class Trainer():
             None
         """
         self.setting = main_setting
+        self._update_setting_if_needed()
 
         # Define model
         self.model = networks.Network(self.setting.model)
@@ -63,6 +67,10 @@ class Trainer():
             self.setting.trainer.inputs, self.setting.trainer.outputs,
             self.setting.data.train, self.setting.data.validation)
 
+        # Manage restart and pretrain
+        self._load_pretrained_model_if_needed()
+        self._load_restart_model_if_needed()
+
     def train(self):
         """Perform training.
 
@@ -72,13 +80,126 @@ class Trainer():
             loss: float
                 Overall loss value.
         """
+        print(f"Ouput directory: {self.setting.trainer.output_directory}")
         self.setting.trainer.output_directory.mkdir(parents=True)
-        self.setting.write_yaml(
+        setting.write_yaml(
+            self.setting,
             self.setting.trainer.output_directory / 'settings.yaml')
 
         self.trainer.run()
         loss = self.log_report_extension.log[-1]['validation/main/loss']
         return loss
+
+    def infer(self):
+        """Perform inference.
+
+        Args:
+            inference_directories: list of pathlib.Path
+                Directories for inference.
+        Returns:
+            loss: float, optional (when the answer is available)
+                Overall loss value.
+        """
+        if self.setting.trainer.pretrain_directory is None:
+            raise ValueError(
+                f'No pretrain directory is specified for inference.')
+
+        dict_x = self._load_data(
+            self.setting.trainer.inputs, self.setting.data.test,
+            return_dict=True)
+        dict_y = self._load_data(
+            self.setting.trainer.outputs, self.setting.data.test,
+            return_dict=True)
+
+        postprocessor = prepost.Postprocessor()
+
+        for directory, x in dict_x.items():
+            print(directory, x, dict_y[directory])
+            inferred_y = self.model(x)
+            postprocessor.postprocess(directory, inferred_y)
+            if directory in dict_y:
+                print(f"update? {self.classifier.update_enabled}")
+                self.classifier(x, dict_y[directory])
+
+        # self.setting.
+
+    def _update_setting(self, path):
+        if path.is_file():
+            yaml_file = path
+        elif path.is_dir():
+            yamls = list(path.glob('*.yaml'))
+            if len(yamls) != 1:
+                raise ValueError(f"{len(yamls)} yaml files found in {path}")
+            yaml_file = yamls[0]
+        self.setting = setting.MainSetting.read_settings_yaml(yaml_file)
+        if self.setting.trainer.output_directory.exists():
+            print(
+                f"{self.setting.trainer.output_directory} exists "
+                'so reset output directory.')
+            self.setting.trainer.output_directory = \
+                setting.TrainerSetting([], []).output_directory
+
+    def _update_setting_if_needed(self):
+        if self.setting.trainer.restart_directory is not None:
+            restart_directory = self.setting.trainer.restart_directory
+            self._update_setting(self.setting.trainer.restart_directory)
+            self.setting.trainer.restart_directory = restart_directory
+        elif self.setting.trainer.pretrain_directory is not None:
+            pretrain_directory = self.setting.trainer.pretrain_directory
+            self._update_setting(self.setting.trainer.pretrain_directory)
+            self.setting.trainer.pretrain_directory = pretrain_directory
+        elif self.setting.trainer.restart_directory is not None \
+                and self.setting.trainer.pretrain_directory is not None:
+            raise ValueError(
+                'Restart directory and pretrain directory cannot be specified '
+                'at the same time.')
+        return
+
+    def _load_pretrained_model_if_needed(self):
+        if self.setting.trainer.pretrain_directory is None:
+            return
+        snapshot = self._select_snapshot(
+            self.setting.trainer.pretrain_directory,
+            method=self.setting.trainer.snapshot_choise_method)
+        ch.serializers.load_npz(
+            snapshot, self.model, path='updater/model:main/predictor/')
+        print(f"{snapshot} loaded as a pretrain model.")
+        return
+
+    def _load_restart_model_if_needed(self):
+        if self.setting.trainer.restart_directory is None:
+            return
+        snapshot = self._select_snapshot(
+            self.setting.trainer.restart_directory, method='latest')
+        ch.serializers.load_npz(snapshot, self.trainer)
+        print(f"{snapshot} loaded for restart.")
+        return
+
+    def _select_snapshot(self, path, method='best'):
+        if not path.exists():
+            raise ValueError(f"{path} doesn't exist")
+
+        if path.is_file():
+            return path
+        elif path.is_dir():
+            snapshots = path.glob('snapshot_*')
+            if method == 'latest':
+                return max(snapshots, key=lambda p: p.stat().st_ctime)
+            elif method == 'best':
+                df = pd.read_json(path / 'log')
+                best_epoch = df['epoch'].iloc[
+                    df['validation/main/loss'].idxmin()]
+                return path / f"snapshot_epoch_{best_epoch}"
+            elif method == 'train_best':
+                df = pd.read_json(path / 'log')
+                best_epoch = df['epoch'].iloc[
+                    df['main/loss'].idxmin()]
+                return path / f"snapshot_epoch_{best_epoch}"
+            else:
+                raise ValueError(f"Unknown snapshot choise method: {method}")
+
+        else:
+            raise ValueError(f"{path} had unknown property.")
 
     def _is_gpu_supporting(self):
         return ch.cuda.available
@@ -155,7 +276,7 @@ class Trainer():
         else:
             raise ValueError(f"Unknown loss function name: {loss_name}")
 
-    def _load_data(self, variable_names, directories):
+    def _load_data(self, variable_names, directories, *, return_dict=False):
         data_directories = []
         for directory in directories:
             data_directories += util.collect_data_directories(
@@ -166,7 +287,12 @@ class Trainer():
                 util.load_variable(data_directory, variable_name)
                 for variable_name in variable_names])
             for data_directory in data_directories]
-        return data
+        if return_dict:
+            return {
+                data_directory: d
+                for data_directory, d in zip(data_directories, data)}
+        else:
+            return data
 
     def _concatenate_variable(self, variables):
 

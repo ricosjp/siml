@@ -78,6 +78,8 @@ class DataSetting(TypedDataClass):
         default_factory=lambda: [Path('data/preprocessed/train')])
     validation: typing.List[Path] = dc.field(
         default_factory=lambda: [Path('data/preprocessed/validation')])
+    test: typing.List[Path] = dc.field(
+        default_factory=lambda: [Path('data/preprocessed/test')])
 
 
 @dc.dataclass
@@ -96,7 +98,7 @@ class TrainerSetting(TypedDataClass):
         Validation data directories.
     restart_directory: str or pathlib.Path, optional [None]
         Directory name to be used for restarting.
-    pretrain_diectory: str or pathlib.Path, optional [None]
+    pretrain_directory: str or pathlib.Path, optional [None]
         Pretrained directory name.
     loss_function: chainer.FunctionNode,
             optional [chainer.functions.mean_squared_error]
@@ -137,7 +139,7 @@ class TrainerSetting(TypedDataClass):
         default_factory=lambda: [])
     restart_directory: Path = dc.field(
         default=None, metadata={'allow_none': True})
-    pretrain_diectory: Path = dc.field(
+    pretrain_directory: Path = dc.field(
         default=None, metadata={'allow_none': True})
     loss_function: str = 'mse'
     optimizer: str = 'adam'
@@ -148,6 +150,7 @@ class TrainerSetting(TypedDataClass):
     optuna_trial: optuna.Trial = dc.field(
         default=None, metadata={'convert': False, 'allow_none': True})
     prune: bool = False
+    snapshot_choise_method: str = 'best'
 
 
 @dc.dataclass
@@ -162,8 +165,8 @@ class BlockSetting(TypedDataClass):
 class ModelSetting(TypedDataClass):
     blocks: typing.List[BlockSetting]
 
-    def __init__(self, blocks):
-        self.blocks = [BlockSetting(**block) for block in blocks]
+    def __init__(self, setting):
+        self.blocks = [BlockSetting(**block) for block in setting['blocks']]
 
 
 @dc.dataclass

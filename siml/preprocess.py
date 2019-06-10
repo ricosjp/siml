@@ -180,7 +180,7 @@ class Preprocessor:
         if not force_renew and np.any([
                 util.files_exist(
                     determine_output_directory(
-                        self.setting.data.interim,
+                        data_directory,
                         self.setting.data.preprocessed, str_replace),
                     [variable_name + '.*'])
                 for data_directory in data_directories]):
