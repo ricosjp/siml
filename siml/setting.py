@@ -54,6 +54,9 @@ class TypedDataClass:
         elif field.type == typing.List[float]:
             def type_function(x):
                 return [float(_x) for _x in x]
+        elif field.type == typing.List[dict]:
+            def type_function(x):
+                return [dict(_x) for _x in x]
         else:
             type_function = field.type
 
@@ -74,6 +77,7 @@ class DataSetting(TypedDataClass):
     raw: Path
     interim: Path = Path('data/interim')
     preprocessed: Path = Path('data/preprocessed')
+    inferred: Path = Path('data/inferred')
     train: typing.List[Path] = dc.field(
         default_factory=lambda: [Path('data/preprocessed/train')])
     validation: typing.List[Path] = dc.field(
@@ -86,9 +90,9 @@ class DataSetting(TypedDataClass):
 class TrainerSetting(TypedDataClass):
 
     """
-    inputs: list of str
+    inputs: list of dict
         Variable names of inputs.
-    outputs: list of str
+    outputs: list of dict
         Variable names of outputs.
     train_directories: list of str or pathlib.Path
         Training data directories.
@@ -119,22 +123,33 @@ class TrainerSetting(TypedDataClass):
     stop_trigger_epoch: int, optional [10]
         The interval to check if training should be stopped. It is used
         for early stopping and pruning.
-    optuna_trial: optuna.Trial [None]
+    optuna_trial: optuna.Trial, optional [None]
         Trial object used to perform optuna hyper parameter tuning.
-    prune: bool [False]
+    prune: bool, optional [False]
         If True and optuna_trial is given, prining would be performed.
+    seed: str, optional [0]
+        Random seed.
     """
 
-    inputs: typing.List[str]
-    outputs: typing.List[str]
+    inputs: typing.List[dict] = dc.field(default_factory=list)
+    outputs: typing.List[dict] = dc.field(default_factory=list)
 
+    input_names: typing.List[str] = dc.field(
+        default=None, metadata={'allow_none': True})
+    input_dims: typing.List[int] = dc.field(
+        default=None, metadata={'allow_none': True})
+    output_names: typing.List[str] = dc.field(
+        default=None, metadata={'allow_none': True})
+    output_dims: typing.List[int] = dc.field(
+        default=None, metadata={'allow_none': True})
+    output_directory: Path = None
+
+    name: str = 'train'
     batch_size: int = 1
     n_epoch: int = 100
     log_trigger_epoch: int = 1
     stop_trigger_epoch: int = 10
 
-    output_directory: Path = dc.field(
-        default=Path('models') / util.date_string())
     validation_directories: typing.List[Path] = dc.field(
         default_factory=lambda: [])
     restart_directory: Path = dc.field(
@@ -151,6 +166,17 @@ class TrainerSetting(TypedDataClass):
         default=None, metadata={'convert': False, 'allow_none': True})
     prune: bool = False
     snapshot_choise_method: str = 'best'
+    seed: int = 0
+
+    def __post_init__(self):
+        self.input_names = [i['name'] for i in self.inputs]
+        self.input_dims = [i['dim'] for i in self.inputs]
+        self.output_names = [o['name'] for o in self.outputs]
+        self.output_dims = [o['dim'] for o in self.outputs]
+        if self.output_directory is None:
+            self.output_directory = Path('models') \
+                / f"{self.name}_{util.date_string()}"
+        super().__post_init__()
 
 
 @dc.dataclass

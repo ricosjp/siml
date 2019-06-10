@@ -1,3 +1,4 @@
+import abc
 import datetime as dt
 import itertools as it
 import os
@@ -141,8 +142,63 @@ def files_exist(directory, file_names):
     return a
 
 
-class IdentityConverter():
+def create_converter(
+        preprocess_method, *, data_files=None, parameter_file=None):
+    if preprocess_method == 'identity':
+        generator = IdentityConverter
+    elif preprocess_method == 'standardize':
+        generator = Standardizer
+    elif preprocess_method == 'std_scale':
+        generator = StandardScaler
+    else:
+        raise ValueError(
+            f"Unknown preprocessing method: {preprocess_method}")
+    if parameter_file is not None:
+        converter = generator.load(parameter_file)
+    elif data_files is not None:
+        converter = generator.lazy_read_files(data_files)
+    else:
+        raise ValueError(
+            'Cannot initialize converter without '
+            'neither data nor parameter file.')
+
+    return converter
+
+
+class AbstractConverter(abc.ABC):
+
+    @classmethod
+    @abc.abstractmethod
+    def lazy_read_files(cls, data_files):
+        pass
+
+    @abc.abstractmethod
+    def transform(self, data):
+        pass
+
+    @abc.abstractmethod
+    def inverse(self, data):
+        pass
+
+    @abc.abstractmethod
+    def save(self, file_name):
+        pass
+
+    @classmethod
+    def load(cls, file_name):
+        parameters = np.load(file_name).item()
+        if parameters is None:
+            return cls()
+        else:
+            return cls(**parameters)
+
+
+class IdentityConverter(AbstractConverter):
     """Class to perform identity conversion (do nothing)."""
+
+    @classmethod
+    def lazy_read_files(cls, data_files):
+        return cls()
 
     def transform(self, data):
         return data
@@ -154,7 +210,7 @@ class IdentityConverter():
         np.save(file_name, None)
 
 
-class Standardizer():
+class Standardizer(AbstractConverter):
     """Class to perform standardization."""
 
     EPSILON = 1e-5
@@ -203,7 +259,7 @@ class Standardizer():
         return (data - self.mean) / (self.std + self.EPSILON)
 
     def inverse(self, data):
-        return (data * (self.std + self.EPSILON)) + self.mean
+        return data * (self.std + self.EPSILON) + self.mean
 
     def save(self, file_name):
         np.save(file_name, {'std': self.std, 'mean': self.mean})
@@ -211,6 +267,9 @@ class Standardizer():
 
 class StandardScaler(Standardizer):
     """Class to perform scaling with standard deviation."""
+
+    def __init__(self, std, *, mean_square=None, n=None):
+        super().__init__(mean=0.0, std=std, mean_square=mean_square, n=n)
 
     def transform(self, data):
         return data / (self.std + self.EPSILON)
@@ -591,10 +650,10 @@ def concat_dicts(dicts):
     return concated_dic
 
 
-def str_date_time():
-    now = dt.datetime.now()
-    return (now.date().__str__() + '-'
-            + now.time().__str__()[:8].replace(':', '-'))
+# def str_date_time():
+#     now = dt.datetime.now()
+#     return (now.date().__str__() + '-'
+#             + now.time().__str__()[:8].replace(':', '-'))
 
 
 def dir2name(dir_name):

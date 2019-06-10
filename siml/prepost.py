@@ -193,15 +193,8 @@ class Preprocessor:
         data_files = [
             data_directory / (variable_name + '.npy')
             for data_directory in data_directories]
-        if preprocess_method == 'identity':
-            preprocessor = util.IdentityConverter()
-        elif preprocess_method == 'standardize':
-            preprocessor = util.Standardizer.lazy_read_files(data_files)
-        elif preprocess_method == 'std_scale':
-            preprocessor = util.StandardScaler.lazy_read_files(data_files)
-        else:
-            raise ValueError(
-                f"Unknown preprocessing method: {preprocess_method}")
+        preprocessor = util.create_converter(
+            preprocess_method, data_files=data_files)
 
         # Transform and save data
         for data_directory in data_directories:
@@ -212,15 +205,75 @@ class Preprocessor:
             util.save_variable(
                 output_directory, variable_name, transformed_data)
 
-            yaml_file = output_directory / 'settings.yaml'
-            if not yaml_file.exists():
-                setting.write_yaml(self.setting, yaml_file)
             (output_directory / self.FINISHED_FILE).touch()
 
         # Save preprocessor parameters
+        yaml_file = self.setting.data.preprocessed / 'settings.yml'
+        if not yaml_file.exists():
+            setting.write_yaml(self.setting, yaml_file)
         preprocessor.save(
             self.setting.data.preprocessed
             / ('preprocessor_' + variable_name + '.npy'))
+        return
+
+
+class Postprocessor:
+
+    @classmethod
+    def read_settings(cls, settings_yaml):
+        preprocess_setting = setting.PreprocessSetting.read_settings_yaml(
+            settings_yaml)
+        return cls(preprocess_setting)
+
+    @classmethod
+    def read_main_setting(cls, main_setting):
+        """Read MainSetting object to create Postprocessor object.
+
+        Args:
+            main_setting: MainSetting
+        Returns:
+            postprocessor: Postprocessor
+        """
+        yamls = list(main_setting.data.preprocessed.glob('*.y*ml'))
+        if len(yamls) != 1:
+            raise ValueError(f"{len(yamls)} yaml files found.")
+        return cls.read_settings(yamls[0])
+
+    def __init__(self, setting):
+        self.setting = setting
+        self.converters = self.generate_converters()
+
+    def generate_converters(self):
+        converters = {
+            variable_name: util.create_converter(
+                preprocess_method,
+                parameter_file=self.setting.data.preprocessed
+                / f"preprocessor_{variable_name}.npy")
+            for variable_name, preprocess_method
+            in self.setting.preprocess.items()}
+        return converters
+
+    def postprocess(
+            self, dict_data_x, dict_data_y, output_directory=None, *,
+            save_x=False):
+        inversed_dict_data_x = {
+            variable_name:
+            self.converters[variable_name].inverse(data)
+            for variable_name, data in dict_data_x.items()}
+        inversed_dict_data_y = {
+            variable_name:
+            self.converters[variable_name].inverse(data)
+            for variable_name, data in dict_data_y.items()}
+
+        if save_x:
+            self.save(inversed_dict_data_x, output_directory)
+        self.save(inversed_dict_data_y, output_directory)
+
+    def save(self, data_dict, output_directory):
+        if not output_directory.exists():
+            output_directory.mkdir(parents=True)
+        for variable_name, data in data_dict.items():
+            np.save(output_directory / f"{variable_name}.npy", data)
         return
 
 

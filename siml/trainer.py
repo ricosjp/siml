@@ -1,3 +1,4 @@
+import random
 
 import chainer as ch
 import daz
@@ -42,6 +43,8 @@ class Trainer():
         self.setting = main_setting
         self._update_setting_if_needed()
 
+        self.set_seed()
+
         # Define model
         self.model = networks.Network(self.setting.model)
         self.classifier = ch.links.Classifier(
@@ -64,7 +67,8 @@ class Trainer():
 
         # Generate trainer
         self.trainer = self._generate_trainer(
-            self.setting.trainer.inputs, self.setting.trainer.outputs,
+            self.setting.trainer.input_names,
+            self.setting.trainer.output_names,
             self.setting.data.train, self.setting.data.validation)
 
         # Manage restart and pretrain
@@ -100,28 +104,73 @@ class Trainer():
             loss: float, optional (when the answer is available)
                 Overall loss value.
         """
+
         if self.setting.trainer.pretrain_directory is None:
             raise ValueError(
                 f'No pretrain directory is specified for inference.')
 
-        dict_x = self._load_data(
-            self.setting.trainer.inputs, self.setting.data.test,
+        dict_dir_x = self._load_data(
+            self.setting.trainer.input_names, self.setting.data.test,
             return_dict=True)
-        dict_y = self._load_data(
-            self.setting.trainer.outputs, self.setting.data.test,
+        dict_dir_y = self._load_data(
+            self.setting.trainer.output_names, self.setting.data.test,
             return_dict=True)
 
-        postprocessor = prepost.Postprocessor()
+        postprocessor = prepost.Postprocessor.read_main_setting(self.setting)
 
-        for directory, x in dict_x.items():
-            print(directory, x, dict_y[directory])
-            inferred_y = self.model(x)
-            postprocessor.postprocess(directory, inferred_y)
-            if directory in dict_y:
-                print(f"update? {self.classifier.update_enabled}")
-                self.classifier(x, dict_y[directory])
+        with ch.using_config('train', False):
+            losses = np.array([
+                self._infer_single_data(
+                    postprocessor, directory, x, dict_dir_y)
+                for directory, x in dict_dir_x.items()])
+        return losses
 
-        # self.setting.
+    def _infer_single_data(self, postprocessor, directory, x, dict_dir_y):
+        inferred_y = self.model(x).data
+        dict_var_x = self._separate_data(x, self.setting.trainer.inputs)
+        dict_var_inferred_y = self._separate_data(
+            inferred_y, self.setting.trainer.outputs)
+
+        output_directory = prepost.determine_output_directory(
+            directory, self.setting.data.inferred,
+            self.setting.data.preprocessed.stem) \
+            / f"{self.setting.trainer.name}_{util.date_string()}"
+        output_directory.mkdir(parents=True)
+
+        postprocessor.postprocess(
+            dict_var_x, dict_var_inferred_y,
+            output_directory=output_directory)
+        if directory in dict_dir_y:
+            loss = self.classifier(x, dict_dir_y[directory]).data
+            print(f"data: {directory}")
+            print(f"loss: {loss}")
+            with open(output_directory / 'loss.dat', 'w') as f:
+                f.write(f"loss: {loss}")
+        else:
+            loss = None
+
+        setting.write_yaml(self.setting, output_directory / 'settings.yml')
+        print(f"Inferred data saved in: {output_directory}")
+        return loss
+
+    def set_seed(self):
+        seed = self.setting.trainer.seed
+        random.seed(seed)
+        np.random.seed(seed)
+        if ch.cuda.available and self.setting.trainer.gpu_id >= 0:
+            ch.cuda.cupy.random.seed(seed)
+        return
+
+    def _separate_data(self, data, descriptions, *, axis=2):
+        data_dict = {}
+        index = 0
+        data = np.swapaxes(data, 0, axis)
+        for description in descriptions:
+            data_dict.update({
+                description['name']:
+                np.swapaxes(data[index:index+description['dim']], 0, axis)})
+            index += description['dim']
+        return data_dict
 
     def _update_setting(self, path):
         if path.is_file():
@@ -138,6 +187,7 @@ class Trainer():
                 'so reset output directory.')
             self.setting.trainer.output_directory = \
                 setting.TrainerSetting([], []).output_directory
+        return
 
     def _update_setting_if_needed(self):
         if self.setting.trainer.restart_directory is not None:
@@ -289,7 +339,8 @@ class Trainer():
             for data_directory in data_directories]
         if return_dict:
             return {
-                data_directory: d
+                data_directory: d[None, :]
+
                 for data_directory, d in zip(data_directories, data)}
         else:
             return data
