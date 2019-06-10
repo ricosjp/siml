@@ -268,7 +268,7 @@ class Standardizer(AbstractConverter):
 class StandardScaler(Standardizer):
     """Class to perform scaling with standard deviation."""
 
-    def __init__(self, std, *, mean_square=None, n=None):
+    def __init__(self, std, *, mean_square=None, n=None, mean=None):
         super().__init__(mean=0.0, std=std, mean_square=mean_square, n=n)
 
     def transform(self, data):
