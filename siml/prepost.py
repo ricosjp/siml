@@ -338,9 +338,6 @@ def determine_output_directory(
         output_directory: pathlib.Path
             Detemined output directory path.
 
-    >>> determine_output_directory(
-            Path('data/raw/a/b'), Path('test/sth'), 'raw')
-    Path('test/sth/a/b')
     """
     replace_indices = np.where(
         np.array(input_directory.parts) == str_replace)[0]

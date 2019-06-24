@@ -144,7 +144,8 @@ class TrainerSetting(TypedDataClass):
         default=None, metadata={'allow_none': True})
     output_directory: Path = None
 
-    name: str = 'train'
+    name: str = dc.field(
+        default=None, metadata={'allow_none': True})
     batch_size: int = 1
     n_epoch: int = 100
     log_trigger_epoch: int = 1
@@ -203,10 +204,15 @@ class MainSetting:
 
     @classmethod
     def read_settings_yaml(cls, settings_yaml):
+        settings_yaml = Path(settings_yaml)
+
         dict_settings = util.load_yaml_file(settings_yaml)
         data_setting = DataSetting(**dict_settings['data'])
         trainer_setting = TrainerSetting(**dict_settings['trainer'])
         model_setting = ModelSetting(dict_settings['model'])
+
+        if trainer_setting.name is None:
+            trainer_setting.name = settings_yaml.stem
         return cls(
             data=data_setting, trainer=trainer_setting, model=model_setting)
 
