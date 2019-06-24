@@ -186,6 +186,13 @@ class BlockSetting(TypedDataClass):
     activations: typing.List[str]
     dropouts: typing.List[float]
 
+    def __post_init__(self):
+        if not(
+            len(self.nodes) - 1 == len(self.activations) == len(self.dropouts)
+        ):
+            raise ValueError('Block definition invalid')
+        super().__post_init__()
+
 
 @dc.dataclass
 class ModelSetting(TypedDataClass):

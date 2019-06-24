@@ -58,6 +58,7 @@ class Trainer():
             raise ValueError(f"Cannot prune without optuna_trial. Feed it.")
         if self._is_gpu_supporting():
             self.setting.trainer.gpu_id = self.setting.trainer.gpu_id
+            print(f"GPU device: {self.setting.trainer.gpu_id}")
         else:
             if self.setting.trainer.gpu_id != -1:
                 print(f"GPU not found. Using CPU.")
@@ -172,7 +173,7 @@ class Trainer():
             index += description['dim']
         return data_dict
 
-    def _update_setting(self, path):
+    def _update_setting(self, path, *, only_model=False):
         if path.is_file():
             yaml_file = path
         elif path.is_dir():
@@ -180,7 +181,10 @@ class Trainer():
             if len(yamls) != 1:
                 raise ValueError(f"{len(yamls)} yaml files found in {path}")
             yaml_file = yamls[0]
-        self.setting = setting.MainSetting.read_settings_yaml(yaml_file)
+        if only_model:
+            self.setting.model = setting.MainSetting.read_settings_yaml(yaml_file).model
+        else:
+            self.setting = setting.MainSetting.read_settings_yaml(yaml_file)
         if self.setting.trainer.output_directory.exists():
             print(
                 f"{self.setting.trainer.output_directory} exists "
@@ -196,7 +200,8 @@ class Trainer():
             self.setting.trainer.restart_directory = restart_directory
         elif self.setting.trainer.pretrain_directory is not None:
             pretrain_directory = self.setting.trainer.pretrain_directory
-            self._update_setting(self.setting.trainer.pretrain_directory)
+            self._update_setting(
+              self.setting.trainer.pretrain_directory, only_model=True)
             self.setting.trainer.pretrain_directory = pretrain_directory
         elif self.setting.trainer.restart_directory is not None \
                 and self.setting.trainer.pretrain_directory is not None:
@@ -280,7 +285,7 @@ class Trainer():
             trigger=(self.setting.trainer.log_trigger_epoch, 'epoch'))
         trainer.extend(self.log_report_extension)
         trainer.extend(ch.training.extensions.PrintReport(
-            ['epoch', 'main/loss', 'validation/main/loss']))
+            ['epoch', 'main/loss', 'validation/main/loss', 'elapsed_time']))
         trainer.extend(
             ch.training.extensions.PlotReport(
                 ['main/loss', 'validation/main/loss'],
@@ -309,7 +314,8 @@ class Trainer():
                 batch_size=self.setting.trainer.batch_size,
                 shuffle=False, repeat=False)
             trainer.extend(ch.training.extensions.Evaluator(
-                validation_iter, self.classifier))
+                validation_iter, self.classifier,
+                device=self.setting.trainer.gpu_id))
         return trainer
 
     def _create_optimizer(self):
