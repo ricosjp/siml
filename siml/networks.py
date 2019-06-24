@@ -98,11 +98,33 @@ class AdjustableMLP(ch.ChainList):
         return h
 
 
+class AdjustableBrickMLP(AdjustableMLP):
+
+    def __init__(self, block_setting):
+        """Initialize the NN.
+
+        Args:
+            block_setting: siml.setting.BlockSetting
+                BlockSetting object.
+        """
+
+        nodes = block_setting.nodes
+        super().__init__(*[
+            ch.links.Linear(n1, n2)
+            for n1, n2 in zip(nodes[:-1], nodes[1:])])
+        self.activations = [
+            DICT_ACTIVATIONS[activation]
+            for activation in block_setting.activations]
+        self.dropout_ratios = [
+            dropout_ratio for dropout_ratio in block_setting.dropouts]
+
+
 class Network(ch.ChainList):
 
     DICT_BLOCKS = {
         'mlp': MLP,
         'adjustable_mlp': AdjustableMLP,
+        'adjustable_brick_mlp': AdjustableBrickMLP,
     }
 
     def __init__(self, model_setting):

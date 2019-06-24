@@ -29,7 +29,7 @@ class Trainer():
         main_setting = setting.MainSetting.read_settings_yaml(settings_yaml)
         return cls(main_setting)
 
-    def __init__(self, main_setting):
+    def __init__(self, main_setting, *, optuna_trial=None):
         """Initialize Trainer object.
 
         Args:
@@ -37,11 +37,14 @@ class Trainer():
                 Setting descriptions.
             model: siml.network.Network object
                 Model to be trained.
+            optuna_trial: optuna.Trial
+                Optuna trial object. Used for pruning.
         Returns:
             None
         """
         self.setting = main_setting
         self._update_setting_if_needed()
+        self.optuna_trial = optuna_trial
 
         self.set_seed()
 
@@ -53,7 +56,7 @@ class Trainer():
             self.setting.trainer.compute_accuracy
 
         # Manage settings
-        if self.setting.trainer.optuna_trial is None \
+        if self.optuna_trial is None \
                 and self.setting.trainer.prune:
             raise ValueError(f"Cannot prune without optuna_trial. Feed it.")
         if self._is_gpu_supporting():
@@ -182,7 +185,8 @@ class Trainer():
                 raise ValueError(f"{len(yamls)} yaml files found in {path}")
             yaml_file = yamls[0]
         if only_model:
-            self.setting.model = setting.MainSetting.read_settings_yaml(yaml_file).model
+            self.setting.model = setting.MainSetting.read_settings_yaml(
+                yaml_file).model
         else:
             self.setting = setting.MainSetting.read_settings_yaml(yaml_file)
         if self.setting.trainer.output_directory.exists():
@@ -300,7 +304,7 @@ class Trainer():
         if self.setting.trainer.prune:
             trainer.extend(
                 optuna.integration.ChainerPruningExtension(
-                    self.setting.trainer.trial, 'validation/main/loss',
+                    self.optuna_trial, 'validation/main/loss',
                     (self.setting.trainer.stop_trigger_epoch, 'epoch')))
 
         # Manage validation

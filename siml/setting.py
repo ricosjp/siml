@@ -2,6 +2,7 @@ import dataclasses as dc
 from pathlib import Path
 import typing
 
+import numpy as np
 import optuna
 import yaml
 
@@ -10,6 +11,13 @@ from . import util
 
 @dc.dataclass
 class TypedDataClass:
+
+    @classmethod
+    def read_settings_yaml(cls, settings_yaml):
+        settings_yaml = Path(settings_yaml)
+
+        dict_settings = util.load_yaml_file(settings_yaml)
+        return cls(**dict_settings)
 
     def convert(self):
         """Convert all fields accordingly with their type definitions.
@@ -84,6 +92,14 @@ class DataSetting(TypedDataClass):
         default_factory=lambda: [Path('data/preprocessed/validation')])
     test: typing.List[Path] = dc.field(
         default_factory=lambda: [Path('data/preprocessed/test')])
+
+
+@dc.dataclass
+class DBSetting(TypedDataClass):
+    servername: str
+    username: str
+    password: str
+    use_sqlite: bool = False
 
 
 @dc.dataclass
@@ -175,22 +191,48 @@ class TrainerSetting(TypedDataClass):
         self.output_names = [o['name'] for o in self.outputs]
         self.output_dims = [o['dim'] for o in self.outputs]
         if self.output_directory is None:
+            self.update_output_directory()
+        super().__post_init__()
+
+    def update_output_directory(self, *, id_=None):
+        if id_ is None:
             self.output_directory = Path('models') \
                 / f"{self.name}_{util.date_string()}"
-        super().__post_init__()
+        else:
+            self.output_directory = Path('models') \
+                / f"{self.name}_{id_}_{util.date_string()}"
 
 
 @dc.dataclass
 class BlockSetting(TypedDataClass):
     name: str
-    nodes: typing.List[int]
-    activations: typing.List[str]
-    dropouts: typing.List[float]
+    nodes: typing.List[int] = dc.field(default_factory=list)
+    activations: typing.List[str] = dc.field(default_factory=list)
+    dropouts: typing.List[float] = dc.field(default_factory=list)
+
+    # Parameters for dynamic definition of layers
+    hidden_nodes: int = dc.field(
+        default=None, metadata={'allow_none': True})
+    hidden_layers: int = dc.field(
+        default=None, metadata={'allow_none': True})
+    hidden_activation: str = 'rely'
+    output_activation: str = 'identity'
+    hidden_dropout: float = 0.5
+    output_dropout: float = 0.0
 
     def __post_init__(self):
+
+        # Dynamic definition of layers
+        if self.hidden_nodes is not None and self.hidden_layers is not None:
+            self.nodes = \
+                [-1] + [self.hidden_nodes] * self.hidden_layers + [-1]
+            self.activations = [self.hidden_activation] * self.hidden_layers \
+                + [self.output_activation]
+            self.dropouts = [self.hidden_dropout] * self.hidden_layers \
+                + [self.output_dropout]
         if not(
-            len(self.nodes) - 1 == len(self.activations) == len(self.dropouts)
-        ):
+                len(self.nodes) - 1 == len(self.activations)
+                == len(self.dropouts)):
             raise ValueError('Block definition invalid')
         super().__post_init__()
 
@@ -204,24 +246,72 @@ class ModelSetting(TypedDataClass):
 
 
 @dc.dataclass
+class OptunaSetting(TypedDataClass):
+    n_trial: int
+    hyperparameters: typing.List[dict] = dc.field(default_factory=list)
+    setting: dict = dc.field(default_factory=dict)
+    # trainer: dict = dc.field(default_factory=dict)
+    # model: dict = dc.field(default_factory=dict)
+
+
+@dc.dataclass
 class MainSetting:
     data: DataSetting
     trainer: TrainerSetting
     model: ModelSetting
+    optuna: OptunaSetting
 
     @classmethod
     def read_settings_yaml(cls, settings_yaml):
         settings_yaml = Path(settings_yaml)
 
         dict_settings = util.load_yaml_file(settings_yaml)
+        return cls.read_dict_settings(dict_settings, name=settings_yaml.stem)
+
+    @classmethod
+    def read_dict_settings(cls, dict_settings, *, name=None):
         data_setting = DataSetting(**dict_settings['data'])
         trainer_setting = TrainerSetting(**dict_settings['trainer'])
         model_setting = ModelSetting(dict_settings['model'])
+        optuna_setting = OptunaSetting(**dict_settings['optuna'])
 
         if trainer_setting.name is None:
-            trainer_setting.name = settings_yaml.stem
+            trainer_setting.name = name
         return cls(
-            data=data_setting, trainer=trainer_setting, model=model_setting)
+            data=data_setting, trainer=trainer_setting, model=model_setting,
+            optuna=optuna_setting)
+
+    def __post_init__(self):
+        input_length = np.sum(self.trainer.input_dims)
+        output_length = np.sum(self.trainer.output_dims)
+
+        # Infer input and output dimension if they are not specified.
+        # NOTE: Basically Chainer can infer input dimension, but not the case
+        # when chainer.functions.einsum is used.
+        if self.model.blocks[0].nodes[0] < 0:
+            self.model.blocks[0].nodes[0] = input_length
+        if self.model.blocks[-1].nodes[-1] < 0:
+            self.model.blocks[-1].nodes[-1] = output_length
+
+    def update_with_dict(self, new_dict):
+        original_dict = dc.asdict(self)
+        return MainSetting.read_dict_settings(
+            self._update_with_dict(original_dict, new_dict))
+
+    def _update_with_dict(self, original_setting, new_setting):
+        if isinstance(new_setting, str) or isinstance(new_setting, float) \
+                or isinstance(new_setting, int):
+            return new_setting
+        elif isinstance(new_setting, list):
+            # NOTE: Assume that data is complete under the list
+            return new_setting
+        elif isinstance(new_setting, dict):
+            for key, value in new_setting.items():
+                original_setting.update({
+                    key: self._update_with_dict(original_setting[key], value)})
+            return original_setting
+        else:
+            raise ValueError(f"Unknown data type: {new_setting.__class__}")
 
 
 @dc.dataclass
