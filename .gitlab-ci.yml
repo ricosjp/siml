@@ -7,4 +7,4 @@ stages:
   - test_siml
 test_siml:
   stage: test_siml
-  script: which pip3; which python3; pip3 freeze; python3 -m unittest discover tests
+  script: python3 -m unittest discover tests
