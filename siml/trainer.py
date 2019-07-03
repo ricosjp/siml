@@ -50,7 +50,7 @@ class Trainer():
 
         # Define model
         self.model = networks.Network(self.setting.model)
-        self.classifier = ch.links.Classifier(
+        self.classifier = networks.Classifier(
             self.model, lossfun=self._create_loss_function())
         self.classifier.compute_accuracy = \
             self.setting.trainer.compute_accuracy
