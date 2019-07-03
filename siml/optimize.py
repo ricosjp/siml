@@ -1,7 +1,9 @@
+import subprocess
 
 import optuna
 
 from . import trainer
+from . import util
 
 
 class Objective():
@@ -111,13 +113,21 @@ def perform_study(main_setting, db_setting):
         None
     """
     # Prepare study
-    if db_setting.use_sqlite:
-        storage = f"sqlite:///{main_setting.trainer.name}.db"
+    if db_setting is None:
+        print(f"No DB setting found. No optuna data will be saved.")
+        storage = None
     else:
-        storage = f"mysql://{db_setting.username}:"
-        f"{db_setting.password}@{db_setting.servername}/{db_setting.username}"
+        if db_setting.use_sqlite:
+            storage = f"sqlite:///{main_setting.trainer.name}.db"
+        else:
+            storage = f"mysql://{db_setting.username}:" \
+            + f"{db_setting.password}@{db_setting.servername}" \
+            + f"/{db_setting.username}"
+
+    top_name = util.get_top_directory().stem
+    study_name = f"{top_name}_{main_setting.trainer.name}"
     study = optuna.create_study(
-        study_name=main_setting.trainer.name,
+        study_name=study_name,
         storage=storage,
         load_if_exists=True, pruner=optuna.pruners.MedianPruner())
     objective = Objective(main_setting)

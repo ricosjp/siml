@@ -2,6 +2,8 @@ import abc
 import datetime as dt
 import itertools as it
 import os
+from pathlib import Path
+import subprocess
 
 import chainer as ch
 import networkx as nx
@@ -791,3 +793,11 @@ def align_fem(data_dir):
         elements=fem_data.elements)
     new_fem_data.write('ucd', os.path.join(data_dir, 'aligned.inp'))
     return new_fem_data
+
+
+def get_top_directory():
+    completed_process = subprocess.run(
+        ['git', 'rev-parse', '--show-toplevel'],
+        capture_output=True, text=True)
+    path = Path(completed_process.stdout)
+    return path
