@@ -1,4 +1,4 @@
-image: python:3.7.3-alpine3.10
+image: python:3.7.3-stretch
 stages:
   - setup
   - test_femio
