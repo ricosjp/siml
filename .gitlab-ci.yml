@@ -1,14 +1,10 @@
 image: python:3.7.3-stretch
 stages:
   - setup
-  - test_femio
   - test_siml
 setup:
   stage: setup
   script: pip3 install -r requirements.txt
-test_femio:
-  stage: test_femio
-  script: cd siml/femio; ./run_test.sh
 test_siml:
   stage: test_siml
   script: ./run_test.sh
