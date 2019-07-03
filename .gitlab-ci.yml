@@ -7,4 +7,4 @@ setup:
   script: pip3 install -r requirements.txt
 test_siml:
   stage: test_siml
-  script: ./run_test.sh
+  script: ls; ./run_test.sh
