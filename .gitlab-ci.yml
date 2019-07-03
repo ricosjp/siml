@@ -1,0 +1,13 @@
+stages:
+  - setup
+  - test_femio
+  - test_siml
+setup:
+  stage: setup
+  script: pip3 install -r requirements.txt
+test_femio:
+  stage: test_femio
+  script: cd siml/femio; ./run_test.sh
+test_siml:
+  stage: test_simkl
+  script: ./run_test.sh
