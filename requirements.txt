@@ -5,6 +5,7 @@ mysqlclient>=1.4.2
 networkx>=2.1
 numpy-stl>=2.8.0
 numpy>=1.14.2
+optuna>=0.11.0
 pandas>=0.23.1
 PyYAML>=5.1
 scikit-learn>=0.19.1
