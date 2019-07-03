@@ -9,5 +9,5 @@ test_femio:
   stage: test_femio
   script: cd siml/femio; ./run_test.sh
 test_siml:
-  stage: test_simkl
+  stage: test_siml
   script: ./run_test.sh
