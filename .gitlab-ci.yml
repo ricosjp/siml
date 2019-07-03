@@ -1,4 +1,6 @@
 image: python:3.7.3-stretch
+variables:
+  GIT_SUBMODULE_STRATEGY: recursive
 stages:
   - setup
   - test_siml
@@ -7,4 +9,4 @@ setup:
   script: pip3 install -r requirements.txt
 test_siml:
   stage: test_siml
-  script: ls; ./run_test.sh
+  script: bash ./run_test.sh
