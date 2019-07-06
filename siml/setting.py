@@ -217,6 +217,7 @@ class BlockSetting(TypedDataClass):
         default=None, metadata={'allow_none': True})
     hidden_activation: str = 'rely'
     output_activation: str = 'identity'
+    input_dropout: float = 0.0
     hidden_dropout: float = 0.5
     output_dropout: float = 0.0
 
@@ -228,7 +229,8 @@ class BlockSetting(TypedDataClass):
                 [-1] + [self.hidden_nodes] * self.hidden_layers + [-1]
             self.activations = [self.hidden_activation] * self.hidden_layers \
                 + [self.output_activation]
-            self.dropouts = [self.hidden_dropout] * self.hidden_layers \
+            self.dropouts = [self.input_dropout] \
+                + [self.hidden_dropout] * (self.hidden_layers - 1) \
                 + [self.output_dropout]
         if not(
                 len(self.nodes) - 1 == len(self.activations)
