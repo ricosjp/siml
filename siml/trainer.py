@@ -58,7 +58,8 @@ class Trainer():
         # Manage settings
         if self.optuna_trial is None \
                 and self.setting.trainer.prune:
-            raise ValueError(f"Cannot prune without optuna_trial. Feed it.")
+            self.setting.trainer.prune = False
+            print('No optuna.trial fed. Set prune = False.')
         if self._is_gpu_supporting():
             self.setting.trainer.gpu_id = self.setting.trainer.gpu_id
             print(f"GPU device: {self.setting.trainer.gpu_id}")
