@@ -668,12 +668,27 @@ def dir2name(dir_name):
         return name
 
 
-def convert_sparse_to_chainer(_sparse, *, device=-1):
+def generate_converter(x_train):
+    sparse = x_train[0][1]
+    order = ch.utils.get_order(sparse.row, sparse.col)
+
+    def convert_example_with_support(batch, device=None):
+        x = [(
+            ch.dataset.to_device(device, b[0][0]),
+            convert_sparse_to_chainer(b[0][1], device=device, order=order))
+             for b in batch]
+        y = ch.dataset.to_device(
+            device, np.stack([b[1] for b in batch]))
+        return x, y
+    return convert_example_with_support
+
+
+def convert_sparse_to_chainer(_sparse, *, device=-1, order=None):
     sparse = ch.utils.CooMatrix(
         ch.dataset.to_device(device, _sparse.data),
         ch.dataset.to_device(device, _sparse.row),
         ch.dataset.to_device(device, _sparse.col),
-        _sparse.shape)
+        _sparse.shape, order=order)
     return sparse
 
 

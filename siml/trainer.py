@@ -279,8 +279,12 @@ class Trainer():
 
         optimizer = self._create_optimizer()
         optimizer.setup(self.classifier)
+        if self.setting.trainer.support_input is None:
+            converter = ch.dataset.concat_example
+        else:
+            converter = util.generate_converter(x_train)
         updater = ch.training.StandardUpdater(
-            train_iter, optimizer, device=self.setting.trainer.gpu_id)
+            train_iter, optimizer, device=self.setting.trainer.gpu_id, converter=converter)
         stop_trigger = ch.training.triggers.EarlyStoppingTrigger(
             monitor='validation/main/loss', check_trigger=(
                 self.setting.trainer.stop_trigger_epoch, 'epoch'),
@@ -323,7 +327,7 @@ class Trainer():
                 shuffle=False, repeat=False)
             trainer.extend(ch.training.extensions.Evaluator(
                 validation_iter, self.classifier,
-                device=self.setting.trainer.gpu_id))
+                device=self.setting.trainer.gpu_id, converter=converter))
         return trainer
 
     def _create_optimizer(self):
@@ -374,14 +378,12 @@ class Trainer():
                 if isinstance(variable, np.ndarray)],
             axis=1)
         unconcatenatable_variables = [
-            util.convert_sparse_to_chainer(
-                variable, device=self.setting.trainer.gpu_id)
-            for variable in variables
+            variable for variable in variables
             if not isinstance(variable, np.ndarray)]
         if len(unconcatenatable_variables) == 0:
             return concatenatable_variables
         elif len(unconcatenatable_variables) == 1:
-            return concatenatable_variables, unconcatenatable_variables
+            return concatenatable_variables, unconcatenatable_variables[0]
         else:
             raise ValueError(
                 f"{len(unconcatenatable_variables)} "

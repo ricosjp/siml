@@ -36,11 +36,8 @@ class GCN(ch.ChainList):
             y: numpy.ndarray of cupy.ndarray
                 Output of the NN.
         """
-        hs = x[:, 0]
-        supports = x[:, 1]
-
         hs = ch.functions.stack([
-            self._call_single(h, support) for h, support in zip(hs, supports)])
+            self._call_single(*x_) for x_ in x])
         return hs
 
     def _call_single(self, x, support):
@@ -49,7 +46,7 @@ class GCN(ch.ChainList):
                 self, self.dropout_ratios, self.activations):
             h = ch.functions.einsum('mf,gf->mg', h, link.W) + link.b
             h = ch.functions.dropout(h, ratio=dropout_ratio)
-            h = activation(ch.functions.sparse_matmul(support[0], h))
+            h = activation(ch.functions.sparse_matmul(support, h))
         return h
 
 
@@ -88,11 +85,8 @@ class ResGCN(ch.Chain):
             y: numpy.ndarray of cupy.ndarray
                 Output of the NN.
         """
-        hs = x[:, 0]
-        supports = x[:, 1]
-
         hs = ch.functions.stack([
-            self._call_single(h, support) for h, support in zip(hs, supports)])
+            self._call_single(*x_) for x_ in x])
         return hs
 
     def _call_single(self, x, support):
@@ -101,5 +95,5 @@ class ResGCN(ch.Chain):
                 self.chains, self.dropout_ratios, self.activations):
             h = ch.functions.einsum('mf,gf->mg', h, link.W) + link.b
             h = ch.functions.dropout(h, ratio=dropout_ratio)
-            h = activation(ch.functions.sparse_matmul(support[0], h))
+            h = activation(ch.functions.sparse_matmul(support, h))
         return h + self.linear(x)
