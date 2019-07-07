@@ -1,5 +1,4 @@
 import chainer as ch
-import numpy as np
 
 from . import header
 
@@ -103,4 +102,4 @@ class ResGCN(ch.Chain):
             h = ch.functions.einsum('mf,gf->mg', h, link.W) + link.b
             h = ch.functions.dropout(h, ratio=dropout_ratio)
             h = activation(ch.functions.sparse_matmul(support[0], h))
-        return h * 0.1 + self.linear(x) * 0.9
+        return h + self.linear(x)
