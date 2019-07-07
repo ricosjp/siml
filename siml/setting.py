@@ -148,6 +148,7 @@ class TrainerSetting(TypedDataClass):
     """
 
     inputs: typing.List[dict] = dc.field(default_factory=list)
+    support_input: str = dc.field(default=None, metadata={'allow_none': True})
     outputs: typing.List[dict] = dc.field(default_factory=list)
 
     input_names: typing.List[str] = dc.field(
@@ -272,13 +273,13 @@ class MainSetting:
 
     @classmethod
     def read_dict_settings(cls, dict_settings, *, name=None):
+        if 'name' not in dict_settings['trainer']:
+            dict_settings['trainer']['name'] = name
         data_setting = DataSetting(**dict_settings['data'])
         trainer_setting = TrainerSetting(**dict_settings['trainer'])
         model_setting = ModelSetting(dict_settings['model'])
         optuna_setting = OptunaSetting(**dict_settings['optuna'])
 
-        if trainer_setting.name is None:
-            trainer_setting.name = name
         return cls(
             data=data_setting, trainer=trainer_setting, model=model_setting,
             optuna=optuna_setting)
