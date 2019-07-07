@@ -35,7 +35,7 @@ class Trainer():
         Args:
             main_setting: siml.setting.MainSetting object
                 Setting descriptions.
-            model: siml.network.Network object
+            model: siml.networks.Network object
                 Model to be trained.
             optuna_trial: optuna.Trial
                 Optuna trial object. Used for pruning.
@@ -74,7 +74,8 @@ class Trainer():
         self.trainer = self._generate_trainer(
             self.setting.trainer.input_names,
             self.setting.trainer.output_names,
-            self.setting.data.train, self.setting.data.validation)
+            self.setting.data.train, self.setting.data.validation,
+            support_x=self.setting.trainer.support_input)
 
         # Manage restart and pretrain
         self._load_pretrained_model_if_needed()
@@ -266,9 +267,11 @@ class Trainer():
 
     def _generate_trainer(
             self, x_variable_names, y_variable_names,
-            train_directories, validation_directories):
+            train_directories, validation_directories, *,
+            support_x=None):
 
-        x_train = self._load_data(x_variable_names, train_directories)
+        x_train = self._load_data(
+            x_variable_names, train_directories, support=support_x)
         y_train = self._load_data(y_variable_names, train_directories)
         train_iter = ch.iterators.SerialIterator(
             ch.datasets.TupleDataset(x_train, y_train),
@@ -311,7 +314,7 @@ class Trainer():
         # Manage validation
         if len(validation_directories) > 0:
             x_validation = self._load_data(
-                x_variable_names, validation_directories)
+                x_variable_names, validation_directories, support=support_x)
             y_validation = self._load_data(
                 y_variable_names, validation_directories)
             validation_iter = ch.iterators.SerialIterator(
@@ -337,16 +340,23 @@ class Trainer():
         else:
             raise ValueError(f"Unknown loss function name: {loss_name}")
 
-    def _load_data(self, variable_names, directories, *, return_dict=False):
+    def _load_data(
+            self, variable_names, directories, *,
+            return_dict=False, support=None):
         data_directories = []
         for directory in directories:
             data_directories += util.collect_data_directories(
                 directory, required_file_names=['*.npy'])
 
+        if support is None:
+            support_variable_name = []
+        else:
+            support_variable_name = [support]
+
         data = [
             self._concatenate_variable([
                 util.load_variable(data_directory, variable_name)
-                for variable_name in variable_names])
+                for variable_name in variable_names + support_variable_name])
             for data_directory in data_directories]
         if return_dict:
             return {
@@ -364,7 +374,9 @@ class Trainer():
                 if isinstance(variable, np.ndarray)],
             axis=1)
         unconcatenatable_variables = [
-            variable for variable in variables
+            util.convert_sparse_to_chainer(
+                variable, device=self.setting.trainer.gpu_id)
+            for variable in variables
             if not isinstance(variable, np.ndarray)]
         if len(unconcatenatable_variables) == 0:
             return concatenatable_variables

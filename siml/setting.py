@@ -148,6 +148,7 @@ class TrainerSetting(TypedDataClass):
     """
 
     inputs: typing.List[dict] = dc.field(default_factory=list)
+    support_input: str = dc.field(default=None, metadata={'allow_none': True})
     outputs: typing.List[dict] = dc.field(default_factory=list)
 
     input_names: typing.List[str] = dc.field(

@@ -62,7 +62,7 @@ def save_variable(
             output_directory / (file_basename + '.npy'), data.astype(dtype))
     elif isinstance(data, sp.coo_matrix):
         save_file_path = output_directory / (file_basename + '.npz')
-        sp.save_npz(save_file_path, data)
+        sp.save_npz(save_file_path, data.astype(dtype))
     else:
         raise ValueError(f"{file_basename} has unknown type: {data.__class__}")
 
