@@ -213,7 +213,6 @@ class Preprocessor:
             transformed_data = preprocessor.transform(
                 util.load_variable(data_directory, variable_name))
             if self.setting.data.pad:
-                print(variable_name, transformed_data.shape)
                 transformed_data = util.pad_array(
                     transformed_data, self.max_n_element)
 
