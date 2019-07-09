@@ -814,5 +814,21 @@ def get_top_directory():
     completed_process = subprocess.run(
         ['git', 'rev-parse', '--show-toplevel'],
         capture_output=True, text=True)
-    path = Path(completed_process.stdout)
+    path = Path(completed_process.stdout.rstrip('\n'))
     return path
+
+
+def pad_array(array, n):
+    shape = array.shape
+    residual_length = n - shape[0]
+    if residual_length < 0:
+        raise ValueError('Max length of element is wrong.')
+    if isinstance(array, np.ndarray):
+        print(residual_length, shape[1:])
+        return np.concatenate(
+            [array, np.zeros([residual_length] + list(shape[1:]))])
+    elif sp.isspmatrix_coo(array):
+        return sp.coo_matrix(
+            (array.data, (array.row, array.col)), shape=(n, n))
+    else:
+        raise ValueError(f"Unsupported data type: {array.__class__}")

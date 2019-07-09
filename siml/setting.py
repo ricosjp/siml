@@ -92,6 +92,7 @@ class DataSetting(TypedDataClass):
         default_factory=lambda: [Path('data/preprocessed/validation')])
     test: typing.List[Path] = dc.field(
         default_factory=lambda: [Path('data/preprocessed/test')])
+    pad: bool = True
 
 
 @dc.dataclass
@@ -195,12 +196,16 @@ class TrainerSetting(TypedDataClass):
             self.update_output_directory()
         super().__post_init__()
 
-    def update_output_directory(self, *, id_=None):
+    def update_output_directory(self, *, id_=None, base=None):
+        if base is None:
+            base = Path('models')
+        else:
+            base = Path(base)
         if id_ is None:
-            self.output_directory = Path('models') \
+            self.output_directory = base \
                 / f"{self.name}_{util.date_string()}"
         else:
-            self.output_directory = Path('models') \
+            self.output_directory = base \
                 / f"{self.name}_{id_}_{util.date_string()}"
 
 
@@ -250,7 +255,8 @@ class ModelSetting(TypedDataClass):
 
 @dc.dataclass
 class OptunaSetting(TypedDataClass):
-    n_trial: int
+    n_trial: int = 100
+    output_base_directory: Path = Path('models')
     hyperparameters: typing.List[dict] = dc.field(default_factory=list)
     setting: dict = dc.field(default_factory=dict)
     # trainer: dict = dc.field(default_factory=dict)
@@ -278,7 +284,10 @@ class MainSetting:
         data_setting = DataSetting(**dict_settings['data'])
         trainer_setting = TrainerSetting(**dict_settings['trainer'])
         model_setting = ModelSetting(dict_settings['model'])
-        optuna_setting = OptunaSetting(**dict_settings['optuna'])
+        if 'optuna' in dict_settings:
+            optuna_setting = OptunaSetting(**dict_settings['optuna'])
+        else:
+            optuna_setting = OptunaSetting()
 
         return cls(
             data=data_setting, trainer=trainer_setting, model=model_setting,
