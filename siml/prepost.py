@@ -134,19 +134,24 @@ class Preprocessor:
     def __init__(self, setting):
         self.setting = setting
 
-    def preprocess_interim_data(self, force_renew=False):
+    def preprocess_interim_data(self, *, force_renew=False, pad=False):
         """Preprocess interim data with preprocessing e.g. standardization and then
         save them.
 
         Args:
             force_renew: bool, optional [False]
                 If True, renew npy files even if they are alerady exist.
+            pad: bool, optional [True]
+                If True, pad data to the lergest size.
         Returns:
             None
         """
         interim_directories = util.collect_data_directories(
             self.setting.data.interim,
             required_file_names=self.REQUIRED_FILE_NAMES, add_base=False)
+        if self.setting.data.pad:
+            self.max_n_element = self._determine_max_n_element(
+                interim_directories, list(self.setting.preprocess.keys())[0])
 
         # Preprocess data variable by variable
         for variable_name, preprocess_method \
@@ -155,6 +160,13 @@ class Preprocessor:
                 interim_directories, variable_name, preprocess_method,
                 str_replace='interim', force_renew=force_renew)
         return
+
+    def _determine_max_n_element(self, data_directories, variable_name):
+        max_n_element = 0
+        for data_directory in data_directories:
+            data = util.load_variable(data_directory, variable_name)
+            max_n_element = max(max_n_element, data.shape[0])
+        return max_n_element
 
     def preprocess_single_variable(
             self, data_directories, variable_name, preprocess_method, *,
@@ -200,6 +212,11 @@ class Preprocessor:
         for data_directory in data_directories:
             transformed_data = preprocessor.transform(
                 util.load_variable(data_directory, variable_name))
+            if self.setting.data.pad:
+                print(variable_name, transformed_data.shape)
+                transformed_data = util.pad_array(
+                    transformed_data, self.max_n_element)
+
             output_directory = determine_output_directory(
                 data_directory, self.setting.data.preprocessed, str_replace)
             util.save_variable(

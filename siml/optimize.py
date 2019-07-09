@@ -1,5 +1,3 @@
-import subprocess
-
 import optuna
 
 from . import trainer
@@ -13,8 +11,9 @@ class Objective():
         'float': float,
     }
 
-    def __init__(self, main_setting):
+    def __init__(self, main_setting, output_base):
         self.main_setting = main_setting
+        self.output_base = output_base
 
     def __call__(self, trial):
         """Objective function to make optimization for Optuna.
@@ -30,7 +29,7 @@ class Objective():
         dict_new_setting = self._create_dict_setting(trial)
         updated_setting = self.main_setting.update_with_dict(dict_new_setting)
         updated_setting.trainer.update_output_directory(
-            id_=f"trial{trial.number}")
+            base=self.output_base, id_=f"trial{trial.number}")
 
         # Train
         trainer_ = trainer.Trainer(updated_setting, optuna_trial=trial)
@@ -121,8 +120,8 @@ def perform_study(main_setting, db_setting):
             storage = f"sqlite:///{main_setting.trainer.name}.db"
         else:
             storage = f"mysql://{db_setting.username}:" \
-            + f"{db_setting.password}@{db_setting.servername}" \
-            + f"/{db_setting.username}"
+                + f"{db_setting.password}@{db_setting.servername}" \
+                + f"/{db_setting.username}"
 
     top_name = util.get_top_directory().stem
     study_name = f"{top_name}_{main_setting.trainer.name}"
@@ -130,7 +129,7 @@ def perform_study(main_setting, db_setting):
         study_name=study_name,
         storage=storage,
         load_if_exists=True, pruner=optuna.pruners.MedianPruner())
-    objective = Objective(main_setting)
+    objective = Objective(main_setting, study_name)
 
     # Optimize
     study.optimize(objective, n_trials=main_setting.optuna.n_trial, catch=())
