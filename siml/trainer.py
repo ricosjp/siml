@@ -280,11 +280,12 @@ class Trainer():
         optimizer = self._create_optimizer()
         optimizer.setup(self.classifier)
         if self.setting.trainer.support_input is None:
-            converter = ch.dataset.concat_example
+            converter = ch.dataset.concat_examples
         else:
             converter = util.generate_converter(x_train)
         updater = ch.training.StandardUpdater(
-            train_iter, optimizer, device=self.setting.trainer.gpu_id, converter=converter)
+            train_iter, optimizer, device=self.setting.trainer.gpu_id,
+            converter=converter)
         stop_trigger = ch.training.triggers.EarlyStoppingTrigger(
             monitor='validation/main/loss', check_trigger=(
                 self.setting.trainer.stop_trigger_epoch, 'epoch'),
