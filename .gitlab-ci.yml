@@ -13,5 +13,4 @@ test_siml:
   stage: test
   script: python3 -m unittest discover tests
   tags:
-    - cpu
     - gpu
