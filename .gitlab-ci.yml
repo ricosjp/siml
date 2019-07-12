@@ -9,7 +9,13 @@ before_script:
 stages:
   - test
 
-test_siml:
+test_cpu:
+  stage: test
+  script: python3 -m unittest discover tests
+  tags:
+    - cpu
+
+test_gpu:
   stage: test
   script: python3 -m unittest discover tests
   tags:

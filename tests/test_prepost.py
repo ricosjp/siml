@@ -6,7 +6,7 @@ import numpy as np
 import siml.prepost as pre
 
 
-class TestFemio(unittest.TestCase):
+class TestPrepost(unittest.TestCase):
 
     def test_determine_output_directory(self):
         self.assertEqual(
