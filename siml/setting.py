@@ -82,7 +82,7 @@ class TypedDataClass:
 @dc.dataclass
 class DataSetting(TypedDataClass):
 
-    raw: Path
+    raw: Path = Path('data/raw')
     interim: Path = Path('data/interim')
     preprocessed: Path = Path('data/preprocessed')
     inferred: Path = Path('data/inferred')
@@ -206,10 +206,12 @@ class TrainerSetting(TypedDataClass):
 
 @dc.dataclass
 class BlockSetting(TypedDataClass):
-    name: str
-    nodes: typing.List[int] = dc.field(default_factory=list)
-    activations: typing.List[str] = dc.field(default_factory=list)
-    dropouts: typing.List[float] = dc.field(default_factory=list)
+    name: str = 'mlp'
+    nodes: typing.List[int] = dc.field(
+        default_factory=lambda: [-1, -1])
+    activations: typing.List[str] = dc.field(
+        default_factory=lambda: ['identity'])
+    dropouts: typing.List[float] = dc.field(default_factory=lambda: [0.])
 
     # Parameters for dynamic definition of layers
     hidden_nodes: int = dc.field(
@@ -244,13 +246,17 @@ class BlockSetting(TypedDataClass):
 class ModelSetting(TypedDataClass):
     blocks: typing.List[BlockSetting]
 
-    def __init__(self, setting):
-        self.blocks = [BlockSetting(**block) for block in setting['blocks']]
+    def __init__(self, setting=None):
+        if setting is None:
+            self.blocks = [BlockSetting()]
+        else:
+            self.blocks = [
+                BlockSetting(**block) for block in setting['blocks']]
 
 
 @dc.dataclass
 class OptunaSetting(TypedDataClass):
-    n_trial: int
+    n_trial: int = 100
     hyperparameters: typing.List[dict] = dc.field(default_factory=list)
     setting: dict = dc.field(default_factory=dict)
     # trainer: dict = dc.field(default_factory=dict)
@@ -259,10 +265,10 @@ class OptunaSetting(TypedDataClass):
 
 @dc.dataclass
 class MainSetting:
-    data: DataSetting
-    trainer: TrainerSetting
-    model: ModelSetting
-    optuna: OptunaSetting
+    data: DataSetting = DataSetting()
+    trainer: TrainerSetting = TrainerSetting()
+    model: ModelSetting = ModelSetting()
+    optuna: OptunaSetting = OptunaSetting()
 
     @classmethod
     def read_settings_yaml(cls, settings_yaml):
@@ -275,10 +281,23 @@ class MainSetting:
     def read_dict_settings(cls, dict_settings, *, name=None):
         if 'name' not in dict_settings['trainer']:
             dict_settings['trainer']['name'] = name
-        data_setting = DataSetting(**dict_settings['data'])
-        trainer_setting = TrainerSetting(**dict_settings['trainer'])
-        model_setting = ModelSetting(dict_settings['model'])
-        optuna_setting = OptunaSetting(**dict_settings['optuna'])
+
+        if 'data' in dict_settings:
+            data_setting = DataSetting(**dict_settings['data'])
+        else:
+            data_setting = DataSetting()
+        if 'trainer' in dict_settings:
+            trainer_setting = TrainerSetting(**dict_settings['trainer'])
+        else:
+            trainer_setting = TrainerSetting
+        if 'model' in dict_settings:
+            model_setting = ModelSetting(dict_settings['model'])
+        else:
+            model_setting = ModelSetting()
+        if 'optuna' in dict_settings:
+            optuna_setting = OptunaSetting(**dict_settings['optuna'])
+        else:
+            optuna_setting = OptunaSetting()
 
         return cls(
             data=data_setting, trainer=trainer_setting, model=model_setting,
