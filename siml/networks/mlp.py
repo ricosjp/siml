@@ -6,7 +6,7 @@ from . import header
 class MLP(ch.ChainList):
     """Multi Layer Perceptron."""
 
-    def __init__(self, block_definition):
+    def __init__(self, block_setting):
         """Initialize MLP object.
 
         Args:
@@ -21,14 +21,16 @@ class MLP(ch.ChainList):
         Returns:
             None
         """
+
+        nodes = block_setting.nodes
         super().__init__(*[
-            ch.links.Linear(unit_number)
-            for unit_number in block_definition['nodes']])
+            ch.links.Linear(n1, n2)
+            for n1, n2 in zip(nodes[:-1], nodes[1:])])
         self.activations = [
             header.DICT_ACTIVATIONS[activation]
-            for activation in block_definition['activations']]
+            for activation in block_setting.activations]
         self.dropout_ratios = [
-            dropout_ratio for dropout_ratio in block_definition['dropouts']]
+            dropout_ratio for dropout_ratio in block_setting.dropouts]
 
     def __call__(self, x):
         """Execute the NN's forward computation.

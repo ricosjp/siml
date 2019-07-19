@@ -1,7 +1,8 @@
-from pathlib import Path
+import os
+import shutil
 import unittest
 
-import chainer as ch
+from chainer import testing
 import numpy as np
 
 import siml.setting as setting
@@ -13,4 +14,12 @@ class TestTrainer(unittest.TestCase):
     def test_train_cpu(self):
         main_setting = setting.MainSetting.read_settings_yaml(
             'tests/data/linear/linear.yml')
-        trainer.Trainer(main_setting)
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, 1e-10)
+
+    @testing.attr.multi_gpu(2)
+    def test_train_gpu(self):
+        raise ValueError(os.getenv('CHAINER_TEST_GPU_LIMIT'))

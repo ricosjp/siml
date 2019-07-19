@@ -7,6 +7,7 @@ numpy-stl>=2.8.0
 numpy>=1.14.2
 optuna>=0.11.0
 pandas>=0.23.1
+pytest>=5.0.1
 PyYAML>=5.1
 scikit-learn>=0.19.1
 scipy>=1.1.0
