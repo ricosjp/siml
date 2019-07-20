@@ -4,7 +4,7 @@ variables:
   GIT_SUBMODULE_STRATEGY: recursive
 
 before_script:
- - sudo pip3 install --upgrade pip
+ - pip3 install --upgrade pip
  - cat /usr/bin/pip3
  - pip3 install -r requirements.txt
 
