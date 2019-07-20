@@ -5,8 +5,9 @@ variables:
 
 before_script:
  - python3 -V
- - python3 -m pip install --user -r requirements.txt
- - python3 -m pip install --user cupy-cuda91
+ - python3 -m pip install -r requirements.txt
+ - python3 -m pip install cupy-cuda91
+ - find / -name 'libcublas*'
  - python3 -c 'import cupy; print(cupy.is_available())'
 stages:
   - test
