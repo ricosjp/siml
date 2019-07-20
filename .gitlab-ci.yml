@@ -1,9 +1,11 @@
-image: python:3.7.3-stretch
+image: nvidia/10.1-base
 
 variables:
   GIT_SUBMODULE_STRATEGY: recursive
 
 before_script:
+ - apt update
+ - apt install python3.7
  - pip3 install -r requirements.txt
  - pip3 install cupy-cuda101
 
