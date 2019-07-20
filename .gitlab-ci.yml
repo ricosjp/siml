@@ -4,15 +4,15 @@ variables:
   GIT_SUBMODULE_STRATEGY: recursive
 
 before_script:
- - python3 --version; which python3; which pip3
- - pip3 install -r requirements.txt
- - pip3 install cupy-cuda101
+ - python --version; which python; which pip
+ - pip install -r requirements.txt
+ - pip install cupy-cuda101
 
 stages:
   - test
 
 test_gpu:
   stage: test
-  script: python3 -m unittest discover tests
+  script: python -m unittest discover tests
   tags:
     - gpu
