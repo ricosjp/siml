@@ -4,14 +4,14 @@ variables:
   GIT_SUBMODULE_STRATEGY: recursive
 
 before_script:
- - python --version; which python; which pip
- - pip install -r requirements.txt
+ - which python3; which pip3
+ - pip3 install -r requirements.txt
 
 stages:
   - test
 
 test_gpu:
   stage: test
-  script: python -m unittest discover tests
+  script: python3 -m unittest discover tests
   tags:
     - gpu
