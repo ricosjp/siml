@@ -6,7 +6,7 @@ variables:
 before_script:
  - python3 -V
  - python3 -m pip install -r requirements.txt
- - python3 -m pip install cupy-cuda91
+ - python3 -m pip install 'cupy-cuda91==7.0.0b2'
  - find / -name 'libcublas*'
  - python3 -c 'import chainer; print(chainer.cuda.available)'
  - python3 -c 'import cupy; print(cupy.is_available())'
