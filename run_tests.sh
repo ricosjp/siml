@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ -x "$(command -v nvidia-smi )" ]
+if [ -x "$(command -v nvcc )" ]
 then
   python3 -m unittest discover tests
 else
