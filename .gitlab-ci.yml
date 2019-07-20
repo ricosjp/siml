@@ -5,7 +5,7 @@ variables:
 
 before_script:
  - pip3 install -r requirements.txt
- - if [ -x "$(command -v nvidia-smi )" ]; then pip3 install cupy-cuda101; done
+ - if [ -x "$(command -v nvidia-smi )" ]; then pip3 install cupy-cuda101; fi
 
 stages:
   - test
