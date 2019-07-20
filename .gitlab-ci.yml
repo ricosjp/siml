@@ -5,7 +5,7 @@ variables:
 
 before_script:
  - pip3 install -r requirements.txt
- - if [ -x "$(command -v nvcc )" ]; then pip3 install cupy-cuda101; fi
+ - pip3 install cupy-cuda101
 
 stages:
   - test
