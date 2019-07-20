@@ -5,11 +5,11 @@ variables:
 
 before_script:
  - pip3 install --upgrade pip
- - 'cat << EOF > /usr/bin/pip3
+ - "cat << EOF > /usr/bin/pip3
  import sys
  from pip import __main__
  if __name__ == '__main__':
-      sys.exit(__main__._main())'
+      sys.exit(__main__._main())"
  - cat /usr/bin/pip3
  - pip3 install -r requirements.txt
 
