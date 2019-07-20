@@ -4,6 +4,7 @@ variables:
   GIT_SUBMODULE_STRATEGY: recursive
 
 before_script:
+ - which python3
  - pip3 install --upgrade pip
  - cat /usr/bin/pip3 | sed 's/import main/import __main__/g' | sed 's/(main())/(__main__._main())/g' > tmp
  - cat tmp > /usr/bin/pip3
