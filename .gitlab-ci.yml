@@ -5,7 +5,7 @@ variables:
 
 before_script:
  - pip3 install --upgrade pip
- - cat /usr/bin/pip3 | sed 's/import main/import __main__/g' | sed 's/(main())/(__main__.main())/g' > tmp
+ - cat /usr/bin/pip3 | sed 's/import main/import __main__/g' | sed 's/(main())/(__main__._main())/g' > tmp
  - cat tmp > /usr/bin/pip3
  - cat /usr/bin/pip3
  - pip3 install -r requirements.txt
