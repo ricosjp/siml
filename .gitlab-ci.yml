@@ -5,7 +5,10 @@ variables:
 
 before_script:
  - apt update
+ - yes | apt install software-properties-common
+ - yes | add-apt-repository ppa:deadsnakes/ppa
  - yes | apt install python3.7
+ - python3 --version; which python3; which pip3
  - pip3 install -r requirements.txt
  - pip3 install cupy-cuda101
 
