@@ -5,13 +5,8 @@ variables:
 
 before_script:
  - pip3 install --upgrade pip
- - |
-    cat << EOF > /usr/bin/pip
-      importsys
-      from pip import __main__
-      if __name__ == '__main__':
-          sys.exit(__main__._main())
-    EOF
+ - cat /usr/bin/pip | sed 's/import main/import __main__/g' | sed 's/(main())/(__main__.main())/g' > tmp
+ - cat tmp > /usr/bin/pip3
  - cat /usr/bin/pip3
  - pip3 install -r requirements.txt
 
