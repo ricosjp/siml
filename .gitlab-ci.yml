@@ -7,7 +7,7 @@ before_script:
  - python3 -V
  - python3 -m pip install --user -r requirements.txt
  - python3 -m pip install --user cupy-cuda91
- - locate libcublas
+ - find /usr | grep libcublas
  - python3 -c 'import cupy; print(cupy.is_available())'
 stages:
   - test
