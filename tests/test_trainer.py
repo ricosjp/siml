@@ -21,5 +21,11 @@ class TestTrainer(unittest.TestCase):
 
     @testing.attr.multi_gpu(2)
     def test_train_gpu(self):
-        import os
-        raise ValueError(os.getenv('CHAINER_TEST_GPU_LIMIT'))
+        main_setting = setting.MainSetting.read_settings_yaml(
+            'tests/data/linear/linear.yml')
+        main_setting.trainer.gpu_id = 1
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, 1e-5)

@@ -5,15 +5,10 @@ variables:
 
 before_script:
  - pip3 install -r requirements.txt
+ - if [ -x "$(command -v nvidia-smi )" ]; then pip3 install cupy-cuda101; done
 
 stages:
   - test
-
-test_cpu:
-  stage: test
-  script: python3 -m unittest discover tests
-  tags:
-    - cpu
 
 test_gpu:
   stage: test
