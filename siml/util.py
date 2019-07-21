@@ -831,7 +831,6 @@ def pad_array(array, n):
     if residual_length < 0:
         raise ValueError('Max length of element is wrong.')
     if isinstance(array, np.ndarray):
-        print(residual_length, shape[1:])
         return np.concatenate(
             [array, np.zeros([residual_length] + list(shape[1:]))])
     elif sp.isspmatrix_coo(array):
