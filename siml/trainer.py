@@ -97,7 +97,9 @@ class Trainer():
             self.setting.trainer.output_directory / 'settings.yaml')
 
         self.trainer.run()
-        loss = self.log_report_extension.log[-1]['validation/main/loss']
+        loss = np.min([
+            l['validation/main/loss']
+            for l in self.log_report_extension.log])
         return loss
 
     def infer(self):

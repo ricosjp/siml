@@ -1,0 +1,31 @@
+data:
+  train:
+    - tests/data/linear/train
+  validation:
+    - tests/data/linear/train
+trainer:
+  output_directory: tests/data/linear/tmp
+  inputs:
+    - name: x1
+      dim: 2
+    - name: x2
+      dim: 1
+  outputs:
+    - name: y
+      dim: 2
+  prune: true
+  batch_size: 1
+  n_epoch: 7000
+  log_trigger_epoch: 1000
+  stop_trigger_epoch: 7000
+  seed: 0
+model:
+  blocks:
+    - name: adjustable_mlp
+      nodes:
+        - -1
+        - -1
+      activations:
+        - identity
+      dropouts:
+        - 0.0
