@@ -6,6 +6,8 @@ variables:
 before_script:
  - apt -y update
  - apt -y install cuda-libraries-9-1 cuda-nvcc-9-1 cuda-libraries-dev-9-1
+ - python3 -m pip install -r requirements.txt
+ - python3 -m pip install 'cupy-cuda91==7.0.0b2'
 
 stages:
   - test
