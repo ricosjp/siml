@@ -652,12 +652,6 @@ def concat_dicts(dicts):
     return concated_dic
 
 
-# def str_date_time():
-#     now = dt.datetime.now()
-#     return (now.date().__str__() + '-'
-#             + now.time().__str__()[:8].replace(':', '-'))
-
-
 def dir2name(dir_name):
     if isinstance(dir_name, list):
         return '_'.join([dir2name(_) for _ in dir_name])
@@ -819,12 +813,24 @@ def get_top_directory():
 
 
 def pad_array(array, n):
+    """Pad array to the size n.
+
+    Args:
+        array: numpy.ndarray or scipy.sparse.coomatrix
+            Input array of size (m, f1, f2, ...) for numpy.ndarray or (m. m)
+            for scipy.sparse.coomatrix
+        n: int
+            Size after padding. n should be equal to or larger than m.
+    Returns:
+        padded_array: numpy.ndarray or scipy.sparse.coomatrix
+            Padded array of size (n, f1, f2, ...) for numpy.ndarray or (n, n)
+            for scipy.sparse.coomatrix.
+    """
     shape = array.shape
     residual_length = n - shape[0]
     if residual_length < 0:
         raise ValueError('Max length of element is wrong.')
     if isinstance(array, np.ndarray):
-        print(residual_length, shape[1:])
         return np.concatenate(
             [array, np.zeros([residual_length] + list(shape[1:]))])
     elif sp.isspmatrix_coo(array):
