@@ -1,0 +1,20 @@
+data:
+  inferred: data/inferred
+  interim: data/interim
+  pad: true
+  preprocessed: data/preprocessed
+  raw: data/raw
+  test:
+  - data/preprocessed/test
+  train:
+  - data/preprocessed/train
+  validation:
+  - data/preprocessed/validation
+preprocess:
+  adj: identity
+  elemental_strain: std_scale
+  elemental_stress: std_scale
+  modulus: std_scale
+  nadj: identity
+  poisson_ratio: identity
+
