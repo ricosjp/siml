@@ -25,6 +25,7 @@ class AbstractGCN(ch.Chain):
         self.dropout_ratios = [
             dropout_ratio for dropout_ratio in block_setting.dropouts]
         self.support_input_index = block_setting.support_input_index
+        self.input_selection = block_setting.input_selection
 
     def __call__(self, x, supports):
         """Execute the NN's forward computation.
@@ -39,7 +40,9 @@ class AbstractGCN(ch.Chain):
                 Output of the NN.
         """
         hs = ch.functions.stack([
-            self._call_single(x_, supports_[self.support_input_index])
+            self._call_single(
+                x_[:, self.input_selection],
+                supports_[self.support_input_index])
             for x_, supports_ in zip(x, supports)])
         return hs
 

@@ -65,6 +65,12 @@ class TypedDataClass:
         elif field.type == typing.List[dict]:
             def type_function(x):
                 return [dict(_x) for _x in x]
+        elif field.type == slice:
+            def type_function(x):
+                if isinstance(x, slice):
+                    return x
+                else:
+                    return slice(*x)
         else:
             type_function = field.type
 
@@ -261,6 +267,11 @@ class BlockSetting(TypedDataClass):
                 == len(self.dropouts)):
             raise ValueError('Block definition invalid')
         super().__post_init__()
+
+        if self.input_indices is not None:
+            self.input_selection = self.input_indices
+        else:
+            self.input_selection = self.input_slice
 
 
 @dc.dataclass

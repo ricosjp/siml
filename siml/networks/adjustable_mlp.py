@@ -26,6 +26,7 @@ class AdjustableMLP(ch.ChainList):
             for activation in block_setting.activations]
         self.dropout_ratios = [
             dropout_ratio for dropout_ratio in block_setting.dropouts]
+        self.input_selection = block_setting.input_selection
 
     def __call__(self, x, supports=None):
         """Execute the NN's forward computation.
@@ -37,7 +38,7 @@ class AdjustableMLP(ch.ChainList):
             y: numpy.ndarray of cupy.ndarray
                 Output of the NN.
         """
-        h = x
+        h = x[:, :, self.input_selection]
         for link, dropout_ratio, activation in zip(
                 self, self.dropout_ratios, self.activations):
             h = ch.functions.einsum('nmf,gf->nmg', h, link.W) + link.b

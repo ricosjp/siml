@@ -35,3 +35,12 @@ class TestTrainer(unittest.TestCase):
             shutil.rmtree(tr.setting.trainer.output_directory)
         loss = tr.train()
         np.testing.assert_array_less(loss, 1.)
+
+    def test_train_general_block_input_selection(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            'tests/data/deform/general_block_input_selection.yml')
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, 1.)
