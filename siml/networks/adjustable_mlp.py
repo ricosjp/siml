@@ -27,7 +27,7 @@ class AdjustableMLP(ch.ChainList):
         self.dropout_ratios = [
             dropout_ratio for dropout_ratio in block_setting.dropouts]
 
-    def __call__(self, x):
+    def __call__(self, x, supports=None):
         """Execute the NN's forward computation.
 
         Args:

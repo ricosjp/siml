@@ -21,7 +21,7 @@ trainer:
   seed: 0
 model:
   blocks:
-    - name: adjustable_mlp
+    - type: adjustable_mlp
       nodes:
         - -1
         - -1

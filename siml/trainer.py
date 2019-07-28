@@ -49,7 +49,7 @@ class Trainer():
         self.set_seed()
 
         # Define model
-        self.model = networks.Network(self.setting.model)
+        self.model = networks.Network(self.setting.model, self.setting.trainer)
         self.classifier = networks.Classifier(
             self.model, lossfun=self._create_loss_function())
         self.classifier.compute_accuracy = \
@@ -75,7 +75,7 @@ class Trainer():
             self.setting.trainer.input_names,
             self.setting.trainer.output_names,
             self.setting.data.train, self.setting.data.validation,
-            support_x=self.setting.trainer.support_input)
+            supports=self.setting.trainer.support_inputs)
 
         # Manage restart and pretrain
         self._load_pretrained_model_if_needed()
@@ -270,21 +270,27 @@ class Trainer():
     def _generate_trainer(
             self, x_variable_names, y_variable_names,
             train_directories, validation_directories, *,
-            support_x=None):
+            supports=None):
 
-        x_train = self._load_data(
-            x_variable_names, train_directories, support=support_x)
-        y_train = self._load_data(y_variable_names, train_directories)
-        train_iter = ch.iterators.SerialIterator(
-            ch.datasets.TupleDataset(x_train, y_train),
-            batch_size=self.setting.trainer.batch_size, shuffle=True)
+        x_train, support_train = self._load_data(
+            x_variable_names, train_directories, supports=supports)
+        y_train, _ = self._load_data(y_variable_names, train_directories)
+        if supports is None:
+            train_iter = ch.iterators.SerialIterator(
+                ch.datasets.DictDataset(**{'x': x_train, 't': y_train}),
+                batch_size=self.setting.trainer.batch_size, shuffle=True)
+        else:
+            train_iter = ch.iterators.SerialIterator(
+                ch.datasets.DictDataset(**{
+                    'x': x_train, 't': y_train, 'supports': support_train}),
+                batch_size=self.setting.trainer.batch_size, shuffle=True)
 
         optimizer = self._create_optimizer()
         optimizer.setup(self.classifier)
-        if self.setting.trainer.support_input is None:
+        if self.setting.trainer.support_inputs is None:
             converter = ch.dataset.concat_examples
         else:
-            converter = util.generate_converter(x_train)
+            converter = util.generate_converter(support_train)
         updater = ch.training.StandardUpdater(
             train_iter, optimizer, device=self.setting.trainer.gpu_id,
             converter=converter)
@@ -320,14 +326,23 @@ class Trainer():
 
         # Manage validation
         if len(validation_directories) > 0:
-            x_validation = self._load_data(
-                x_variable_names, validation_directories, support=support_x)
-            y_validation = self._load_data(
+            x_validation, support_validation = self._load_data(
+                x_variable_names, validation_directories, supports=supports)
+            y_validation, _ = self._load_data(
                 y_variable_names, validation_directories)
-            validation_iter = ch.iterators.SerialIterator(
-                ch.datasets.TupleDataset(x_validation, y_validation),
-                batch_size=self.setting.trainer.batch_size,
-                shuffle=False, repeat=False)
+            if supports is None:
+                validation_iter = ch.iterators.SerialIterator(
+                    ch.datasets.DictDataset(**{
+                        'x': x_validation, 't': y_validation}),
+                    batch_size=self.setting.trainer.batch_size,
+                    shuffle=False, repeat=False)
+            else:
+                validation_iter = ch.iterators.SerialIterator(
+                    ch.datasets.DictDataset(**{
+                        'x': x_validation, 't': y_validation,
+                        'supports': support_validation}),
+                    batch_size=self.setting.trainer.batch_size,
+                    shuffle=False, repeat=False)
             trainer.extend(ch.training.extensions.Evaluator(
                 validation_iter, self.classifier,
                 device=self.setting.trainer.gpu_id, converter=converter))
@@ -349,29 +364,39 @@ class Trainer():
 
     def _load_data(
             self, variable_names, directories, *,
-            return_dict=False, support=None):
+            return_dict=False, supports=None):
         data_directories = []
         for directory in directories:
             data_directories += util.collect_data_directories(
                 directory, required_file_names=['*.npy'])
 
-        if support is None:
-            support_variable_name = []
-        else:
-            support_variable_name = [support]
+        if supports is None:
+            supports = []
 
         data = [
             self._concatenate_variable([
                 util.load_variable(data_directory, variable_name)
-                for variable_name in variable_names + support_variable_name])
+                for variable_name in variable_names])
+            for data_directory in data_directories]
+        support_data = [
+            [
+                util.load_variable(data_directory, support)
+                for support in supports]
             for data_directory in data_directories]
         if return_dict:
-            return {
-                data_directory: d[None, :]
+            if len(supports) > 0:
+                return {
+                    data_directory: [d[None, :], [s]]
 
-                for data_directory, d in zip(data_directories, data)}
+                    for data_directory, d, s
+                    in zip(data_directories, data, support_data)}
+            else:
+                return {
+                    data_directory: d[None, :]
+
+                    for data_directory, d in zip(data_directories, data)}
         else:
-            return data
+            return data, support_data
 
     def _concatenate_variable(self, variables):
 
@@ -385,10 +410,5 @@ class Trainer():
             if not isinstance(variable, np.ndarray)]
         if len(unconcatenatable_variables) == 0:
             return concatenatable_variables
-        elif len(unconcatenatable_variables) == 1:
-            return concatenatable_variables, unconcatenatable_variables[0]
         else:
-            raise ValueError(
-                f"{len(unconcatenatable_variables)} "
-                'unconcatenatable variables found.\n'
-                'Must be less than 2.')
+            return concatenatable_variables, unconcatenatable_variables

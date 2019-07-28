@@ -662,18 +662,23 @@ def dir2name(dir_name):
         return name
 
 
-def generate_converter(x_train):
-    sparse = x_train[0][1]
+def generate_converter(support_train):
+    # NOTE: Assume orders are the same for all support inputs
+    sparse = support_train[0][0]
     order = ch.utils.get_order(sparse.row, sparse.col)
 
     def convert_example_with_support(batch, device=None):
-        x = [(
-            ch.dataset.to_device(device, b[0][0]),
-            convert_sparse_to_chainer(b[0][1], device=device, order=order))
-             for b in batch]
-        y = ch.dataset.to_device(
-            device, np.stack([b[1] for b in batch]))
-        return x, y
+        x = ch.dataset.to_device(
+            device, np.stack([b['x'] for b in batch]))
+        t = ch.dataset.to_device(
+            device, np.stack([b['t'] for b in batch]))
+        supports = [
+            [
+                convert_sparse_to_chainer(sparse, device=device, order=order)
+                for sparse in b['supports']]
+            for b in batch]
+        return {'x': x, 't': t, 'supports': supports}
+
     return convert_example_with_support
 
 
