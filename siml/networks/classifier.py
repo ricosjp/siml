@@ -17,12 +17,12 @@ class Classifier(ch.link.Chain):
         with self.init_scope():
             self.predictor = predictor
 
-    def __call__(self, x, t):
+    def __call__(self, x, t, supports=None):
         self.y = None
         self.loss = None
         self.accuracy = None
 
-        self.y = self.predictor(x)
+        self.y = self.predictor(x, supports)
         self.loss = self.lossfun(self.y, t)
         ch.report({'loss': ch.backends.cuda.to_cpu(self.loss.data)}, self)
         if self.accfun is not None:

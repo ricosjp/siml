@@ -33,7 +33,7 @@ class TypedDataClass:
             except TypeError:
                 raise TypeError(
                     f"Can't convert {getattr(self, field_name)} to "
-                    f"{field.type}")
+                    f"{field.type} for {field_name}")
 
     def validate(self):
         for field_name, field in self.__dataclass_fields__.items():
@@ -65,6 +65,12 @@ class TypedDataClass:
         elif field.type == typing.List[dict]:
             def type_function(x):
                 return [dict(_x) for _x in x]
+        elif field.type == slice:
+            def type_function(x):
+                if isinstance(x, slice):
+                    return x
+                else:
+                    return slice(*x)
         else:
             type_function = field.type
 
@@ -150,6 +156,8 @@ class TrainerSetting(TypedDataClass):
 
     inputs: typing.List[dict] = dc.field(default_factory=list)
     support_input: str = dc.field(default=None, metadata={'allow_none': True})
+    support_inputs: typing.List[str] = dc.field(
+        default=None, metadata={'allow_none': True})
     outputs: typing.List[dict] = dc.field(default_factory=list)
 
     input_names: typing.List[str] = dc.field(
@@ -194,6 +202,13 @@ class TrainerSetting(TypedDataClass):
         self.output_dims = [o['dim'] for o in self.outputs]
         if self.output_directory is None:
             self.update_output_directory()
+        if self.support_input is not None:
+            if self.support_inputs is not None:
+                raise ValueError(
+                    'Both support_input and support_inputs cannot be '
+                    'specified.')
+            else:
+                self.support_inputs = [self.support_input]
         super().__post_init__()
 
     def update_output_directory(self, *, id_=None, base=None):
@@ -211,7 +226,14 @@ class TrainerSetting(TypedDataClass):
 
 @dc.dataclass
 class BlockSetting(TypedDataClass):
-    name: str = 'mlp'
+    name: str = 'Block'
+    type: str = 'mlp'
+    destinations: typing.List[str] = dc.field(
+        default_factory=lambda: ['Output'])
+    input_slice: slice = slice(0, None, 1)
+    input_indices: typing.List[int] = dc.field(
+        default=None, metadata={'allow_none': True})
+    support_input_index: int = 0
     nodes: typing.List[int] = dc.field(
         default_factory=lambda: [-1, -1])
     activations: typing.List[str] = dc.field(
@@ -245,6 +267,11 @@ class BlockSetting(TypedDataClass):
                 == len(self.dropouts)):
             raise ValueError('Block definition invalid')
         super().__post_init__()
+
+        if self.input_indices is not None:
+            self.input_selection = self.input_indices
+        else:
+            self.input_selection = self.input_slice
 
 
 @dc.dataclass
