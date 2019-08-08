@@ -16,7 +16,7 @@ FEMIO_FILE = 'femio_npy_saved.npy'
 
 
 def convert_raw_data(
-        raw_directory, mandatory_variables, *, optional_variables,
+        raw_directory, mandatory_variables, *, optional_variables=None,
         output_base_directory='data/interim',
         recursive=False, conversion_function=None, force_renew=False,
         finished_file='converted', file_type='fistr',
@@ -311,11 +311,12 @@ def extract_variables(
     dict_data = {
         mandatory_variable: fem_data.access_attribute(mandatory_variable)
         for mandatory_variable in mandatory_variables}
-    for optional_variable in optional_variables:
-        optional_variable_data = fem_data.access_attribute(
-            optional_variable, mandatory=False)
-        if optional_variable_data is not None:
-            dict_data.update({optional_variable: optional_variable_data})
+    if optional_variables is not None:
+        for optional_variable in optional_variables:
+            optional_variable_data = fem_data.access_attribute(
+                optional_variable, mandatory=False)
+            if optional_variable_data is not None:
+                dict_data.update({optional_variable: optional_variable_data})
     return dict_data
 
 
