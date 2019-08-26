@@ -132,15 +132,9 @@ def files_exist(directory, file_names):
         files_exist: bool
             True if all files exist. Otherwise False.
     """
-    try:
-        a = np.all([
-            len(list(directory.glob(file_name))) > 0
-            for file_name in file_names])
-    except:
-        raise ValueError(directory.glob('*.npy'))
-        raise ValueError([
-            len(list(directory.glob(file_name))) > 0
-            for file_name in file_names])
+    a = np.all([
+        len(list(directory.glob(file_name))) > 0
+        for file_name in file_names])
     return a
 
 
@@ -312,7 +306,7 @@ def _single_symmat2array(symmat):
         assert abs(symmat[0, 1] - symmat[1, 0]) < 1e-5
         assert abs(symmat[0, 2] - symmat[2, 0]) < 1e-5
         assert abs(symmat[1, 2] - symmat[2, 1]) < 1e-5
-    except:
+    except AssertionError:
         raise ValueError(symmat)
 
     return np.array(
