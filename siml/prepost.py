@@ -1,8 +1,10 @@
 """Module for preprocessing."""
 
 import datetime as dt
+import itertools as it
 from pathlib import Path
 
+import matplotlib.pyplot as plt
 import numpy as np
 import scipy.sparse as sp
 
@@ -393,3 +395,181 @@ def normalize_adjacency_matrix(adj):
     d_mat_inv_sqrt = sp.diags(d_inv_sqrt)
     print(f"calculating norm: {dt.datetime.now()}")
     return adj.dot(d_mat_inv_sqrt).transpose().dot(d_mat_inv_sqrt).tocoo()
+
+
+def analyze_data_directories(
+        data_directories, x_name, f_name, *, n_split=10, n_bin=100,
+        out_directory=None, ref_index=0, plot=True):
+    """Analyze data f_name with grid over x_name.
+
+    Args:
+        data_directories: List[pathlib.Path]
+            List of data directories.
+        x_name: str
+            Name of x variable.
+        f_name: str
+            Name of f variable.
+        n_split: int, optional, [10]
+            The number to split x space.
+        n_bin: int, optional, [100]
+            The number of bins to draw histogram
+        out_directory: pathlib.Path, optional, [None]
+            Output directory path. By default no output is written.
+        ref_index: int, optional, [0]
+            Reference data directory index to analyze data.
+        plot: bool, optional, [True]
+            If True, plot data by grid.
+    """
+
+    # Initialization
+    if out_directory is not None:
+        out_directory.mkdir(parents=True, exist_ok=True)
+
+    data = [
+        _read_analyzing_data(data_directory, x_name, f_name)
+        for data_directory in data_directories]
+    xs = [d[0] for d in data]
+    fs = [d[1] for d in data]
+    f_grids = _generate_grids(fs, n_bin, symmetric=True, magnitude_range=.1)
+
+    ranges, list_split_data, centers, means, stds = split_data_arrays(
+        xs, fs, n_split=n_split)
+
+    # Plot data
+    if plot:
+        for range_, split_data in zip(ranges, list_split_data):
+            range_string = '__'.join(f"{r[0]:.3e}_{r[1]:.3e}" for r in range_)
+            if out_directory is None:
+                out_file_base = None
+            else:
+                out_file_base = out_directory / f"{f_name}_{range_string}"
+            _plot_histogram(
+                split_data, f_grids, data_directories,
+                out_file_base=out_file_base)
+
+    # Write output file
+    array_means = np.transpose(np.stack(means), (1, 0, 2))
+    mean_diffs = array_means - array_means[ref_index]
+    array_stds = np.transpose(np.stack(stds), (1, 0, 2))
+    std_diffs = array_stds - array_stds[ref_index]
+
+    header = ','.join(
+        f"{x_name}_{i}" for i in range(centers.shape[-1])) + ',' \
+        + ','.join(
+            f"mean_diff_{f_name}_{i}" for i in range(mean_diffs.shape[-1])) \
+        + ',mean_diff_norm,' \
+        + ','.join(
+            f"std_diff_{f_name}_{i}" for i in range(mean_diffs.shape[-1])) \
+        + ',std_diff_norm'
+    for i_dir, data_directory in enumerate(data_directories):
+        mean_diff_norms = np.linalg.norm(mean_diffs[i_dir], axis=1)[:, None]
+        std_diff_norms = np.linalg.norm(std_diffs[i_dir], axis=1)[:, None]
+        np.savetxt(
+            out_directory / (data_directory.stem + '.csv'),
+            np.concatenate(
+                [centers, mean_diffs[i_dir], mean_diff_norms,
+                 std_diffs[i_dir], std_diff_norms], axis=1),
+            delimiter=',', header=header)
+
+
+def split_data_arrays(xs, fs, *, n_split=10):
+    """Split data fs with regards to grids of xs.
+
+    Args:
+        xs: List[numpy.ndarray]
+            n_sample-length list contains (n_element, dim_x) shaped ndarray.
+        fs: List[numpy.ndarray]
+            n_sample-length list contains (n_element, dim_f) shaped ndarray.
+        n_split: int, optional, [10]
+            The number to split x space.
+    """
+
+    x_grids = _generate_grids(xs, n_split)
+    # raise ValueError(x_grids)
+
+    # Analyze data by grid
+    ranges = np.transpose(
+        np.stack([x_grids[:-1, :], x_grids[1:, :]]), (2, 1, 0))
+    useful_ranges = []
+    list_split_data = []
+    centers = []
+    means = []
+    stds = []
+    for rs in it.product(*ranges):
+        filters = [_calculate_filter(x, rs) for x in xs]
+        if np.any([np.all(~filter_) for filter_ in filters]):
+            continue
+
+        filtered_fs = [f_[filter_] for f_, filter_ in zip(fs, filters)]
+        list_split_data.append(filtered_fs)
+        useful_ranges.append(rs)
+
+        filtered_means = np.stack([np.mean(ff, axis=0) for ff in filtered_fs])
+        filtered_stds = np.stack([np.std(ff, axis=0) for ff in filtered_fs])
+        center = [np.mean(r) for r in rs]
+        centers.append(center)
+        means.append(filtered_means)
+        stds.append(filtered_stds)
+
+    # Write output file
+    centers = np.array(centers)
+
+    return useful_ranges, list_split_data, centers, means, stds
+
+
+def _plot_histogram(
+        list_data, list_bins, data_directories,
+        out_file_base=None):
+    f_dim = list_data[0].shape[-1]
+    plt.close('all')
+
+    for i_dim in range(f_dim):
+        plt.figure(i_dim)
+        for data, data_directory in zip(list_data, data_directories):
+            plt.hist(
+                data[:, i_dim], bins=list_bins[:, i_dim],
+                histtype='step', label=str(data_directory))
+
+    if out_file_base is not None:
+        for i_dim in range(f_dim):
+            plt.figure(i_dim)
+            plt.legend()
+            plt.savefig(str(out_file_base) + f"_{i_dim}.png")
+    else:
+        for i_dim in range(f_dim):
+            plt.figure(i_dim)
+            plt.legend()
+        plt.show()
+    return
+
+
+def _generate_grids(list_data, n_split, symmetric=False, magnitude_range=1.):
+    bounding_box = _obtain_bounding_box(list_data) * magnitude_range
+    if symmetric:
+        bounding_box = np.stack([
+            -np.mean(np.abs(bounding_box), axis=0),
+            np.mean(np.abs(bounding_box), axis=0)])
+    grids = np.linspace(bounding_box[0, :], bounding_box[1, :], n_split)
+    return grids
+
+
+def _calculate_filter(x, ranges):
+    filter_ = np.ones(len(x))
+    for _x, _r in zip(x.T, ranges):
+        filter_ = np.logical_and(
+            filter_, np.logical_and(_r[0] <= _x, _x < _r[1]))
+    return filter_
+
+
+def _obtain_bounding_box(data):
+    concat_data = np.concatenate(data)
+    return np.stack([
+        [np.min(concat_data[:, i]), np.max(concat_data[:, i])]
+        for i in range(concat_data.shape[-1])], axis=1)
+
+
+def _read_analyzing_data(data_directory, x, f):
+    fem_data = femio.FEMData.read_directory('fistr', data_directory)
+    x_val = fem_data.convert_nodal2elemental(x, calc_average=True)
+    f_val = fem_data.convert_nodal2elemental(f, calc_average=True)
+    return x_val, f_val

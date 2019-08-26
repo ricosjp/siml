@@ -28,3 +28,46 @@ class TestPrepost(unittest.TestCase):
         ])
         np.testing.assert_almost_equal(
             d_inv_sqrt @ adj @ d_inv_sqrt, nadj.toarray())
+
+    def test_split_data_arrays(self):
+        true_xs = [
+            np.concatenate([
+                np.stack([[0., 0.]] * 10000),
+                np.stack([[1., 0.]] * 10000),
+                np.stack([[0., 1.]] * 10000),
+                np.stack([[1., 1.]] * 10000),
+            ]),
+            np.concatenate([
+                np.stack([[0., 0.]] * 10000),
+                np.stack([[1., 0.]] * 10000),
+                np.stack([[0., 1.]] * 10000),
+            ]),
+        ]
+        noised_xs = [
+            np.concatenate([
+                np.array([
+                    [-.5, -.5],
+                    [1.5, 1.5],
+                ]),
+                true_x + np.random.randn(*true_x.shape) * .1])
+            for true_x in true_xs]
+        fs = [noised_xs[0], noised_xs[1] / 2]
+        ranges, list_split_data, centers, means, stds = pre.split_data_arrays(
+            noised_xs, fs, n_split=3)
+
+        array_means = np.transpose(np.stack(means), (1, 0, 2))
+        array_stds = np.transpose(np.stack(stds), (1, 0, 2))
+        answer = np.array([
+                [0., 0.],
+                [0., 1.],
+                [1., 0.],
+            ])
+        np.testing.assert_array_almost_equal(centers, answer)
+        np.testing.assert_array_almost_equal(
+            array_means[0], answer, decimal=2)
+        np.testing.assert_array_almost_equal(
+            array_means[1], answer * .5, decimal=2)
+        np.testing.assert_array_almost_equal(
+            array_stds[0], np.ones(array_stds.shape[1:]) * .1, decimal=2)
+        np.testing.assert_array_almost_equal(
+            array_stds[1], np.ones(array_stds.shape[1:]) * .05, decimal=2)
