@@ -22,7 +22,8 @@ def convert_raw_data(
         output_base_directory='data/interim',
         recursive=False, conversion_function=None, force_renew=False,
         finished_file='converted', file_type='fistr',
-        required_file_names=['*.msh', '*.cnt', '*.res.0.1'], read_npy=False):
+        required_file_names=['*.msh', '*.cnt', '*.res.0.1'], read_npy=False,
+        write_ucd=True):
     """Convert raw data and save them in interim directory.
 
     Args:
@@ -55,18 +56,18 @@ def convert_raw_data(
             Required file names.
         read_npy: bool, optional [False]
             If True, read .npy files instead of original files if exists.
+        write_ucd: bool, optional [True]
+            If True, write AVS UCD file with preprocessed variables.
     Returns:
         None
     """
-
     # Process all directories when raw directory is a list
     if isinstance(raw_directory, list) or isinstance(raw_directory, set):
-        for _raw_directory in raw_directory:
+        for _raw_directory in set(raw_directory):
             convert_raw_data(
                 _raw_directory, mandatory_variables,
                 optional_variables=optional_variables,
                 output_base_directory=output_base_directory,
-
                 recursive=recursive,
                 conversion_function=conversion_function,
                 force_renew=force_renew, finished_file=finished_file,
@@ -112,14 +113,32 @@ def convert_raw_data(
     dict_data = extract_variables(
         fem_data, mandatory_variables, optional_variables=optional_variables)
     if conversion_function is not None:
-        dict_data.update(conversion_function(fem_data))
+        dict_data.update(conversion_function(fem_data, raw_directory))
 
     # Save data
     fem_data.save(output_directory)
+    if write_ucd:
+        write_ucd_file(output_directory, fem_data, dict_data)
     save_dict_data(output_directory, dict_data)
     (output_directory / finished_file).touch()
 
     return
+
+
+def write_ucd_file(output_directory, fem_data, dict_data=None):
+    if dict_data is not None:
+        # Merge dict_data to fem_data
+        for key, value in dict_data.items():
+            if key in ['adj', 'nadj']:
+                continue
+            try:
+                fem_data.elemental_data.update({
+                    key: femio.FEMAttribute(
+                        key, fem_data.elements.ids, value)})
+            except ValueError:
+                raise ValueError(key)
+
+    fem_data.write('ucd', output_directory / 'mesh.inp')
 
 
 class Preprocessor:
@@ -311,13 +330,15 @@ def extract_variables(
             Data dictionary.
     """
     dict_data = {
-        mandatory_variable: fem_data.access_attribute(mandatory_variable)
+        mandatory_variable: fem_data.convert_nodal2elemental(
+            mandatory_variable, ravel=True)
         for mandatory_variable in mandatory_variables}
     if optional_variables is not None:
         for optional_variable in optional_variables:
-            optional_variable_data = fem_data.access_attribute(
-                optional_variable, mandatory=False)
-            if optional_variable_data is not None:
+            if (optional_variable in fem_data.nodal_data) \
+                    or optional_variable in fem_data.elemental_data:
+                optional_variable_data = fem_data.convert_nodal2elemental(
+                    optional_variable, ravel=True)
                 dict_data.update({optional_variable: optional_variable_data})
     return dict_data
 
