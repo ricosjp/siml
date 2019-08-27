@@ -368,10 +368,27 @@ class Trainer():
         data_directories = []
         for directory in directories:
             data_directories += util.collect_data_directories(
-                directory, required_file_names=['*.npy'])
+                directory, required_file_names=[f"{variable_names[0]}.npy"])
 
         if supports is None:
             supports = []
+
+        # Check data dimension correctness
+        if len(data_directories) > 0:
+            data_wo_concatenation = {
+                variable_name:
+                util.load_variable(data_directories[0], variable_name)
+                for variable_name in variable_names}
+            for input_setting in self.setting.trainer.inputs:
+                if input_setting['name'] in data_wo_concatenation and \
+                        (data_wo_concatenation[input_setting['name']].shape[-1]
+                         != input_setting['dim']):
+                    setting_dim = input_setting['dim']
+                    actual_dim = data_wo_concatenation[
+                        input_setting['name']].shape[-1]
+                    raise ValueError(
+                        f"{input_setting['name']} dimension incorrect: "
+                        f"{setting_dim} vs {actual_dim}")
 
         data = [
             self._concatenate_variable([
