@@ -66,9 +66,9 @@ class TestPrepost(unittest.TestCase):
             ])
         np.testing.assert_array_almost_equal(centers, answer)
         np.testing.assert_array_almost_equal(
-            array_means[0], answer, decimal=2)
+            array_means[0], answer, decimal=1)
         np.testing.assert_array_almost_equal(
-            array_means[1], answer * .5, decimal=2)
+            array_means[1], answer * .5, decimal=1)
         np.testing.assert_array_almost_equal(
             array_stds[0], np.ones(array_stds.shape[1:]) * .1, decimal=1)
         np.testing.assert_array_almost_equal(
