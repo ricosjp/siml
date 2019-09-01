@@ -370,8 +370,8 @@ class MainSetting:
 
 @dc.dataclass
 class PreprocessSetting:
-    data: DataSetting
-    preprocess: dict
+    data: DataSetting = DataSetting()
+    preprocess: dict = dc.field(default_factory=dict)
 
     @classmethod
     def read_settings_yaml(cls, settings_yaml):

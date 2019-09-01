@@ -220,11 +220,11 @@ class Standardizer(AbstractConverter):
 
     @classmethod
     def read_data(cls, data):
-        std = np.std(data)
+        std = np.std(data, axis=0)
         mean_square = np.mean(data**2)
         return cls(
-            mean=np.mean(data), std=std, mean_square=mean_square,
-            n=np.prod(data.shape))
+            mean=np.mean(data, axis=0), std=std, mean_square=mean_square,
+            n=data.shape[0])
 
     @classmethod
     def lazy_read_files(cls, data_files):
@@ -240,9 +240,9 @@ class Standardizer(AbstractConverter):
         if not self.is_updatable:
             raise ValueError('Standardizer is not updatable')
 
-        m = np.prod(data.shape)
-        mean = (self.mean * self.n + np.sum(data)) / (self.n + m)
-        mean_square = (self.mean_square * self.n + np.sum(data**2)) / (
+        m = data.shape[0]
+        mean = (self.mean * self.n + np.sum(data, axis=0)) / (self.n + m)
+        mean_square = (self.mean_square * self.n + np.sum(data**2, axis=0)) / (
             self.n + m)
 
         self.mean = mean
