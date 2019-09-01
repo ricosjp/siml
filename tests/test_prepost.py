@@ -87,8 +87,8 @@ class TestPrepost(unittest.TestCase):
         )
 
         # Clean up data
-        shutil.rmtree(data_setting.interim)
-        shutil.rmtree(data_setting.preprocessed)
+        shutil.rmtree(data_setting.interim, ignore_errors=True)
+        shutil.rmtree(data_setting.preprocessed, ignore_errors=True)
         data_setting.preprocessed.mkdir(parents=True)
 
         # Create data

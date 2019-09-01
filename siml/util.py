@@ -221,7 +221,7 @@ class Standardizer(AbstractConverter):
     @classmethod
     def read_data(cls, data):
         std = np.std(data, axis=0)
-        mean_square = np.mean(data**2)
+        mean_square = np.mean(data**2, axis=0)
         return cls(
             mean=np.mean(data, axis=0), std=std, mean_square=mean_square,
             n=data.shape[0])
