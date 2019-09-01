@@ -676,6 +676,14 @@ def generate_converter(support_train):
     return convert_example_with_support
 
 
+def element_wise_converter(batch, device=None):
+    x = ch.dataset.to_device(
+        device, np.concatenate([b['x'] for b in batch]))
+    t = ch.dataset.to_device(
+        device, np.concatenate([b['t'] for b in batch]))
+    return {'x': x, 't': t}
+
+
 def convert_sparse_to_chainer(_sparse, *, device=-1, order=None):
     sparse = ch.utils.CooMatrix(
         ch.dataset.to_device(device, _sparse.data),
