@@ -32,12 +32,18 @@ class Classifier(ch.link.Chain):
             ch.report({'accuracy': self.accuracy}, self)
 
         if self.element_batchsize > 0:
+            length = self.y.shape[-2]
+            step = length // self.element_batchsize
+            indices = range(step, length, step)
+
             split_ys = ch.functions.split_axis(
-                self.y, self.element_batchsize, axis=-2)
+                self.y, indices, axis=-2)
             split_ts = ch.functions.split_axis(
-                t, self.element_batchsize, axis=-2)
+                t, indices, axis=-2)
+
             losses = [
                 self.lossfun(split_y, split_t)
                 for split_y, split_t in zip(split_ys, split_ts)]
             return self.loss, losses
+
         return self.loss
