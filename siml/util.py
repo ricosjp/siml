@@ -220,11 +220,11 @@ class Standardizer(AbstractConverter):
 
     @classmethod
     def read_data(cls, data):
-        std = np.std(data)
-        mean_square = np.mean(data**2)
+        std = np.std(data, axis=0)
+        mean_square = np.mean(data**2, axis=0)
         return cls(
-            mean=np.mean(data), std=std, mean_square=mean_square,
-            n=np.prod(data.shape))
+            mean=np.mean(data, axis=0), std=std, mean_square=mean_square,
+            n=data.shape[0])
 
     @classmethod
     def lazy_read_files(cls, data_files):
@@ -240,9 +240,9 @@ class Standardizer(AbstractConverter):
         if not self.is_updatable:
             raise ValueError('Standardizer is not updatable')
 
-        m = np.prod(data.shape)
-        mean = (self.mean * self.n + np.sum(data)) / (self.n + m)
-        mean_square = (self.mean_square * self.n + np.sum(data**2)) / (
+        m = data.shape[0]
+        mean = (self.mean * self.n + np.sum(data, axis=0)) / (self.n + m)
+        mean_square = (self.mean_square * self.n + np.sum(data**2, axis=0)) / (
             self.n + m)
 
         self.mean = mean
@@ -674,6 +674,14 @@ def generate_converter(support_train):
         return {'x': x, 't': t, 'supports': supports}
 
     return convert_example_with_support
+
+
+def element_wise_converter(batch, device=None):
+    x = ch.dataset.to_device(
+        device, np.concatenate([b['x'] for b in batch]))
+    t = ch.dataset.to_device(
+        device, np.concatenate([b['t'] for b in batch]))
+    return {'x': x, 't': t}
 
 
 def convert_sparse_to_chainer(_sparse, *, device=-1, order=None):

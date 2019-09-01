@@ -155,15 +155,13 @@ class Preprocessor:
     def __init__(self, setting):
         self.setting = setting
 
-    def preprocess_interim_data(self, *, force_renew=False, pad=False):
+    def preprocess_interim_data(self, *, force_renew=False):
         """Preprocess interim data with preprocessing e.g. standardization and then
         save them.
 
         Args:
             force_renew: bool, optional [False]
                 If True, renew npy files even if they are alerady exist.
-            pad: bool, optional [True]
-                If True, pad data to the lergest size.
         Returns:
             None
         """

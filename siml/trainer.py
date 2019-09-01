@@ -11,6 +11,7 @@ from . import util
 from . import networks
 from . import prepost
 from . import setting
+from . import updaters
 
 
 class Trainer():
@@ -51,7 +52,8 @@ class Trainer():
         # Define model
         self.model = networks.Network(self.setting.model, self.setting.trainer)
         self.classifier = networks.Classifier(
-            self.model, lossfun=self._create_loss_function())
+            self.model, lossfun=self._create_loss_function(),
+            element_batchsize=self.setting.trainer.element_batchsize)
         self.classifier.compute_accuracy = \
             self.setting.trainer.compute_accuracy
 
@@ -288,12 +290,25 @@ class Trainer():
         optimizer = self._create_optimizer()
         optimizer.setup(self.classifier)
         if self.setting.trainer.support_inputs is None:
-            converter = ch.dataset.concat_examples
+            if self.setting.trainer.element_wise:
+                converter = util.element_wise_converter
+            else:
+                converter = ch.dataset.concat_examples
         else:
             converter = util.generate_converter(support_train)
-        updater = ch.training.StandardUpdater(
-            train_iter, optimizer, device=self.setting.trainer.gpu_id,
-            converter=converter)
+        if self.setting.trainer.use_siml_updater:
+            updater = updaters.SimlUpdater(
+                train_iter, optimizer, device=self.setting.trainer.gpu_id,
+                converter=converter)
+        else:
+            if self.setting.trainer.element_batchsize >= 0:
+                print(
+                    f"When use_siml_updater: True, "
+                    f"cannot set element_batchsize >= 0. Set to -1.")
+                self.setting.trainer.element_batchsize = -1
+            updater = ch.training.updaters.StandardUpdater(
+                train_iter, optimizer, device=self.setting.trainer.gpu_id,
+                converter=converter)
         stop_trigger = ch.training.triggers.EarlyStoppingTrigger(
             monitor='validation/main/loss', check_trigger=(
                 self.setting.trainer.stop_trigger_epoch, 'epoch'),

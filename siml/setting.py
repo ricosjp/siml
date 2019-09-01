@@ -152,6 +152,9 @@ class TrainerSetting(TypedDataClass):
         If True and optuna_trial is given, prining would be performed.
     seed: str, optional [0]
         Random seed.
+    element_wise: bool, optional [False]
+        If True, concatenate data to force element wise training
+        (so no graph information can be used).
     """
 
     inputs: typing.List[dict] = dc.field(default_factory=list)
@@ -194,6 +197,9 @@ class TrainerSetting(TypedDataClass):
     prune: bool = False
     snapshot_choise_method: str = 'best'
     seed: int = 0
+    element_wise: bool = False
+    element_batchsize: int = -1
+    use_siml_updater: bool = True
 
     def __post_init__(self):
         self.input_names = [i['name'] for i in self.inputs]
@@ -370,8 +376,8 @@ class MainSetting:
 
 @dc.dataclass
 class PreprocessSetting:
-    data: DataSetting
-    preprocess: dict
+    data: DataSetting = DataSetting()
+    preprocess: dict = dc.field(default_factory=dict)
 
     @classmethod
     def read_settings_yaml(cls, settings_yaml):
