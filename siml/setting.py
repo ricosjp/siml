@@ -225,6 +225,12 @@ class TrainerSetting(TypedDataClass):
                 'eps': 1e-8,
                 'eta': 1.0,
                 'weight_decay_rate': 0}
+        if self.element_wise:
+            print(f"element_wise is True. Overwrite settings.")
+            self.batch_size = self.element_batchsize
+            self.element_batchsize = -1
+            self.use_siml_updater = False
+
         super().__post_init__()
 
     def update_output_directory(self, *, id_=None, base=None):

@@ -5,7 +5,7 @@ data:
     - tests/data/linear/train
 trainer:
   element_wise: true
-  output_directory: tests/data/linear/concat
+  output_directory: tests/data/linear/element_wise
   inputs:
     - name: x1
       dim: 2
