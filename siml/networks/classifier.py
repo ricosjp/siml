@@ -6,11 +6,11 @@ class Classifier(ch.link.Chain):
     def __init__(
             self, predictor, *,
             lossfun=ch.functions.loss.softmax_cross_entropy, accfun=None,
-            element_batchsize=-1):
+            element_batch_size=-1):
         super().__init__()
         self.lossfun = lossfun
         self.accfun = accfun
-        self.element_batchsize = element_batchsize
+        self.element_batch_size = element_batch_size
 
         self.y = None
         self.loss = None
@@ -31,10 +31,13 @@ class Classifier(ch.link.Chain):
             self.accuracy = self.accfun(self.y, t)
             ch.report({'accuracy': self.accuracy}, self)
 
-        if self.element_batchsize > 0:
+        if self.element_batch_size > 0:
             length = self.y.shape[-2]
-            step = length // self.element_batchsize
-            indices = range(step, length, step)
+            if self.element_batch_size >= length:
+                indices = 1  # No split
+            else:
+                indices = range(
+                    self.element_batch_size, length, self.element_batch_size)
 
             split_ys = ch.functions.split_axis(
                 self.y, indices, axis=-2)

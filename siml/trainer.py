@@ -53,7 +53,7 @@ class Trainer():
         self.model = networks.Network(self.setting.model, self.setting.trainer)
         self.classifier = networks.Classifier(
             self.model, lossfun=self._create_loss_function(),
-            element_batchsize=self.setting.trainer.element_batchsize)
+            element_batch_size=self.setting.trainer.element_batch_size)
         self.classifier.compute_accuracy = \
             self.setting.trainer.compute_accuracy
 
@@ -302,11 +302,11 @@ class Trainer():
                 train_iter, optimizer, device=self.setting.trainer.gpu_id,
                 converter=converter)
         else:
-            if self.setting.trainer.element_batchsize >= 0:
+            if self.setting.trainer.element_batch_size >= 0:
                 print(
                     f"When use_siml_updater: True, "
-                    f"cannot set element_batchsize >= 0. Set to -1.")
-                self.setting.trainer.element_batchsize = -1
+                    f"cannot set element_batch_size >= 0. Set to -1.")
+                self.setting.trainer.element_batch_size = -1
             updater = ch.training.updaters.StandardUpdater(
                 train_iter, optimizer, device=self.setting.trainer.gpu_id,
                 converter=converter)

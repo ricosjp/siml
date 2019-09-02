@@ -10,7 +10,7 @@ class SimlUpdater(ch.training.updaters.StandardUpdater):
         in_arrays = self.converter(batch, self.device)
 
         optimizer = self._optimizers['main']
-        if optimizer.target.element_batchsize > 0:
+        if optimizer.target.element_batch_size > 0:
             # Update parameters element batch by element batch
             loss, losses = optimizer.target(**in_arrays)
             for loss_ in losses:

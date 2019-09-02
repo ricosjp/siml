@@ -79,13 +79,13 @@ class TestTrainer(unittest.TestCase):
         main_setting = setting.MainSetting.read_settings_yaml(
             'tests/data/linear/linear_element_batch.yml')
 
-        main_setting.trainer.element_batchsize = 1
+        main_setting.trainer.element_batch_size = 100000
         eb1_tr = trainer.Trainer(main_setting)
         if eb1_tr.setting.trainer.output_directory.exists():
             shutil.rmtree(eb1_tr.setting.trainer.output_directory)
         eb1_loss = eb1_tr.train()
 
-        main_setting.trainer.element_batchsize = -1
+        main_setting.trainer.element_batch_size = -1
         ebneg_tr = trainer.Trainer(main_setting)
         if ebneg_tr.setting.trainer.output_directory.exists():
             shutil.rmtree(ebneg_tr.setting.trainer.output_directory)

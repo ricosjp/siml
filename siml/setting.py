@@ -198,7 +198,7 @@ class TrainerSetting(TypedDataClass):
     snapshot_choise_method: str = 'best'
     seed: int = 0
     element_wise: bool = False
-    element_batchsize: int = -1
+    element_batch_size: int = -1
     use_siml_updater: bool = True
     optimizer_setting: dict = dc.field(
         default=None, metadata={'convert': False, 'allow_none': True})
@@ -227,8 +227,8 @@ class TrainerSetting(TypedDataClass):
                 'weight_decay_rate': 0}
         if self.element_wise:
             print(f"element_wise is True. Overwrite settings.")
-            self.batch_size = self.element_batchsize
-            self.element_batchsize = -1
+            self.batch_size = self.element_batch_size
+            self.element_batch_size = -1
             self.use_siml_updater = False
 
         super().__post_init__()
