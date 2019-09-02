@@ -366,7 +366,7 @@ class Trainer():
     def _create_optimizer(self):
         optimizer_name = self.setting.trainer.optimizer.lower()
         if optimizer_name == 'adam':
-            return ch.optimizers.Adam()
+            return ch.optimizers.Adam(**self.setting.trainer.optimizer_setting)
         else:
             raise ValueError(f"Unknown optimizer name: {optimizer_name}")
 

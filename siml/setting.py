@@ -200,6 +200,8 @@ class TrainerSetting(TypedDataClass):
     element_wise: bool = False
     element_batchsize: int = -1
     use_siml_updater: bool = True
+    optimizer_setting: dict = dc.field(
+        default=None, metadata={'convert': False, 'allow_none': True})
 
     def __post_init__(self):
         self.input_names = [i['name'] for i in self.inputs]
@@ -215,6 +217,14 @@ class TrainerSetting(TypedDataClass):
                     'specified.')
             else:
                 self.support_inputs = [self.support_input]
+        if self.optimizer_setting is None:
+            self.optimizer_setting = {
+                'alpha': 0.001,
+                'beta1': 0.9,
+                'beta2': 0.99,
+                'eps': 1e-8,
+                'eta': 1.0,
+                'weight_decay_rate': 0}
         super().__post_init__()
 
     def update_output_directory(self, *, id_=None, base=None):
