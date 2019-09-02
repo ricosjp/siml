@@ -99,3 +99,12 @@ class TestTrainer(unittest.TestCase):
 
         np.testing.assert_almost_equal(eb1_loss, std_loss)
         np.testing.assert_almost_equal(ebneg_loss, std_loss)
+
+    def test_train_element_learning_rate(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            'tests/data/linear/linear_short_lr.yml')
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, 10.)

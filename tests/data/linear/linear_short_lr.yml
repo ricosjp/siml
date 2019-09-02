@@ -4,8 +4,8 @@ data:
   validation:
     - tests/data/linear/train
 trainer:
-  element_wise: true
-  output_directory: tests/data/linear/element_wise
+  element_wise: false
+  output_directory: tests/data/linear/lr
   inputs:
     - name: x1
       dim: 2
@@ -16,14 +16,17 @@ trainer:
       dim: 2
   prune: true
   batch_size: 2
-  element_batchsize: 10
+  element_batchsize: 7
   n_epoch: 100
   log_trigger_epoch: 10
   stop_trigger_epoch: 100
   seed: 0
+  optimizer: adam
+  optimizer_setting:
+    alpha: 0.01
 model:
   blocks:
-    - type: mlp
+    - type: adjustable_mlp
       nodes:
         - -1
         - -1

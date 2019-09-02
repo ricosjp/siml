@@ -289,13 +289,14 @@ class Trainer():
 
         optimizer = self._create_optimizer()
         optimizer.setup(self.classifier)
+
+        # Converter setting
         if self.setting.trainer.support_inputs is None:
-            if self.setting.trainer.element_wise:
-                converter = util.element_wise_converter
-            else:
-                converter = ch.dataset.concat_examples
+            converter = ch.dataset.concat_examples
         else:
             converter = util.generate_converter(support_train)
+
+        # Updater setting
         if self.setting.trainer.use_siml_updater:
             updater = updaters.SimlUpdater(
                 train_iter, optimizer, device=self.setting.trainer.gpu_id,
@@ -309,6 +310,7 @@ class Trainer():
             updater = ch.training.updaters.StandardUpdater(
                 train_iter, optimizer, device=self.setting.trainer.gpu_id,
                 converter=converter)
+
         stop_trigger = ch.training.triggers.EarlyStoppingTrigger(
             monitor='validation/main/loss', check_trigger=(
                 self.setting.trainer.stop_trigger_epoch, 'epoch'),
@@ -366,7 +368,7 @@ class Trainer():
     def _create_optimizer(self):
         optimizer_name = self.setting.trainer.optimizer.lower()
         if optimizer_name == 'adam':
-            return ch.optimizers.Adam()
+            return ch.optimizers.Adam(**self.setting.trainer.optimizer_setting)
         else:
             raise ValueError(f"Unknown optimizer name: {optimizer_name}")
 
@@ -415,6 +417,11 @@ class Trainer():
                 util.load_variable(data_directory, support)
                 for support in supports]
             for data_directory in data_directories]
+        if self.setting.trainer.element_wise:
+            if len(support_data[0]) > 0:
+                raise ValueError(
+                    'Cannot use support_input if element_wise is True')
+            return np.concatenate(data), None
         if return_dict:
             if len(supports) > 0:
                 return {
