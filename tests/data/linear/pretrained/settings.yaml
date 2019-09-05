@@ -1,0 +1,110 @@
+data:
+  inferred: data/inferred
+  interim: data/interim
+  pad: true
+  preprocessed: data/preprocessed
+  raw: data/raw
+  test:
+  - data/preprocessed/test
+  train:
+  - tests/data/linear/train
+  validation:
+  - tests/data/linear/train
+model:
+  blocks:
+  - activations:
+    - identity
+    destinations:
+    - Output
+    dropouts:
+    - 0.0
+    hidden_activation: rely
+    hidden_dropout: 0.5
+    hidden_layers: null
+    hidden_nodes: null
+    input_dropout: 0.0
+    input_indices: null
+    input_slice: !!python/object/apply:builtins.slice
+    - 0
+    - null
+    - 1
+    name: Block
+    nodes:
+    - !!python/object/apply:numpy.core.multiarray.scalar
+      - &id001 !!python/object/apply:numpy.dtype
+        args:
+        - i8
+        - 0
+        - 1
+        state: !!python/tuple
+        - 3
+        - <
+        - null
+        - null
+        - null
+        - -1
+        - -1
+        - 0
+      - !!binary |
+        AwAAAAAAAAA=
+    - !!python/object/apply:numpy.core.multiarray.scalar
+      - *id001
+      - !!binary |
+        AgAAAAAAAAA=
+    output_activation: identity
+    output_dropout: 0.0
+    support_input_index: 0
+    type: adjustable_mlp
+optuna:
+  hyperparameters: []
+  n_trial: 100
+  output_base_directory: models
+  setting: {}
+trainer:
+  batch_size: 1
+  compute_accuracy: false
+  element_batch_size: -1
+  element_wise: false
+  gpu_id: -1
+  input_dims:
+  - 2
+  - 1
+  input_names:
+  - x1
+  - x2
+  inputs:
+  - dim: 2
+    name: x1
+  - dim: 1
+    name: x2
+  log_trigger_epoch: 1000
+  loss_function: mse
+  n_epoch: 7000
+  name: linear
+  optimizer: adam
+  optimizer_setting:
+    alpha: 0.001
+    beta1: 0.9
+    beta2: 0.99
+    eps: 1.0e-08
+    eta: 1.0
+    weight_decay_rate: 0
+  optuna_trial: null
+  output_dims:
+  - 2
+  output_directory: tests/data/linear/long
+  output_names:
+  - y
+  outputs:
+  - dim: 2
+    name: y
+  pretrain_directory: null
+  prune: false
+  restart_directory: null
+  seed: 0
+  snapshot_choise_method: best
+  stop_trigger_epoch: 7000
+  support_input: null
+  support_inputs: null
+  use_siml_updater: true
+  validation_directories: []
