@@ -1,0 +1,16 @@
+data:
+  inferred: data/inferred
+  interim: tests/data/linear/interim
+  pad: true
+  preprocessed: tests/data/linear/preprocessed
+  raw: data/raw
+  test:
+  - data/preprocessed/test
+  train:
+  - tests/data/linear/preprocessed/train
+  validation:
+  - tests/data/linear/preprocessed/train
+preprocess:
+  x1: standardize
+  x2: std_scale
+  y: standardize
