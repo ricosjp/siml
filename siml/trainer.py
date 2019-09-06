@@ -114,7 +114,8 @@ class Trainer():
             write_simulation=False, write_npy=True,
             write_simulation_base=None, read_simulation_type='fistr',
             write_simulation_type='fistr',
-            converter_parameters_pkl=None, conversion_function=None):
+            converter_parameters_pkl=None, conversion_function=None,
+            data_addition_function=None):
         """Perform inference.
 
         Args:
@@ -156,6 +157,9 @@ class Trainer():
                 Conversion function to preprocess raw data. It should receive
                 two parameters, fem_data and raw_directory. If not fed,
                 no additional conversion occurs.
+            data_addition_function: function, optional [None]
+                Function to add some data at simulation data writing phase.
+                If not fed, no data addition occurs.
         Returns:
             inference_results: list
             Inference results contains:
@@ -224,7 +228,8 @@ class Trainer():
                     output_directory=output_directory,
                     write_simulation=write_simulation, write_npy=write_npy,
                     write_simulation_base=write_simulation_base,
-                    simulation_type=write_simulation_type)
+                    simulation_type=write_simulation_type,
+                    data_addition_function=data_addition_function)
                 for directory, x in dict_dir_x.items()]
         return inference_results
 
@@ -267,8 +272,8 @@ class Trainer():
     def _infer_single_data(
             self, postprocessor, directory, x, dict_dir_y, *, save=True,
             output_directory=None, write_simulation=False, write_npy=True,
-            write_simulation_base=None, simulation_type='fistr'):
-        # raise ValueError(x)
+            write_simulation_base=None, simulation_type='fistr',
+            data_addition_function=None):
 
         # Inference
         inferred_y = self.model(x).data
@@ -296,7 +301,8 @@ class Trainer():
             output_directory=output_directory,
             write_simulation=write_simulation, write_npy=write_npy,
             write_simulation_base=write_simulation_base,
-            simulation_type=simulation_type)
+            simulation_type=simulation_type,
+            data_addition_function=data_addition_function)
 
         # Compute loss
         if directory in dict_dir_y:

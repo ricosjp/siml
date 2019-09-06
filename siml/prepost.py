@@ -281,7 +281,8 @@ class Converter:
     def postprocess(
             self, dict_data_x, dict_data_y, output_directory=None, *,
             save_x=False, write_simulation=False, write_npy=True,
-            write_simulation_base=None, simulation_type='fistr'):
+            write_simulation_base=None, simulation_type='fistr',
+            data_addition_function=None):
         """Postprocess data with inversely converting them.
 
         Args:
@@ -329,17 +330,21 @@ class Converter:
                 self.write_simulation(
                     inversed_dict_data_y, output_directory,
                     write_simulation_base=write_simulation_base,
-                    simulation_type=simulation_type)
+                    simulation_type=simulation_type,
+                    data_addition_function=data_addition_function)
 
         return inversed_dict_data_x, inversed_dict_data_y
 
     def write_simulation(
             self, dict_data_y, output_directory, write_simulation_base, *,
-            simulation_type='fistr'):
+            simulation_type='fistr', data_addition_function=None):
         fem_data = femio.FEMData.read_directory(
             simulation_type, write_simulation_base)
         for k, v in dict_data_y.items():
             fem_data.overwrite_attribute(k, v[0])
+        if data_addition_function is not None:
+            fem_data = data_addition_function(fem_data)
+
         if simulation_type == 'fistr':
             ext = ''
         elif simulation_type == 'ucd':
