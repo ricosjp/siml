@@ -1,3 +1,10 @@
+conversion:
+  mandatory:
+  - elemental_strain
+  - modulus
+  - poisson_ratio
+  optional:
+  - elemental_stress
 data:
   inferred: data/inferred
   interim: data/interim
