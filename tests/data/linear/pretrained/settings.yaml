@@ -1,15 +1,15 @@
 data:
   inferred: data/inferred
-  interim: data/interim
+  interim: tests/data/linear/interim
   pad: true
-  preprocessed: data/preprocessed
+  preprocessed: tests/data/linear/preprocessed
   raw: data/raw
   test:
   - data/preprocessed/test
   train:
-  - tests/data/linear/train
+  - tests/data/linear/preprocessed/train
   validation:
-  - tests/data/linear/train
+  - tests/data/linear/preprocessed/validation
 model:
   blocks:
   - activations:
@@ -24,33 +24,14 @@ model:
     hidden_nodes: null
     input_dropout: 0.0
     input_indices: null
-    input_slice: !!python/object/apply:builtins.slice
+    input_slice:
     - 0
     - null
     - 1
     name: Block
     nodes:
-    - !!python/object/apply:numpy.core.multiarray.scalar
-      - &id001 !!python/object/apply:numpy.dtype
-        args:
-        - i8
-        - 0
-        - 1
-        state: !!python/tuple
-        - 3
-        - <
-        - null
-        - null
-        - null
-        - -1
-        - -1
-        - 0
-      - !!binary |
-        AwAAAAAAAAA=
-    - !!python/object/apply:numpy.core.multiarray.scalar
-      - *id001
-      - !!binary |
-        AgAAAAAAAAA=
+    - 3
+    - 2
     output_activation: identity
     output_dropout: 0.0
     support_input_index: 0

@@ -1,8 +1,8 @@
 data:
   train:
-    - tests/data/linear/train
+    - tests/data/linear/preprocessed/train
   validation:
-    - tests/data/linear/train
+    - tests/data/linear/preprocessed/train
 trainer:
   element_wise: false
   output_directory: tests/data/linear/lr

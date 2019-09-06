@@ -1,51 +1,51 @@
 [
     {
-        "main/loss": 3.946839198887348,
-        "validation/main/loss": 3.9392837242484093,
+        "main/loss": 0.4594618833239656,
+        "validation/main/loss": 0.4919352286593057,
         "epoch": 1000,
         "iteration": 2000,
-        "elapsed_time": 3.397092678
+        "elapsed_time": 2.9837332909999965
     },
     {
-        "main/loss": 0.7609085318446159,
-        "validation/main/loss": 0.7601389321237803,
+        "main/loss": 0.00035554093933256713,
+        "validation/main/loss": 0.00036908020675940944,
         "epoch": 2000,
         "iteration": 4000,
-        "elapsed_time": 7.133153135000001
+        "elapsed_time": 6.218391334
     },
     {
-        "main/loss": 0.15132244556304067,
-        "validation/main/loss": 0.15109119633678347,
+        "main/loss": 6.55497855969224e-09,
+        "validation/main/loss": 6.618413909646042e-09,
         "epoch": 3000,
         "iteration": 6000,
-        "elapsed_time": 10.85764898
+        "elapsed_time": 9.436426819999998
     },
     {
-        "main/loss": 0.0053934115076774555,
-        "validation/main/loss": 0.005369362894319579,
+        "main/loss": 5.96819325893172e-09,
+        "validation/main/loss": 6.086537085184251e-09,
         "epoch": 4000,
         "iteration": 8000,
-        "elapsed_time": 14.591957004999998
+        "elapsed_time": 12.620712672999996
     },
     {
-        "main/loss": 5.204515620595455e-09,
-        "validation/main/loss": 5.1888471264468355e-09,
+        "main/loss": 6.0126779651593906e-09,
+        "validation/main/loss": 6.14005636433157e-09,
         "epoch": 5000,
         "iteration": 10000,
-        "elapsed_time": 18.507860031
+        "elapsed_time": 15.794150431999999
     },
     {
-        "main/loss": 5.37671623842672e-09,
-        "validation/main/loss": 5.370217455965545e-09,
+        "main/loss": 5.984750086469176e-09,
+        "validation/main/loss": 6.033919788185626e-09,
         "epoch": 6000,
         "iteration": 12000,
-        "elapsed_time": 22.149514783
+        "elapsed_time": 18.932857517999995
     },
     {
-        "main/loss": 5.6309586613920895e-09,
-        "validation/main/loss": 5.632140936257445e-09,
+        "main/loss": 6.253341942139001e-09,
+        "validation/main/loss": 6.34883689215604e-09,
         "epoch": 7000,
         "iteration": 14000,
-        "elapsed_time": 25.854507458
+        "elapsed_time": 22.082183888999996
     }
 ]
