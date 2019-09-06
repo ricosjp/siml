@@ -108,10 +108,12 @@ class Trainer():
         self._load_restart_model_if_needed()
 
     def infer(
-            self, *, model_directory=None, save=True, output_directory=None,
+            self, *, model_directory=None, model_file=None,
+            save=True, output_directory=None,
             preprocessed_data_directory=None, raw_data_directory=None,
             write_simulation=False, write_npy=True,
-            write_simulation_base=None, simulation_type='fistr',
+            write_simulation_base=None, read_simulation_type='fistr',
+            write_simulation_type='fistr',
             converter_parameters_pkl=None, conversion_function=None):
         """Perform inference.
 
@@ -121,6 +123,10 @@ class Trainer():
             model_directory: pathlib.Path, optional [None]
                 Model directory path. If not fed,
                 TrainerSetting.pretrain_directory will be used.
+            model_file: pathlib.Path, optional [None]
+                Model directory path. If not fed,
+                model_directory or TrainerSetting.pretrain_directory will be
+                used.
             save: bool, optional [False]
                 If True, save inference results.
             output_directory: pathlib.Path, optional [None]
@@ -139,7 +145,9 @@ class Trainer():
             write_simulation_base: pathlib.Path, optional [None]
                 Base of simulation data to be used for write_simulation option.
                 If not fed, try to find from the input directories.
-            simulation_type: str, optional ['fistr']
+            read_simulation_type: str, optional ['fistr']
+                Simulation file type to read.
+            write_simulation_type: str, optional ['fistr']
                 Simulation file type to write.
             converter_parameters_pkl: pathlib.Path, optional [None]
                 Pickel file of converter parameters. IF not fed,
@@ -156,16 +164,17 @@ class Trainer():
                     - loss
         """
         # Define model
-        if model_directory is None:
-            if self.setting.trainer.pretrain_directory is None:
-                raise ValueError(
-                    f'No pretrain directory is specified for inference.')
-        else:
-            self.setting.trainer.pretrain_directory = model_directory
+        if model_file is None:
+            if model_directory is None:
+                if self.setting.trainer.pretrain_directory is None:
+                    raise ValueError(
+                        f'No pretrain directory is specified for inference.')
+            else:
+                self.setting.trainer.pretrain_directory = model_directory
             self._update_setting_if_needed()
 
         self.model = networks.Network(self.setting.model, self.setting.trainer)
-        self._load_pretrained_model_if_needed()
+        self._load_pretrained_model_if_needed(model_file=model_file)
         self.classifier = networks.Classifier(
             self.model, lossfun=self._create_loss_function(),
             element_batch_size=self.setting.trainer.element_batch_size)
@@ -199,7 +208,7 @@ class Trainer():
             if write_simulation_base is None:
                 write_simulation_base = raw_data_directory
             x, y = self._preprocess_data(
-                simulation_type, raw_data_directory, prepost_converter,
+                read_simulation_type, raw_data_directory, prepost_converter,
                 conversion_function=conversion_function)
             dict_dir_x = {preprocessed_data_directory: x}
             if y is None:
@@ -215,7 +224,7 @@ class Trainer():
                     output_directory=output_directory,
                     write_simulation=write_simulation, write_npy=write_npy,
                     write_simulation_base=write_simulation_base,
-                    simulation_type=simulation_type)
+                    simulation_type=write_simulation_type)
                 for directory, x in dict_dir_x.items()]
         return inference_results
 
@@ -227,6 +236,9 @@ class Trainer():
         dict_data = prepost.extract_variables(
             fem_data, self.setting.conversion.mandatory,
             optional_variables=self.setting.conversion.optional)
+        if conversion_function is not None:
+            dict_data.update(conversion_function(fem_data, raw_data_directory))
+
         converted_dict_data = prepost_converter.preprocess(dict_data)
         input_data = np.concatenate([
             converted_dict_data[input_info['name']]
@@ -256,9 +268,13 @@ class Trainer():
             self, postprocessor, directory, x, dict_dir_y, *, save=True,
             output_directory=None, write_simulation=False, write_npy=True,
             write_simulation_base=None, simulation_type='fistr'):
+        # raise ValueError(x)
 
         # Inference
         inferred_y = self.model(x).data
+        if len(x.shape) == 2:
+            x = x[None, :, :]
+            inferred_y = inferred_y[None, :, :]
         dict_var_x = self._separate_data(x, self.setting.trainer.inputs)
         dict_var_inferred_y = self._separate_data(
             inferred_y, self.setting.trainer.outputs)
@@ -355,15 +371,17 @@ class Trainer():
                 'at the same time.')
         return
 
-    def _load_pretrained_model_if_needed(self):
-        if self.setting.trainer.pretrain_directory is None:
+    def _load_pretrained_model_if_needed(self, *, model_file=None):
+        if self.setting.trainer.pretrain_directory is None \
+                and model_file is None:
             return
-        snapshot = self._select_snapshot(
-            self.setting.trainer.pretrain_directory,
-            method=self.setting.trainer.snapshot_choise_method)
+        if model_file is None:
+            model_file = self._select_snapshot(
+                self.setting.trainer.pretrain_directory,
+                method=self.setting.trainer.snapshot_choise_method)
         ch.serializers.load_npz(
-            snapshot, self.model, path='updater/model:main/predictor/')
-        print(f"{snapshot} loaded as a pretrain model.")
+            model_file, self.model, path='updater/model:main/predictor/')
+        print(f"{model_file} loaded as a pretrain model.")
         return
 
     def _load_restart_model_if_needed(self):

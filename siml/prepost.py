@@ -339,8 +339,12 @@ class Converter:
         fem_data = femio.FEMData.read_directory(
             simulation_type, write_simulation_base)
         for k, v in dict_data_y.items():
-            fem_data.overwrite_attribute(k, v)
-        fem_data.write(simulation_type, output_directory / 'mesh')
+            fem_data.overwrite_attribute(k, v[0])
+        if simulation_type == 'fistr':
+            ext = ''
+        elif simulation_type == 'ucd':
+            ext = '.inp'
+        fem_data.write(simulation_type, output_directory / ('mesh' + ext))
         return
 
     def save(self, data_dict, output_directory):
@@ -373,7 +377,6 @@ def extract_variables(
     if optional_variables is not None and len(optional_variables) > 0:
         for optional_variable in optional_variables:
             try:
-                # TODO: use `in` keyword after femio.FEMData supports it
                 optional_variable_data = fem_data.convert_nodal2elemental(
                     optional_variable, ravel=True)
                 dict_data.update({optional_variable: optional_variable_data})

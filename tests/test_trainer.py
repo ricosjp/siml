@@ -5,6 +5,7 @@ import unittest
 from chainer import testing
 import numpy as np
 
+import siml.femio as femio
 import siml.prepost as prepost
 import siml.setting as setting
 import siml.trainer as trainer
@@ -190,3 +191,60 @@ class TestTrainer(unittest.TestCase):
         np.testing.assert_almost_equal(
             res_from_raw[0][1]['elemental_stress'][0],
             res_from_preprocessed[0][1]['elemental_stress'][0], decimal=3)
+
+    def test_infer_with_raw_data_wo_answer_with_model_file(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            'tests/data/deform/incomplete_pretrained/settings.yaml')
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+
+        def conversion_function(fem_data, raw_directory=None):
+            adj, _ = fem_data.calculate_adjacency_matrix_element()
+            nadj = prepost.normalize_adjacency_matrix(adj)
+            return {'adj': adj, 'nadj': nadj}
+
+        res_from_raw = tr.infer(
+            model_file=Path(
+                'tests/data/deform/incomplete_pretrained/snapshot_epoch_5000'),
+            raw_data_directory=Path(
+                'tests/data/deform/external/tet2_4_modulusx0.9500'),
+            converter_parameters_pkl=Path(
+                'tests/data/deform/preprocessed/preprocessors.pkl'),
+            conversion_function=conversion_function, save=False)
+        res_from_preprocessed = tr.infer(
+            model_directory=Path('tests/data/deform/pretrained'),
+            preprocessed_data_directory=Path(
+                'tests/data/deform/preprocessed/test/'
+                'tet2_4_modulusx0.9500'),
+            converter_parameters_pkl=Path(
+                'tests/data/deform/preprocessed/preprocessors.pkl'))
+        np.testing.assert_almost_equal(
+            res_from_raw[0][1]['elemental_stress'][0],
+            res_from_preprocessed[0][1]['elemental_stress'][0], decimal=3)
+
+    def test_infer_to_write_simulation_file(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            'tests/data/deform/incomplete_pretrained/settings.yaml')
+        output_directory = Path('tests/data/deform/write_simulation')
+
+        tr = trainer.Trainer(main_setting)
+        if output_directory.exists():
+            shutil.rmtree(output_directory)
+
+        res_from_preprocessed = tr.infer(
+            model_directory=Path('tests/data/deform/pretrained'),
+            output_directory=output_directory,
+            preprocessed_data_directory=Path(
+                'tests/data/deform/preprocessed/test/'
+                'tet2_4_modulusx0.9500'),
+            converter_parameters_pkl=Path(
+                'tests/data/deform/preprocessed/preprocessors.pkl'),
+            write_simulation_base=Path(
+                'tests/data/deform/raw/test/tet2_4_modulusx0.9500'),
+            write_simulation=True, write_simulation_type='ucd')
+        fem_data = femio.FEMData.read_files(
+            'ucd', [output_directory / 'mesh.inp'])
+        np.testing.assert_almost_equal(
+            fem_data.access_attribute('elemental_stress'),
+            res_from_preprocessed[0][1]['elemental_stress'][0], decimal=7)
