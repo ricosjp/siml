@@ -1,15 +1,22 @@
 data:
-  inferred: data/inferred
-  interim: data/interim
+  inferred: tests/data/deform/inferred
+  interim: tests/data/deform/interim
   pad: true
-  preprocessed: data/preprocessed
-  raw: data/raw
+  preprocessed: tests/data/deform/preprocessed
+  raw: tests/data/deform/raw
   test:
-  - data/preprocessed/test
+  - tests/data/deform/preprocessed/test
   train:
-  - data/preprocessed/train
+  - tests/data/deform/preprocessed/train
   validation:
-  - data/preprocessed/validation
+  - tests/data/deform/preprocessed/validation
+conversion:
+  mandatory:
+    - elemental_strain
+    - modulus
+    - poisson_ratio
+  optional:
+    - elemental_stress
 preprocess:
   adj: identity
   elemental_strain: std_scale
@@ -17,4 +24,3 @@ preprocess:
   modulus: std_scale
   nadj: identity
   poisson_ratio: identity
-

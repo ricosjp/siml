@@ -3,6 +3,7 @@
 import datetime as dt
 import itertools as it
 from pathlib import Path
+import pickle
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -173,11 +174,19 @@ class Preprocessor:
                 interim_directories, list(self.setting.preprocess.keys())[0])
 
         # Preprocess data variable by variable
+        dict_preprocessor_settings = {}
         for variable_name, preprocess_method \
                 in self.setting.preprocess.items():
-            self.preprocess_single_variable(
+            parameters = self.preprocess_single_variable(
                 interim_directories, variable_name, preprocess_method,
                 str_replace='interim', force_renew=force_renew)
+            dict_preprocessor_settings.update({
+                variable_name:
+                {'method': preprocess_method, 'parameters': parameters}})
+        with open(
+                self.setting.data.preprocessed / 'preprocessors.pkl',
+                'wb') as f:
+            pickle.dump(dict_preprocessor_settings, f)
         return
 
     def _determine_max_n_element(self, data_directories, variable_name):
@@ -204,7 +213,7 @@ class Preprocessor:
             force_renew: bool, optional [False]
                 If True, renew npy files even if they are alerady exist.
         Returns:
-            None
+            preprocessor_parameters: dict
         """
 
         # Check if data already exists
@@ -242,55 +251,64 @@ class Preprocessor:
 
             (output_directory / self.FINISHED_FILE).touch()
 
-        # Save preprocessor parameters
         yaml_file = self.setting.data.preprocessed / 'settings.yml'
         if not yaml_file.exists():
             setting.write_yaml(self.setting, yaml_file)
-        preprocessor.save(
-            self.setting.data.preprocessed
-            / ('preprocessor_' + variable_name + '.npy'))
-        return
+        return preprocessor.parameters
 
 
-class Postprocessor:
+class Converter:
 
-    @classmethod
-    def read_settings(cls, settings_yaml):
-        preprocess_setting = setting.PreprocessSetting.read_settings_yaml(
-            settings_yaml)
-        return cls(preprocess_setting)
+    def __init__(self, converter_parameters_pkl):
+        self.converters = self._generate_converters(converter_parameters_pkl)
 
-    @classmethod
-    def read_main_setting(cls, main_setting):
-        """Read MainSetting object to create Postprocessor object.
+    def _generate_converters(self, converter_parameters_pkl):
+        with open(converter_parameters_pkl, 'rb') as f:
+            dict_preprocessor_settings = pickle.load(f)
 
-        Args:
-            main_setting: MainSetting
-        Returns:
-            postprocessor: Postprocessor
-        """
-        yamls = list(main_setting.data.preprocessed.glob('*.y*ml'))
-        if len(yamls) != 1:
-            raise ValueError(f"{len(yamls)} yaml files found.")
-        return cls.read_settings(yamls[0])
-
-    def __init__(self, setting):
-        self.setting = setting
-        self.converters = self.generate_converters()
-
-    def generate_converters(self):
         converters = {
-            variable_name: util.create_converter(
-                preprocess_method,
-                parameter_file=self.setting.data.preprocessed
-                / f"preprocessor_{variable_name}.npy")
-            for variable_name, preprocess_method
-            in self.setting.preprocess.items()}
+            variable_name: util.generate_converter_from_dict(value)
+            for variable_name, value in dict_preprocessor_settings.items()}
         return converters
+
+    def preprocess(self, dict_data_x):
+        converted_dict_data_x = {
+            variable_name:
+            self.converters[variable_name].transform(data)
+            for variable_name, data in dict_data_x.items()}
+        return converted_dict_data_x
 
     def postprocess(
             self, dict_data_x, dict_data_y, output_directory=None, *,
-            save_x=False):
+            save_x=False, write_simulation=False, write_npy=True,
+            write_simulation_base=None, simulation_type='fistr',
+            data_addition_function=None):
+        """Postprocess data with inversely converting them.
+
+        Args:
+            dict_data_x: dict
+                Dict of input data.
+            dict_data_y: dict
+                Dict of output data.
+            output_directory: pathlib.Path, optional [None]
+                Output directory path.
+            save_x: bool, optional [False]
+                If True, save input values in addition to output values.
+            write_simulation: bool, optional [False]
+                If True, write simulation data file(s) based on the inference.
+            write_npy: bool, optional [True]
+                If True, write npy files of inferences.
+            write_simulation_base: pathlib.Path, optional [None]
+                Base of simulation data to be used for write_simulation option.
+                If not fed, try to find from the input directories.
+            simulation_type: str, optional ['fistr']
+                Simulation file type to write.
+        Returns:
+            inversed_dict_data_x: dict
+                Inversed input data.
+            inversed_dict_data_y: dict
+                Inversed output data.
+        """
         inversed_dict_data_x = {
             variable_name:
             self.converters[variable_name].inverse(data)
@@ -300,9 +318,39 @@ class Postprocessor:
             self.converters[variable_name].inverse(data)
             for variable_name, data in dict_data_y.items()}
 
-        if save_x:
-            self.save(inversed_dict_data_x, output_directory)
-        self.save(inversed_dict_data_y, output_directory)
+        # Save data
+        if output_directory is not None:
+            if write_npy:
+                if save_x:
+                    self.save(inversed_dict_data_x, output_directory)
+                self.save(inversed_dict_data_y, output_directory)
+            if write_simulation:
+                if write_simulation_base is None:
+                    raise ValueError('No write_simulation_base fed.')
+                self.write_simulation(
+                    inversed_dict_data_y, output_directory,
+                    write_simulation_base=write_simulation_base,
+                    simulation_type=simulation_type,
+                    data_addition_function=data_addition_function)
+
+        return inversed_dict_data_x, inversed_dict_data_y
+
+    def write_simulation(
+            self, dict_data_y, output_directory, write_simulation_base, *,
+            simulation_type='fistr', data_addition_function=None):
+        fem_data = femio.FEMData.read_directory(
+            simulation_type, write_simulation_base)
+        for k, v in dict_data_y.items():
+            fem_data.overwrite_attribute(k, v[0])
+        if data_addition_function is not None:
+            fem_data = data_addition_function(fem_data)
+
+        if simulation_type == 'fistr':
+            ext = ''
+        elif simulation_type == 'ucd':
+            ext = '.inp'
+        fem_data.write(simulation_type, output_directory / ('mesh' + ext))
+        return
 
     def save(self, data_dict, output_directory):
         if not output_directory.exists():
@@ -331,13 +379,14 @@ def extract_variables(
         mandatory_variable: fem_data.convert_nodal2elemental(
             mandatory_variable, ravel=True)
         for mandatory_variable in mandatory_variables}
-    if optional_variables is not None:
+    if optional_variables is not None and len(optional_variables) > 0:
         for optional_variable in optional_variables:
-            if (optional_variable in fem_data.nodal_data) \
-                    or optional_variable in fem_data.elemental_data:
+            try:
                 optional_variable_data = fem_data.convert_nodal2elemental(
                     optional_variable, ravel=True)
                 dict_data.update({optional_variable: optional_variable_data})
+            except ValueError:
+                continue
     return dict_data
 
 

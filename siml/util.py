@@ -156,7 +156,23 @@ def create_converter(
     else:
         raise ValueError(
             'Cannot initialize converter without '
-            'neither data nor parameter file.')
+            'neither data nor parameter file nor setting_dict.')
+
+    return converter
+
+
+def generate_converter_from_dict(setting_dict):
+    preprocess_method = setting_dict['method']
+    if preprocess_method == 'identity':
+        generator = IdentityConverter
+    elif preprocess_method == 'standardize':
+        generator = Standardizer
+    elif preprocess_method == 'std_scale':
+        generator = StandardScaler
+    else:
+        raise ValueError(
+            f"Unknown preprocessing method: {preprocess_method}")
+    converter = generator(**setting_dict['parameters'])
 
     return converter
 
@@ -166,6 +182,11 @@ class AbstractConverter(abc.ABC):
     @classmethod
     @abc.abstractmethod
     def lazy_read_files(cls, data_files):
+        pass
+
+    @property
+    @abc.abstractmethod
+    def parameters(self):
         pass
 
     @abc.abstractmethod
@@ -196,6 +217,10 @@ class IdentityConverter(AbstractConverter):
     def lazy_read_files(cls, data_files):
         return cls()
 
+    @property
+    def parameters(self):
+        return {}
+
     def transform(self, data):
         return data
 
@@ -217,6 +242,10 @@ class Standardizer(AbstractConverter):
         self.mean_square = mean_square
         self.n = n
         self.is_updatable = self.mean_square is not None and self.n is not None
+
+    @property
+    def parameters(self):
+        return {'std': self.std, 'mean': self.mean}
 
     @classmethod
     def read_data(cls, data):
@@ -266,6 +295,10 @@ class StandardScaler(Standardizer):
 
     def __init__(self, std, *, mean_square=None, n=None, mean=None):
         super().__init__(mean=0.0, std=std, mean_square=mean_square, n=n)
+
+    @property
+    def parameters(self):
+        return {'std': self.std}
 
     def transform(self, data):
         return data / (self.std + self.EPSILON)

@@ -319,8 +319,15 @@ class OptunaSetting(TypedDataClass):
 
 
 @dc.dataclass
+class ConversionSetting:
+    mandatory: typing.List[str] = dc.field(default_factory=list)
+    optional: typing.List[str] = dc.field(default_factory=list)
+
+
+@dc.dataclass
 class MainSetting:
     data: DataSetting = DataSetting()
+    conversion: ConversionSetting = ConversionSetting()
     trainer: TrainerSetting = TrainerSetting()
     model: ModelSetting = ModelSetting()
     optuna: OptunaSetting = OptunaSetting()
@@ -340,6 +347,11 @@ class MainSetting:
             data_setting = DataSetting(**dict_settings['data'])
         else:
             data_setting = DataSetting()
+        if 'conversion' in dict_settings:
+            conversion_setting = ConversionSetting(
+                **dict_settings['conversion'])
+        else:
+            conversion_setting = ConversionSetting()
         if 'trainer' in dict_settings:
             trainer_setting = TrainerSetting(**dict_settings['trainer'])
         else:
@@ -354,7 +366,8 @@ class MainSetting:
             optuna_setting = OptunaSetting()
 
         return cls(
-            data=data_setting, trainer=trainer_setting, model=model_setting,
+            data=data_setting, conversion=conversion_setting,
+            trainer=trainer_setting, model=model_setting,
             optuna=optuna_setting)
 
     def __post_init__(self):
@@ -365,9 +378,9 @@ class MainSetting:
         # NOTE: Basically Chainer can infer input dimension, but not the case
         # when chainer.functions.einsum is used.
         if self.model.blocks[0].nodes[0] < 0:
-            self.model.blocks[0].nodes[0] = input_length
+            self.model.blocks[0].nodes[0] = int(input_length)
         if self.model.blocks[-1].nodes[-1] < 0:
-            self.model.blocks[-1].nodes[-1] = output_length
+            self.model.blocks[-1].nodes[-1] = int(output_length)
 
     def update_with_dict(self, new_dict):
         original_dict = dc.asdict(self)
@@ -427,6 +440,8 @@ def write_yaml(data_class, file_name):
 def _standardize_data(data):
     if isinstance(data, list):
         return [_standardize_data(d) for d in data]
+    elif isinstance(data, slice):
+        return [data.start, data.stop, data.step]
     elif isinstance(data, dict):
         return {k: _standardize_data(v) for k, v in data.items()}
     elif isinstance(data, Path):

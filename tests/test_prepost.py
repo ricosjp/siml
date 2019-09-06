@@ -64,7 +64,7 @@ class TestPrepost(unittest.TestCase):
                 [0., 1.],
                 [1., 0.],
             ])
-        np.testing.assert_array_almost_equal(centers, answer)
+        np.testing.assert_array_almost_equal(centers, answer, decimal=1)
         np.testing.assert_array_almost_equal(
             array_means[0], answer, decimal=1)
         np.testing.assert_array_almost_equal(
@@ -145,3 +145,78 @@ class TestPrepost(unittest.TestCase):
             np.std(pre_standardize, axis=0), 1. + epsilon, decimal=3)
         np.testing.assert_almost_equal(
             np.mean(pre_standardize, axis=0), np.zeros(5), decimal=5)
+
+    def test_postprocessor(self):
+        data_setting = setting.DataSetting(
+            interim='tests/data/prepost/interim',
+            preprocessed='tests/data/prepost/preprocessed',
+            pad=False
+        )
+        preprocess_setting = setting.PreprocessSetting(
+            data_setting, {
+                'identity': 'identity', 'std_scale': 'std_scale',
+                'standardize': 'standardize'}
+        )
+
+        # Clean up data
+        shutil.rmtree(data_setting.interim, ignore_errors=True)
+        shutil.rmtree(data_setting.preprocessed, ignore_errors=True)
+        data_setting.preprocessed.mkdir(parents=True)
+
+        # Create data
+        interim_paths = [
+            data_setting.interim / 'a',
+            data_setting.interim / 'b']
+        for i, interim_path in enumerate(interim_paths):
+            interim_path.mkdir(parents=True)
+            n_element = np.random.randint(1e4)
+            identity = np.random.randint(2, size=(n_element, 1))
+            std_scale = np.random.rand(n_element, 3) * 5 * i
+            standardize = np.random.randn(n_element, 5) * 2 * i \
+                + i * np.array([[.1, .2, .3, .4, .5]])
+            np.save(interim_path / 'identity.npy', identity)
+            np.save(interim_path / 'std_scale.npy', std_scale)
+            np.save(interim_path / 'standardize.npy', standardize)
+            (interim_path / 'converted').touch()
+
+        # Preprocess data
+        preprocessor = pre.Preprocessor(preprocess_setting)
+        preprocessor.preprocess_interim_data()
+
+        postprocessor = pre.Converter(
+            'tests/data/prepost/preprocessed/preprocessors.pkl')
+        preprocessed_paths = [
+            data_setting.preprocessed / 'a',
+            data_setting.preprocessed / 'b']
+        for interim_path, preprocessed_path in zip(
+                interim_paths, preprocessed_paths):
+            dict_data_x = {
+                'identity': np.load(preprocessed_path / 'identity.npy'),
+                'std_scale': np.load(preprocessed_path / 'std_scale.npy')}
+            dict_data_y = {
+                'standardize': np.load(preprocessed_path / 'standardize.npy')}
+            inv_dict_data_x, inv_dict_data_y = postprocessor.postprocess(
+                dict_data_x, dict_data_y)
+            for k, v in inv_dict_data_x.items():
+                interim_data = np.load(interim_path / (k + '.npy'))
+                np.testing.assert_almost_equal(interim_data, v, decimal=5)
+            for k, v in inv_dict_data_y.items():
+                interim_data = np.load(interim_path / (k + '.npy'))
+                np.testing.assert_almost_equal(interim_data, v, decimal=5)
+
+    def test_preprocess_deform(self):
+        shutil.rmtree('tests/data/deform/interim', ignore_errors=True)
+        shutil.rmtree('tests/data/deform/preprocessed', ignore_errors=True)
+
+        def conversion_function(fem_data, raw_directory=None):
+            adj, _ = fem_data.calculate_adjacency_matrix_element()
+            nadj = pre.normalize_adjacency_matrix(adj)
+            return {'adj': adj, 'nadj': nadj}
+        pre.convert_raw_data(
+            'tests/data/deform/raw',
+            ['elemental_strain', 'elemental_stress',
+             'modulus', 'poisson_ratio'],
+            output_base_directory='tests/data/deform/interim', recursive=True,
+            conversion_function=conversion_function)
+        p = pre.Preprocessor.read_settings('tests/data/deform/data.yml')
+        p.preprocess_interim_data()

@@ -1,10 +1,16 @@
 data:
+  interim: tests/data/linear/interim
+  preprocessed: tests/data/linear/preprocessed
   train:
-    - tests/data/linear/train
+    - tests/data/linear/preprocessed/train
   validation:
-    - tests/data/linear/train
+    - tests/data/linear/preprocessed/validation
+preprocess:
+  x1: standardize
+  x2: std_scale
+  y: standardize
 trainer:
-  output_directory: tests/data/linear/tmp
+  output_directory: tests/data/linear/long
   inputs:
     - name: x1
       dim: 2
