@@ -1,7 +1,7 @@
 data:
   inferred: data/inferred
   interim: tests/data/linear/interim
-  pad: true
+  pad: false
   preprocessed: tests/data/linear/preprocessed
   raw: data/raw
   test:

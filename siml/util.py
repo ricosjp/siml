@@ -689,6 +689,15 @@ def dir2name(dir_name):
         return name
 
 
+def concat_examples(batch, device=None):
+    x = ch.dataset.to_device(
+        device, ch.functions.pad_sequence([b['x'] for b in batch]).data)
+    original_lengths = [b['x'].shape[0] for b in batch]
+    t = ch.dataset.to_device(
+        device, np.concatenate([b['t'] for b in batch]))
+    return {'x': x, 't': t, 'original_lengths': original_lengths}
+
+
 def generate_converter(support_train):
     # NOTE: Assume orders are the same for all support inputs
     sparse = support_train[0][0]
@@ -696,17 +705,33 @@ def generate_converter(support_train):
 
     def convert_example_with_support(batch, device=None):
         x = ch.dataset.to_device(
-            device, np.stack([b['x'] for b in batch]))
+            device, ch.functions.pad_sequence([b['x'] for b in batch]).data)
+        original_lengths = [b['x'].shape[0] for b in batch]
         t = ch.dataset.to_device(
-            device, np.stack([b['t'] for b in batch]))
+            device, np.concatenate([b['t'] for b in batch]))
+        length = x.shape[1]
         supports = [
             [
-                convert_sparse_to_chainer(sparse, device=device, order=order)
+                convert_sparse_to_chainer(
+                    pad_sparse(sparse, length), device=device, order=order)
                 for sparse in b['supports']]
             for b in batch]
-        return {'x': x, 't': t, 'supports': supports}
+        return {
+            'x': x, 't': t, 'supports': supports,
+            'original_lengths': original_lengths}
 
     return convert_example_with_support
+
+
+def pad_sparse_sequence(sparse_sequence):
+    length = np.max([s.shape[0] for s in sparse_sequence])
+    return [pad_sparse(s, length) for s in sparse_sequence]
+
+
+def pad_sparse(sparse_matrix, length):
+    return sp.coo_matrix(
+        (sparse_matrix.data, (sparse_matrix.row, sparse_matrix.col)),
+        shape=(length, length))
 
 
 def element_wise_converter(batch, device=None):

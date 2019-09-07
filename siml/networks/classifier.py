@@ -19,20 +19,26 @@ class Classifier(ch.link.Chain):
         with self.init_scope():
             self.predictor = predictor
 
-    def __call__(self, x, t, supports=None):
+    def __call__(self, x, t, original_lengths=None, supports=None):
         self.y = None
         self.loss = None
         self.accuracy = None
 
-        self.y = self.predictor(x, supports)
+        if original_lengths is None:
+            original_lengths = [x.shape[1]] * x.shape[0]
+
+        self.y = ch.functions.concat([
+            y_[:l_] for y_, l_
+            in zip(self.predictor(x, supports), original_lengths)], axis=0)
         self.loss = self.lossfun(self.y, t)
         ch.report({'loss': ch.backends.cuda.to_cpu(self.loss.data)}, self)
+
         if self.accfun is not None:
             self.accuracy = self.accfun(self.y, t)
             ch.report({'accuracy': self.accuracy}, self)
 
         if self.element_batch_size > 0:
-            length = self.y.shape[-2]
+            length = len(self.y)
             if self.element_batch_size >= length:
                 indices = 1  # No split
             else:
@@ -40,9 +46,9 @@ class Classifier(ch.link.Chain):
                     self.element_batch_size, length, self.element_batch_size)
 
             split_ys = ch.functions.split_axis(
-                self.y, indices, axis=-2)
+                self.y, indices, axis=0)
             split_ts = ch.functions.split_axis(
-                t, indices, axis=-2)
+                t, indices, axis=0)
 
             losses = [
                 self.lossfun(split_y, split_t)

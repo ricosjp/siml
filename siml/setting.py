@@ -98,7 +98,13 @@ class DataSetting(TypedDataClass):
         default_factory=lambda: [Path('data/preprocessed/validation')])
     test: typing.List[Path] = dc.field(
         default_factory=lambda: [Path('data/preprocessed/test')])
-    pad: bool = True
+    pad: bool = False
+
+    def __post_init__(self):
+        if self.pad:
+            raise ValueError(
+                f"pad = True option is deprecated. Set pad = False")
+        super().__post_init__()
 
 
 @dc.dataclass
