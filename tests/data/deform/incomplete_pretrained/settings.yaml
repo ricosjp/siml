@@ -8,7 +8,7 @@ conversion:
 data:
   inferred: data/inferred
   interim: data/interim
-  pad: true
+  pad: false
   preprocessed: data/preprocessed
   raw: data/raw
   test:

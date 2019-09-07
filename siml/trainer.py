@@ -307,7 +307,7 @@ class Trainer():
         # Compute loss
         if directory in dict_dir_y:
             # Answer data exists
-            loss = self.classifier(x, dict_dir_y[directory]).data
+            loss = self.classifier(x, dict_dir_y[directory][0]).data
             print(f"data: {directory}")
             print(f"loss: {loss}")
             if save:
@@ -451,7 +451,7 @@ class Trainer():
 
         # Converter setting
         if self.setting.trainer.support_inputs is None:
-            converter = ch.dataset.concat_examples
+            converter = util.concat_examples
         else:
             converter = util.generate_converter(support_train)
 

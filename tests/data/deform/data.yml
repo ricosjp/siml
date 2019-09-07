@@ -1,7 +1,7 @@
 data:
   inferred: tests/data/deform/inferred
   interim: tests/data/deform/interim
-  pad: true
+  pad: false
   preprocessed: tests/data/deform/preprocessed
   raw: tests/data/deform/raw
   test:

@@ -248,3 +248,76 @@ class TestTrainer(unittest.TestCase):
         np.testing.assert_almost_equal(
             fem_data.access_attribute('elemental_stress'),
             res_from_preprocessed[0][1]['elemental_stress'][0], decimal=7)
+
+    def test_gradient_consistency_with_padding(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            'tests/data/linear/linear.yml')
+        tr = trainer.Trainer(main_setting)
+        tr._prepare_training()
+        x = np.reshape(np.arange(5*3), (1, 5, 3)).astype(np.float32) * .1
+        y = (x[:, :, :2] * 2 - .5)[0]
+
+        padded_x = np.concatenate([x, np.zeros((1, 2, 3))], axis=1).astype(
+            np.float32)
+        # padded_y = np.concatenate([y, np.zeros((1, 2, 2))], axis=1).astype(
+        #     np.float32)
+
+        tr.classifier.cleargrads()
+        loss_wo_padding = tr.classifier(x, y)
+        loss_wo_padding.backward()
+        w_grad_wo_padding = tr.model.chains[0][0].W.grad
+        b_grad_wo_padding = tr.model.chains[0][0].b.grad
+        tr.classifier.cleargrads()
+        loss_w_padding = tr.classifier(
+            padded_x, y, original_lengths=([5]))
+        loss_wo_padding.backward()
+        w_grad_w_padding = tr.model.chains[0][0].W.grad
+        b_grad_w_padding = tr.model.chains[0][0].b.grad
+
+        np.testing.assert_almost_equal(
+            loss_wo_padding.data, loss_w_padding.data)
+        np.testing.assert_almost_equal(w_grad_wo_padding, w_grad_w_padding)
+        np.testing.assert_almost_equal(b_grad_wo_padding, b_grad_w_padding)
+
+    def test_gradient_consistency_with_padding_with_element_batch(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            'tests/data/linear/linear_element_batch.yml')
+        main_setting.trainer.element_batch_size = 4
+        tr = trainer.Trainer(main_setting)
+        tr._prepare_training()
+        x = np.reshape(np.arange(5*3), (1, 5, 3)).astype(np.float32) * .1
+        y = (x[:, :, :2] * 2 - .5)[0]
+
+        padded_x = np.concatenate([x, np.zeros((1, 2, 3))], axis=1).astype(
+            np.float32)
+
+        tr.classifier.cleargrads()
+        loss_wo_padding, losses_wo_padding = tr.classifier(x, y)
+        loss_wo_padding.backward()
+        w_grad_wo_padding = tr.model.chains[0][0].W.grad
+        b_grad_wo_padding = tr.model.chains[0][0].b.grad
+        tr.classifier.cleargrads()
+        loss_w_padding, losses_w_padding = tr.classifier(
+            padded_x, y, original_lengths=([5]))
+        loss_wo_padding.backward()
+        w_grad_w_padding = tr.model.chains[0][0].W.grad
+        b_grad_w_padding = tr.model.chains[0][0].b.grad
+
+        np.testing.assert_almost_equal(
+            loss_wo_padding.data, loss_w_padding.data)
+        np.testing.assert_almost_equal(w_grad_wo_padding, w_grad_w_padding)
+        np.testing.assert_almost_equal(b_grad_wo_padding, b_grad_w_padding)
+
+        for l_wo, l_w in zip(losses_wo_padding, losses_w_padding):
+            tr.classifier.cleargrads()
+            l_wo.backward()
+            w_grad_wo_padding = tr.model.chains[0][0].W.grad
+            b_grad_wo_padding = tr.model.chains[0][0].b.grad
+
+            tr.classifier.cleargrads()
+            l_w.backward()
+            w_grad_w_padding = tr.model.chains[0][0].W.grad
+            b_grad_w_padding = tr.model.chains[0][0].b.grad
+
+            np.testing.assert_almost_equal(w_grad_wo_padding, w_grad_w_padding)
+            np.testing.assert_almost_equal(b_grad_wo_padding, b_grad_w_padding)
