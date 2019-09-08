@@ -77,7 +77,8 @@ class Trainer():
         self.model = networks.Network(self.setting.model, self.setting.trainer)
         self.classifier = networks.Classifier(
             self.model, lossfun=self._create_loss_function(),
-            element_batch_size=self.setting.trainer.element_batch_size)
+            element_batch_size=self.setting.trainer.element_batch_size,
+            element_wise=self.setting.trainer.element_wise)
         self.classifier.compute_accuracy = \
             self.setting.trainer.compute_accuracy
 
@@ -450,10 +451,13 @@ class Trainer():
         optimizer.setup(self.classifier)
 
         # Converter setting
-        if self.setting.trainer.support_inputs is None:
-            converter = util.concat_examples
+        if self.setting.trainer.element_wise:
+            converter = ch.dataset.concat_examples
         else:
-            converter = util.generate_converter(support_train)
+            if self.setting.trainer.support_inputs is None:
+                converter = util.concat_examples
+            else:
+                converter = util.generate_converter(support_train)
 
         # Updater setting
         if self.setting.trainer.use_siml_updater:
