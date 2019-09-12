@@ -340,15 +340,20 @@ class MainSetting:
 
     @classmethod
     def read_settings_yaml(cls, settings_yaml):
-        settings_yaml = Path(settings_yaml)
-
-        dict_settings = util.load_yaml_file(settings_yaml)
-        return cls.read_dict_settings(dict_settings, name=settings_yaml.stem)
+        dict_settings = util.load_yaml(settings_yaml)
+        if isinstance(settings_yaml, Path):
+            name = settings_yaml.stem
+        else:
+            name = None
+        return cls.read_dict_settings(dict_settings, name=name)
 
     @classmethod
     def read_dict_settings(cls, dict_settings, *, name=None):
         if 'name' not in dict_settings['trainer']:
-            dict_settings['trainer']['name'] = name
+            if name is None:
+                dict_settings['trainer']['name'] = 'unnamed'
+            else:
+                dict_settings['trainer']['name'] = name
         if 'data' in dict_settings:
             data_setting = DataSetting(**dict_settings['data'])
         else:
