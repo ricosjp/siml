@@ -1,6 +1,7 @@
 """Module for preprocessing."""
 
 import datetime as dt
+import io
 import itertools as it
 from pathlib import Path
 import pickle
@@ -263,8 +264,15 @@ class Converter:
         self.converters = self._generate_converters(converter_parameters_pkl)
 
     def _generate_converters(self, converter_parameters_pkl):
-        with open(converter_parameters_pkl, 'rb') as f:
-            dict_preprocessor_settings = pickle.load(f)
+        if isinstance(converter_parameters_pkl, io.BufferedIOBase):
+            dict_preprocessor_settings = pickle.load(converter_parameters_pkl)
+        elif isinstance(converter_parameters_pkl, Path):
+            with open(converter_parameters_pkl, 'rb') as f:
+                dict_preprocessor_settings = pickle.load(f)
+        else:
+            raise ValueError(
+                f"Input type {converter_parameters_pkl.__class__} not "
+                'understood')
 
         converters = {
             variable_name: util.generate_converter_from_dict(value)
