@@ -184,7 +184,7 @@ class TestPrepost(unittest.TestCase):
         preprocessor.preprocess_interim_data()
 
         postprocessor = pre.Converter(
-            'tests/data/prepost/preprocessed/preprocessors.pkl')
+            Path('tests/data/prepost/preprocessed/preprocessors.pkl'))
         preprocessed_paths = [
             data_setting.preprocessed / 'a',
             data_setting.preprocessed / 'b']
@@ -220,3 +220,12 @@ class TestPrepost(unittest.TestCase):
             conversion_function=conversion_function)
         p = pre.Preprocessor.read_settings('tests/data/deform/data.yml')
         p.preprocess_interim_data()
+
+    def test_generate_converters(self):
+        preprocessors_file = Path('tests/data/prepost/preprocessors.pkl')
+        real_file_converter = pre.Converter(preprocessors_file)
+        with open(preprocessors_file, 'rb') as f:
+            file_like_object_converter = pre.Converter(f)
+        np.testing.assert_almost_equal(
+            real_file_converter.converters['sharp20'].parameters['std'],
+            file_like_object_converter.converters['sharp20'].parameters['std'])
