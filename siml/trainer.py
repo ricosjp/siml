@@ -209,6 +209,11 @@ class Trainer():
             dict_dir_y = self._load_data(
                 self.setting.trainer.output_names, input_directories,
                 return_dict=True)
+            # dict_dir_x = {preprocessed_data_directory: x}
+            # if y is None:
+            #     dict_dir_y = {}
+            # else:
+            #     dict_dir_y = {preprocessed_data_directory: y}
 
         else:
             # Inference based on raw data
@@ -342,7 +347,16 @@ class Trainer():
         # Compute loss
         if directory in dict_dir_y:
             # Answer data exists
-            loss = self.classifier(x, dict_dir_y[directory][0]).data
+            if len(dict_dir_y[directory].shape) == 2:
+                loss = self.classifier.lossfun(
+                    inferred_y[0], dict_dir_y[directory]).data
+            elif len(dict_dir_y[directory].shape) == 3:
+                loss = self.classifier.lossfun(
+                    inferred_y, dict_dir_y[directory]).data
+            else:
+                raise ValueError(
+                    f"Unknown shape of y: {dict_dir_y[directory].shape}")
+            # loss = self.classifier(x, dict_dir_y[directory]).data
             print(f"data: {directory}")
             print(f"loss: {loss}")
             if save:
@@ -618,7 +632,12 @@ class Trainer():
             if len(support_data[0]) > 0:
                 raise ValueError(
                     'Cannot use support_input if element_wise is True')
-            return np.concatenate(data), None
+            if return_dict:
+                return {
+                    data_directory:
+                    d for data_directory, d in zip(data_directories, data)}
+            else:
+                return np.concatenate(data), None
         if return_dict:
             if len(supports) > 0:
                 return {

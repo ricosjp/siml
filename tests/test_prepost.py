@@ -98,7 +98,7 @@ class TestPrepost(unittest.TestCase):
             data_setting.interim / 'b']
         for i, interim_path in enumerate(interim_paths):
             interim_path.mkdir(parents=True)
-            n_element = np.random.randint(1e4)
+            n_element = np.random.randint(1e4, 2e4)
             identity = np.random.randint(2, size=(n_element, 1))
             std_scale = np.random.rand(n_element, 3) * 5 * i
             standardize = np.random.randn(n_element, 5) * 2 * i \
