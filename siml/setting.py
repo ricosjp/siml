@@ -232,12 +232,15 @@ class TrainerSetting(TypedDataClass):
                 'eta': 1.0,
                 'weight_decay_rate': 0}
         if self.element_wise:
-            print(f"element_wise is True. Overwrite settings.")
-            self.batch_size = self.element_batch_size
-            self.element_batch_size = -1
-            self.use_siml_updater = False
+            self.overwrite_element_wise_setting()
 
         super().__post_init__()
+
+    def overwrite_element_wise_setting(self):
+        print(f"element_wise is True. Overwrite settings.")
+        self.batch_size = self.element_batch_size
+        self.element_batch_size = -1
+        self.use_siml_updater = False
 
     def update_output_directory(self, *, id_=None, base=None):
         if base is None:
