@@ -29,7 +29,7 @@ class TestTrainer(unittest.TestCase):
         if tr.setting.trainer.output_directory.exists():
             shutil.rmtree(tr.setting.trainer.output_directory)
         loss = tr.train()
-        np.testing.assert_array_less(loss, 2.)
+        np.testing.assert_array_less(loss, 3.)
 
     def test_train_general_block(self):
         main_setting = setting.MainSetting.read_settings_yaml(
@@ -38,7 +38,7 @@ class TestTrainer(unittest.TestCase):
         if tr.setting.trainer.output_directory.exists():
             shutil.rmtree(tr.setting.trainer.output_directory)
         loss = tr.train()
-        np.testing.assert_array_less(loss, 2.)
+        np.testing.assert_array_less(loss, 3.)
 
     def test_train_general_block_input_selection(self):
         main_setting = setting.MainSetting.read_settings_yaml(
@@ -47,7 +47,7 @@ class TestTrainer(unittest.TestCase):
         if tr.setting.trainer.output_directory.exists():
             shutil.rmtree(tr.setting.trainer.output_directory)
         loss = tr.train()
-        np.testing.assert_array_less(loss, 2.)
+        np.testing.assert_array_less(loss, 3.)
 
     @testing.attr.multi_gpu(2)
     def test_train_general_block_gpu(self):
@@ -58,7 +58,7 @@ class TestTrainer(unittest.TestCase):
         if tr.setting.trainer.output_directory.exists():
             shutil.rmtree(tr.setting.trainer.output_directory)
         loss = tr.train()
-        np.testing.assert_array_less(loss, 2.)
+        np.testing.assert_array_less(loss, 3.)
 
     def test_train_element_wise(self):
         main_setting = setting.MainSetting.read_settings_yaml(
