@@ -122,6 +122,9 @@ def collect_data_directories(
         found_directories: list of pathlib.Path
             All found directories.
     """
+    if not base_directory.exists():
+        raise ValueError(f"{base_directory} not exist")
+
     found_directories = [
         directory
         for directory in base_directory.iterdir()
@@ -152,6 +155,8 @@ def files_exist(directory, file_names):
         files_exist: bool
             True if all files exist. Otherwise False.
     """
+    if isinstance(file_names, str):
+        file_names = [file_names]
     a = np.all([
         len(list(directory.glob(file_name))) > 0
         for file_name in file_names])

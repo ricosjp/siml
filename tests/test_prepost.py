@@ -6,6 +6,7 @@ import numpy as np
 
 import siml.prepost as pre
 import siml.setting as setting
+import siml.trainer as trainer
 
 
 class TestPrepost(unittest.TestCase):
@@ -229,3 +230,41 @@ class TestPrepost(unittest.TestCase):
         np.testing.assert_almost_equal(
             real_file_converter.converters['sharp20'].parameters['std'],
             file_like_object_converter.converters['sharp20'].parameters['std'])
+
+    def test_concatenate_preprocessed_data(self):
+        preprocessed_base_directory = Path(
+            'tests/data/linear/preprocessed/train')
+        concatenated_directory = Path('tests/data/linear/concatenated')
+        shutil.rmtree(concatenated_directory, ignore_errors=True)
+
+        pre.concatenate_preprocessed_data(
+            preprocessed_base_directory, concatenated_directory,
+            variable_names=['x1', 'x2', 'y'], ratios=(1., 0., 0.))
+
+        for name in ['x1', 'x2', 'y']:
+            actual = np.load(concatenated_directory / f"train/{name}.npy")
+            answer = np.concatenate([
+                np.load(preprocessed_base_directory / f"0/{name}.npy"),
+                np.load(preprocessed_base_directory / f"1/{name}.npy")])
+            np.testing.assert_almost_equal(np.max(actual), np.max(answer))
+            np.testing.assert_almost_equal(np.min(actual), np.min(answer))
+            np.testing.assert_almost_equal(np.std(actual), np.std(answer))
+            np.testing.assert_almost_equal(np.mean(actual), np.mean(answer))
+
+    def test_train_concatenated_data(self):
+        preprocessed_base_directory = Path(
+            'tests/data/linear/preprocessed/train')
+        concatenated_directory = Path('tests/data/linear/concatenated')
+        shutil.rmtree(concatenated_directory, ignore_errors=True)
+
+        pre.concatenate_preprocessed_data(
+            preprocessed_base_directory, concatenated_directory,
+            variable_names=['x1', 'x2', 'y'], ratios=(.9, 0.1, 0.))
+
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/linear/linear_concatenated.yml'))
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, 1e-5)

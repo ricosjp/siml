@@ -1,0 +1,33 @@
+data:
+  train:
+    - tests/data/linear/concatenated/train
+  validation:
+    - tests/data/linear/concatenated/validation
+trainer:
+  element_wise: true
+  output_directory: tests/data/linear/element_wise
+  inputs:
+    - name: x1
+      dim: 2
+    - name: x2
+      dim: 1
+  outputs:
+    - name: y
+      dim: 2
+  prune: true
+  batch_size: 2
+  element_batch_size: 10
+  n_epoch: 200
+  log_trigger_epoch: 50
+  stop_trigger_epoch: 100
+  seed: 0
+model:
+  blocks:
+    - type: mlp
+      nodes:
+        - -1
+        - -1
+      activations:
+        - identity
+      dropouts:
+        - 0.0
