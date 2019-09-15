@@ -143,6 +143,67 @@ def write_ucd_file(output_directory, fem_data, dict_data=None):
     fem_data.write('ucd', output_directory / 'mesh.inp')
 
 
+def concatenate_preprocessed_data(
+        preprocessed_base_directories, output_directory_base, variable_names,
+        *, ratios=(.9, .05, .05), overwrite=False):
+    """Concatenate preprocessed data in the element direction.
+
+    NOTE: It may lead data leakage so it is just for research use.
+
+    Args:
+        preprocessed_base_directories: pathlib.Path or List[pathlib.Path]
+            Base directory name of preprocessed data.
+        output_directory_base: pathlib.Path
+            Base directory of output. Inside of it, train, validation, and
+            test directories will be created.
+        variable_names: List[str]
+            Variable names to be concatenated.
+        ratios: List[float], optional [[.9, .05, .05]]
+            Ratio to split data.
+        overwrite: bool, optional [False]
+            If True, overwrite output data.
+    """
+    if np.abs(np.sum(ratios) - 1.0) > 1e-5:
+        raise ValueError('The sum of ratios does not make 1.')
+    preprocessed_directories = util.collect_data_directories(
+        preprocessed_base_directories,
+        required_file_names=Preprocessor.FINISHED_FILE)
+    dict_data = {
+        variable_name:
+        np.concatenate([
+            util.load_variable(preprocessed_directory, variable_name)
+            for preprocessed_directory in preprocessed_directories])
+        for variable_name in variable_names}
+    data_length = len(dict_data[variable_names[0]])
+    indices = np.arange(data_length)
+    np.random.shuffle(indices)
+
+    train_length = int(np.round(data_length * ratios[0]))
+    validation_length = int(np.round(data_length * ratios[1]))
+    test_length = data_length - train_length - validation_length
+
+    (output_directory_base / 'train').mkdir(
+        parents=True, exist_ok=overwrite)
+    (output_directory_base / 'validation').mkdir(
+        parents=True, exist_ok=overwrite)
+    (output_directory_base / 'test').mkdir(
+        parents=True, exist_ok=overwrite)
+
+    for variable_name, data in dict_data.items():
+        np.save(
+            output_directory_base / f"train/{variable_name}.npy",
+            data[indices[:train_length]])
+        if validation_length > 0:
+            np.save(
+                output_directory_base / f"validation/{variable_name}.npy",
+                data[indices[train_length:train_length+validation_length]])
+        if test_length > 0:
+            np.save(
+                output_directory_base / f"validation/{variable_name}.npy",
+                data[indices[train_length+validation_length:]])
+    return
+
+
 class Preprocessor:
 
     REQUIRED_FILE_NAMES = ['converted']
