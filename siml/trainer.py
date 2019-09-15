@@ -112,9 +112,10 @@ class Trainer():
             self, *, model_directory=None, model_file=None,
             save=True, overwrite=False, output_directory=None,
             preprocessed_data_directory=None, raw_data_directory=None,
-            write_simulation=False, write_npy=True,
-            write_simulation_base=None, read_simulation_type='fistr',
-            write_simulation_type='fistr',
+            raw_data_basename=None,
+            write_simulation=False, write_npy=True, write_yaml=True,
+            write_simulation_base=None, write_simulation_stem=None,
+            read_simulation_type='fistr', write_simulation_type='fistr',
             converter_parameters_pkl=None, conversion_function=None,
             data_addition_function=None):
         """Perform inference.
@@ -140,10 +141,14 @@ class Trainer():
             raw_data_directory: pathlib.Path, optional [None]
                 Raw data directories. If not fed, DataSetting.test
                 will be used.
+            raw_data_basename: pathlib.Path, optional [None]
+                Raw data basename (without extention).
             write_simulation: bool, optional [False]
                 If True, write simulation data file(s) based on the inference.
             write_npy: bool, optional [True]
                 If True, write npy files of inferences.
+            write_yaml: bool, optional [True]
+                If True, write yaml file used to make inference.
             write_simulation_base: pathlib.Path, optional [None]
                 Base of simulation data to be used for write_simulation option.
                 If not fed, try to find from the input directories.
@@ -191,7 +196,8 @@ class Trainer():
         prepost_converter = prepost.Converter(converter_parameters_pkl)
 
         # Load data
-        if raw_data_directory is None:
+        if raw_data_directory is None and raw_data_basename is None:
+            # Inference based on preprocessed data
             if preprocessed_data_directory is None:
                 input_directories = self.setting.data.test
             else:
@@ -205,15 +211,30 @@ class Trainer():
                 return_dict=True)
 
         else:
+            # Inference based on raw data
             if preprocessed_data_directory is not None:
                 raise ValueError(
                     'Both preprocessed_data_directory and raw_data_directory '
                     'cannot be specified at the same time')
-            input_directories = [raw_data_directory]
+            if raw_data_basename is not None:
+                if raw_data_directory is not None:
+                    raise ValueError(
+                        'Both raw_data_basename and raw_data_directory cannot'
+                        'be fed at the same time')
+                raw_data_directory = raw_data_basename.parent
+                raw_data_stem = raw_data_basename.stem
+            else:
+                raw_data_stem = None
+
             if write_simulation_base is None:
                 write_simulation_base = raw_data_directory
+            if write_simulation_stem is None:
+                write_simulation_stem = raw_data_stem
             x, y = self._preprocess_data(
-                read_simulation_type, raw_data_directory, prepost_converter,
+                read_simulation_type,
+                raw_data_directory=raw_data_directory,
+                raw_data_stem=raw_data_stem,
+                prepost_converter=prepost_converter,
                 conversion_function=conversion_function)
             dict_dir_x = {preprocessed_data_directory: x}
             if y is None:
@@ -228,17 +249,22 @@ class Trainer():
                     prepost_converter, directory, x, dict_dir_y, save=save,
                     overwrite=overwrite, output_directory=output_directory,
                     write_simulation=write_simulation, write_npy=write_npy,
+                    write_yaml=write_yaml,
                     write_simulation_base=write_simulation_base,
-                    simulation_type=write_simulation_type,
+                    write_simulation_stem=write_simulation_stem,
+                    write_simulation_type=write_simulation_type,
+                    read_simulation_type=read_simulation_type,
                     data_addition_function=data_addition_function)
                 for directory, x in dict_dir_x.items()]
         return inference_results
 
     def _preprocess_data(
-            self, simulation_type, raw_data_directory,
-            prepost_converter, *, conversion_function=None):
+            self, simulation_type, prepost_converter, raw_data_directory,
+            *, raw_data_stem=None,
+            conversion_function=None):
         fem_data = femio.FEMData.read_directory(
-            simulation_type, raw_data_directory)
+            simulation_type, raw_data_directory, stem=raw_data_stem,
+            save=False)
         dict_data = prepost.extract_variables(
             fem_data, self.setting.conversion.mandatory,
             optional_variables=self.setting.conversion.optional)
@@ -274,7 +300,9 @@ class Trainer():
             self, postprocessor, directory, x, dict_dir_y, *, save=True,
             overwrite=False,
             output_directory=None, write_simulation=False, write_npy=True,
-            write_simulation_base=None, simulation_type='fistr',
+            write_yaml=True,
+            write_simulation_base=None, write_simulation_stem=None,
+            write_simulation_type='fistr', read_simulation_type='fistr',
             data_addition_function=None):
 
         # Inference
@@ -294,9 +322,10 @@ class Trainer():
                     self.setting.data.preprocessed.stem) \
                     / f"{self.setting.trainer.name}_{util.date_string()}"
             output_directory.mkdir(parents=True, exist_ok=overwrite)
-            setting.write_yaml(
-                self.setting, output_directory / 'settings.yml',
-                overwrite=overwrite)
+            if write_yaml:
+                setting.write_yaml(
+                    self.setting, output_directory / 'settings.yml',
+                    overwrite=overwrite)
         else:
             output_directory = None
 
@@ -305,7 +334,9 @@ class Trainer():
             output_directory=output_directory, overwrite=overwrite,
             write_simulation=write_simulation, write_npy=write_npy,
             write_simulation_base=write_simulation_base,
-            simulation_type=simulation_type,
+            write_simulation_stem=write_simulation_stem,
+            write_simulation_type=write_simulation_type,
+            read_simulation_type=read_simulation_type,
             data_addition_function=data_addition_function)
 
         # Compute loss

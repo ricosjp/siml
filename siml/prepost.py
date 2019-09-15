@@ -289,8 +289,9 @@ class Converter:
     def postprocess(
             self, dict_data_x, dict_data_y, output_directory=None, *,
             overwrite=False, save_x=False, write_simulation=False,
-            write_npy=True,
-            write_simulation_base=None, simulation_type='fistr',
+            write_npy=True, write_simulation_stem=None,
+            write_simulation_base=None, read_simulation_type='fistr',
+            write_simulation_type='fistr',
             data_addition_function=None):
         """Postprocess data with inversely converting them.
 
@@ -312,7 +313,9 @@ class Converter:
             write_simulation_base: pathlib.Path, optional [None]
                 Base of simulation data to be used for write_simulation option.
                 If not fed, try to find from the input directories.
-            simulation_type: str, optional ['fistr']
+            read_simulation_type: str, optional ['fistr']
+                Simulation file type to read simulation base.
+            write_simulation_type: str, optional ['fistr']
                 Simulation file type to write.
         Returns:
             inversed_dict_data_x: dict
@@ -342,28 +345,33 @@ class Converter:
                     inversed_dict_data_y, output_directory,
                     overwrite=overwrite,
                     write_simulation_base=write_simulation_base,
-                    simulation_type=simulation_type,
+                    write_simulation_stem=write_simulation_stem,
+                    read_simulation_type=read_simulation_type,
+                    write_simulation_type=write_simulation_type,
                     data_addition_function=data_addition_function)
 
         return inversed_dict_data_x, inversed_dict_data_y
 
     def write_simulation(
             self, dict_data_y, output_directory, write_simulation_base, *,
-            simulation_type='fistr', data_addition_function=None,
+            write_simulation_stem=None,
+            read_simulation_type='fistr', data_addition_function=None,
+            write_simulation_type='fistr',
             overwrite=False):
         fem_data = femio.FEMData.read_directory(
-            simulation_type, write_simulation_base)
+            read_simulation_type, write_simulation_base,
+            stem=write_simulation_stem, save=False)
         for k, v in dict_data_y.items():
             fem_data.overwrite_attribute(k, v[0])
         if data_addition_function is not None:
             fem_data = data_addition_function(fem_data)
 
-        if simulation_type == 'fistr':
+        if write_simulation_type == 'fistr':
             ext = ''
-        elif simulation_type == 'ucd':
+        elif write_simulation_type == 'ucd':
             ext = '.inp'
         fem_data.write(
-            simulation_type, output_directory / ('mesh' + ext),
+            write_simulation_type, output_directory / ('mesh' + ext),
             overwrite=overwrite)
         return
 
