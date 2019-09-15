@@ -288,7 +288,8 @@ class Converter:
 
     def postprocess(
             self, dict_data_x, dict_data_y, output_directory=None, *,
-            save_x=False, write_simulation=False, write_npy=True,
+            overwrite=False, save_x=False, write_simulation=False,
+            write_npy=True,
             write_simulation_base=None, simulation_type='fistr',
             data_addition_function=None):
         """Postprocess data with inversely converting them.
@@ -300,6 +301,8 @@ class Converter:
                 Dict of output data.
             output_directory: pathlib.Path, optional [None]
                 Output directory path.
+            overwrite: bool, optional [False]
+                If True, overwrite data.
             save_x: bool, optional [False]
                 If True, save input values in addition to output values.
             write_simulation: bool, optional [False]
@@ -337,6 +340,7 @@ class Converter:
                     raise ValueError('No write_simulation_base fed.')
                 self.write_simulation(
                     inversed_dict_data_y, output_directory,
+                    overwrite=overwrite,
                     write_simulation_base=write_simulation_base,
                     simulation_type=simulation_type,
                     data_addition_function=data_addition_function)
@@ -345,7 +349,8 @@ class Converter:
 
     def write_simulation(
             self, dict_data_y, output_directory, write_simulation_base, *,
-            simulation_type='fistr', data_addition_function=None):
+            simulation_type='fistr', data_addition_function=None,
+            overwrite=False):
         fem_data = femio.FEMData.read_directory(
             simulation_type, write_simulation_base)
         for k, v in dict_data_y.items():
@@ -357,7 +362,9 @@ class Converter:
             ext = ''
         elif simulation_type == 'ucd':
             ext = '.inp'
-        fem_data.write(simulation_type, output_directory / ('mesh' + ext))
+        fem_data.write(
+            simulation_type, output_directory / ('mesh' + ext),
+            overwrite=overwrite)
         return
 
     def save(self, data_dict, output_directory):

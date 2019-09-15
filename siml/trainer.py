@@ -110,7 +110,7 @@ class Trainer():
 
     def infer(
             self, *, model_directory=None, model_file=None,
-            save=True, output_directory=None,
+            save=True, overwrite=False, output_directory=None,
             preprocessed_data_directory=None, raw_data_directory=None,
             write_simulation=False, write_npy=True,
             write_simulation_base=None, read_simulation_type='fistr',
@@ -226,7 +226,7 @@ class Trainer():
             inference_results = [
                 self._infer_single_data(
                     prepost_converter, directory, x, dict_dir_y, save=save,
-                    output_directory=output_directory,
+                    overwrite=overwrite, output_directory=output_directory,
                     write_simulation=write_simulation, write_npy=write_npy,
                     write_simulation_base=write_simulation_base,
                     simulation_type=write_simulation_type,
@@ -272,6 +272,7 @@ class Trainer():
 
     def _infer_single_data(
             self, postprocessor, directory, x, dict_dir_y, *, save=True,
+            overwrite=False,
             output_directory=None, write_simulation=False, write_npy=True,
             write_simulation_base=None, simulation_type='fistr',
             data_addition_function=None):
@@ -292,14 +293,16 @@ class Trainer():
                     directory, self.setting.data.inferred,
                     self.setting.data.preprocessed.stem) \
                     / f"{self.setting.trainer.name}_{util.date_string()}"
-            output_directory.mkdir(parents=True)
-            setting.write_yaml(self.setting, output_directory / 'settings.yml')
+            output_directory.mkdir(parents=True, exist_ok=overwrite)
+            setting.write_yaml(
+                self.setting, output_directory / 'settings.yml',
+                overwrite=overwrite)
         else:
             output_directory = None
 
         inversed_dict_x, inversed_dict_y = postprocessor.postprocess(
             dict_var_x, dict_var_inferred_y,
-            output_directory=output_directory,
+            output_directory=output_directory, overwrite=overwrite,
             write_simulation=write_simulation, write_npy=write_npy,
             write_simulation_base=write_simulation_base,
             simulation_type=simulation_type,

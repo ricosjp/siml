@@ -427,17 +427,21 @@ class PreprocessSetting:
         return cls(data=data, preprocess=preprocess)
 
 
-def write_yaml(data_class, file_name):
+def write_yaml(data_class, file_name, *, overwrite=False):
     """Write YAML file of the specified dataclass object.
 
     Args:
+        data_class: dataclasses.dataclass
+            DataClass object to write.
         file_name: str or pathlib.Path
             YAML file name to write.
+        overwrite: bool, optional [False]
+            If True, overwrite file.
     Returns:
         None
     """
     file_name = Path(file_name)
-    if file_name.exists():
+    if file_name.exists() and not overwrite:
         raise ValueError(f"{file_name} already exists")
 
     dict_data = dc.asdict(data_class)
