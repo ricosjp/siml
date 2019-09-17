@@ -60,7 +60,7 @@ class TestOptimize(unittest.TestCase):
             study.best_trial.value, np.max([t.value for t in study.trials]))
 
     @testing.attr.multi_gpu(2)
-    def test_perform_study(self):
+    def test_perform_study_gpu(self):
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/deform/optuna.yml'))
         main_setting.trainer.gpu_id = 1

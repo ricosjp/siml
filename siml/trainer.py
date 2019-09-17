@@ -530,6 +530,9 @@ class Trainer():
         trainer = ch.training.Trainer(
             updater, stop_trigger, out=self.setting.trainer.output_directory)
 
+        def postprocess(fig, axes, summary):
+            axes.set_yscale('log')
+
         self.log_report_extension = ch.training.extensions.LogReport(
             trigger=(self.setting.trainer.log_trigger_epoch, 'epoch'))
         trainer.extend(self.log_report_extension)
@@ -539,7 +542,8 @@ class Trainer():
             ch.training.extensions.PlotReport(
                 ['main/loss', 'validation/main/loss'],
                 'epoch',
-                trigger=(self.setting.trainer.log_trigger_epoch, 'epoch')))
+                trigger=(self.setting.trainer.log_trigger_epoch, 'epoch'),
+                postprocess=postprocess))
         trainer.extend(
             ch.training.extensions.snapshot(
                 filename='snapshot_epoch_{.updater.epoch}'),
