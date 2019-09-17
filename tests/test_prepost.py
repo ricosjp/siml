@@ -98,7 +98,7 @@ class TestPrepost(unittest.TestCase):
             data_setting.interim / 'b']
         for i, interim_path in enumerate(interim_paths):
             interim_path.mkdir(parents=True)
-            n_element = np.random.randint(1e4, 2e4)
+            n_element = int(1e5)
             identity = np.random.randint(2, size=(n_element, 1))
             std_scale = np.random.rand(n_element, 3) * 5 * i
             standardize = np.random.randn(n_element, 5) * 2 * i \
@@ -122,15 +122,18 @@ class TestPrepost(unittest.TestCase):
             np.load(p / 'identity.npy') for p in interim_paths])
         pre_identity = np.concatenate([
             np.load(p / 'identity.npy') for p in preprocessed_paths])
-        np.testing.assert_almost_equal(int_identity, pre_identity)
+
+        np.testing.assert_almost_equal(
+            int_identity, pre_identity, decimal=3)
 
         int_std_scale = np.concatenate([
             np.load(p / 'std_scale.npy') for p in interim_paths])
         pre_std_scale = np.concatenate([
             np.load(p / 'std_scale.npy') for p in preprocessed_paths])
+
         np.testing.assert_almost_equal(
             int_std_scale / (np.std(int_std_scale, axis=0) + epsilon),
-            pre_std_scale, decimal=5)
+            pre_std_scale, decimal=3)
         np.testing.assert_almost_equal(
             np.std(pre_std_scale), 1. + epsilon, decimal=3)
 
@@ -138,14 +141,15 @@ class TestPrepost(unittest.TestCase):
             np.load(p / 'standardize.npy') for p in interim_paths])
         pre_standardize = np.concatenate([
             np.load(p / 'standardize.npy') for p in preprocessed_paths])
+
         np.testing.assert_almost_equal(
             (int_standardize - np.mean(int_standardize, axis=0))
             / (np.std(int_standardize, axis=0) + epsilon),
-            pre_standardize, decimal=5)
+            pre_standardize, decimal=3)
         np.testing.assert_almost_equal(
             np.std(pre_standardize, axis=0), 1. + epsilon, decimal=3)
         np.testing.assert_almost_equal(
-            np.mean(pre_standardize, axis=0), np.zeros(5), decimal=5)
+            np.mean(pre_standardize, axis=0), np.zeros(5), decimal=3)
 
     def test_postprocessor(self):
         data_setting = setting.DataSetting(

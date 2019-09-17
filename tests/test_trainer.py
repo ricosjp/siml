@@ -263,13 +263,13 @@ class TestTrainer(unittest.TestCase):
         #     np.float32)
 
         tr.classifier.cleargrads()
-        loss_wo_padding = tr.classifier(x, y)
+        loss_wo_padding = tr.classifier(x, y, report=False)
         loss_wo_padding.backward()
         w_grad_wo_padding = tr.model.chains[0][0].W.grad
         b_grad_wo_padding = tr.model.chains[0][0].b.grad
         tr.classifier.cleargrads()
         loss_w_padding = tr.classifier(
-            padded_x, y, original_lengths=([5]))
+            padded_x, y, original_lengths=([5]), report=False)
         loss_wo_padding.backward()
         w_grad_w_padding = tr.model.chains[0][0].W.grad
         b_grad_w_padding = tr.model.chains[0][0].b.grad
@@ -292,13 +292,13 @@ class TestTrainer(unittest.TestCase):
             np.float32)
 
         tr.classifier.cleargrads()
-        loss_wo_padding, losses_wo_padding = tr.classifier(x, y)
+        loss_wo_padding, losses_wo_padding = tr.classifier(x, y, report=False)
         loss_wo_padding.backward()
         w_grad_wo_padding = tr.model.chains[0][0].W.grad
         b_grad_wo_padding = tr.model.chains[0][0].b.grad
         tr.classifier.cleargrads()
         loss_w_padding, losses_w_padding = tr.classifier(
-            padded_x, y, original_lengths=([5]))
+            padded_x, y, original_lengths=([5]), report=False)
         loss_wo_padding.backward()
         w_grad_w_padding = tr.model.chains[0][0].W.grad
         b_grad_w_padding = tr.model.chains[0][0].b.grad

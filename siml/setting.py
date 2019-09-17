@@ -320,11 +320,18 @@ class ModelSetting(TypedDataClass):
 @dc.dataclass
 class OptunaSetting(TypedDataClass):
     n_trial: int = 100
-    output_base_directory: Path = Path('models')
+    output_base_directory: Path = Path('models/optuna')
     hyperparameters: typing.List[dict] = dc.field(default_factory=list)
     setting: dict = dc.field(default_factory=dict)
-    # trainer: dict = dc.field(default_factory=dict)
-    # model: dict = dc.field(default_factory=dict)
+
+    def __post_init__(self):
+        for hyperparameter in self.hyperparameters:
+            if hyperparameter['type'] == 'categorical':
+                if len(hyperparameter['choices']) != len(np.unique([
+                        c['id'] for c in hyperparameter['choices']])):
+                    raise ValueError(
+                        'IDs in optuna.hyperparameter.choices not unique')
+        super().__post_init__()
 
 
 @dc.dataclass
