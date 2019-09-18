@@ -1,0 +1,87 @@
+data:
+  train:
+    - tests/data/deform/preprocessed/train
+  validation:
+    - tests/data/deform/preprocessed/train
+conversion:
+  mandatory:
+    - elemental_strain
+    - modulus
+    - poisson_ratio
+  optional:
+    - elemental_stress
+optuna:
+  output_base_directory: tests/data/optuna
+  n_trial: 10
+  hyperparameters:
+    - name: inputs
+      type: categorical
+      choices:
+        -
+          id: 0
+          value:
+          - name: elemental_strain
+            dim: 6
+          - name: modulus
+            dim: 1
+          - name: poisson_ratio
+            dim: 1
+        -
+          id: 1
+          value:
+          - name: elemental_strain
+            dim: 6
+    - name: n_node
+      type: discrete_uniform
+      low: 50
+      high: 100
+      step: 10
+      dtype: int
+    - name: hidden_layers
+      type: int
+      low: 2
+      high: 5
+    - name: dropout
+      type: discrete_uniform
+      low: .01
+      high: .1
+      step: .01
+      dtype: float
+  setting:
+    trainer:
+      inputs: inputs
+    model:
+      blocks:
+        - name: MLP
+          type: adjustable_mlp
+          hidden_nodes: n_node
+          hidden_activation: relu
+          output_activation: identity
+          input_dropout: 0.0
+          hidden_dropout: dropout
+          output_dropout: 0.0
+          hidden_layers: hidden_layers
+trainer:
+  outputs:
+    - name: elemental_stress
+      dim: 6
+  prune: true
+  batch_size: 2
+  n_epoch: 1000
+  log_trigger_epoch: 100
+  stop_trigger_epoch: 100
+  seed: 0
+model:
+  blocks:
+    - name: MLP
+      type: adjustable_mlp
+      nodes:
+        - -1
+        - 50
+        - -1
+      activations:
+        - relu
+        - identity
+      dropouts:
+        - 0.3
+        - 0.0

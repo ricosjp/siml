@@ -40,10 +40,12 @@ class Objective():
         parameter_type = dict_hyperparameter['type']
         if parameter_type == 'categorical':
             choices = dict_hyperparameter['choices']
-            index = trial.suggest_int(
-                dict_hyperparameter['name'],
-                low=0, high=len(choices)-1)
-            parameter = choices[index]
+            ids = [c['id'] for c in choices]
+            suggested_id = trial.suggest_categorical(
+                dict_hyperparameter['name'], ids)
+            for choice in choices:
+                if choice['id'] == suggested_id:
+                    parameter = choice['value']
             # NOTE: Since list of list, list of dict, ... not supported, just
             # choose index instead of suggest_categorical
 
@@ -77,30 +79,31 @@ class Objective():
             self._suggest_parameter(trial, dict_hyperparameter)
             for dict_hyperparameter
             in self.main_setting.optuna.hyperparameters}
-        return self._replace_dict(
+        return self._generate_dict(
             self.main_setting.optuna.setting, hyperparameters)
 
-    def _replace_dict(self, dict_setting, dict_replace):
-        if isinstance(dict_setting, str):
-            if dict_setting in dict_replace:
-                return dict_replace[dict_setting]
+    def _generate_dict(self, default_settings, dict_replace):
+        if isinstance(default_settings, list):
+            return [
+                self._generate_dict(d, dict_replace) for d in default_settings]
+        elif isinstance(default_settings, dict):
+            return {
+                key: self._generate_dict(value, dict_replace)
+                for key, value in default_settings.items()}
+        elif isinstance(default_settings, str):
+            if default_settings in dict_replace:
+                return dict_replace[default_settings]
             else:
-                return dict_setting
-        elif isinstance(dict_setting, int) or isinstance(dict_setting, float):
-            return dict_setting
-        elif isinstance(dict_setting, list):
-            return [self._replace_dict(d, dict_replace) for d in dict_setting]
-        elif isinstance(dict_setting, dict):
-            for key, value in dict_setting.items():
-                dict_setting.update({
-                    key:
-                    self._replace_dict(dict_setting[key], dict_replace)})
-            return dict_setting
+                return default_settings
+        elif isinstance(default_settings, int) or isinstance(
+                default_settings, float):
+            return default_settings
         else:
-            raise ValueError(f"Unknown data type: {dict_setting.__class__}")
+            raise ValueError(
+                f"Unknown data type: {default_settings.__class__}")
 
 
-def perform_study(main_setting, db_setting):
+def perform_study(main_setting, db_setting=None):
     """Perform hyperparameter search study.
 
     Args:
@@ -125,11 +128,13 @@ def perform_study(main_setting, db_setting):
 
     top_name = util.get_top_directory().stem
     study_name = f"{top_name}_{main_setting.trainer.name}"
+    output_directory = main_setting.optuna.output_base_directory / study_name
     study = optuna.create_study(
         study_name=study_name,
         storage=storage,
+        sampler=optuna.samplers.TPESampler(seed=main_setting.trainer.seed),
         load_if_exists=True, pruner=optuna.pruners.MedianPruner())
-    objective = Objective(main_setting, study_name)
+    objective = Objective(main_setting, output_directory)
 
     # Optimize
     study.optimize(objective, n_trials=main_setting.optuna.n_trial, catch=())
@@ -137,3 +142,5 @@ def perform_study(main_setting, db_setting):
     # Visualize the best result
     print('=== Best Trial ===')
     print(study.best_trial)
+
+    return study

@@ -6,11 +6,12 @@ class Classifier(ch.link.Chain):
     def __init__(
             self, predictor, *,
             lossfun=ch.functions.loss.softmax_cross_entropy, accfun=None,
-            element_batch_size=-1):
+            element_batch_size=-1, element_wise=False):
         super().__init__()
         self.lossfun = lossfun
         self.accfun = accfun
         self.element_batch_size = element_batch_size
+        self.element_wise = element_wise
 
         self.y = None
         self.loss = None
@@ -19,7 +20,36 @@ class Classifier(ch.link.Chain):
         with self.init_scope():
             self.predictor = predictor
 
-    def __call__(self, x, t, original_lengths=None, supports=None):
+    def __call__(
+            self, x, t, original_lengths=None, supports=None, report=True):
+        if self.element_wise:
+            loss = self.call_element_wise(x, t, report=report)
+            return loss
+        else:
+            if self.element_batch_size > 0:
+                loss, losses = self.call_default(
+                    x, t, original_lengths=original_lengths, supports=supports,
+                    report=report)
+                return loss, losses
+            else:
+                loss = self.call_default(
+                    x, t, original_lengths=original_lengths, supports=supports,
+                    report=report)
+                return loss
+
+    def call_element_wise(self, x, t, report=True):
+        self.y = None
+        self.loss = None
+        self.accuracy = None
+
+        self.y = self.predictor(x)
+        self.loss = self.lossfun(self.y, t)
+        if report:
+            ch.report({'loss': ch.backends.cuda.to_cpu(self.loss.data)}, self)
+        return self.loss
+
+    def call_default(
+            self, x, t, original_lengths=None, supports=None, report=False):
         self.y = None
         self.loss = None
         self.accuracy = None
@@ -31,11 +61,13 @@ class Classifier(ch.link.Chain):
             y_[:l_] for y_, l_
             in zip(self.predictor(x, supports), original_lengths)], axis=0)
         self.loss = self.lossfun(self.y, t)
-        ch.report({'loss': ch.backends.cuda.to_cpu(self.loss.data)}, self)
+        if report:
+            ch.report({'loss': ch.backends.cuda.to_cpu(self.loss.data)}, self)
 
         if self.accfun is not None:
             self.accuracy = self.accfun(self.y, t)
-            ch.report({'accuracy': self.accuracy}, self)
+            if report:
+                ch.report({'accuracy': self.accuracy}, self)
 
         if self.element_batch_size > 0:
             length = len(self.y)

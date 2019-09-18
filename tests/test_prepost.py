@@ -6,6 +6,7 @@ import numpy as np
 
 import siml.prepost as pre
 import siml.setting as setting
+import siml.trainer as trainer
 
 
 class TestPrepost(unittest.TestCase):
@@ -97,7 +98,7 @@ class TestPrepost(unittest.TestCase):
             data_setting.interim / 'b']
         for i, interim_path in enumerate(interim_paths):
             interim_path.mkdir(parents=True)
-            n_element = np.random.randint(1e4)
+            n_element = int(1e5)
             identity = np.random.randint(2, size=(n_element, 1))
             std_scale = np.random.rand(n_element, 3) * 5 * i
             standardize = np.random.randn(n_element, 5) * 2 * i \
@@ -121,15 +122,18 @@ class TestPrepost(unittest.TestCase):
             np.load(p / 'identity.npy') for p in interim_paths])
         pre_identity = np.concatenate([
             np.load(p / 'identity.npy') for p in preprocessed_paths])
-        np.testing.assert_almost_equal(int_identity, pre_identity)
+
+        np.testing.assert_almost_equal(
+            int_identity, pre_identity, decimal=3)
 
         int_std_scale = np.concatenate([
             np.load(p / 'std_scale.npy') for p in interim_paths])
         pre_std_scale = np.concatenate([
             np.load(p / 'std_scale.npy') for p in preprocessed_paths])
+
         np.testing.assert_almost_equal(
             int_std_scale / (np.std(int_std_scale, axis=0) + epsilon),
-            pre_std_scale, decimal=5)
+            pre_std_scale, decimal=3)
         np.testing.assert_almost_equal(
             np.std(pre_std_scale), 1. + epsilon, decimal=3)
 
@@ -137,14 +141,15 @@ class TestPrepost(unittest.TestCase):
             np.load(p / 'standardize.npy') for p in interim_paths])
         pre_standardize = np.concatenate([
             np.load(p / 'standardize.npy') for p in preprocessed_paths])
+
         np.testing.assert_almost_equal(
             (int_standardize - np.mean(int_standardize, axis=0))
             / (np.std(int_standardize, axis=0) + epsilon),
-            pre_standardize, decimal=5)
+            pre_standardize, decimal=3)
         np.testing.assert_almost_equal(
             np.std(pre_standardize, axis=0), 1. + epsilon, decimal=3)
         np.testing.assert_almost_equal(
-            np.mean(pre_standardize, axis=0), np.zeros(5), decimal=5)
+            np.mean(pre_standardize, axis=0), np.zeros(5), decimal=3)
 
     def test_postprocessor(self):
         data_setting = setting.DataSetting(
@@ -184,7 +189,7 @@ class TestPrepost(unittest.TestCase):
         preprocessor.preprocess_interim_data()
 
         postprocessor = pre.Converter(
-            'tests/data/prepost/preprocessed/preprocessors.pkl')
+            Path('tests/data/prepost/preprocessed/preprocessors.pkl'))
         preprocessed_paths = [
             data_setting.preprocessed / 'a',
             data_setting.preprocessed / 'b']
@@ -220,3 +225,50 @@ class TestPrepost(unittest.TestCase):
             conversion_function=conversion_function)
         p = pre.Preprocessor.read_settings('tests/data/deform/data.yml')
         p.preprocess_interim_data()
+
+    def test_generate_converters(self):
+        preprocessors_file = Path('tests/data/prepost/preprocessors.pkl')
+        real_file_converter = pre.Converter(preprocessors_file)
+        with open(preprocessors_file, 'rb') as f:
+            file_like_object_converter = pre.Converter(f)
+        np.testing.assert_almost_equal(
+            real_file_converter.converters['sharp20'].parameters['std'],
+            file_like_object_converter.converters['sharp20'].parameters['std'])
+
+    def test_concatenate_preprocessed_data(self):
+        preprocessed_base_directory = Path(
+            'tests/data/linear/preprocessed/train')
+        concatenated_directory = Path('tests/data/linear/concatenated')
+        shutil.rmtree(concatenated_directory, ignore_errors=True)
+
+        pre.concatenate_preprocessed_data(
+            preprocessed_base_directory, concatenated_directory,
+            variable_names=['x1', 'x2', 'y'], ratios=(1., 0., 0.))
+
+        for name in ['x1', 'x2', 'y']:
+            actual = np.load(concatenated_directory / f"train/{name}.npy")
+            answer = np.concatenate([
+                np.load(preprocessed_base_directory / f"0/{name}.npy"),
+                np.load(preprocessed_base_directory / f"1/{name}.npy")])
+            np.testing.assert_almost_equal(np.max(actual), np.max(answer))
+            np.testing.assert_almost_equal(np.min(actual), np.min(answer))
+            np.testing.assert_almost_equal(np.std(actual), np.std(answer))
+            np.testing.assert_almost_equal(np.mean(actual), np.mean(answer))
+
+    def test_train_concatenated_data(self):
+        preprocessed_base_directory = Path(
+            'tests/data/linear/preprocessed/train')
+        concatenated_directory = Path('tests/data/linear/concatenated')
+        shutil.rmtree(concatenated_directory, ignore_errors=True)
+
+        pre.concatenate_preprocessed_data(
+            preprocessed_base_directory, concatenated_directory,
+            variable_names=['x1', 'x2', 'y'], ratios=(.9, 0.1, 0.))
+
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/linear/linear_concatenated.yml'))
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, 1e-5)

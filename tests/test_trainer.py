@@ -15,7 +15,7 @@ class TestTrainer(unittest.TestCase):
 
     def test_train_cpu_short(self):
         main_setting = setting.MainSetting.read_settings_yaml(
-            'tests/data/linear/linear_short.yml')
+            Path('tests/data/linear/linear_short.yml'))
         tr = trainer.Trainer(main_setting)
         if tr.setting.trainer.output_directory.exists():
             shutil.rmtree(tr.setting.trainer.output_directory)
@@ -24,45 +24,45 @@ class TestTrainer(unittest.TestCase):
 
     def test_train_general_block_without_support(self):
         main_setting = setting.MainSetting.read_settings_yaml(
-            'tests/data/deform/general_block_wo_support.yml')
+            Path('tests/data/deform/general_block_wo_support.yml'))
         tr = trainer.Trainer(main_setting)
         if tr.setting.trainer.output_directory.exists():
             shutil.rmtree(tr.setting.trainer.output_directory)
         loss = tr.train()
-        np.testing.assert_array_less(loss, 2.)
+        np.testing.assert_array_less(loss, 3.)
 
     def test_train_general_block(self):
         main_setting = setting.MainSetting.read_settings_yaml(
-            'tests/data/deform/general_block.yml')
+            Path('tests/data/deform/general_block.yml'))
         tr = trainer.Trainer(main_setting)
         if tr.setting.trainer.output_directory.exists():
             shutil.rmtree(tr.setting.trainer.output_directory)
         loss = tr.train()
-        np.testing.assert_array_less(loss, 2.)
+        np.testing.assert_array_less(loss, 3.)
 
     def test_train_general_block_input_selection(self):
         main_setting = setting.MainSetting.read_settings_yaml(
-            'tests/data/deform/general_block_input_selection.yml')
+            Path('tests/data/deform/general_block_input_selection.yml'))
         tr = trainer.Trainer(main_setting)
         if tr.setting.trainer.output_directory.exists():
             shutil.rmtree(tr.setting.trainer.output_directory)
         loss = tr.train()
-        np.testing.assert_array_less(loss, 2.)
+        np.testing.assert_array_less(loss, 3.)
 
     @testing.attr.multi_gpu(2)
     def test_train_general_block_gpu(self):
         main_setting = setting.MainSetting.read_settings_yaml(
-            'tests/data/deform/general_block.yml')
+            Path('tests/data/deform/general_block.yml'))
         main_setting.trainer.gpu_id = 1
         tr = trainer.Trainer(main_setting)
         if tr.setting.trainer.output_directory.exists():
             shutil.rmtree(tr.setting.trainer.output_directory)
         loss = tr.train()
-        np.testing.assert_array_less(loss, 2.)
+        np.testing.assert_array_less(loss, 3.)
 
     def test_train_element_wise(self):
         main_setting = setting.MainSetting.read_settings_yaml(
-            'tests/data/linear/linear_element_wise.yml')
+            Path('tests/data/linear/linear_element_wise.yml'))
         tr = trainer.Trainer(main_setting)
         if tr.setting.trainer.output_directory.exists():
             shutil.rmtree(tr.setting.trainer.output_directory)
@@ -71,7 +71,7 @@ class TestTrainer(unittest.TestCase):
 
     def test_train_element_batch(self):
         main_setting = setting.MainSetting.read_settings_yaml(
-            'tests/data/linear/linear_element_batch.yml')
+            Path('tests/data/linear/linear_element_batch.yml'))
         tr = trainer.Trainer(main_setting)
         if tr.setting.trainer.output_directory.exists():
             shutil.rmtree(tr.setting.trainer.output_directory)
@@ -80,7 +80,7 @@ class TestTrainer(unittest.TestCase):
 
     def test_siml_updater_equivalent(self):
         main_setting = setting.MainSetting.read_settings_yaml(
-            'tests/data/linear/linear_element_batch.yml')
+            Path('tests/data/linear/linear_element_batch.yml'))
 
         main_setting.trainer.element_batch_size = 100000
         eb1_tr = trainer.Trainer(main_setting)
@@ -105,7 +105,7 @@ class TestTrainer(unittest.TestCase):
 
     def test_train_element_learning_rate(self):
         main_setting = setting.MainSetting.read_settings_yaml(
-            'tests/data/linear/linear_short_lr.yml')
+            Path('tests/data/linear/linear_short_lr.yml'))
         tr = trainer.Trainer(main_setting)
         if tr.setting.trainer.output_directory.exists():
             shutil.rmtree(tr.setting.trainer.output_directory)
@@ -114,7 +114,7 @@ class TestTrainer(unittest.TestCase):
 
     def test_infer_with_preprocessed_data(self):
         main_setting = setting.MainSetting.read_settings_yaml(
-            'tests/data/linear/pretrained/settings.yaml')
+            Path('tests/data/linear/pretrained/settings.yaml'))
         tr = trainer.Trainer(main_setting)
         if tr.setting.trainer.output_directory.exists():
             shutil.rmtree(tr.setting.trainer.output_directory)
@@ -131,7 +131,7 @@ class TestTrainer(unittest.TestCase):
 
     def test_infer_with_raw_data(self):
         main_setting = setting.MainSetting.read_settings_yaml(
-            'tests/data/deform/pretrained/settings.yaml')
+            Path('tests/data/deform/pretrained/settings.yaml'))
         tr = trainer.Trainer(main_setting)
         if tr.setting.trainer.output_directory.exists():
             shutil.rmtree(tr.setting.trainer.output_directory)
@@ -164,7 +164,7 @@ class TestTrainer(unittest.TestCase):
 
     def test_infer_with_raw_data_wo_answer(self):
         main_setting = setting.MainSetting.read_settings_yaml(
-            'tests/data/deform/pretrained/settings.yaml')
+            Path('tests/data/deform/pretrained/settings.yaml'))
         tr = trainer.Trainer(main_setting)
         if tr.setting.trainer.output_directory.exists():
             shutil.rmtree(tr.setting.trainer.output_directory)
@@ -194,7 +194,7 @@ class TestTrainer(unittest.TestCase):
 
     def test_infer_with_raw_data_wo_answer_with_model_file(self):
         main_setting = setting.MainSetting.read_settings_yaml(
-            'tests/data/deform/incomplete_pretrained/settings.yaml')
+            Path('tests/data/deform/incomplete_pretrained/settings.yaml'))
         tr = trainer.Trainer(main_setting)
         if tr.setting.trainer.output_directory.exists():
             shutil.rmtree(tr.setting.trainer.output_directory)
@@ -225,7 +225,7 @@ class TestTrainer(unittest.TestCase):
 
     def test_infer_to_write_simulation_file(self):
         main_setting = setting.MainSetting.read_settings_yaml(
-            'tests/data/deform/incomplete_pretrained/settings.yaml')
+            Path('tests/data/deform/incomplete_pretrained/settings.yaml'))
         output_directory = Path('tests/data/deform/write_simulation')
 
         tr = trainer.Trainer(main_setting)
@@ -251,7 +251,7 @@ class TestTrainer(unittest.TestCase):
 
     def test_gradient_consistency_with_padding(self):
         main_setting = setting.MainSetting.read_settings_yaml(
-            'tests/data/linear/linear.yml')
+            Path('tests/data/linear/linear.yml'))
         tr = trainer.Trainer(main_setting)
         tr._prepare_training()
         x = np.reshape(np.arange(5*3), (1, 5, 3)).astype(np.float32) * .1
@@ -263,13 +263,13 @@ class TestTrainer(unittest.TestCase):
         #     np.float32)
 
         tr.classifier.cleargrads()
-        loss_wo_padding = tr.classifier(x, y)
+        loss_wo_padding = tr.classifier(x, y, report=False)
         loss_wo_padding.backward()
         w_grad_wo_padding = tr.model.chains[0][0].W.grad
         b_grad_wo_padding = tr.model.chains[0][0].b.grad
         tr.classifier.cleargrads()
         loss_w_padding = tr.classifier(
-            padded_x, y, original_lengths=([5]))
+            padded_x, y, original_lengths=([5]), report=False)
         loss_wo_padding.backward()
         w_grad_w_padding = tr.model.chains[0][0].W.grad
         b_grad_w_padding = tr.model.chains[0][0].b.grad
@@ -281,7 +281,7 @@ class TestTrainer(unittest.TestCase):
 
     def test_gradient_consistency_with_padding_with_element_batch(self):
         main_setting = setting.MainSetting.read_settings_yaml(
-            'tests/data/linear/linear_element_batch.yml')
+            Path('tests/data/linear/linear_element_batch.yml'))
         main_setting.trainer.element_batch_size = 4
         tr = trainer.Trainer(main_setting)
         tr._prepare_training()
@@ -292,13 +292,13 @@ class TestTrainer(unittest.TestCase):
             np.float32)
 
         tr.classifier.cleargrads()
-        loss_wo_padding, losses_wo_padding = tr.classifier(x, y)
+        loss_wo_padding, losses_wo_padding = tr.classifier(x, y, report=False)
         loss_wo_padding.backward()
         w_grad_wo_padding = tr.model.chains[0][0].W.grad
         b_grad_wo_padding = tr.model.chains[0][0].b.grad
         tr.classifier.cleargrads()
         loss_w_padding, losses_w_padding = tr.classifier(
-            padded_x, y, original_lengths=([5]))
+            padded_x, y, original_lengths=([5]), report=False)
         loss_wo_padding.backward()
         w_grad_w_padding = tr.model.chains[0][0].W.grad
         b_grad_w_padding = tr.model.chains[0][0].b.grad

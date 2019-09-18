@@ -77,7 +77,8 @@ class Trainer():
         self.model = networks.Network(self.setting.model, self.setting.trainer)
         self.classifier = networks.Classifier(
             self.model, lossfun=self._create_loss_function(),
-            element_batch_size=self.setting.trainer.element_batch_size)
+            element_batch_size=self.setting.trainer.element_batch_size,
+            element_wise=self.setting.trainer.element_wise)
         self.classifier.compute_accuracy = \
             self.setting.trainer.compute_accuracy
 
@@ -109,11 +110,12 @@ class Trainer():
 
     def infer(
             self, *, model_directory=None, model_file=None,
-            save=True, output_directory=None,
+            save=True, overwrite=False, output_directory=None,
             preprocessed_data_directory=None, raw_data_directory=None,
-            write_simulation=False, write_npy=True,
-            write_simulation_base=None, read_simulation_type='fistr',
-            write_simulation_type='fistr',
+            raw_data_basename=None,
+            write_simulation=False, write_npy=True, write_yaml=True,
+            write_simulation_base=None, write_simulation_stem=None,
+            read_simulation_type='fistr', write_simulation_type='fistr',
             converter_parameters_pkl=None, conversion_function=None,
             data_addition_function=None):
         """Perform inference.
@@ -139,10 +141,14 @@ class Trainer():
             raw_data_directory: pathlib.Path, optional [None]
                 Raw data directories. If not fed, DataSetting.test
                 will be used.
+            raw_data_basename: pathlib.Path, optional [None]
+                Raw data basename (without extention).
             write_simulation: bool, optional [False]
                 If True, write simulation data file(s) based on the inference.
             write_npy: bool, optional [True]
                 If True, write npy files of inferences.
+            write_yaml: bool, optional [True]
+                If True, write yaml file used to make inference.
             write_simulation_base: pathlib.Path, optional [None]
                 Base of simulation data to be used for write_simulation option.
                 If not fed, try to find from the input directories.
@@ -190,7 +196,8 @@ class Trainer():
         prepost_converter = prepost.Converter(converter_parameters_pkl)
 
         # Load data
-        if raw_data_directory is None:
+        if raw_data_directory is None and raw_data_basename is None:
+            # Inference based on preprocessed data
             if preprocessed_data_directory is None:
                 input_directories = self.setting.data.test
             else:
@@ -202,17 +209,37 @@ class Trainer():
             dict_dir_y = self._load_data(
                 self.setting.trainer.output_names, input_directories,
                 return_dict=True)
+            # dict_dir_x = {preprocessed_data_directory: x}
+            # if y is None:
+            #     dict_dir_y = {}
+            # else:
+            #     dict_dir_y = {preprocessed_data_directory: y}
 
         else:
+            # Inference based on raw data
             if preprocessed_data_directory is not None:
                 raise ValueError(
                     'Both preprocessed_data_directory and raw_data_directory '
                     'cannot be specified at the same time')
-            input_directories = [raw_data_directory]
+            if raw_data_basename is not None:
+                if raw_data_directory is not None:
+                    raise ValueError(
+                        'Both raw_data_basename and raw_data_directory cannot'
+                        'be fed at the same time')
+                raw_data_directory = raw_data_basename.parent
+                raw_data_stem = raw_data_basename.stem
+            else:
+                raw_data_stem = None
+
             if write_simulation_base is None:
                 write_simulation_base = raw_data_directory
+            if write_simulation_stem is None:
+                write_simulation_stem = raw_data_stem
             x, y = self._preprocess_data(
-                read_simulation_type, raw_data_directory, prepost_converter,
+                read_simulation_type,
+                raw_data_directory=raw_data_directory,
+                raw_data_stem=raw_data_stem,
+                prepost_converter=prepost_converter,
                 conversion_function=conversion_function)
             dict_dir_x = {preprocessed_data_directory: x}
             if y is None:
@@ -225,19 +252,24 @@ class Trainer():
             inference_results = [
                 self._infer_single_data(
                     prepost_converter, directory, x, dict_dir_y, save=save,
-                    output_directory=output_directory,
+                    overwrite=overwrite, output_directory=output_directory,
                     write_simulation=write_simulation, write_npy=write_npy,
+                    write_yaml=write_yaml,
                     write_simulation_base=write_simulation_base,
-                    simulation_type=write_simulation_type,
+                    write_simulation_stem=write_simulation_stem,
+                    write_simulation_type=write_simulation_type,
+                    read_simulation_type=read_simulation_type,
                     data_addition_function=data_addition_function)
                 for directory, x in dict_dir_x.items()]
         return inference_results
 
     def _preprocess_data(
-            self, simulation_type, raw_data_directory,
-            prepost_converter, *, conversion_function=None):
+            self, simulation_type, prepost_converter, raw_data_directory,
+            *, raw_data_stem=None,
+            conversion_function=None):
         fem_data = femio.FEMData.read_directory(
-            simulation_type, raw_data_directory)
+            simulation_type, raw_data_directory, stem=raw_data_stem,
+            save=False)
         dict_data = prepost.extract_variables(
             fem_data, self.setting.conversion.mandatory,
             optional_variables=self.setting.conversion.optional)
@@ -271,8 +303,11 @@ class Trainer():
 
     def _infer_single_data(
             self, postprocessor, directory, x, dict_dir_y, *, save=True,
+            overwrite=False,
             output_directory=None, write_simulation=False, write_npy=True,
-            write_simulation_base=None, simulation_type='fistr',
+            write_yaml=True,
+            write_simulation_base=None, write_simulation_stem=None,
+            write_simulation_type='fistr', read_simulation_type='fistr',
             data_addition_function=None):
 
         # Inference
@@ -291,23 +326,37 @@ class Trainer():
                     directory, self.setting.data.inferred,
                     self.setting.data.preprocessed.stem) \
                     / f"{self.setting.trainer.name}_{util.date_string()}"
-            output_directory.mkdir(parents=True)
-            setting.write_yaml(self.setting, output_directory / 'settings.yml')
+            output_directory.mkdir(parents=True, exist_ok=overwrite)
+            if write_yaml:
+                setting.write_yaml(
+                    self.setting, output_directory / 'settings.yml',
+                    overwrite=overwrite)
         else:
             output_directory = None
 
         inversed_dict_x, inversed_dict_y = postprocessor.postprocess(
             dict_var_x, dict_var_inferred_y,
-            output_directory=output_directory,
+            output_directory=output_directory, overwrite=overwrite,
             write_simulation=write_simulation, write_npy=write_npy,
             write_simulation_base=write_simulation_base,
-            simulation_type=simulation_type,
+            write_simulation_stem=write_simulation_stem,
+            write_simulation_type=write_simulation_type,
+            read_simulation_type=read_simulation_type,
             data_addition_function=data_addition_function)
 
         # Compute loss
         if directory in dict_dir_y:
             # Answer data exists
-            loss = self.classifier(x, dict_dir_y[directory][0]).data
+            if len(dict_dir_y[directory].shape) == 2:
+                loss = self.classifier.lossfun(
+                    inferred_y[0], dict_dir_y[directory]).data
+            elif len(dict_dir_y[directory].shape) == 3:
+                loss = self.classifier.lossfun(
+                    inferred_y, dict_dir_y[directory]).data
+            else:
+                raise ValueError(
+                    f"Unknown shape of y: {dict_dir_y[directory].shape}")
+            # loss = self.classifier(x, dict_dir_y[directory]).data
             print(f"data: {directory}")
             print(f"loss: {loss}")
             if save:
@@ -450,22 +499,25 @@ class Trainer():
         optimizer.setup(self.classifier)
 
         # Converter setting
-        if self.setting.trainer.support_inputs is None:
-            converter = util.concat_examples
+        if self.setting.trainer.element_wise:
+            converter = ch.dataset.concat_examples
         else:
-            converter = util.generate_converter(support_train)
+            if self.setting.trainer.support_inputs is None:
+                converter = util.concat_examples
+            else:
+                converter = util.generate_converter(support_train)
 
         # Updater setting
         if self.setting.trainer.use_siml_updater:
-            updater = updaters.SimlUpdater(
-                train_iter, optimizer, device=self.setting.trainer.gpu_id,
-                converter=converter)
-        else:
             if self.setting.trainer.element_batch_size >= 0:
                 print(
                     f"When use_siml_updater: True, "
                     f"cannot set element_batch_size >= 0. Set to -1.")
                 self.setting.trainer.element_batch_size = -1
+            updater = updaters.SimlUpdater(
+                train_iter, optimizer, device=self.setting.trainer.gpu_id,
+                converter=converter)
+        else:
             updater = ch.training.updaters.StandardUpdater(
                 train_iter, optimizer, device=self.setting.trainer.gpu_id,
                 converter=converter)
@@ -478,6 +530,9 @@ class Trainer():
         trainer = ch.training.Trainer(
             updater, stop_trigger, out=self.setting.trainer.output_directory)
 
+        def postprocess(fig, axes, summary):
+            axes.set_yscale('log')
+
         self.log_report_extension = ch.training.extensions.LogReport(
             trigger=(self.setting.trainer.log_trigger_epoch, 'epoch'))
         trainer.extend(self.log_report_extension)
@@ -487,7 +542,8 @@ class Trainer():
             ch.training.extensions.PlotReport(
                 ['main/loss', 'validation/main/loss'],
                 'epoch',
-                trigger=(self.setting.trainer.log_trigger_epoch, 'epoch')))
+                trigger=(self.setting.trainer.log_trigger_epoch, 'epoch'),
+                postprocess=postprocess))
         trainer.extend(
             ch.training.extensions.snapshot(
                 filename='snapshot_epoch_{.updater.epoch}'),
@@ -580,7 +636,12 @@ class Trainer():
             if len(support_data[0]) > 0:
                 raise ValueError(
                     'Cannot use support_input if element_wise is True')
-            return np.concatenate(data), None
+            if return_dict:
+                return {
+                    data_directory:
+                    d for data_directory, d in zip(data_directories, data)}
+            else:
+                return np.concatenate(data), None
         if return_dict:
             if len(supports) > 0:
                 return {

@@ -1,6 +1,7 @@
 """Module for preprocessing."""
 
 import datetime as dt
+import io
 import itertools as it
 from pathlib import Path
 import pickle
@@ -142,6 +143,67 @@ def write_ucd_file(output_directory, fem_data, dict_data=None):
     fem_data.write('ucd', output_directory / 'mesh.inp')
 
 
+def concatenate_preprocessed_data(
+        preprocessed_base_directories, output_directory_base, variable_names,
+        *, ratios=(.9, .05, .05), overwrite=False):
+    """Concatenate preprocessed data in the element direction.
+
+    NOTE: It may lead data leakage so it is just for research use.
+
+    Args:
+        preprocessed_base_directories: pathlib.Path or List[pathlib.Path]
+            Base directory name of preprocessed data.
+        output_directory_base: pathlib.Path
+            Base directory of output. Inside of it, train, validation, and
+            test directories will be created.
+        variable_names: List[str]
+            Variable names to be concatenated.
+        ratios: List[float], optional [[.9, .05, .05]]
+            Ratio to split data.
+        overwrite: bool, optional [False]
+            If True, overwrite output data.
+    """
+    if np.abs(np.sum(ratios) - 1.0) > 1e-5:
+        raise ValueError('The sum of ratios does not make 1.')
+    preprocessed_directories = util.collect_data_directories(
+        preprocessed_base_directories,
+        required_file_names=Preprocessor.FINISHED_FILE)
+    dict_data = {
+        variable_name:
+        np.concatenate([
+            util.load_variable(preprocessed_directory, variable_name)
+            for preprocessed_directory in preprocessed_directories])
+        for variable_name in variable_names}
+    data_length = len(dict_data[variable_names[0]])
+    indices = np.arange(data_length)
+    np.random.shuffle(indices)
+
+    train_length = int(np.round(data_length * ratios[0]))
+    validation_length = int(np.round(data_length * ratios[1]))
+    test_length = data_length - train_length - validation_length
+
+    (output_directory_base / 'train').mkdir(
+        parents=True, exist_ok=overwrite)
+    (output_directory_base / 'validation').mkdir(
+        parents=True, exist_ok=overwrite)
+    (output_directory_base / 'test').mkdir(
+        parents=True, exist_ok=overwrite)
+
+    for variable_name, data in dict_data.items():
+        np.save(
+            output_directory_base / f"train/{variable_name}.npy",
+            data[indices[:train_length]])
+        if validation_length > 0:
+            np.save(
+                output_directory_base / f"validation/{variable_name}.npy",
+                data[indices[train_length:train_length+validation_length]])
+        if test_length > 0:
+            np.save(
+                output_directory_base / f"validation/{variable_name}.npy",
+                data[indices[train_length+validation_length:]])
+    return
+
+
 class Preprocessor:
 
     REQUIRED_FILE_NAMES = ['converted']
@@ -263,8 +325,15 @@ class Converter:
         self.converters = self._generate_converters(converter_parameters_pkl)
 
     def _generate_converters(self, converter_parameters_pkl):
-        with open(converter_parameters_pkl, 'rb') as f:
-            dict_preprocessor_settings = pickle.load(f)
+        if isinstance(converter_parameters_pkl, io.BufferedIOBase):
+            dict_preprocessor_settings = pickle.load(converter_parameters_pkl)
+        elif isinstance(converter_parameters_pkl, Path):
+            with open(converter_parameters_pkl, 'rb') as f:
+                dict_preprocessor_settings = pickle.load(f)
+        else:
+            raise ValueError(
+                f"Input type {converter_parameters_pkl.__class__} not "
+                'understood')
 
         converters = {
             variable_name: util.generate_converter_from_dict(value)
@@ -280,8 +349,10 @@ class Converter:
 
     def postprocess(
             self, dict_data_x, dict_data_y, output_directory=None, *,
-            save_x=False, write_simulation=False, write_npy=True,
-            write_simulation_base=None, simulation_type='fistr',
+            overwrite=False, save_x=False, write_simulation=False,
+            write_npy=True, write_simulation_stem=None,
+            write_simulation_base=None, read_simulation_type='fistr',
+            write_simulation_type='fistr',
             data_addition_function=None):
         """Postprocess data with inversely converting them.
 
@@ -292,6 +363,8 @@ class Converter:
                 Dict of output data.
             output_directory: pathlib.Path, optional [None]
                 Output directory path.
+            overwrite: bool, optional [False]
+                If True, overwrite data.
             save_x: bool, optional [False]
                 If True, save input values in addition to output values.
             write_simulation: bool, optional [False]
@@ -301,7 +374,9 @@ class Converter:
             write_simulation_base: pathlib.Path, optional [None]
                 Base of simulation data to be used for write_simulation option.
                 If not fed, try to find from the input directories.
-            simulation_type: str, optional ['fistr']
+            read_simulation_type: str, optional ['fistr']
+                Simulation file type to read simulation base.
+            write_simulation_type: str, optional ['fistr']
                 Simulation file type to write.
         Returns:
             inversed_dict_data_x: dict
@@ -329,27 +404,36 @@ class Converter:
                     raise ValueError('No write_simulation_base fed.')
                 self.write_simulation(
                     inversed_dict_data_y, output_directory,
+                    overwrite=overwrite,
                     write_simulation_base=write_simulation_base,
-                    simulation_type=simulation_type,
+                    write_simulation_stem=write_simulation_stem,
+                    read_simulation_type=read_simulation_type,
+                    write_simulation_type=write_simulation_type,
                     data_addition_function=data_addition_function)
 
         return inversed_dict_data_x, inversed_dict_data_y
 
     def write_simulation(
             self, dict_data_y, output_directory, write_simulation_base, *,
-            simulation_type='fistr', data_addition_function=None):
+            write_simulation_stem=None,
+            read_simulation_type='fistr', data_addition_function=None,
+            write_simulation_type='fistr',
+            overwrite=False):
         fem_data = femio.FEMData.read_directory(
-            simulation_type, write_simulation_base)
+            read_simulation_type, write_simulation_base,
+            stem=write_simulation_stem, save=False)
         for k, v in dict_data_y.items():
             fem_data.overwrite_attribute(k, v[0])
         if data_addition_function is not None:
             fem_data = data_addition_function(fem_data)
 
-        if simulation_type == 'fistr':
+        if write_simulation_type == 'fistr':
             ext = ''
-        elif simulation_type == 'ucd':
+        elif write_simulation_type == 'ucd':
             ext = '.inp'
-        fem_data.write(simulation_type, output_directory / ('mesh' + ext))
+        fem_data.write(
+            write_simulation_type, output_directory / ('mesh' + ext),
+            overwrite=overwrite)
         return
 
     def save(self, data_dict, output_directory):

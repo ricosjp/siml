@@ -1,5 +1,6 @@
 import abc
 import datetime as dt
+import io
 import itertools as it
 import os
 from pathlib import Path
@@ -36,6 +37,25 @@ def load_yaml_file(file_name):
     with open(file_name, 'r') as f:
         dict_data = yaml.load(f, Loader=yaml.SafeLoader)
     return dict_data
+
+
+def load_yaml(source):
+    """Load YAML source.
+
+    Args:
+        source: File-like object or str or pathlib.Path
+    Returns:
+        dict_data: dict
+            YAML contents.
+    """
+    if isinstance(source, io.TextIOBase):
+        return yaml.load(source, Loader=yaml.SafeLoader)
+    elif isinstance(source, str):
+        return yaml.load(source, Loader=yaml.SafeLoader)
+    elif isinstance(source, Path):
+        return load_yaml_file(source)
+    else:
+        raise ValueError(f"Input type {source.__class__} not understood")
 
 
 def save_variable(
@@ -102,6 +122,9 @@ def collect_data_directories(
         found_directories: list of pathlib.Path
             All found directories.
     """
+    if not base_directory.exists():
+        raise ValueError(f"{base_directory} not exist")
+
     found_directories = [
         directory
         for directory in base_directory.iterdir()
@@ -132,6 +155,8 @@ def files_exist(directory, file_names):
         files_exist: bool
             True if all files exist. Otherwise False.
     """
+    if isinstance(file_names, str):
+        file_names = [file_names]
     a = np.all([
         len(list(directory.glob(file_name))) > 0
         for file_name in file_names])

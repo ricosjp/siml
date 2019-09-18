@@ -232,12 +232,15 @@ class TrainerSetting(TypedDataClass):
                 'eta': 1.0,
                 'weight_decay_rate': 0}
         if self.element_wise:
-            print(f"element_wise is True. Overwrite settings.")
-            self.batch_size = self.element_batch_size
-            self.element_batch_size = -1
-            self.use_siml_updater = False
+            self.overwrite_element_wise_setting()
 
         super().__post_init__()
+
+    def overwrite_element_wise_setting(self):
+        print(f"element_wise is True. Overwrite settings.")
+        self.batch_size = self.element_batch_size
+        self.element_batch_size = -1
+        self.use_siml_updater = False
 
     def update_output_directory(self, *, id_=None, base=None):
         if base is None:
@@ -317,11 +320,18 @@ class ModelSetting(TypedDataClass):
 @dc.dataclass
 class OptunaSetting(TypedDataClass):
     n_trial: int = 100
-    output_base_directory: Path = Path('models')
+    output_base_directory: Path = Path('models/optuna')
     hyperparameters: typing.List[dict] = dc.field(default_factory=list)
     setting: dict = dc.field(default_factory=dict)
-    # trainer: dict = dc.field(default_factory=dict)
-    # model: dict = dc.field(default_factory=dict)
+
+    def __post_init__(self):
+        for hyperparameter in self.hyperparameters:
+            if hyperparameter['type'] == 'categorical':
+                if len(hyperparameter['choices']) != len(np.unique([
+                        c['id'] for c in hyperparameter['choices']])):
+                    raise ValueError(
+                        'IDs in optuna.hyperparameter.choices not unique')
+        super().__post_init__()
 
 
 @dc.dataclass
@@ -340,15 +350,20 @@ class MainSetting:
 
     @classmethod
     def read_settings_yaml(cls, settings_yaml):
-        settings_yaml = Path(settings_yaml)
-
-        dict_settings = util.load_yaml_file(settings_yaml)
-        return cls.read_dict_settings(dict_settings, name=settings_yaml.stem)
+        dict_settings = util.load_yaml(settings_yaml)
+        if isinstance(settings_yaml, Path):
+            name = settings_yaml.stem
+        else:
+            name = None
+        return cls.read_dict_settings(dict_settings, name=name)
 
     @classmethod
     def read_dict_settings(cls, dict_settings, *, name=None):
         if 'name' not in dict_settings['trainer']:
-            dict_settings['trainer']['name'] = name
+            if name is None:
+                dict_settings['trainer']['name'] = 'unnamed'
+            else:
+                dict_settings['trainer']['name'] = name
         if 'data' in dict_settings:
             data_setting = DataSetting(**dict_settings['data'])
         else:
@@ -422,17 +437,21 @@ class PreprocessSetting:
         return cls(data=data, preprocess=preprocess)
 
 
-def write_yaml(data_class, file_name):
+def write_yaml(data_class, file_name, *, overwrite=False):
     """Write YAML file of the specified dataclass object.
 
     Args:
+        data_class: dataclasses.dataclass
+            DataClass object to write.
         file_name: str or pathlib.Path
             YAML file name to write.
+        overwrite: bool, optional [False]
+            If True, overwrite file.
     Returns:
         None
     """
     file_name = Path(file_name)
-    if file_name.exists():
+    if file_name.exists() and not overwrite:
         raise ValueError(f"{file_name} already exists")
 
     dict_data = dc.asdict(data_class)
