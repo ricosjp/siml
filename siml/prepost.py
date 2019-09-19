@@ -550,16 +550,16 @@ def normalize_adjacency_matrix(adj):
 
 
 def analyze_data_directories(
-        data_directories, x_name, f_name, *, n_split=10, n_bin=100,
+        data_directories, x_names, f_names, *, n_split=10, n_bin=100,
         out_directory=None, ref_index=0, plot=True):
     """Analyze data f_name with grid over x_name.
 
     Args:
         data_directories: List[pathlib.Path]
             List of data directories.
-        x_name: str
-            Name of x variable.
-        f_name: str
+        x_names: List[str]
+            Names of x variables.
+        f_names: List[str]
             Name of f variable.
         n_split: int, optional, [10]
             The number to split x space.
@@ -578,14 +578,19 @@ def analyze_data_directories(
         out_directory.mkdir(parents=True, exist_ok=True)
 
     data = [
-        _read_analyzing_data(data_directory, x_name, f_name)
+        _read_analyzing_data(data_directory, x_names, f_names)
         for data_directory in data_directories]
     xs = [d[0] for d in data]
     fs = [d[1] for d in data]
     f_grids = _generate_grids(fs, n_bin, symmetric=True, magnitude_range=.1)
+    print('a')
+    # f_grids = _generate_grids(fs, n_bin)
 
+    print('b')
     ranges, list_split_data, centers, means, stds = split_data_arrays(
         xs, fs, n_split=n_split)
+    str_x_names = '-'.join(x_name for x_name in x_names)
+    str_f_names = '-'.join(f_name for f_name in f_names)
 
     # Plot data
     if plot:
@@ -594,7 +599,7 @@ def analyze_data_directories(
             if out_directory is None:
                 out_file_base = None
             else:
-                out_file_base = out_directory / f"{f_name}_{range_string}"
+                out_file_base = out_directory / f"{str_f_names}_{range_string}"
             _plot_histogram(
                 split_data, f_grids, data_directories,
                 out_file_base=out_file_base)
@@ -606,12 +611,14 @@ def analyze_data_directories(
     std_diffs = array_stds - array_stds[ref_index]
 
     header = ','.join(
-        f"{x_name}_{i}" for i in range(centers.shape[-1])) + ',' \
+        f"{str_x_names}_{i}" for i in range(centers.shape[-1])) + ',' \
         + ','.join(
-            f"mean_diff_{f_name}_{i}" for i in range(mean_diffs.shape[-1])) \
+            f"mean_diff_{str_f_names}_{i}"
+            for i in range(mean_diffs.shape[-1])) \
         + ',mean_diff_norm,' \
         + ','.join(
-            f"std_diff_{f_name}_{i}" for i in range(mean_diffs.shape[-1])) \
+            f"std_diff_{str_f_names}_{i}"
+            for i in range(mean_diffs.shape[-1])) \
         + ',std_diff_norm'
     for i_dir, data_directory in enumerate(data_directories):
         mean_diff_norms = np.linalg.norm(mean_diffs[i_dir], axis=1)[:, None]
@@ -650,6 +657,7 @@ def split_data_arrays(xs, fs, *, n_split=10):
     for rs in it.product(*ranges):
         filters = [_calculate_filter(x, rs) for x in xs]
         if np.any([np.all(~filter_) for filter_ in filters]):
+            print('s', end='')
             continue
 
         filtered_fs = [f_[filter_] for f_, filter_ in zip(fs, filters)]
@@ -720,8 +728,27 @@ def _obtain_bounding_box(data):
         for i in range(concat_data.shape[-1])], axis=1)
 
 
-def _read_analyzing_data(data_directory, x, f):
+def _read_analyzing_data(data_directory, x_names, f_names):
     fem_data = femio.FEMData.read_directory('fistr', data_directory)
-    x_val = fem_data.convert_nodal2elemental(x, calc_average=True)
-    f_val = fem_data.convert_nodal2elemental(f, calc_average=True)
+    for x_name in x_names:
+        if x_name not in fem_data.elemental_data \
+                and x_name not in fem_data.nodal_data:
+            if x_name == 'node':
+                continue
+            fem_data.overwrite_attribute(
+                x_name, np.load(data_directory / (x_name + '.npy')))
+    for f_name in f_names:
+        if f_name not in fem_data.elemental_data \
+                and f_name not in fem_data.nodal_data:
+            if f_name == 'node':
+                continue
+            fem_data.overwrite_attribute(
+                f_name, np.load(data_directory / (f_name + '.npy')))
+
+    x_val = np.concatenate([
+        fem_data.convert_nodal2elemental(x_name, calc_average=True)
+        for x_name in x_names], axis=-1)
+    f_val = np.concatenate([
+        fem_data.convert_nodal2elemental(f_name, calc_average=True)
+        for f_name in f_names], axis=-1)
     return x_val, f_val
