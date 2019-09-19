@@ -582,8 +582,8 @@ def analyze_data_directories(
         for data_directory in data_directories]
     xs = [d[0] for d in data]
     fs = [d[1] for d in data]
-    f_grids = _generate_grids(fs, n_bin, symmetric=True, magnitude_range=.1)
     print('a')
+    f_grids = _generate_grids(fs, n_bin, symmetric=True, magnitude_range=.01)
     # f_grids = _generate_grids(fs, n_bin)
 
     print('b')
