@@ -436,6 +436,21 @@ class PreprocessSetting:
         preprocess = dict_settings['preprocess']
         return cls(data=data, preprocess=preprocess)
 
+    def __post_init__(self):
+        for key, value in self.preprocess.items():
+            if isinstance(value, str):
+                self.preprocess.update(
+                    {key: {'method': value, 'componentwise': True}})
+            elif isinstance(value, dict):
+                if 'method' not in value:
+                    value.update({'method': 'identity'})
+                if 'componentwise' not in value:
+                    value.update({'componentwise': True})
+                self.preprocess.update({key: value})
+            else:
+                raise ValueError('Invalid format of preprocess setting')
+        return
+
 
 def write_yaml(data_class, file_name, *, overwrite=False):
     """Write YAML file of the specified dataclass object.
