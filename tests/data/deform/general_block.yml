@@ -4,6 +4,7 @@ data:
   validation:
     - tests/data/deform/preprocessed/train
 trainer:
+  lazy: true
   output_directory: tests/data/deform/tmp
   inputs:
     - name: elemental_strain

@@ -22,6 +22,16 @@ class TestTrainer(unittest.TestCase):
         loss = tr.train()
         np.testing.assert_array_less(loss, 10.)
 
+    def test_train_cpu_short_lazy(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/linear/linear_short.yml'))
+        main_setting.trainer.lazy = True
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, 10.)
+
     def test_train_general_block_without_support(self):
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/deform/general_block_wo_support.yml'))

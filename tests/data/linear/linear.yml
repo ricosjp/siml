@@ -11,6 +11,7 @@ preprocess:
   y: standardize
 trainer:
   output_directory: tests/data/linear/long
+  lazy: true
   inputs:
     - name: x1
       dim: 2
