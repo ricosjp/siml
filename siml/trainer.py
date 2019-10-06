@@ -7,11 +7,12 @@ import optuna
 import pandas as pd
 
 from . import femio
-from . import util
+from . import datasets
 from . import networks
 from . import prepost
 from . import setting
 from . import updaters
+from . import util
 
 
 class Trainer():
@@ -482,18 +483,23 @@ class Trainer():
             train_directories, validation_directories, *,
             supports=None):
 
+        self._check_data_dimension(x_variable_names, train_directories)
         x_train, support_train = self._load_data(
             x_variable_names, train_directories, supports=supports)
         y_train, _ = self._load_data(y_variable_names, train_directories)
-        if supports is None:
-            train_iter = ch.iterators.SerialIterator(
-                ch.datasets.DictDataset(**{'x': x_train, 't': y_train}),
-                batch_size=self.setting.trainer.batch_size, shuffle=True)
+        if self.setting.trainer.lazy:
+            dataset = datasets.LazyDataSet(
+                x_variable_names, y_variable_names, train_directories,
+                supports=supports)
         else:
-            train_iter = ch.iterators.SerialIterator(
-                ch.datasets.DictDataset(**{
-                    'x': x_train, 't': y_train, 'supports': support_train}),
-                batch_size=self.setting.trainer.batch_size, shuffle=True)
+            if supports is None:
+                dataset = ch.datasets.DictDataset(
+                    **{'x': x_train, 't': y_train})
+            else:
+                dataset = ch.datasets.DictDataset(
+                    **{'x': x_train, 't': y_train, 'supports': support_train})
+        train_iter = ch.iterators.SerialIterator(
+            dataset, batch_size=self.setting.trainer.batch_size, shuffle=True)
 
         optimizer = self._create_optimizer()
         optimizer.setup(self.classifier)
@@ -594,17 +600,11 @@ class Trainer():
         else:
             raise ValueError(f"Unknown loss function name: {loss_name}")
 
-    def _load_data(
-            self, variable_names, directories, *,
-            return_dict=False, supports=None):
+    def _check_data_dimension(self, variable_names, directories):
         data_directories = []
         for directory in directories:
             data_directories += util.collect_data_directories(
                 directory, required_file_names=[f"{variable_names[0]}.npy"])
-
-        if supports is None:
-            supports = []
-
         # Check data dimension correctness
         if len(data_directories) > 0:
             data_wo_concatenation = {
@@ -621,9 +621,21 @@ class Trainer():
                     raise ValueError(
                         f"{input_setting['name']} dimension incorrect: "
                         f"{setting_dim} vs {actual_dim}")
+        return
+
+    def _load_data(
+            self, variable_names, directories, *,
+            return_dict=False, supports=None):
+        data_directories = []
+        for directory in directories:
+            data_directories += util.collect_data_directories(
+                directory, required_file_names=[f"{variable_names[0]}.npy"])
+
+        if supports is None:
+            supports = []
 
         data = [
-            self._concatenate_variable([
+            util.concatenate_variable([
                 util.load_variable(data_directory, variable_name)
                 for variable_name in variable_names])
             for data_directory in data_directories]
@@ -656,18 +668,3 @@ class Trainer():
                     for data_directory, d in zip(data_directories, data)}
         else:
             return data, support_data
-
-    def _concatenate_variable(self, variables):
-
-        concatenatable_variables = np.concatenate(
-            [
-                variable for variable in variables
-                if isinstance(variable, np.ndarray)],
-            axis=1)
-        unconcatenatable_variables = [
-            variable for variable in variables
-            if not isinstance(variable, np.ndarray)]
-        if len(unconcatenatable_variables) == 0:
-            return concatenatable_variables
-        else:
-            return concatenatable_variables, unconcatenatable_variables

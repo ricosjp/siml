@@ -928,3 +928,18 @@ def pad_array(array, n):
             (array.data, (array.row, array.col)), shape=(n, n))
     else:
         raise ValueError(f"Unsupported data type: {array.__class__}")
+
+
+def concatenate_variable(variables):
+    concatenatable_variables = np.concatenate(
+        [
+            variable for variable in variables
+            if isinstance(variable, np.ndarray)],
+        axis=1)
+    unconcatenatable_variables = [
+        variable for variable in variables
+        if not isinstance(variable, np.ndarray)]
+    if len(unconcatenatable_variables) == 0:
+        return concatenatable_variables
+    else:
+        return concatenatable_variables, unconcatenatable_variables
