@@ -4,6 +4,7 @@ data:
   validation:
     - tests/data/linear/concatenated/validation
 trainer:
+  lazy: false
   element_wise: true
   output_directory: tests/data/linear/element_wise
   inputs:

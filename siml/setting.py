@@ -161,6 +161,8 @@ class TrainerSetting(TypedDataClass):
     element_wise: bool, optional [False]
         If True, concatenate data to force element wise training
         (so no graph information can be used).
+    lazy: bool, optional [True]
+        If True, load data lazily.
     """
 
     inputs: typing.List[dict] = dc.field(default_factory=list)
@@ -208,8 +210,12 @@ class TrainerSetting(TypedDataClass):
     use_siml_updater: bool = True
     optimizer_setting: dict = dc.field(
         default=None, metadata={'convert': False, 'allow_none': True})
+    lazy: bool = True
 
     def __post_init__(self):
+        if self.element_wise and self.lazy:
+            raise ValueError(
+                'Both element_wise and lazy cannot be True at the same time')
         self.input_names = [i['name'] for i in self.inputs]
         self.input_dims = [i['dim'] for i in self.inputs]
         self.output_names = [o['name'] for o in self.outputs]
