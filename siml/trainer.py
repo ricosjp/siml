@@ -484,14 +484,16 @@ class Trainer():
             supports=None):
 
         self._check_data_dimension(x_variable_names, train_directories)
-        x_train, support_train = self._load_data(
-            x_variable_names, train_directories, supports=supports)
-        y_train, _ = self._load_data(y_variable_names, train_directories)
         if self.setting.trainer.lazy:
             dataset = datasets.LazyDataSet(
                 x_variable_names, y_variable_names, train_directories,
                 supports=supports)
+            _, support_train = self._load_data(
+                x_variable_names, [dataset.data_directories[0]], supports=supports)
         else:
+            x_train, support_train = self._load_data(
+                x_variable_names, train_directories, supports=supports)
+            y_train, _ = self._load_data(y_variable_names, train_directories)
             if supports is None:
                 dataset = ch.datasets.DictDataset(
                     **{'x': x_train, 't': y_train})
