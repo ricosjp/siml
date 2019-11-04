@@ -4,6 +4,7 @@ data:
   validation:
     - tests/data/linear/preprocessed/train
 trainer:
+  lazy: false
   output_directory: tests/data/linear/tmp
   inputs:
     - name: x1
