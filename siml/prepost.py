@@ -550,8 +550,9 @@ def normalize_adjacency_matrix(adj):
 
 
 def analyze_data_directories(
-        data_directories, x_names, f_names, *, n_split=10, n_bin=100,
-        out_directory=None, ref_index=0, plot=True):
+        data_directories, x_names, f_names, *, n_split=10, n_bin=20,
+        out_directory=None, ref_index=0, plot=True, symmetric=False,
+        magnitude_range=1.):
     """Analyze data f_name with grid over x_name.
 
     Args:
@@ -571,6 +572,10 @@ def analyze_data_directories(
             Reference data directory index to analyze data.
         plot: bool, optional, [True]
             If True, plot data by grid.
+        symmetric: bool, optional, [False]
+            If True, take plot range symmetric.
+        magnitude_range: float, optional [1.]
+            Magnitude to be multiplied to the range of plot.
     """
 
     # Initialization
@@ -582,11 +587,10 @@ def analyze_data_directories(
         for data_directory in data_directories]
     xs = [d[0] for d in data]
     fs = [d[1] for d in data]
-    print('a')
-    f_grids = _generate_grids(fs, n_bin, symmetric=True, magnitude_range=.01)
+    f_grids = _generate_grids(
+        fs, n_bin, symmetric=symmetric, magnitude_range=magnitude_range)
     # f_grids = _generate_grids(fs, n_bin)
 
-    print('b')
     ranges, list_split_data, centers, means, stds = split_data_arrays(
         xs, fs, n_split=n_split)
     str_x_names = '-'.join(x_name for x_name in x_names)
@@ -735,15 +739,21 @@ def _read_analyzing_data(data_directory, x_names, f_names):
                 and x_name not in fem_data.nodal_data:
             if x_name == 'node':
                 continue
-            fem_data.overwrite_attribute(
-                x_name, np.load(data_directory / (x_name + '.npy')))
+            fem_data.elemental_data.update({
+                x_name: femio.FEMAttribute(
+                    x_name, fem_data.elements.ids,
+                    np.load(data_directory / (x_name + '.npy')))})
     for f_name in f_names:
         if f_name not in fem_data.elemental_data \
                 and f_name not in fem_data.nodal_data:
             if f_name == 'node':
                 continue
-            fem_data.overwrite_attribute(
-                f_name, np.load(data_directory / (f_name + '.npy')))
+            # fem_data.overwrite_attribute(
+            #     f_name, np.load(data_directory / (f_name + '.npy')))
+            fem_data.elemental_data.update({
+                f_name: femio.FEMAttribute(
+                    f_name, fem_data.elements.ids,
+                    np.load(data_directory / (f_name + '.npy')))})
 
     x_val = np.concatenate([
         fem_data.convert_nodal2elemental(x_name, calc_average=True)
