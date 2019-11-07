@@ -7,6 +7,7 @@ from . import distributor
 from . import gcn
 from . import identity
 from . import mlp
+from . import nri
 
 
 class BlockInformation():
@@ -27,7 +28,8 @@ class Network(ch.Chain):
         'gcn': BlockInformation(gcn.GCN, use_support=True),
         'res_gcn': BlockInformation(gcn.ResGCN, use_support=True),
         'distributor': BlockInformation(distributor.Distributor),
-        'deepsets': BlockInformation(deepsets.DeepSets)
+        'deepsets': BlockInformation(deepsets.DeepSets),
+        'nri': BlockInformation(nri.NRI, use_support=True),
     }
 
     def __init__(self, model_setting, trainer_setting):

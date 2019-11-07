@@ -331,27 +331,3 @@ class TestTrainer(unittest.TestCase):
 
             np.testing.assert_almost_equal(w_grad_wo_padding, w_grad_w_padding)
             np.testing.assert_almost_equal(b_grad_wo_padding, b_grad_w_padding)
-
-    def test_deepsets(self):
-        main_setting = setting.MainSetting.read_settings_yaml(
-            Path('tests/data/linear/deepsets.yml'))
-        tr = trainer.Trainer(main_setting)
-        tr._prepare_training()
-        x = np.reshape(np.arange(5*3), (1, 5, 3)).astype(np.float32) * .1
-
-        # tr.classifier.cleargrads()
-        y_wo_permutation = tr.model(x)
-
-        # raise ValueError(x[0, None, 2:].shape, x[0, None, :2].shape)
-        x_w_permutation = np.concatenate(
-            [x[0, None, 2:], x[0, None, :2]], axis=1)
-        # raise ValueError(x, x_w_permutation)
-        y_w_permutation = tr.model(x_w_permutation)
-
-        np.testing.assert_almost_equal(
-            np.concatenate(
-                [
-                    y_wo_permutation[0, None, 2:].data,
-                    y_wo_permutation[0, None, :2].data],
-                axis=1),
-            y_w_permutation.data)
