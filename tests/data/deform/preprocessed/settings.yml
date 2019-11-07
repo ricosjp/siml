@@ -1,0 +1,31 @@
+data:
+  inferred: tests/data/deform/inferred
+  interim: tests/data/deform/interim
+  pad: false
+  preprocessed: tests/data/deform/preprocessed
+  raw: tests/data/deform/raw
+  test:
+  - tests/data/deform/preprocessed/test
+  train:
+  - tests/data/deform/preprocessed/train
+  validation:
+  - tests/data/deform/preprocessed/validation
+preprocess:
+  adj:
+    componentwise: true
+    method: identity
+  elemental_strain:
+    componentwise: true
+    method: std_scale
+  elemental_stress:
+    componentwise: true
+    method: std_scale
+  modulus:
+    componentwise: true
+    method: std_scale
+  nadj:
+    componentwise: true
+    method: identity
+  poisson_ratio:
+    componentwise: true
+    method: identity
