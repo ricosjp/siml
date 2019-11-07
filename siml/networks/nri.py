@@ -88,28 +88,7 @@ class NRI(header.AbstractGCN):
             y: numpy.ndarray of cupy.ndarray
                 Output of the NN.
         """
-
-        # h_node = x
-        # # 4 loop
-        # reduce_matrix = self.make_reduce_matrix(support, mean=True)
-        # for i in range(len(self.edge_parameters)):
-        #     merged = ch.functions.concat([h_node[support.col],
-        #                                   h_node[support.row]],
-        #                                  axis=1)
-        #     print(merged.shape, h_node.shape)
-        #     edge_emb = ch.functions.relu(
-        #         self.edge_parameters[i](merged))
-        #     h_edge = ch.functions.sparse_matmul(
-        #         reduce_matrix, edge_emb, transa=True)
-        #     if self.last_layer and i == len(self.edge_parameters) - 1:
-        #         # print('identity')
-        #         h_node = self.node_parameters[i](h_edge)
-        #     else:
-        #         # print('relu')
-        #         h_node = ch.functions.relu(self.node_parameters[i](h_edge))
-
         h_node = x
-        # 4 loop
         reduce_matrix = self.make_reduce_matrix(support, mean=True)
         for i in range(len(self.edge_parameters)):
             xp = cuda.get_array_module(x)
@@ -126,11 +105,11 @@ class NRI(header.AbstractGCN):
                       [h_node[support.col], h_node[support.row]], axis=1)
                 else:
                     merged = h_node[support.col] - h_node[support.row]
-            print(self.edge_parameters[i].W.shape, merged.shape, h_node.shape)
             edge_emb = ch.functions.relu(
                 self.edge_parameters[i](merged))
-            h_edge = ch.functions.sparse_matmul(reduce_matrix, edge_emb,
-                                                transa=True)
+
+            h_edge = ch.functions.sparse_matmul(
+                reduce_matrix, edge_emb, transa=True)
             h_node = ch.functions.relu(self.node_parameters[i](h_edge))
 
         return h_node

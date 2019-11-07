@@ -7,6 +7,7 @@ from pathlib import Path
 import subprocess
 
 import chainer as ch
+from chainer.backends import cuda
 import networkx as nx
 import numpy as np
 import scipy.sparse as sp
@@ -767,12 +768,12 @@ def element_wise_converter(batch, device=None):
     return {'x': x, 't': t}
 
 
-def convert_sparse_to_chainer(_sparse, *, device=-1, order=None):
+def convert_sparse_to_chainer(_sparse, *, device=-1, order=None, xp=np):
     sparse = ch.utils.CooMatrix(
         ch.dataset.to_device(device, _sparse.data),
         ch.dataset.to_device(device, _sparse.row),
         ch.dataset.to_device(device, _sparse.col),
-        _sparse.shape, order=order)
+        _sparse.shape, order='C')
     return sparse
 
 
