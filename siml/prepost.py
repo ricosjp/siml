@@ -591,8 +591,8 @@ def analyze_data_directories(
         fs, n_bin, symmetric=symmetric, magnitude_range=magnitude_range)
     # f_grids = _generate_grids(fs, n_bin)
 
-    ranges, list_split_data, centers, means, stds = split_data_arrays(
-        xs, fs, n_split=n_split)
+    ranges, list_split_data, centers, means, stds, coverage \
+        = split_data_arrays(xs, fs, n_split=n_split)
     str_x_names = '-'.join(x_name for x_name in x_names)
     str_f_names = '-'.join(f_name for f_name in f_names)
 
@@ -614,6 +614,20 @@ def analyze_data_directories(
     array_stds = np.transpose(np.stack(stds), (1, 0, 2))
     std_diffs = array_stds - array_stds[ref_index]
 
+    nonref_indices = list(range(ref_index)) + list(
+        range(ref_index + 1, len(data)))
+    nonref_mean_diffs = mean_diffs[nonref_indices]
+    nonref_std_diffs = std_diffs[nonref_indices]
+
+    mean_difference = np.mean(
+        nonref_mean_diffs[~np.isnan(nonref_mean_diffs)]**2)**.5
+    std_difference = np.mean(
+        nonref_std_diffs[~np.isnan(nonref_std_diffs)]**2)**.5
+    print(
+        f"Mean difference: {mean_difference:.3e}\n"
+        f" STD difference: {std_difference:.3e}\n"
+        f"       Coverage: {coverage:.3f}")
+
     header = ','.join(
         f"{str_x_names}_{i}" for i in range(centers.shape[-1])) + ',' \
         + ','.join(
@@ -627,15 +641,16 @@ def analyze_data_directories(
     for i_dir, data_directory in enumerate(data_directories):
         mean_diff_norms = np.linalg.norm(mean_diffs[i_dir], axis=1)[:, None]
         std_diff_norms = np.linalg.norm(std_diffs[i_dir], axis=1)[:, None]
-        np.savetxt(
-            out_directory / (data_directory.stem + '.csv'),
-            np.concatenate(
-                [centers, mean_diffs[i_dir], mean_diff_norms,
-                 std_diffs[i_dir], std_diff_norms], axis=1),
-            delimiter=',', header=header)
+        if out_directory is not None:
+            np.savetxt(
+                out_directory / (data_directory.stem + '.csv'),
+                np.concatenate(
+                    [centers, mean_diffs[i_dir], mean_diff_norms,
+                     std_diffs[i_dir], std_diff_norms], axis=1),
+                delimiter=',', header=header)
 
 
-def split_data_arrays(xs, fs, *, n_split=10):
+def split_data_arrays(xs, fs, *, n_split=10, ref_index=0):
     """Split data fs with regards to grids of xs.
 
     Args:
@@ -658,27 +673,36 @@ def split_data_arrays(xs, fs, *, n_split=10):
     centers = []
     means = []
     stds = []
+    n_cell_with_ref = 0
     for rs in it.product(*ranges):
         filters = [_calculate_filter(x, rs) for x in xs]
-        if np.any([np.all(~filter_) for filter_ in filters]):
-            print('s', end='')
+        if np.any(filters[ref_index]):
+            n_cell_with_ref = n_cell_with_ref + 1
+            if not np.any([
+                    np.any(filter_) for filter_
+                    in filters[:ref_index] + filters[ref_index+1:]]):
+                continue
+        else:
             continue
 
         filtered_fs = [f_[filter_] for f_, filter_ in zip(fs, filters)]
         list_split_data.append(filtered_fs)
         useful_ranges.append(rs)
 
-        filtered_means = np.stack([np.mean(ff, axis=0) for ff in filtered_fs])
-        filtered_stds = np.stack([np.std(ff, axis=0) for ff in filtered_fs])
+        filtered_means = np.stack([
+            np.mean(ff, axis=0) for ff in filtered_fs])
+        filtered_stds = np.stack([
+            np.std(ff, axis=0) for ff in filtered_fs])
         center = [np.mean(r) for r in rs]
         centers.append(center)
         means.append(filtered_means)
         stds.append(filtered_stds)
+    coverage = len(useful_ranges) / n_cell_with_ref
 
     # Write output file
     centers = np.array(centers)
 
-    return useful_ranges, list_split_data, centers, means, stds
+    return useful_ranges, list_split_data, centers, means, stds, coverage
 
 
 def _plot_histogram(
@@ -738,6 +762,7 @@ def _read_analyzing_data(data_directory, x_names, f_names):
         if x_name not in fem_data.elemental_data \
                 and x_name not in fem_data.nodal_data:
             if x_name == 'node':
+                fem_data.overwrite_attribute('NODE', fem_data.nodes.data)
                 continue
             fem_data.elemental_data.update({
                 x_name: femio.FEMAttribute(
