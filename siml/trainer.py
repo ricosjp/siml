@@ -74,6 +74,11 @@ class Trainer():
     def _prepare_training(self):
         self.set_seed()
 
+        if len(self.setting.trainer.input_names) == 0:
+            raise ValueError('No input_names fed')
+        if len(self.setting.trainer.output_names) == 0:
+            raise ValueError('No output_names fed')
+
         # Define model
         self.model = networks.Network(self.setting.model, self.setting.trainer)
         self.classifier = networks.Classifier(
@@ -489,7 +494,8 @@ class Trainer():
                 x_variable_names, y_variable_names, train_directories,
                 supports=supports)
             _, support_train = self._load_data(
-                x_variable_names, [dataset.data_directories[0]], supports=supports)
+                x_variable_names,
+                [dataset.data_directories[0]], supports=supports)
         else:
             x_train, support_train = self._load_data(
                 x_variable_names, train_directories, supports=supports)
@@ -646,6 +652,8 @@ class Trainer():
                 util.load_variable(data_directory, support)
                 for support in supports]
             for data_directory in data_directories]
+        if len(data) == 0:
+            raise ValueError(f"No data found for: {directories}")
         if self.setting.trainer.element_wise:
             if len(support_data[0]) > 0:
                 raise ValueError(

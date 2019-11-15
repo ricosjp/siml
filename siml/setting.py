@@ -220,6 +220,7 @@ class TrainerSetting(TypedDataClass):
         self.input_dims = [i['dim'] for i in self.inputs]
         self.output_names = [o['name'] for o in self.outputs]
         self.output_dims = [o['dim'] for o in self.outputs]
+
         if self.output_directory is None:
             self.update_output_directory()
         if self.support_input is not None:

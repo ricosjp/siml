@@ -300,7 +300,7 @@ class Preprocessor:
                     determine_output_directory(
                         data_directory,
                         self.setting.data.preprocessed, str_replace),
-                    [variable_name + '.*'])
+                    self.FINISHED_FILE)
                 for data_directory in data_directories]):
             print(
                 'Data already exists in '
@@ -332,6 +332,7 @@ class Preprocessor:
             else:
                 self.save_func(
                     output_directory, variable_name, transformed_data)
+                (output_directory / self.FINISHED_FILE).touch()
 
         yaml_file = self.setting.data.preprocessed / 'settings.yml'
         if not yaml_file.exists():
