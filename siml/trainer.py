@@ -493,6 +493,7 @@ class Trainer():
             dataset = datasets.LazyDataSet(
                 x_variable_names, y_variable_names, train_directories,
                 supports=supports)
+            print(dataset.data_directories)
             _, support_train = self._load_data(
                 x_variable_names,
                 [dataset.data_directories[0]], supports=supports)

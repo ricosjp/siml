@@ -251,10 +251,14 @@ class Preprocessor:
                 in self.setting.preprocess.items():
             preprocess_method = preprocess_setting['method']
             componentwise = preprocess_setting['componentwise']
+            if variable_name == list(self.setting.preprocess.items())[-1][0]:
+                last = True
+            else:
+                last = False
             parameters = self.preprocess_single_variable(
                 interim_directories, variable_name, preprocess_method,
                 str_replace='interim', force_renew=force_renew,
-                componentwise=componentwise)
+                componentwise=componentwise, last=last)
             dict_preprocessor_settings.update({
                 variable_name:
                 {'method': preprocess_method, 'parameters': parameters}})
@@ -273,7 +277,8 @@ class Preprocessor:
 
     def preprocess_single_variable(
             self, data_directories, variable_name, preprocess_method, *,
-            str_replace='interim', force_renew=False, componentwise=True):
+            str_replace='interim', force_renew=False, componentwise=True,
+            last=False):
         """Preprocess single variable.
 
         Args:
@@ -290,6 +295,8 @@ class Preprocessor:
             componentwise: bool, optional [True]
                 If True, perform preprocessing (e.g. standardization)
                 componentwise.
+            last: bool, optional [False]
+                If True, touch finished file.
         Returns:
             preprocessor_parameters: dict
         """
@@ -305,7 +312,7 @@ class Preprocessor:
             print(
                 'Data already exists in '
                 f"{self.setting.data.preprocessed}. Skipped.")
-            exit()
+            return
 
         # Prepare preprocessor
         data_files = [
@@ -328,11 +335,13 @@ class Preprocessor:
             if self.save_func is None:
                 util.save_variable(
                     output_directory, variable_name, transformed_data)
-                (output_directory / self.FINISHED_FILE).touch()
+                if last:
+                    (output_directory / self.FINISHED_FILE).touch()
             else:
                 self.save_func(
                     output_directory, variable_name, transformed_data)
-                (output_directory / self.FINISHED_FILE).touch()
+                if last:
+                    (output_directory / self.FINISHED_FILE).touch()
 
         yaml_file = self.setting.data.preprocessed / 'settings.yml'
         if not yaml_file.exists():
