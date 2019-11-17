@@ -105,3 +105,9 @@ class TestUtil(unittest.TestCase):
             explicit_std.transform(new_data), transformed_new_data)
         np.testing.assert_almost_equal(
             explicit_std.inverse(transformed_new_data), new_data)
+
+    def test_collect_data_directories(self):
+        data_directories = util.collect_data_directories(
+            Path('tests/data/deform/raw'),
+            required_file_names=['*.msh', '*.cnt', '*.res.0.1'])
+        self.assertEqual(len(data_directories), 10)
