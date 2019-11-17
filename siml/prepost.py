@@ -20,7 +20,7 @@ FEMIO_FILE = 'femio_npy_saved.npy'
 
 
 def convert_raw_data(
-        raw_directory, mandatory_variables, *, optional_variables=None,
+        raw_directory, *, mandatory_variables=None, optional_variables=None,
         output_base_directory='data/interim',
         recursive=False, conversion_function=None, force_renew=False,
         finished_file='converted', file_type='fistr',
@@ -69,7 +69,7 @@ def convert_raw_data(
     if isinstance(raw_directory, list) or isinstance(raw_directory, set):
         for _raw_directory in set(raw_directory):
             convert_raw_data(
-                _raw_directory, mandatory_variables,
+                _raw_directory, mandatory_variables=mandatory_variables,
                 optional_variables=optional_variables,
                 output_base_directory=output_base_directory,
                 recursive=recursive,
@@ -87,7 +87,7 @@ def convert_raw_data(
         raw_directories = util.collect_data_directories(
             raw_directory, add_base=False)
         convert_raw_data(
-            raw_directories, mandatory_variables,
+            raw_directories, mandatory_variables=mandatory_variables,
             optional_variables=optional_variables,
             output_base_directory=output_base_directory,
             recursive=recursive,
@@ -116,8 +116,12 @@ def convert_raw_data(
             file_type, raw_directory, read_npy=read_npy, save=False,
             read_res=read_res)
 
-    dict_data = extract_variables(
-        fem_data, mandatory_variables, optional_variables=optional_variables)
+    if mandatory_variables is not None and len(mandatory_variables) > 0:
+        dict_data = extract_variables(
+            fem_data, mandatory_variables,
+            optional_variables=optional_variables)
+    else:
+        dict_data = {}
     if conversion_function is not None:
         dict_data.update(conversion_function(fem_data, raw_directory))
 
