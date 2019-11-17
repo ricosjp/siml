@@ -81,10 +81,15 @@ class Trainer():
 
         # Define model
         self.model = networks.Network(self.setting.model, self.setting.trainer)
+        if self.setting.trainer.element_wise \
+                or self.setting.trainer.simplified_model:
+            element_wise = True
+        else:
+            element_wise = False
         self.classifier = networks.Classifier(
             self.model, lossfun=self._create_loss_function(),
             element_batch_size=self.setting.trainer.element_batch_size,
-            element_wise=self.setting.trainer.element_wise)
+            element_wise=element_wise)
         self.classifier.compute_accuracy = \
             self.setting.trainer.compute_accuracy
 
@@ -298,7 +303,8 @@ class Trainer():
         else:
             output_data = None
 
-        if self.setting.trainer.element_wise:
+        if self.setting.trainer.element_wise \
+                or self.setting.trainer.simplified_model:
             return input_data, output_data
         else:
             if output_data is None:
@@ -493,7 +499,6 @@ class Trainer():
             dataset = datasets.LazyDataSet(
                 x_variable_names, y_variable_names, train_directories,
                 supports=supports)
-            print(dataset.data_directories)
             _, support_train = self._load_data(
                 x_variable_names,
                 [dataset.data_directories[0]], supports=supports)
@@ -520,7 +525,8 @@ class Trainer():
         optimizer.setup(self.classifier)
 
         # Converter setting
-        if self.setting.trainer.element_wise:
+        if self.setting.trainer.element_wise \
+                or self.setting.trainer.simplified_model:
             converter = ch.dataset.concat_examples
         else:
             if self.setting.trainer.support_inputs is None:
@@ -656,10 +662,12 @@ class Trainer():
             for data_directory in data_directories]
         if len(data) == 0:
             raise ValueError(f"No data found for: {directories}")
-        if self.setting.trainer.element_wise:
+        if self.setting.trainer.element_wise \
+                or self.setting.trainer.simplified_model:
             if len(support_data[0]) > 0:
                 raise ValueError(
-                    'Cannot use support_input if element_wise is True')
+                    'Cannot use support_input if '
+                    'element_wise or simplified_model is True')
             if return_dict:
                 return {
                     data_directory:

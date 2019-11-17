@@ -331,3 +331,18 @@ class TestTrainer(unittest.TestCase):
 
             np.testing.assert_almost_equal(w_grad_wo_padding, w_grad_w_padding)
             np.testing.assert_almost_equal(b_grad_wo_padding, b_grad_w_padding)
+
+    def test_simplified_model(self):
+        setting_yaml = Path('tests/data/simplified/mlp.yml')
+        main_setting = setting.MainSetting.read_settings_yaml(setting_yaml)
+
+        if main_setting.data.preprocessed.exists():
+            shutil.rmtree(main_setting.data.preprocessed)
+        preprocessor = prepost.Preprocessor.read_settings(setting_yaml)
+        preprocessor.preprocess_interim_data()
+
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, 0.01)
