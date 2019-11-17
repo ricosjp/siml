@@ -7,7 +7,6 @@ from pathlib import Path
 import subprocess
 
 import chainer as ch
-from chainer.backends import cuda
 import networkx as nx
 import numpy as np
 import scipy.sparse as sp

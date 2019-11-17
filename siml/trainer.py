@@ -507,8 +507,14 @@ class Trainer():
             else:
                 dataset = ch.datasets.DictDataset(
                     **{'x': x_train, 't': y_train, 'supports': support_train})
+
+        if self.setting.trainer.element_wise:
+            batch_size = self.setting.trainer.element_batch_size
+        else:
+            batch_size = self.setting.trainer.batch_size
+
         train_iter = ch.iterators.SerialIterator(
-            dataset, batch_size=self.setting.trainer.batch_size, shuffle=True)
+            dataset, batch_size=batch_size, shuffle=True)
 
         optimizer = self._create_optimizer()
         optimizer.setup(self.classifier)
@@ -524,11 +530,6 @@ class Trainer():
 
         # Updater setting
         if self.setting.trainer.use_siml_updater:
-            if self.setting.trainer.element_batch_size >= 0:
-                print(
-                    f"When use_siml_updater: True, "
-                    f"cannot set element_batch_size >= 0. Set to -1.")
-                self.setting.trainer.element_batch_size = -1
             updater = updaters.SimlUpdater(
                 train_iter, optimizer, device=self.setting.trainer.gpu_id,
                 converter=converter)
@@ -581,14 +582,14 @@ class Trainer():
                 validation_iter = ch.iterators.SerialIterator(
                     ch.datasets.DictDataset(**{
                         'x': x_validation, 't': y_validation}),
-                    batch_size=self.setting.trainer.batch_size,
+                    batch_size=batch_size,
                     shuffle=False, repeat=False)
             else:
                 validation_iter = ch.iterators.SerialIterator(
                     ch.datasets.DictDataset(**{
                         'x': x_validation, 't': y_validation,
                         'supports': support_validation}),
-                    batch_size=self.setting.trainer.batch_size,
+                    batch_size=batch_size,
                     shuffle=False, repeat=False)
             trainer.extend(ch.training.extensions.Evaluator(
                 validation_iter, self.classifier,

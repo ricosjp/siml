@@ -160,7 +160,14 @@ class TrainerSetting(TypedDataClass):
         Random seed.
     element_wise: bool, optional [False]
         If True, concatenate data to force element wise training
-        (so no graph information can be used).
+        (so no graph information can be used). With this option,
+        element_batch_size will be used for trainer's batch size as it is
+        "element wise" training.
+    simplified_model: bool, optional [False]
+        If True, regard the target simulation as simplified simulation
+        (so-called "1D simulation"), which focuses on only a few inputs and
+        outputs. The behavior of the trainer will be similar to that with
+        element_wise = True.
     lazy: bool, optional [True]
         If True, load data lazily.
     """
@@ -206,6 +213,7 @@ class TrainerSetting(TypedDataClass):
     snapshot_choise_method: str = 'best'
     seed: int = 0
     element_wise: bool = False
+    simplified_model: bool = False
     element_batch_size: int = -1
     use_siml_updater: bool = True
     optimizer_setting: dict = dc.field(
@@ -216,6 +224,10 @@ class TrainerSetting(TypedDataClass):
         if self.element_wise and self.lazy:
             raise ValueError(
                 'Both element_wise and lazy cannot be True at the same time')
+        if self.simplified_model and self.lazy:
+            raise ValueError(
+                'Both simplified_model and lazy cannot be True '
+                'at the same time')
         self.input_names = [i['name'] for i in self.inputs]
         self.input_dims = [i['dim'] for i in self.inputs]
         self.output_names = [o['name'] for o in self.outputs]
@@ -238,16 +250,16 @@ class TrainerSetting(TypedDataClass):
                 'eps': 1e-8,
                 'eta': 1.0,
                 'weight_decay_rate': 0}
-        if self.element_wise:
-            self.overwrite_element_wise_setting()
+        if self.element_wise or self.simplified_model:
+            self.use_siml_updater = False
 
         super().__post_init__()
 
-    def overwrite_element_wise_setting(self):
-        print(f"element_wise is True. Overwrite settings.")
-        self.batch_size = self.element_batch_size
-        self.element_batch_size = -1
-        self.use_siml_updater = False
+    # def overwrite_element_wise_setting(self):
+    #     print(f"element_wise is True. Overwrite settings.")
+    #     self.batch_size = self.element_batch_size
+    #     self.element_batch_size = -1
+    #     self.use_siml_updater = False
 
     def update_output_directory(self, *, id_=None, base=None):
         if base is None:
