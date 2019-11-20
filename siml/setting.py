@@ -500,5 +500,7 @@ def _standardize_data(data):
         return {k: _standardize_data(v) for k, v in data.items()}
     elif isinstance(data, Path):
         return str(data)
+    elif isinstance(data, Enum):
+        return data.value
     else:
         return data
