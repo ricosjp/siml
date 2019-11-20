@@ -512,7 +512,7 @@ class Trainer():
                 dataset, batch_size=self.setting.trainer.batch_size,
                 shuffle=True)
         elif self.setting.trainer.iterator is setting.Iter.MULTI:
-            train_iter = ch.iterators.MutiprocessIterator(
+            train_iter = ch.iterators.MultiprocessIterator(
                 dataset, batch_size=self.setting.trainer.batch_size,
                 shuffle=True)
         else:
