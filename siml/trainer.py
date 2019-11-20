@@ -507,8 +507,18 @@ class Trainer():
             else:
                 dataset = ch.datasets.DictDataset(
                     **{'x': x_train, 't': y_train, 'supports': support_train})
-        train_iter = ch.iterators.SerialIterator(
-            dataset, batch_size=self.setting.trainer.batch_size, shuffle=True)
+        if self.setting.trainer.iterator is setting.Iter.SERIAL:
+            train_iter = ch.iterators.SerialIterator(
+                dataset, batch_size=self.setting.trainer.batch_size,
+                shuffle=True)
+        elif self.setting.trainer.iterator is setting.Iter.MULTI:
+            train_iter = ch.iterators.MutiprocessIterator(
+                dataset, batch_size=self.setting.trainer.batch_size,
+                shuffle=True)
+        else:
+            train_iter = ch.iterators.SerialIterator(
+                dataset, batch_size=self.setting.trainer.batch_size,
+                shuffle=True)
 
         optimizer = self._create_optimizer()
         optimizer.setup(self.classifier)

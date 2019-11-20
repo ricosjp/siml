@@ -1,6 +1,7 @@
 import dataclasses as dc
 from pathlib import Path
 import typing
+from enum import Enum
 
 import numpy as np
 import optuna
@@ -115,6 +116,11 @@ class DBSetting(TypedDataClass):
     use_sqlite: bool = False
 
 
+class Iter(Enum):
+    SERIAL = 'serial'
+    MULTI = 'multi'
+
+
 @dc.dataclass
 class TrainerSetting(TypedDataClass):
 
@@ -208,6 +214,7 @@ class TrainerSetting(TypedDataClass):
     element_wise: bool = False
     element_batch_size: int = -1
     use_siml_updater: bool = True
+    iterator: Iter = Iter.SERIAL
     optimizer_setting: dict = dc.field(
         default=None, metadata={'convert': False, 'allow_none': True})
     lazy: bool = True
