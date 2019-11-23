@@ -341,13 +341,22 @@ class Trainer():
 
         # Preprocess data
         preprocessed_x = self.prepost_converter.preprocess(raw_dict_x)
+        x = np.concatenate(
+            [
+                preprocessed_x[variable_name]
+                for variable_name in self.setting.trainer.input_names],
+            axis=1).astype(np.float32)
+
         if answer_raw_dict_y is not None:
             answer_preprocessed_y = self.prepost_converter.preprocess(
                 answer_raw_dict_y)
-        x = np.concatenate(
-            [preprocessed_x['a'], preprocessed_x['b']], axis=1).astype(
-                np.float32)
-        answer_y = answer_preprocessed_y['c'][None, :, :].astype(np.float32)
+            answer_y = np.concatenate(
+                [
+                    answer_preprocessed_y[variable_name]
+                    for variable_name in self.setting.trainer.output_names],
+                axis=1).astype(np.float32)
+        else:
+            answer_y = None
 
         _, inversed_dict_y, loss = self._infer_single_data(
             self.prepost_converter, x, answer_y=answer_y)
