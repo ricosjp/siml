@@ -184,27 +184,9 @@ class Trainer():
                     - output variables
                     - loss
         """
-        # Define model
-        if model_file is None:
-            if model_directory is None:
-                if self.setting.trainer.pretrain_directory is None:
-                    raise ValueError(
-                        f'No pretrain directory is specified for inference.')
-            else:
-                self.setting.trainer.pretrain_directory = model_directory
-            self._update_setting_if_needed()
-
-        self.model = networks.Network(self.setting.model, self.setting.trainer)
-        self._load_pretrained_model_if_needed(model_file=model_file)
-        self.classifier = networks.Classifier(
-            self.model, lossfun=self._create_loss_function(),
-            element_batch_size=self.setting.trainer.element_batch_size)
-        self.classifier.compute_accuracy = \
-            self.setting.trainer.compute_accuracy
-        if converter_parameters_pkl is None:
-            converter_parameters_pkl = self.setting.data.preprocessed \
-                / 'preprocessors.pkl'
-        prepost_converter = prepost.Converter(converter_parameters_pkl)
+        self._prepare_inference(
+            model_file, model_directory=model_directory,
+            converter_parameters_pkl=converter_parameters_pkl)
 
         # Load data
         if raw_data_directory is None and raw_data_basename is None:
@@ -220,11 +202,6 @@ class Trainer():
             dict_dir_y = self._load_data(
                 self.setting.trainer.output_names, input_directories,
                 return_dict=True)
-            # dict_dir_x = {preprocessed_data_directory: x}
-            # if y is None:
-            #     dict_dir_y = {}
-            # else:
-            #     dict_dir_y = {preprocessed_data_directory: y}
 
         else:
             # Inference based on raw data
@@ -250,7 +227,7 @@ class Trainer():
                 read_simulation_type,
                 raw_data_directory=raw_data_directory,
                 raw_data_stem=raw_data_stem,
-                prepost_converter=prepost_converter,
+                prepost_converter=self.prepost_converter,
                 conversion_function=conversion_function)
             dict_dir_x = {preprocessed_data_directory: x}
             if y is None:
@@ -261,8 +238,9 @@ class Trainer():
         # Perform inference
         with ch.using_config('train', False):
             inference_results = [
-                self._infer_single_data(
-                    prepost_converter, directory, x, dict_dir_y, save=save,
+                self._infer_single_directory(
+                    self.prepost_converter, directory, x, dict_dir_y,
+                    save=save,
                     overwrite=overwrite, output_directory=output_directory,
                     write_simulation=write_simulation, write_npy=write_npy,
                     write_yaml=write_yaml,
@@ -273,6 +251,31 @@ class Trainer():
                     data_addition_function=data_addition_function)
                 for directory, x in dict_dir_x.items()]
         return inference_results
+
+    def _prepare_inference(
+            self, model_file,
+            *, model_directory=None, converter_parameters_pkl=None):
+        # Define model
+        if model_file is None:
+            if model_directory is None:
+                if self.setting.trainer.pretrain_directory is None:
+                    raise ValueError(
+                        f'No pretrain directory is specified for inference.')
+            else:
+                self.setting.trainer.pretrain_directory = model_directory
+            self._update_setting_if_needed()
+
+        self.model = networks.Network(self.setting.model, self.setting.trainer)
+        self._load_pretrained_model_if_needed(model_file=model_file)
+        self.classifier = networks.Classifier(
+            self.model, lossfun=self._create_loss_function(),
+            element_batch_size=self.setting.trainer.element_batch_size)
+        self.classifier.compute_accuracy = \
+            self.setting.trainer.compute_accuracy
+        if converter_parameters_pkl is None:
+            converter_parameters_pkl = self.setting.data.preprocessed \
+                / 'preprocessors.pkl'
+        self.prepost_converter = prepost.Converter(converter_parameters_pkl)
 
     def _preprocess_data(
             self, simulation_type, prepost_converter, raw_data_directory,
@@ -313,11 +316,47 @@ class Trainer():
                 extended_output_data = output_data[None, :, :]
             return input_data[None, :, :], extended_output_data
 
+    def infer_simplified_model(
+            self, model_file, raw_dict_x, *,
+            answer_raw_dict_y=None, model_directory=None,
+            converter_parameters_pkl=None):
+        """
+        Infer with simplified model.
+
+        Args:
+            model_file: pathlib.Path
+                Model file name.
+            raw_dict_x: dict
+                Dict of raw x data.
+            answer_raw_dict_y: dict, optional [None]
+                Dict of answer raw y data.
+            model_directory: pathlib.Path
+                Model directory name.
+            converter_parameters_pkl: pathlib.Path
+                Converter parameters pkl data.
+        """
+        self._prepare_inference(
+            model_file, model_directory=model_directory,
+            converter_parameters_pkl=converter_parameters_pkl)
+
+        # Preprocess data
+        preprocessed_x = self.prepost_converter.preprocess(raw_dict_x)
+        if answer_raw_dict_y is not None:
+            answer_preprocessed_y = self.prepost_converter.preprocess(
+                answer_raw_dict_y)
+        x = np.concatenate(
+            [preprocessed_x['a'], preprocessed_x['b']], axis=1).astype(
+                np.float32)
+        answer_y = answer_preprocessed_y['c'][None, :, :].astype(np.float32)
+
+        _, inversed_dict_y, loss = self._infer_single_data(
+            self.prepost_converter, x, answer_y=answer_y)
+        return inversed_dict_y, loss
+
     def _infer_single_data(
-            self, postprocessor, directory, x, dict_dir_y, *, save=True,
+            self, postprocessor, x, *, answer_y=None,
             overwrite=False,
             output_directory=None, write_simulation=False, write_npy=True,
-            write_yaml=True,
             write_simulation_base=None, write_simulation_stem=None,
             write_simulation_type='fistr', read_simulation_type='fistr',
             data_addition_function=None):
@@ -332,20 +371,6 @@ class Trainer():
             inferred_y, self.setting.trainer.outputs)
 
         # Postprocess
-        if save:
-            if output_directory is None:
-                output_directory = prepost.determine_output_directory(
-                    directory, self.setting.data.inferred,
-                    self.setting.data.preprocessed.stem) \
-                    / f"{self.setting.trainer.name}_{util.date_string()}"
-            output_directory.mkdir(parents=True, exist_ok=overwrite)
-            if write_yaml:
-                setting.write_yaml(
-                    self.setting, output_directory / 'settings.yml',
-                    overwrite=overwrite)
-        else:
-            output_directory = None
-
         inversed_dict_x, inversed_dict_y = postprocessor.postprocess(
             dict_var_x, dict_var_inferred_y,
             output_directory=output_directory, overwrite=overwrite,
@@ -357,28 +382,71 @@ class Trainer():
             data_addition_function=data_addition_function)
 
         # Compute loss
-        if directory in dict_dir_y:
-            # Answer data exists
-            if len(dict_dir_y[directory].shape) == 2:
+        if answer_y is not None:
+            if len(answer_y.shape) == 2:
                 loss = self.classifier.lossfun(
-                    inferred_y[0], dict_dir_y[directory]).data
-            elif len(dict_dir_y[directory].shape) == 3:
+                    inferred_y[0], answer_y).data
+            elif len(answer_y.shape) == 3:
                 loss = self.classifier.lossfun(
-                    inferred_y, dict_dir_y[directory]).data
+                    inferred_y, answer_y).data
             else:
                 raise ValueError(
-                    f"Unknown shape of y: {dict_dir_y[directory].shape}")
-            # loss = self.classifier(x, dict_dir_y[directory]).data
-            print(f"data: {directory}")
-            print(f"loss: {loss}")
-            if save:
-                with open(output_directory / 'loss.dat', 'w') as f:
-                    f.write(f"loss: {loss}")
+                    f"Unknown shape of answer_y: {answer_y.shape}")
         else:
             # Answer data does not exist
             loss = None
 
-        print(f"Inferred data saved in: {output_directory}")
+        return inversed_dict_x, inversed_dict_y, loss
+
+    def _infer_single_directory(
+            self, postprocessor, directory, x, dict_dir_y, *, save=True,
+            overwrite=False,
+            output_directory=None, write_simulation=False, write_npy=True,
+            write_yaml=True,
+            write_simulation_base=None, write_simulation_stem=None,
+            write_simulation_type='fistr', read_simulation_type='fistr',
+            data_addition_function=None):
+
+        if directory in dict_dir_y:
+            # Answer data exists
+            answer_y = dict_dir_y[directory]
+        else:
+            answer_y = None
+
+        if save:
+            if output_directory is None:
+                output_directory = prepost.determine_output_directory(
+                    directory, self.setting.data.inferred,
+                    self.setting.data.preprocessed.stem) \
+                    / f"{self.setting.trainer.name}_{util.date_string()}"
+            output_directory.mkdir(parents=True, exist_ok=overwrite)
+        else:
+            output_directory = None
+
+        inversed_dict_x, inversed_dict_y, loss = self._infer_single_data(
+            postprocessor, x, answer_y=answer_y,
+            overwrite=overwrite,
+            output_directory=output_directory,
+            write_simulation=write_simulation, write_npy=write_npy,
+            write_simulation_base=write_simulation_base,
+            write_simulation_stem=write_simulation_stem,
+            write_simulation_type=write_simulation_type,
+            read_simulation_type=read_simulation_type,
+            data_addition_function=data_addition_function)
+
+        if loss is not None:
+            print(f"data: {directory}")
+            print(f"loss: {loss}")
+
+        if save:
+            if write_yaml:
+                setting.write_yaml(
+                    self.setting, output_directory / 'settings.yml',
+                    overwrite=overwrite)
+            with open(output_directory / 'loss.dat', 'w') as f:
+                f.write(f"loss: {loss}")
+            print(f"Inferred data saved in: {output_directory}")
+
         return inversed_dict_x, inversed_dict_y, loss
 
     def set_seed(self):
