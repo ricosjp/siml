@@ -1,4 +1,5 @@
 import random
+import os
 
 import chainer as ch
 import daz
@@ -514,7 +515,7 @@ class Trainer():
         elif self.setting.trainer.iterator is setting.Iter.MULTI:
             train_iter = ch.iterators.MultiprocessIterator(
                 dataset, batch_size=self.setting.trainer.batch_size,
-                shuffle=True)
+                shuffle=True, n_processes=len(os.sched_getaffinity(0)))
         else:
             train_iter = ch.iterators.SerialIterator(
                 dataset, batch_size=self.setting.trainer.batch_size,
