@@ -119,6 +119,7 @@ class DBSetting(TypedDataClass):
 class Iter(Enum):
     SERIAL = 'serial'
     MULTI = 'multi'
+    MULTI_TH = 'multi_th'
 
 
 @dc.dataclass

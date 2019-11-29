@@ -516,6 +516,10 @@ class Trainer():
             train_iter = ch.iterators.MultiprocessIterator(
                 dataset, batch_size=self.setting.trainer.batch_size,
                 shuffle=True, n_processes=len(os.sched_getaffinity(0)))
+        elif self.setting.trainer.iterator is setting.Iter.MULTI_TH:
+            train_iter = ch.iterators.MultithreadIterator(
+                dataset, batch_size=self.setting.trainer.batch_size,
+                shuffle=True, n_threads=2)
         else:
             train_iter = ch.iterators.SerialIterator(
                 dataset, batch_size=self.setting.trainer.batch_size,
