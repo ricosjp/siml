@@ -109,7 +109,7 @@ def load_variable(data_directory, file_basename):
 
 
 def collect_data_directories(
-        base_directory, *, required_file_names=None, add_base=True):
+        base_directory, *, required_file_names=None, add_base=True, top=True):
     """Collect data directories recursively from the base directory.
 
     Args:
@@ -133,17 +133,20 @@ def collect_data_directories(
 
     for found_directory in found_directories:
         found_directories += collect_data_directories(
-            found_directory, add_base=False)
+            found_directory, add_base=False, top=False)
 
     if add_base:
         found_directories += [base_directory]
-    if required_file_names is None:
-        return found_directories
-    else:
-        return [
+    if required_file_names is not None:
+        found_directories = [
             found_directory
             for found_directory in found_directories
             if files_exist(found_directory, required_file_names)]
+
+    if top:
+        return list(np.unique(found_directories))
+    else:
+        return found_directories
 
 
 def files_exist(directory, file_names):
@@ -165,7 +168,8 @@ def files_exist(directory, file_names):
 
 
 def create_converter(
-        preprocess_method, *, data_files=None, parameter_file=None):
+        preprocess_method, *, data_files=None, parameter_file=None,
+        componentwise=True):
     if preprocess_method == 'identity':
         generator = IdentityConverter
     elif preprocess_method == 'standardize':
@@ -178,7 +182,8 @@ def create_converter(
     if parameter_file is not None:
         converter = generator.load(parameter_file)
     elif data_files is not None:
-        converter = generator.lazy_read_files(data_files)
+        converter = generator.lazy_read_files(
+            data_files, componentwise=componentwise)
     else:
         raise ValueError(
             'Cannot initialize converter without '
@@ -207,7 +212,7 @@ class AbstractConverter(abc.ABC):
 
     @classmethod
     @abc.abstractmethod
-    def lazy_read_files(cls, data_files):
+    def lazy_read_files(cls, data_files, componentwise=True):
         pass
 
     @property
@@ -240,7 +245,7 @@ class IdentityConverter(AbstractConverter):
     """Class to perform identity conversion (do nothing)."""
 
     @classmethod
-    def lazy_read_files(cls, data_files):
+    def lazy_read_files(cls, data_files, componentwise=True):
         return cls()
 
     @property
@@ -262,11 +267,13 @@ class Standardizer(AbstractConverter):
 
     EPSILON = 1e-5
 
-    def __init__(self, mean, std, *, mean_square=None, n=None):
+    def __init__(
+            self, mean, std, *, mean_square=None, n=None, componentwise=True):
         self.std = std
         self.mean = mean
         self.mean_square = mean_square
         self.n = n
+        self.componentwise = componentwise
         self.is_updatable = self.mean_square is not None and self.n is not None
 
     @property
@@ -274,16 +281,26 @@ class Standardizer(AbstractConverter):
         return {'std': self.std, 'mean': self.mean}
 
     @classmethod
-    def read_data(cls, data):
-        std = np.std(data, axis=0)
-        mean_square = np.mean(data**2, axis=0)
+    def read_data(cls, data, componentwise=True):
+        if componentwise:
+            mean = np.mean(data, axis=0)
+            std = np.std(data, axis=0)
+            mean_square = np.mean(data**2, axis=0)
+            n = data.shape[0]
+        else:
+            mean = np.mean(data)
+            std = np.std(data)
+            mean_square = np.mean(data**2)
+            n = data.size
+
         return cls(
-            mean=np.mean(data, axis=0), std=std, mean_square=mean_square,
-            n=data.shape[0])
+            mean=mean, std=std, mean_square=mean_square, n=n,
+            componentwise=componentwise)
 
     @classmethod
-    def lazy_read_files(cls, data_files):
-        obj = cls.read_data(np.load(data_files[0]))
+    def lazy_read_files(cls, data_files, componentwise=True):
+        obj = cls.read_data(
+            np.load(data_files[0]), componentwise=componentwise)
         if len(data_files) == 1:
             return obj
 
@@ -295,10 +312,18 @@ class Standardizer(AbstractConverter):
         if not self.is_updatable:
             raise ValueError('Standardizer is not updatable')
 
-        m = data.shape[0]
-        mean = (self.mean * self.n + np.sum(data, axis=0)) / (self.n + m)
-        mean_square = (self.mean_square * self.n + np.sum(data**2, axis=0)) / (
-            self.n + m)
+        if self.componentwise:
+            m = data.shape[0]
+            mean = (self.mean * self.n + np.sum(data, axis=0)) / (self.n + m)
+            mean_square = (
+                self.mean_square * self.n + np.sum(data**2, axis=0)) / (
+                    self.n + m)
+        else:
+            m = data.size
+            mean = (self.mean * self.n + np.sum(data)) / (self.n + m)
+            mean_square = (
+                self.mean_square * self.n + np.sum(data**2)) / (
+                    self.n + m)
 
         self.mean = mean
         self.mean_square = mean_square
@@ -319,8 +344,12 @@ class Standardizer(AbstractConverter):
 class StandardScaler(Standardizer):
     """Class to perform scaling with standard deviation."""
 
-    def __init__(self, std, *, mean_square=None, n=None, mean=None):
-        super().__init__(mean=0.0, std=std, mean_square=mean_square, n=n)
+    def __init__(
+            self, std, *,
+            mean_square=None, n=None, mean=None, componentwise=True):
+        super().__init__(
+            mean=0.0, std=std, mean_square=mean_square, n=n,
+            componentwise=componentwise)
 
     @property
     def parameters(self):

@@ -220,6 +220,7 @@ class TrainerSetting(TypedDataClass):
         self.input_dims = [i['dim'] for i in self.inputs]
         self.output_names = [o['name'] for o in self.outputs]
         self.output_dims = [o['dim'] for o in self.outputs]
+
         if self.output_directory is None:
             self.update_output_directory()
         if self.support_input is not None:
@@ -441,6 +442,21 @@ class PreprocessSetting:
         data = DataSetting(**dict_settings['data'])
         preprocess = dict_settings['preprocess']
         return cls(data=data, preprocess=preprocess)
+
+    def __post_init__(self):
+        for key, value in self.preprocess.items():
+            if isinstance(value, str):
+                self.preprocess.update(
+                    {key: {'method': value, 'componentwise': True}})
+            elif isinstance(value, dict):
+                if 'method' not in value:
+                    value.update({'method': 'identity'})
+                if 'componentwise' not in value:
+                    value.update({'componentwise': True})
+                self.preprocess.update({key: value})
+            else:
+                raise ValueError('Invalid format of preprocess setting')
+        return
 
 
 def write_yaml(data_class, file_name, *, overwrite=False):

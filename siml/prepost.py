@@ -25,7 +25,7 @@ def convert_raw_data(
         recursive=False, conversion_function=None, force_renew=False,
         finished_file='converted', file_type='fistr',
         required_file_names=['*.msh', '*.cnt', '*.res.0.1'], read_npy=False,
-        write_ucd=True):
+        write_ucd=True, read_res=True):
     """Convert raw data and save them in interim directory.
 
     Args:
@@ -60,6 +60,8 @@ def convert_raw_data(
             If True, read .npy files instead of original files if exists.
         write_ucd: bool, optional [True]
             If True, write AVS UCD file with preprocessed variables.
+        read_res: bool, optional [True]
+            If True, read res file of FrontISTR.
     Returns:
         None
     """
@@ -74,7 +76,8 @@ def convert_raw_data(
                 conversion_function=conversion_function,
                 force_renew=force_renew, finished_file=finished_file,
                 file_type=file_type,
-                required_file_names=required_file_names, read_npy=read_npy)
+                required_file_names=required_file_names, read_npy=read_npy,
+                read_res=read_res)
         return
 
     # Process all subdirectories when recursice is True
@@ -92,7 +95,7 @@ def convert_raw_data(
             force_renew=force_renew, finished_file=finished_file,
             file_type=file_type,
             required_file_names=required_file_names,
-            read_npy=read_npy)
+            read_npy=read_npy, read_res=read_res)
 
     # Determine output directory
     output_directory = determine_output_directory(
@@ -110,7 +113,8 @@ def convert_raw_data(
         fem_data = femio.FEMData.read_npy_directory(output_directory)
     else:
         fem_data = femio.FEMData.read_directory(
-            file_type, raw_directory, read_npy=read_npy, save=False)
+            file_type, raw_directory, read_npy=read_npy, save=False,
+            read_res=read_res)
 
     dict_data = extract_variables(
         fem_data, mandatory_variables, optional_variables=optional_variables)
@@ -138,7 +142,8 @@ def write_ucd_file(output_directory, fem_data, dict_data=None):
                     key: femio.FEMAttribute(
                         key, fem_data.elements.ids, value)})
             except ValueError:
-                raise ValueError(key)
+                print(f"{key} is skipped for writing in UCD")
+                continue
 
     fem_data.write('ucd', output_directory / 'mesh.inp')
 
@@ -218,16 +223,21 @@ class Preprocessor:
     def __init__(self, setting):
         self.setting = setting
 
-    def preprocess_interim_data(self, *, force_renew=False):
+    def preprocess_interim_data(self, *, force_renew=False, save_func=None):
         """Preprocess interim data with preprocessing e.g. standardization and then
         save them.
 
         Args:
             force_renew: bool, optional [False]
                 If True, renew npy files even if they are alerady exist.
+            save_func: function object, optional [None]
+                Callback function to customize save data. It should accept
+                output_directory, variable_name, and transformed_data.
         Returns:
             None
         """
+        self.save_func = save_func
+
         interim_directories = util.collect_data_directories(
             self.setting.data.interim,
             required_file_names=self.REQUIRED_FILE_NAMES, add_base=False)
@@ -237,11 +247,18 @@ class Preprocessor:
 
         # Preprocess data variable by variable
         dict_preprocessor_settings = {}
-        for variable_name, preprocess_method \
+        for variable_name, preprocess_setting \
                 in self.setting.preprocess.items():
+            preprocess_method = preprocess_setting['method']
+            componentwise = preprocess_setting['componentwise']
+            if variable_name == list(self.setting.preprocess.items())[-1][0]:
+                last = True
+            else:
+                last = False
             parameters = self.preprocess_single_variable(
                 interim_directories, variable_name, preprocess_method,
-                str_replace='interim', force_renew=force_renew)
+                str_replace='interim', force_renew=force_renew,
+                componentwise=componentwise, last=last)
             dict_preprocessor_settings.update({
                 variable_name:
                 {'method': preprocess_method, 'parameters': parameters}})
@@ -260,7 +277,8 @@ class Preprocessor:
 
     def preprocess_single_variable(
             self, data_directories, variable_name, preprocess_method, *,
-            str_replace='interim', force_renew=False):
+            str_replace='interim', force_renew=False, componentwise=True,
+            last=False):
         """Preprocess single variable.
 
         Args:
@@ -274,6 +292,11 @@ class Preprocessor:
                 Name to replace the input data base directory with.
             force_renew: bool, optional [False]
                 If True, renew npy files even if they are alerady exist.
+            componentwise: bool, optional [True]
+                If True, perform preprocessing (e.g. standardization)
+                componentwise.
+            last: bool, optional [False]
+                If True, touch finished file.
         Returns:
             preprocessor_parameters: dict
         """
@@ -284,19 +307,20 @@ class Preprocessor:
                     determine_output_directory(
                         data_directory,
                         self.setting.data.preprocessed, str_replace),
-                    [variable_name + '.*'])
+                    self.FINISHED_FILE)
                 for data_directory in data_directories]):
             print(
                 'Data already exists in '
                 f"{self.setting.data.preprocessed}. Skipped.")
-            exit()
+            return
 
         # Prepare preprocessor
         data_files = [
             data_directory / (variable_name + '.npy')
             for data_directory in data_directories]
         preprocessor = util.create_converter(
-            preprocess_method, data_files=data_files)
+            preprocess_method, data_files=data_files,
+            componentwise=componentwise)
 
         # Transform and save data
         for data_directory in data_directories:
@@ -308,10 +332,16 @@ class Preprocessor:
 
             output_directory = determine_output_directory(
                 data_directory, self.setting.data.preprocessed, str_replace)
-            util.save_variable(
-                output_directory, variable_name, transformed_data)
-
-            (output_directory / self.FINISHED_FILE).touch()
+            if self.save_func is None:
+                util.save_variable(
+                    output_directory, variable_name, transformed_data)
+                if last:
+                    (output_directory / self.FINISHED_FILE).touch()
+            else:
+                self.save_func(
+                    output_directory, variable_name, transformed_data)
+                if last:
+                    (output_directory / self.FINISHED_FILE).touch()
 
         yaml_file = self.setting.data.preprocessed / 'settings.yml'
         if not yaml_file.exists():

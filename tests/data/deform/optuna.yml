@@ -1,8 +1,8 @@
 data:
   train:
-    - tests/data/deform/preprocessed/train
+    - tests/data/deform/ci_preprocessed/train
   validation:
-    - tests/data/deform/preprocessed/train
+    - tests/data/deform/ci_preprocessed/validation
 conversion:
   mandatory:
     - elemental_strain

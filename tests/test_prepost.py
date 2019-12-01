@@ -77,8 +77,8 @@ class TestPrepost(unittest.TestCase):
 
     def test_preprocessor(self):
         data_setting = setting.DataSetting(
-            interim='tests/data/prepost/interim',
-            preprocessed='tests/data/prepost/preprocessed',
+            interim=Path('tests/data/prepost/interim'),
+            preprocessed=Path('tests/data/prepost/preprocessed'),
             pad=False
         )
         preprocess_setting = setting.PreprocessSetting(
@@ -153,8 +153,8 @@ class TestPrepost(unittest.TestCase):
 
     def test_postprocessor(self):
         data_setting = setting.DataSetting(
-            interim='tests/data/prepost/interim',
-            preprocessed='tests/data/prepost/preprocessed',
+            interim=Path('tests/data/prepost/interim'),
+            preprocessed=Path('tests/data/prepost/preprocessed'),
             pad=False
         )
         preprocess_setting = setting.PreprocessSetting(
@@ -210,20 +210,24 @@ class TestPrepost(unittest.TestCase):
                 np.testing.assert_almost_equal(interim_data, v, decimal=5)
 
     def test_preprocess_deform(self):
-        shutil.rmtree('tests/data/deform/interim', ignore_errors=True)
-        shutil.rmtree('tests/data/deform/preprocessed', ignore_errors=True)
+        interim = Path('tests/data/deform/test_prepost/interim')
+        preprocessed = Path('tests/data/deform/test_prepost/preprocessed')
+        shutil.rmtree(interim, ignore_errors=True)
+        shutil.rmtree(preprocessed, ignore_errors=True)
 
         def conversion_function(fem_data, raw_directory=None):
             adj, _ = fem_data.calculate_adjacency_matrix_element()
             nadj = pre.normalize_adjacency_matrix(adj)
             return {'adj': adj, 'nadj': nadj}
         pre.convert_raw_data(
-            'tests/data/deform/raw',
+            Path('tests/data/deform/raw'),
             ['elemental_strain', 'elemental_stress',
              'modulus', 'poisson_ratio'],
-            output_base_directory='tests/data/deform/interim', recursive=True,
-            conversion_function=conversion_function)
+            output_base_directory=interim,
+            recursive=True, conversion_function=conversion_function)
         p = pre.Preprocessor.read_settings('tests/data/deform/data.yml')
+        p.setting.data.interim = interim
+        p.setting.data.preprocessed = preprocessed
         p.preprocess_interim_data()
 
     def test_generate_converters(self):

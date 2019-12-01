@@ -11,6 +11,6 @@ stages:
 
 test_gpu:
   stage: test
-  script: python3 -m unittest discover tests
+  script: python3 -m pytest tests --capture=no
   tags:
     - gpu
