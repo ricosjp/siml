@@ -539,11 +539,6 @@ class Trainer():
 
         # Updater setting
         if self.setting.trainer.use_siml_updater:
-            if self.setting.trainer.element_batch_size >= 0:
-                print(
-                    f"When use_siml_updater: True, "
-                    f"cannot set element_batch_size >= 0. Set to -1.")
-                self.setting.trainer.element_batch_size = -1
             updater = updaters.SimlUpdater(
                 train_iter, optimizer, device=self.setting.trainer.gpu_id,
                 converter=converter)
