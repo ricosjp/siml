@@ -1,4 +1,5 @@
 import random
+import os
 
 import chainer as ch
 import daz
@@ -507,8 +508,22 @@ class Trainer():
             else:
                 dataset = ch.datasets.DictDataset(
                     **{'x': x_train, 't': y_train, 'supports': support_train})
-        train_iter = ch.iterators.SerialIterator(
-            dataset, batch_size=self.setting.trainer.batch_size, shuffle=True)
+        if self.setting.trainer.iterator is setting.Iter.SERIAL:
+            train_iter = ch.iterators.SerialIterator(
+                dataset, batch_size=self.setting.trainer.batch_size,
+                shuffle=True)
+        elif self.setting.trainer.iterator is setting.Iter.MULTIPROCESS:
+            train_iter = ch.iterators.MultiprocessIterator(
+                dataset, batch_size=self.setting.trainer.batch_size,
+                shuffle=True, n_processes=len(os.sched_getaffinity(0)))
+        elif self.setting.trainer.iterator is setting.Iter.MULTITHREAD:
+            train_iter = ch.iterators.MultithreadIterator(
+                dataset, batch_size=self.setting.trainer.batch_size,
+                shuffle=True, n_threads=2)
+        else:
+            train_iter = ch.iterators.SerialIterator(
+                dataset, batch_size=self.setting.trainer.batch_size,
+                shuffle=True)
 
         optimizer = self._create_optimizer()
         optimizer.setup(self.classifier)
@@ -524,11 +539,6 @@ class Trainer():
 
         # Updater setting
         if self.setting.trainer.use_siml_updater:
-            if self.setting.trainer.element_batch_size >= 0:
-                print(
-                    f"When use_siml_updater: True, "
-                    f"cannot set element_batch_size >= 0. Set to -1.")
-                self.setting.trainer.element_batch_size = -1
             updater = updaters.SimlUpdater(
                 train_iter, optimizer, device=self.setting.trainer.gpu_id,
                 converter=converter)
