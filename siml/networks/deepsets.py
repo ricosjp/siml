@@ -50,7 +50,8 @@ class DeepSets(ch.Chain):
                 self.dropout_ratios, self.activations):
             h = ch.functions.einsum('nmf,gf->nmg', h, lambda_.W) + lambda_.b \
                 + ch.functions.max(
-                    ch.functions.einsum('nmf,gf->nmg', h, gamma.W) + gamma.b)
+                    ch.functions.einsum('nmf,gf->nmg', h, gamma.W) + gamma.b,
+                    axis=1, keepdims=True)
             h = ch.functions.dropout(h, ratio=dropout_ratio)
             h = activation(h)
         return h
