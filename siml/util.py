@@ -210,10 +210,7 @@ class PreprocessConverter():
 
     def lazy_read_files(self, data_files, componentwise=True):
         for data_file in data_files:
-            try:
-                data = np.load(data_file)
-            except:
-                raise ValueError(data_file)
+            data = np.load(data_file)
             if not componentwise:
                 data = np.reshape(data, (-1, 1))
             self.converter.partial_fit(data)
