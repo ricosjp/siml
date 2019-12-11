@@ -1,7 +1,7 @@
 import sys
-sys.path.insert(0, '..')  # NOQA
+sys.path.insert(0, '../siml')  # NOQA
 
-from siml import prepost
+import siml.prepost as prepost
 
 
 def conversion_function(fem_data, data_directory):
