@@ -578,16 +578,17 @@ def normalize_adjacency_matrix(adj):
 
 
 def analyze_data_directories(
-        data_directories, x_name, f_name, *, n_split=10, n_bin=100,
-        out_directory=None, ref_index=0, plot=True):
+        data_directories, x_names, f_names, *, n_split=10, n_bin=20,
+        out_directory=None, ref_index=0, plot=True, symmetric=False,
+        magnitude_range=1.):
     """Analyze data f_name with grid over x_name.
 
     Args:
         data_directories: List[pathlib.Path]
             List of data directories.
-        x_name: str
-            Name of x variable.
-        f_name: str
+        x_names: List[str]
+            Names of x variables.
+        f_names: List[str]
             Name of f variable.
         n_split: int, optional, [10]
             The number to split x space.
@@ -599,6 +600,10 @@ def analyze_data_directories(
             Reference data directory index to analyze data.
         plot: bool, optional, [True]
             If True, plot data by grid.
+        symmetric: bool, optional, [False]
+            If True, take plot range symmetric.
+        magnitude_range: float, optional [1.]
+            Magnitude to be multiplied to the range of plot.
     """
 
     # Initialization
@@ -606,14 +611,18 @@ def analyze_data_directories(
         out_directory.mkdir(parents=True, exist_ok=True)
 
     data = [
-        _read_analyzing_data(data_directory, x_name, f_name)
+        _read_analyzing_data(data_directory, x_names, f_names)
         for data_directory in data_directories]
     xs = [d[0] for d in data]
     fs = [d[1] for d in data]
-    f_grids = _generate_grids(fs, n_bin, symmetric=True, magnitude_range=.1)
+    f_grids = _generate_grids(
+        fs, n_bin, symmetric=symmetric, magnitude_range=magnitude_range)
+    # f_grids = _generate_grids(fs, n_bin)
 
-    ranges, list_split_data, centers, means, stds = split_data_arrays(
-        xs, fs, n_split=n_split)
+    ranges, list_split_data, centers, means, stds, coverage \
+        = split_data_arrays(xs, fs, n_split=n_split)
+    str_x_names = '-'.join(x_name for x_name in x_names)
+    str_f_names = '-'.join(f_name for f_name in f_names)
 
     # Plot data
     if plot:
@@ -622,7 +631,7 @@ def analyze_data_directories(
             if out_directory is None:
                 out_file_base = None
             else:
-                out_file_base = out_directory / f"{f_name}_{range_string}"
+                out_file_base = out_directory / f"{str_f_names}_{range_string}"
             _plot_histogram(
                 split_data, f_grids, data_directories,
                 out_file_base=out_file_base)
@@ -633,26 +642,43 @@ def analyze_data_directories(
     array_stds = np.transpose(np.stack(stds), (1, 0, 2))
     std_diffs = array_stds - array_stds[ref_index]
 
+    nonref_indices = list(range(ref_index)) + list(
+        range(ref_index + 1, len(data)))
+    nonref_mean_diffs = mean_diffs[nonref_indices]
+    nonref_std_diffs = std_diffs[nonref_indices]
+
+    mean_difference = np.mean(
+        nonref_mean_diffs[~np.isnan(nonref_mean_diffs)]**2)**.5
+    std_difference = np.mean(
+        nonref_std_diffs[~np.isnan(nonref_std_diffs)]**2)**.5
+    print(
+        f"Mean difference: {mean_difference:.3e}\n"
+        f" STD difference: {std_difference:.3e}\n"
+        f"       Coverage: {coverage:.3f}")
+
     header = ','.join(
-        f"{x_name}_{i}" for i in range(centers.shape[-1])) + ',' \
+        f"{str_x_names}_{i}" for i in range(centers.shape[-1])) + ',' \
         + ','.join(
-            f"mean_diff_{f_name}_{i}" for i in range(mean_diffs.shape[-1])) \
+            f"mean_diff_{str_f_names}_{i}"
+            for i in range(mean_diffs.shape[-1])) \
         + ',mean_diff_norm,' \
         + ','.join(
-            f"std_diff_{f_name}_{i}" for i in range(mean_diffs.shape[-1])) \
+            f"std_diff_{str_f_names}_{i}"
+            for i in range(mean_diffs.shape[-1])) \
         + ',std_diff_norm'
     for i_dir, data_directory in enumerate(data_directories):
         mean_diff_norms = np.linalg.norm(mean_diffs[i_dir], axis=1)[:, None]
         std_diff_norms = np.linalg.norm(std_diffs[i_dir], axis=1)[:, None]
-        np.savetxt(
-            out_directory / (data_directory.stem + '.csv'),
-            np.concatenate(
-                [centers, mean_diffs[i_dir], mean_diff_norms,
-                 std_diffs[i_dir], std_diff_norms], axis=1),
-            delimiter=',', header=header)
+        if out_directory is not None:
+            np.savetxt(
+                out_directory / (data_directory.stem + '.csv'),
+                np.concatenate(
+                    [centers, mean_diffs[i_dir], mean_diff_norms,
+                     std_diffs[i_dir], std_diff_norms], axis=1),
+                delimiter=',', header=header)
 
 
-def split_data_arrays(xs, fs, *, n_split=10):
+def split_data_arrays(xs, fs, *, n_split=10, ref_index=0):
     """Split data fs with regards to grids of xs.
 
     Args:
@@ -675,26 +701,36 @@ def split_data_arrays(xs, fs, *, n_split=10):
     centers = []
     means = []
     stds = []
+    n_cell_with_ref = 0
     for rs in it.product(*ranges):
         filters = [_calculate_filter(x, rs) for x in xs]
-        if np.any([np.all(~filter_) for filter_ in filters]):
+        if np.any(filters[ref_index]):
+            n_cell_with_ref = n_cell_with_ref + 1
+            if not np.any([
+                    np.any(filter_) for filter_
+                    in filters[:ref_index] + filters[ref_index+1:]]):
+                continue
+        else:
             continue
 
         filtered_fs = [f_[filter_] for f_, filter_ in zip(fs, filters)]
         list_split_data.append(filtered_fs)
         useful_ranges.append(rs)
 
-        filtered_means = np.stack([np.mean(ff, axis=0) for ff in filtered_fs])
-        filtered_stds = np.stack([np.std(ff, axis=0) for ff in filtered_fs])
+        filtered_means = np.stack([
+            np.mean(ff, axis=0) for ff in filtered_fs])
+        filtered_stds = np.stack([
+            np.std(ff, axis=0) for ff in filtered_fs])
         center = [np.mean(r) for r in rs]
         centers.append(center)
         means.append(filtered_means)
         stds.append(filtered_stds)
+    coverage = len(useful_ranges) / n_cell_with_ref
 
     # Write output file
     centers = np.array(centers)
 
-    return useful_ranges, list_split_data, centers, means, stds
+    return useful_ranges, list_split_data, centers, means, stds, coverage
 
 
 def _plot_histogram(
@@ -748,8 +784,34 @@ def _obtain_bounding_box(data):
         for i in range(concat_data.shape[-1])], axis=1)
 
 
-def _read_analyzing_data(data_directory, x, f):
+def _read_analyzing_data(data_directory, x_names, f_names):
     fem_data = femio.FEMData.read_directory('fistr', data_directory)
-    x_val = fem_data.convert_nodal2elemental(x, calc_average=True)
-    f_val = fem_data.convert_nodal2elemental(f, calc_average=True)
+    for x_name in x_names:
+        if x_name not in fem_data.elemental_data \
+                and x_name not in fem_data.nodal_data:
+            if x_name == 'node':
+                fem_data.overwrite_attribute('NODE', fem_data.nodes.data)
+                continue
+            fem_data.elemental_data.update({
+                x_name: femio.FEMAttribute(
+                    x_name, fem_data.elements.ids,
+                    np.load(data_directory / (x_name + '.npy')))})
+    for f_name in f_names:
+        if f_name not in fem_data.elemental_data \
+                and f_name not in fem_data.nodal_data:
+            if f_name == 'node':
+                continue
+            # fem_data.overwrite_attribute(
+            #     f_name, np.load(data_directory / (f_name + '.npy')))
+            fem_data.elemental_data.update({
+                f_name: femio.FEMAttribute(
+                    f_name, fem_data.elements.ids,
+                    np.load(data_directory / (f_name + '.npy')))})
+
+    x_val = np.concatenate([
+        fem_data.convert_nodal2elemental(x_name, calc_average=True)
+        for x_name in x_names], axis=-1)
+    f_val = np.concatenate([
+        fem_data.convert_nodal2elemental(f_name, calc_average=True)
+        for f_name in f_names], axis=-1)
     return x_val, f_val

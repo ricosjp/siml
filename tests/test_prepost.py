@@ -55,8 +55,8 @@ class TestPrepost(unittest.TestCase):
                 true_x + np.random.randn(*true_x.shape) * .1])
             for true_x in true_xs]
         fs = [noised_xs[0], noised_xs[1] / 2]
-        ranges, list_split_data, centers, means, stds = pre.split_data_arrays(
-            noised_xs, fs, n_split=3)
+        ranges, list_split_data, centers, means, stds, coverage \
+            = pre.split_data_arrays(noised_xs, fs, n_split=3)
 
         array_means = np.transpose(np.stack(means), (1, 0, 2))
         array_stds = np.transpose(np.stack(stds), (1, 0, 2))

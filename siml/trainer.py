@@ -1,4 +1,5 @@
 import random
+import os
 
 import chainer as ch
 import daz
@@ -595,8 +596,20 @@ class Trainer():
         else:
             batch_size = self.setting.trainer.batch_size
 
-        train_iter = ch.iterators.SerialIterator(
-            dataset, batch_size=batch_size, shuffle=True)
+        if self.setting.trainer.iterator is setting.Iter.SERIAL:
+            train_iter = ch.iterators.SerialIterator(
+                dataset, batch_size=batch_size, shuffle=True)
+        elif self.setting.trainer.iterator is setting.Iter.MULTIPROCESS:
+            train_iter = ch.iterators.MultiprocessIterator(
+                dataset, batch_size=batch_size, shuffle=True,
+                n_processes=len(os.sched_getaffinity(0)))
+        elif self.setting.trainer.iterator is setting.Iter.MULTITHREAD:
+            train_iter = ch.iterators.MultithreadIterator(
+                dataset, batch_size=batch_size, shuffle=True, n_threads=2)
+        else:
+            train_iter = ch.iterators.SerialIterator(
+                dataset, batch_size=self.setting.trainer.batch_size,
+                shuffle=True)
 
         optimizer = self._create_optimizer()
         optimizer.setup(self.classifier)

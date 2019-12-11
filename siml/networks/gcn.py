@@ -35,4 +35,5 @@ class ResGCN(header.AbstractGCN):
             h = ch.functions.einsum('mf,gf->mg', h, link.W) + link.b
             h = ch.functions.dropout(h, ratio=dropout_ratio)
             h = activation(ch.functions.sparse_matmul(support, h))
-        return h + self.linear(x)
+
+        return h + self.activations[-1](self.linear(x))
