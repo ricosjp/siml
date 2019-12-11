@@ -189,7 +189,7 @@ class TestPrepost(unittest.TestCase):
         preprocessor.preprocess_interim_data()
 
         postprocessor = pre.Converter(
-            Path('tests/data/prepost/preprocessed/preprocessors.pkl'))
+            data_setting.preprocessed / 'preprocessors.pkl')
         preprocessed_paths = [
             data_setting.preprocessed / 'a',
             data_setting.preprocessed / 'b']
@@ -237,8 +237,9 @@ class TestPrepost(unittest.TestCase):
         with open(preprocessors_file, 'rb') as f:
             file_like_object_converter = pre.Converter(f)
         np.testing.assert_almost_equal(
-            real_file_converter.converters['sharp20'].parameters['std'],
-            file_like_object_converter.converters['sharp20'].parameters['std'])
+            real_file_converter.converters['standardize'].converter.var_,
+            file_like_object_converter.converters[
+                'standardize'].converter.var_)
 
     def test_concatenate_preprocessed_data(self):
         preprocessed_base_directory = Path(
