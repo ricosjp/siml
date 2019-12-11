@@ -11,6 +11,34 @@ stages:
 
 test_gpu:
   stage: test
-  script: python3 -m pytest tests --capture=no
+  script: python3 -m pytest tests/gpu --capture=no
   tags:
     - gpu
+
+test_networks:
+  stage: test
+  script: python3 -m pytest tests/test_networks.py --capture=no
+
+test_optimize:
+  stage: test
+  script: python3 -m pytest tests/test_optimize.py --capture=no
+
+test_prepost:
+  stage: test
+  script: python3 -m pytest tests/test_prepost.py --capture=no
+
+test_setting:
+  stage: test
+  script: python3 -m pytest tests/test_setting.py --capture=no
+
+test_trainer:
+  stage: test
+  script: python3 -m pytest tests/test_trainer.py --capture=no
+
+test_trainer_long:
+  stage: test
+  script: python3 -m pytest tests/test_trainer_long.py --capture=no
+
+test_util:
+  stage: test
+  script: python3 -m pytest tests/test_util.py --capture=no

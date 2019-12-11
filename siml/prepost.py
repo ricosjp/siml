@@ -20,7 +20,7 @@ FEMIO_FILE = 'femio_npy_saved.npy'
 
 
 def convert_raw_data(
-        raw_directory, mandatory_variables, *, optional_variables=None,
+        raw_directory, *, mandatory_variables=None, optional_variables=None,
         output_base_directory='data/interim',
         recursive=False, conversion_function=None, force_renew=False,
         finished_file='converted', file_type='fistr',
@@ -65,39 +65,31 @@ def convert_raw_data(
     Returns:
         None
     """
-    # Process all directories when raw directory is a list
-    if isinstance(raw_directory, list) or isinstance(raw_directory, set):
-        for _raw_directory in set(raw_directory):
+
+    # Process all subdirectories when recursice is True
+    output_base_directory = Path(output_base_directory)
+    if recursive:
+        if isinstance(raw_directory, list) or isinstance(raw_directory, set):
+            raw_directories = {util.collect_data_directories(
+                Path(d), add_base=False) for d in (raw_directory)}
+        else:
+            raw_directories = util.collect_data_directories(
+                Path(raw_directory), add_base=False)
+
+        for d in raw_directories:
             convert_raw_data(
-                _raw_directory, mandatory_variables,
+                d, mandatory_variables=mandatory_variables,
                 optional_variables=optional_variables,
                 output_base_directory=output_base_directory,
-                recursive=recursive,
+                recursive=False,  # recursive=False to avoid infinite loop
                 conversion_function=conversion_function,
                 force_renew=force_renew, finished_file=finished_file,
                 file_type=file_type,
-                required_file_names=required_file_names, read_npy=read_npy,
-                read_res=read_res)
-        return
-
-    # Process all subdirectories when recursice is True
-    raw_directory = Path(raw_directory)
-    output_base_directory = Path(output_base_directory)
-    if recursive:
-        raw_directories = util.collect_data_directories(
-            raw_directory, add_base=False)
-        convert_raw_data(
-            raw_directories, mandatory_variables,
-            optional_variables=optional_variables,
-            output_base_directory=output_base_directory,
-            recursive=recursive,
-            conversion_function=conversion_function,
-            force_renew=force_renew, finished_file=finished_file,
-            file_type=file_type,
-            required_file_names=required_file_names,
-            read_npy=read_npy, read_res=read_res)
+                required_file_names=required_file_names,
+                read_npy=read_npy, read_res=read_res)
 
     # Determine output directory
+    raw_directory = Path(raw_directory)
     output_directory = determine_output_directory(
         raw_directory, output_base_directory, 'raw')
 
@@ -116,22 +108,28 @@ def convert_raw_data(
             file_type, raw_directory, read_npy=read_npy, save=False,
             read_res=read_res)
 
-    dict_data = extract_variables(
-        fem_data, mandatory_variables, optional_variables=optional_variables)
+    if mandatory_variables is not None and len(mandatory_variables) > 0:
+        dict_data = extract_variables(
+            fem_data, mandatory_variables,
+            optional_variables=optional_variables)
+    else:
+        dict_data = {}
     if conversion_function is not None:
         dict_data.update(conversion_function(fem_data, raw_directory))
 
     # Save data
     fem_data.save(output_directory)
     if write_ucd:
-        write_ucd_file(output_directory, fem_data, dict_data)
+        write_ucd_file(
+            output_directory, fem_data, dict_data, force_renew=force_renew)
     save_dict_data(output_directory, dict_data)
     (output_directory / finished_file).touch()
 
     return
 
 
-def write_ucd_file(output_directory, fem_data, dict_data=None):
+def write_ucd_file(
+        output_directory, fem_data, dict_data=None, force_renew=False):
     if dict_data is not None:
         # Merge dict_data to fem_data
         for key, value in dict_data.items():
@@ -145,7 +143,7 @@ def write_ucd_file(output_directory, fem_data, dict_data=None):
                 print(f"{key} is skipped for writing in UCD")
                 continue
 
-    fem_data.write('ucd', output_directory / 'mesh.inp')
+    fem_data.write('ucd', output_directory / 'mesh.inp', overwrite=force_renew)
 
 
 def concatenate_preprocessed_data(

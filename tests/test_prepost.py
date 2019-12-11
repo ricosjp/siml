@@ -221,8 +221,9 @@ class TestPrepost(unittest.TestCase):
             return {'adj': adj, 'nadj': nadj}
         pre.convert_raw_data(
             Path('tests/data/deform/raw'),
-            ['elemental_strain', 'elemental_stress',
-             'modulus', 'poisson_ratio'],
+            mandatory_variables=[
+                'elemental_strain', 'elemental_stress',
+                'modulus', 'poisson_ratio'],
             output_base_directory=interim,
             recursive=True, conversion_function=conversion_function)
         p = pre.Preprocessor.read_settings('tests/data/deform/data.yml')

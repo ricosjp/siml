@@ -2,7 +2,6 @@ from pathlib import Path
 import shutil
 import unittest
 
-from chainer import testing
 import numpy as np
 
 import siml.femio as femio
@@ -53,17 +52,6 @@ class TestTrainer(unittest.TestCase):
     def test_train_general_block_input_selection(self):
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/deform/general_block_input_selection.yml'))
-        tr = trainer.Trainer(main_setting)
-        if tr.setting.trainer.output_directory.exists():
-            shutil.rmtree(tr.setting.trainer.output_directory)
-        loss = tr.train()
-        np.testing.assert_array_less(loss, 3.)
-
-    @testing.attr.multi_gpu(2)
-    def test_train_general_block_gpu(self):
-        main_setting = setting.MainSetting.read_settings_yaml(
-            Path('tests/data/deform/general_block.yml'))
-        main_setting.trainer.gpu_id = 1
         tr = trainer.Trainer(main_setting)
         if tr.setting.trainer.output_directory.exists():
             shutil.rmtree(tr.setting.trainer.output_directory)
@@ -331,3 +319,38 @@ class TestTrainer(unittest.TestCase):
 
             np.testing.assert_almost_equal(w_grad_wo_padding, w_grad_w_padding)
             np.testing.assert_almost_equal(b_grad_wo_padding, b_grad_w_padding)
+
+    def test_train_simplified_model(self):
+        setting_yaml = Path('tests/data/simplified/mlp.yml')
+        main_setting = setting.MainSetting.read_settings_yaml(setting_yaml)
+
+        if main_setting.data.preprocessed.exists():
+            shutil.rmtree(main_setting.data.preprocessed)
+        preprocessor = prepost.Preprocessor.read_settings(setting_yaml)
+        preprocessor.preprocess_interim_data()
+
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, 0.01)
+
+    def test_infer_simplified_model(self):
+        setting_yaml = Path('tests/data/simplified/mlp.yml')
+        model_file = Path(
+            'tests/data/simplified/pretrained/snapshot_epoch_1000')
+        converter_parameters_pkl = Path(
+            'tests/data/simplified/pretrained/preprocessors.pkl')
+        tr = trainer.Trainer.read_settings(setting_yaml)
+        seed_a = np.random.rand(10, 1)
+        raw_dict_x = {
+            'a': np.concatenate([seed_a, seed_a * 2, seed_a * 3], axis=1),
+            'b': np.random.rand(10, 1) * 100.}
+
+        answer_raw_dict_y = {'c': raw_dict_x['a'] * raw_dict_x['b']}
+        inversed_dict_y, loss = tr.infer_simplified_model(
+            model_file, raw_dict_x, answer_raw_dict_y=answer_raw_dict_y,
+            converter_parameters_pkl=converter_parameters_pkl)
+        rmse = np.mean((inversed_dict_y['c'] - answer_raw_dict_y['c'])**2)**.5
+        self.assertLess(rmse, 5.)
+        self.assertLess(loss, 2e-3)

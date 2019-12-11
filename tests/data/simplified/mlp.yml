@@ -1,0 +1,42 @@
+data:
+  interim: tests/data/simplified/interim
+  preprocessed: tests/data/simplified/preprocessed
+  train:
+    - tests/data/simplified/preprocessed/train
+  validation:
+    - tests/data/simplified/preprocessed/validation
+preprocess:
+  a: standardize
+  b: standardize
+  c: standardize
+trainer:
+  output_directory: tests/data/simplified/long
+  simplified_model: true
+  lazy: false
+  inputs:
+    - name: a
+      dim: 3
+    - name: b
+      dim: 1
+  outputs:
+    - name: c
+      dim: 3
+  prune: true
+  batch_size: 20
+  n_epoch: 1000
+  log_trigger_epoch: 100
+  stop_trigger_epoch: 1000
+  seed: 0
+model:
+  blocks:
+    - type: mlp
+      nodes:
+        - -1
+        - 10
+        - -1
+      activations:
+        - tanh
+        - identity
+      dropouts:
+        - 0.0
+        - 0.0
