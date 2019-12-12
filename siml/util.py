@@ -127,26 +127,27 @@ def collect_data_directories(
         raise ValueError(f"{base_directory} not exist")
 
     found_directories = [
-        directory
-        for directory in base_directory.iterdir()
-        if directory.is_dir()]
+        Path(directory) for directory, sub_directories, sub_files
+        in os.walk(base_directory, followlinks=True)
+        if len(sub_files) > 0 and files_match(sub_files, required_file_names)]
+    return found_directories
 
-    for found_directory in found_directories:
-        found_directories += collect_data_directories(
-            found_directory, add_base=False, top=False)
 
-    if add_base:
-        found_directories += [base_directory]
-    if required_file_names is not None:
-        found_directories = [
-            found_directory
-            for found_directory in found_directories
-            if files_exist(found_directory, required_file_names)]
+def files_match(file_names, required_file_names):
+    """Check if file names match.
 
-    if top:
-        return list(np.unique(found_directories))
-    else:
-        return found_directories
+    Args:
+        file_names: List[str]
+        file_names: List[str]
+    Returns:
+        files_match: bool
+            True if all files match. Otherwise False.
+    """
+    return np.all([
+        np.any([
+            required_file_name.lstrip('*') in file_name
+            for file_name in file_names])
+        for required_file_name in required_file_names])
 
 
 def files_exist(directory, file_names):
