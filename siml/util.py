@@ -109,7 +109,7 @@ def load_variable(data_directory, file_basename):
 
 
 def collect_data_directories(
-        base_directory, *, required_file_names=None, add_base=True, top=True):
+        base_directory, *, required_file_names=None):
     """Collect data directories recursively from the base directory.
 
     Args:
@@ -117,8 +117,6 @@ def collect_data_directories(
             Base directory to search directory from.
         required_file_names: list of str
             If given, only return directories which have required files.
-        add_base: bool, optional [True]
-            Add base directory to the collection.
     Returns:
         found_directories: list of pathlib.Path
             All found directories.
@@ -126,27 +124,34 @@ def collect_data_directories(
     if not base_directory.exists():
         raise ValueError(f"{base_directory} not exist")
 
-    found_directories = [
-        directory
-        for directory in base_directory.iterdir()
-        if directory.is_dir()]
-
-    for found_directory in found_directories:
-        found_directories += collect_data_directories(
-            found_directory, add_base=False, top=False)
-
-    if add_base:
-        found_directories += [base_directory]
-    if required_file_names is not None:
+    if required_file_names:
         found_directories = [
-            found_directory
-            for found_directory in found_directories
-            if files_exist(found_directory, required_file_names)]
-
-    if top:
-        return list(np.unique(found_directories))
+            Path(directory) for directory, _, sub_files
+            in os.walk(base_directory, followlinks=True)
+            if len(sub_files) > 0 and files_match(
+                    sub_files, required_file_names)]
     else:
-        return found_directories
+        found_directories = [
+            Path(directory) for directory, _, sub_files
+            in os.walk(base_directory, followlinks=True)]
+    return found_directories
+
+
+def files_match(file_names, required_file_names):
+    """Check if file names match.
+
+    Args:
+        file_names: List[str]
+        file_names: List[str]
+    Returns:
+        files_match: bool
+            True if all files match. Otherwise False.
+    """
+    return np.all([
+        np.any([
+            required_file_name.lstrip('*') in file_name
+            for file_name in file_names])
+        for required_file_name in required_file_names])
 
 
 def files_exist(directory, file_names):

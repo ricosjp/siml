@@ -71,10 +71,10 @@ def convert_raw_data(
     if recursive:
         if isinstance(raw_directory, list) or isinstance(raw_directory, set):
             raw_directories = {util.collect_data_directories(
-                Path(d), add_base=False) for d in (raw_directory)}
+                Path(d)) for d in (raw_directory)}
         else:
             raw_directories = util.collect_data_directories(
-                Path(raw_directory), add_base=False)
+                Path(raw_directory))
 
         for d in raw_directories:
             convert_raw_data(
@@ -238,7 +238,7 @@ class Preprocessor:
 
         interim_directories = util.collect_data_directories(
             self.setting.data.interim,
-            required_file_names=self.REQUIRED_FILE_NAMES, add_base=False)
+            required_file_names=self.REQUIRED_FILE_NAMES)
         if self.setting.data.pad:
             self.max_n_element = self._determine_max_n_element(
                 interim_directories, list(self.setting.preprocess.keys())[0])
