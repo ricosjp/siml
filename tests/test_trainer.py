@@ -221,7 +221,7 @@ class TestTrainer(unittest.TestCase):
                 'tests/data/deform/preprocessed/preprocessors.pkl'))
         np.testing.assert_almost_equal(
             res_from_raw[0][1]['elemental_stress'][0],
-            res_from_preprocessed[0][1]['elemental_stress'][0], decimal=5)
+            res_from_preprocessed[0][1]['elemental_stress'][0], decimal=3)
 
     def test_infer_to_write_simulation_file(self):
         main_setting = setting.MainSetting.read_settings_yaml(
