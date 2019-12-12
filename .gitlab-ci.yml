@@ -22,7 +22,15 @@ preprocess:
 
 test_gpu:
   stage: test
-  script: python3 -m pytest tests/gpu --capture=no
+  script:
+    - python3 -m pytest tests/gpu/test_networks_gpu.py --capture=no
+    - python3 -m pytest tests/gpu/test_trainer_gpu.py --capture=no
+  tags:
+    - gpu
+
+test_gpu_optimize:
+  stage: test
+  script: python3 -m pytest tests/gpu/test_optimize_gpu.py --capture=no
   tags:
     - gpu
 
