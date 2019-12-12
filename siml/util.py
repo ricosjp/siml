@@ -109,7 +109,7 @@ def load_variable(data_directory, file_basename):
 
 
 def collect_data_directories(
-        base_directory, *, required_file_names=None, add_base=True, top=True):
+        base_directory, *, required_file_names=None):
     """Collect data directories recursively from the base directory.
 
     Args:
@@ -117,8 +117,6 @@ def collect_data_directories(
             Base directory to search directory from.
         required_file_names: list of str
             If given, only return directories which have required files.
-        add_base: bool, optional [True]
-            Add base directory to the collection.
     Returns:
         found_directories: list of pathlib.Path
             All found directories.
@@ -126,10 +124,16 @@ def collect_data_directories(
     if not base_directory.exists():
         raise ValueError(f"{base_directory} not exist")
 
-    found_directories = [
-        Path(directory) for directory, sub_directories, sub_files
-        in os.walk(base_directory, followlinks=True)
-        if len(sub_files) > 0 and files_match(sub_files, required_file_names)]
+    if required_file_names:
+        found_directories = [
+            Path(directory) for directory, _, sub_files
+            in os.walk(base_directory, followlinks=True)
+            if len(sub_files) > 0 and files_match(
+                    sub_files, required_file_names)]
+    else:
+        found_directories = [
+            Path(directory) for directory, _, sub_files
+            in os.walk(base_directory, followlinks=True)]
     return found_directories
 
 
