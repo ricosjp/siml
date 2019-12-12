@@ -146,6 +146,7 @@ class TestTrainer(unittest.TestCase):
             converter_parameters_pkl=Path(
                 'tests/data/deform/preprocessed/preprocessors.pkl'),
             conversion_function=conversion_function, save=False)
+
         res_from_preprocessed = tr.infer(
             model_directory=Path('tests/data/deform/pretrained'),
             preprocessed_data_directory=Path(
@@ -153,6 +154,7 @@ class TestTrainer(unittest.TestCase):
                 'tet2_4_modulusx0.9500'),
             converter_parameters_pkl=Path(
                 'tests/data/deform/preprocessed/preprocessors.pkl'))
+
         np.testing.assert_almost_equal(
             res_from_raw[0][1]['elemental_stress'][0],
             res_from_preprocessed[0][1]['elemental_stress'][0], decimal=3)
@@ -219,7 +221,7 @@ class TestTrainer(unittest.TestCase):
                 'tests/data/deform/preprocessed/preprocessors.pkl'))
         np.testing.assert_almost_equal(
             res_from_raw[0][1]['elemental_stress'][0],
-            res_from_preprocessed[0][1]['elemental_stress'][0], decimal=3)
+            res_from_preprocessed[0][1]['elemental_stress'][0], decimal=5)
 
     def test_infer_to_write_simulation_file(self):
         main_setting = setting.MainSetting.read_settings_yaml(
