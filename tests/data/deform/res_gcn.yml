@@ -5,7 +5,7 @@ data:
     - tests/data/deform/preprocessed/train
 trainer:
   lazy: true
-  output_directory: tests/data/deform/tmp
+  output_directory: tests/data/deform/res_gcn
   inputs:
     - name: elemental_strain
       dim: 6
@@ -30,14 +30,14 @@ model:
       support_input_index: 0  # assume one support input (e.g. adjacency matrix) for each block
       nodes:
         - -1
-        - 10
-        - 10
+        - 100
+        - 100
         - -1
       activations:
         - relu
         - relu
         - identity
       dropouts:
-        - 0.3
+        - 0.0
         - 0.3
         - 0.0

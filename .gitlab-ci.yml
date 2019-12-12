@@ -7,7 +7,18 @@ before_script:
  - python3 -m pip install -r requirements.txt
 
 stages:
+  - preprocess
   - test
+
+preprocess:
+  stage: preprocess
+  script: python3 tests/preprocess.py
+  artifacts:
+    paths:
+      - tests/data/linear/preprocessed
+      - tests/data/deform/interim
+      - tests/data/deform/preprocessed
+    expire_in: 60min
 
 test_gpu:
   stage: test

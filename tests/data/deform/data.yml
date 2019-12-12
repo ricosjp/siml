@@ -18,9 +18,17 @@ conversion:
   optional:
     - elemental_stress
 preprocess:
-  adj: identity
-  elemental_strain: std_scale
-  elemental_stress: std_scale
-  modulus: std_scale
-  nadj: identity
-  poisson_ratio: identity
+  adj:
+    method: identity
+  elemental_strain:
+    method: std_scale
+    componentwise: false
+  elemental_stress:
+    method: std_scale
+    componentwise: false
+  modulus:
+    method: std_scale
+  nadj:
+    method: identity
+  poisson_ratio:
+    method: identity

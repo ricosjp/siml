@@ -59,23 +59,25 @@ class TestUtil(unittest.TestCase):
             np.save(data_file, d)
 
         all_data = np.concatenate(list_data)
-        explicit_std = util.Standardizer(
-            mean=np.mean(all_data, axis=0), std=np.std(all_data, axis=0))
-        once_std = util.Standardizer.read_data(all_data)
-        lazy_std = util.Standardizer.lazy_read_files(data_files)
+        all_data_file = out_directory / 'all_data.npy'
+        np.save(all_data_file, all_data)
+        once_std = util.PreprocessConverter(
+            'standardize', data_files=[all_data_file])
+        lazy_std = util.PreprocessConverter(
+            'standardize', data_files=data_files)
 
-        np.testing.assert_almost_equal(explicit_std.mean, once_std.mean)
-        np.testing.assert_almost_equal(explicit_std.mean, lazy_std.mean)
-        np.testing.assert_almost_equal(explicit_std.std, once_std.std)
-        np.testing.assert_almost_equal(explicit_std.std, lazy_std.std)
+        np.testing.assert_almost_equal(
+            once_std.converter.mean_, lazy_std.converter.mean_)
+        np.testing.assert_almost_equal(
+            once_std.converter.var_, lazy_std.converter.var_)
 
         new_data = np.random.rand(100, dim)
-        transformed_new_data = (new_data - explicit_std.mean) / (
-            explicit_std.std + 1e-5)
+        transformed_new_data = (new_data - np.mean(all_data, axis=0)) / np.std(
+            all_data, axis=0)
         np.testing.assert_almost_equal(
-            explicit_std.transform(new_data), transformed_new_data)
+            lazy_std.transform(new_data), transformed_new_data)
         np.testing.assert_almost_equal(
-            explicit_std.inverse(transformed_new_data), new_data)
+            lazy_std.inverse(transformed_new_data), new_data)
 
     def test_std_scale(self):
         n_data = 5
@@ -91,20 +93,22 @@ class TestUtil(unittest.TestCase):
             np.save(data_file, d)
 
         all_data = np.concatenate(list_data)
-        explicit_std = util.StandardScaler(
-            mean=np.mean(all_data, axis=0), std=np.std(all_data, axis=0))
-        once_std = util.StandardScaler.read_data(all_data)
-        lazy_std = util.StandardScaler.lazy_read_files(data_files)
+        all_data_file = out_directory / 'all_data.npy'
+        np.save(all_data_file, all_data)
+        once_std = util.PreprocessConverter(
+            'std_scale', data_files=[all_data_file])
+        lazy_std = util.PreprocessConverter(
+            'std_scale', data_files=data_files)
 
-        np.testing.assert_almost_equal(explicit_std.std, once_std.std)
-        np.testing.assert_almost_equal(explicit_std.std, lazy_std.std)
+        np.testing.assert_almost_equal(
+            once_std.converter.var_, lazy_std.converter.var_)
 
         new_data = np.random.rand(100, dim)
-        transformed_new_data = new_data / (explicit_std.std + 1e-5)
+        transformed_new_data = new_data / np.std(all_data, axis=0)
         np.testing.assert_almost_equal(
-            explicit_std.transform(new_data), transformed_new_data)
+            lazy_std.transform(new_data), transformed_new_data)
         np.testing.assert_almost_equal(
-            explicit_std.inverse(transformed_new_data), new_data)
+            lazy_std.inverse(transformed_new_data), new_data)
 
     def test_collect_data_directories(self):
         data_directories = util.collect_data_directories(

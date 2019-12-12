@@ -1,3 +1,6 @@
+conversion:
+  mandatory: []
+  optional: []
 data:
   inferred: data/inferred
   interim: tests/data/linear/interim
@@ -39,7 +42,7 @@ model:
 optuna:
   hyperparameters: []
   n_trial: 100
-  output_base_directory: models
+  output_base_directory: models/optuna
   setting: {}
 trainer:
   batch_size: 1
@@ -58,6 +61,8 @@ trainer:
     name: x1
   - dim: 1
     name: x2
+  iterator: serial
+  lazy: true
   log_trigger_epoch: 1000
   loss_function: mse
   n_epoch: 7000
@@ -83,6 +88,7 @@ trainer:
   prune: false
   restart_directory: null
   seed: 0
+  simplified_model: false
   snapshot_choise_method: best
   stop_trigger_epoch: 7000
   support_input: null

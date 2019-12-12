@@ -253,13 +253,14 @@ class Preprocessor:
                 last = True
             else:
                 last = False
-            parameters = self.preprocess_single_variable(
+            preprocess_converter = self.preprocess_single_variable(
                 interim_directories, variable_name, preprocess_method,
                 str_replace='interim', force_renew=force_renew,
                 componentwise=componentwise, last=last)
             dict_preprocessor_settings.update({
-                variable_name:
-                {'method': preprocess_method, 'parameters': parameters}})
+                variable_name: {
+                    'method': preprocess_method,
+                    'preprocess_converter': preprocess_converter}})
         with open(
                 self.setting.data.preprocessed / 'preprocessors.pkl',
                 'wb') as f:
@@ -296,7 +297,7 @@ class Preprocessor:
             last: bool, optional [False]
                 If True, touch finished file.
         Returns:
-            preprocessor_parameters: dict
+            preprocess_converter: PreprocessConverter.converter object
         """
 
         # Check if data already exists
@@ -313,10 +314,17 @@ class Preprocessor:
             return
 
         # Prepare preprocessor
+        if (data_directories[0] / (variable_name + '.npy')).exists():
+            ext = '.npy'
+        elif (data_directories[0] / (variable_name + '.npz')).exists():
+            ext = '.npz'
+        else:
+            raise ValueError(
+                f"Unknown extension or file not found for {variable_name}")
         data_files = [
-            data_directory / (variable_name + '.npy')
+            data_directory / (variable_name + ext)
             for data_directory in data_directories]
-        preprocessor = util.create_converter(
+        preprocessor = util.PreprocessConverter(
             preprocess_method, data_files=data_files,
             componentwise=componentwise)
 
@@ -344,7 +352,7 @@ class Preprocessor:
         yaml_file = self.setting.data.preprocessed / 'settings.yml'
         if not yaml_file.exists():
             setting.write_yaml(self.setting, yaml_file)
-        return preprocessor.parameters
+        return preprocessor.converter
 
 
 class Converter:
@@ -364,7 +372,8 @@ class Converter:
                 'understood')
 
         converters = {
-            variable_name: util.generate_converter_from_dict(value)
+            variable_name:
+            util.PreprocessConverter(value['preprocess_converter'])
             for variable_name, value in dict_preprocessor_settings.items()}
         return converters
 

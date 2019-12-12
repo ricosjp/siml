@@ -1,4 +1,3 @@
-import abc
 import datetime as dt
 import io
 import itertools as it
@@ -10,7 +9,9 @@ import chainer as ch
 import networkx as nx
 import numpy as np
 import scipy.sparse as sp
+from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.decomposition import PCA
+from sklearn import preprocessing
 import yaml
 
 from .femio import FEMData, FEMAttribute
@@ -166,202 +167,73 @@ def files_exist(directory, file_names):
     return a
 
 
-def create_converter(
-        preprocess_method, *, data_files=None, parameter_file=None,
-        componentwise=True):
-    if preprocess_method == 'identity':
-        generator = IdentityConverter
-    elif preprocess_method == 'standardize':
-        generator = Standardizer
-    elif preprocess_method == 'std_scale':
-        generator = StandardScaler
-    else:
-        raise ValueError(
-            f"Unknown preprocessing method: {preprocess_method}")
-    if parameter_file is not None:
-        converter = generator.load(parameter_file)
-    elif data_files is not None:
-        converter = generator.lazy_read_files(
-            data_files, componentwise=componentwise)
-    else:
-        raise ValueError(
-            'Cannot initialize converter without '
-            'neither data nor parameter file nor setting_dict.')
+class PreprocessConverter():
 
-    return converter
-
-
-def generate_converter_from_dict(setting_dict):
-    preprocess_method = setting_dict['method']
-    if preprocess_method == 'identity':
-        generator = IdentityConverter
-    elif preprocess_method == 'standardize':
-        generator = Standardizer
-    elif preprocess_method == 'std_scale':
-        generator = StandardScaler
-    else:
-        raise ValueError(
-            f"Unknown preprocessing method: {preprocess_method}")
-    converter = generator(**setting_dict['parameters'])
-
-    return converter
-
-
-class AbstractConverter(abc.ABC):
-
-    @classmethod
-    @abc.abstractmethod
-    def lazy_read_files(cls, data_files, componentwise=True):
-        pass
-
-    @property
-    @abc.abstractmethod
-    def parameters(self):
-        pass
-
-    @abc.abstractmethod
-    def transform(self, data):
-        pass
-
-    @abc.abstractmethod
-    def inverse(self, data):
-        pass
-
-    @abc.abstractmethod
-    def save(self, file_name):
-        pass
-
-    @classmethod
-    def load(cls, file_name):
-        parameters = np.load(file_name).item()
-        if parameters is None:
-            return cls()
+    def __init__(self, setting_data, *, data_files=None, componentwise=True):
+        if isinstance(setting_data, dict):
+            self._init_with_dict(setting_data)
+        elif isinstance(setting_data, str):
+            self._init_with_str(setting_data)
+        elif isinstance(setting_data, BaseEstimator):
+            self._init_with_converter(setting_data)
         else:
-            return cls(**parameters)
+            raise ValueError(f"Unsupported setting_data: {setting_data}")
+
+        if data_files is not None:
+            self.lazy_read_files(data_files, componentwise)
+        return
+
+    def _init_with_dict(self, setting_dict):
+        preprocess_method = setting_dict['method']
+        self._init_with_str(preprocess_method)
+        return
+
+    def _init_with_str(self, preprocess_method):
+        if preprocess_method == 'identity':
+            self.converter = Identity()
+        elif preprocess_method == 'standardize':
+            self.converter = preprocessing.StandardScaler()
+        elif preprocess_method == 'std_scale':
+            self.converter = preprocessing.StandardScaler(with_mean=False)
+        elif preprocess_method == 'min_max':
+            self.converter = preprocessing.MinMaxScaler()
+        elif preprocess_method == 'min_abs':
+            self.converter = preprocessing.MaxAbsScaler()
+        else:
+            raise ValueError(
+                f"Unknown preprocessing method: {preprocess_method}")
+        return
+
+    def _init_with_converter(self, converter):
+        self.converter = converter
+        return
+
+    def lazy_read_files(self, data_files, componentwise=True):
+        for data_file in data_files:
+            data = np.load(data_file)
+            if not componentwise:
+                data = np.reshape(data, (-1, 1))
+            self.converter.partial_fit(data)
+        return
+
+    def transform(self, data):
+        return self.converter.transform(data)
+
+    def inverse(self, data):
+        return self.converter.inverse_transform(data)
 
 
-class IdentityConverter(AbstractConverter):
+class Identity(TransformerMixin, BaseEstimator):
     """Class to perform identity conversion (do nothing)."""
 
-    @classmethod
-    def lazy_read_files(cls, data_files, componentwise=True):
-        return cls()
-
-    @property
-    def parameters(self):
-        return {}
+    def partial_fit(cls, data):
+        return
 
     def transform(self, data):
         return data
 
-    def inverse(self, data):
+    def inverse_transform(self, data):
         return data
-
-    def save(self, file_name):
-        np.save(file_name, None)
-
-
-class Standardizer(AbstractConverter):
-    """Class to perform standardization."""
-
-    EPSILON = 1e-5
-
-    def __init__(
-            self, mean, std, *, mean_square=None, n=None, componentwise=True):
-        self.std = std
-        self.mean = mean
-        self.mean_square = mean_square
-        self.n = n
-        self.componentwise = componentwise
-        self.is_updatable = self.mean_square is not None and self.n is not None
-
-    @property
-    def parameters(self):
-        return {'std': self.std, 'mean': self.mean}
-
-    @classmethod
-    def read_data(cls, data, componentwise=True):
-        if componentwise:
-            mean = np.mean(data, axis=0)
-            std = np.std(data, axis=0)
-            mean_square = np.mean(data**2, axis=0)
-            n = data.shape[0]
-        else:
-            mean = np.mean(data)
-            std = np.std(data)
-            mean_square = np.mean(data**2)
-            n = data.size
-
-        return cls(
-            mean=mean, std=std, mean_square=mean_square, n=n,
-            componentwise=componentwise)
-
-    @classmethod
-    def lazy_read_files(cls, data_files, componentwise=True):
-        obj = cls.read_data(
-            np.load(data_files[0]), componentwise=componentwise)
-        if len(data_files) == 1:
-            return obj
-
-        for data_file in data_files[1:]:
-            obj.update(np.load(data_file))
-        return obj
-
-    def update(self, data):
-        if not self.is_updatable:
-            raise ValueError('Standardizer is not updatable')
-
-        if self.componentwise:
-            m = data.shape[0]
-            mean = (self.mean * self.n + np.sum(data, axis=0)) / (self.n + m)
-            mean_square = (
-                self.mean_square * self.n + np.sum(data**2, axis=0)) / (
-                    self.n + m)
-        else:
-            m = data.size
-            mean = (self.mean * self.n + np.sum(data)) / (self.n + m)
-            mean_square = (
-                self.mean_square * self.n + np.sum(data**2)) / (
-                    self.n + m)
-
-        self.mean = mean
-        self.mean_square = mean_square
-        self.n += m
-
-        self.std = np.sqrt(self.mean_square - self.mean**2)
-
-    def transform(self, data):
-        return (data - self.mean) / (self.std + self.EPSILON)
-
-    def inverse(self, data):
-        return data * (self.std + self.EPSILON) + self.mean
-
-    def save(self, file_name):
-        np.save(file_name, {'std': self.std, 'mean': self.mean})
-
-
-class StandardScaler(Standardizer):
-    """Class to perform scaling with standard deviation."""
-
-    def __init__(
-            self, std, *,
-            mean_square=None, n=None, mean=None, componentwise=True):
-        super().__init__(
-            mean=0.0, std=std, mean_square=mean_square, n=n,
-            componentwise=componentwise)
-
-    @property
-    def parameters(self):
-        return {'std': self.std}
-
-    def transform(self, data):
-        return data / (self.std + self.EPSILON)
-
-    def inverse(self, data):
-        return data * (self.std + self.EPSILON)
-
-    def save(self, file_name):
-        np.save(file_name, {'std': self.std})
 
 
 def diagonalize(data, rotations):
