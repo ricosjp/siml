@@ -7,6 +7,7 @@ import numpy as np
 import siml.prepost as pre
 import siml.setting as setting
 import siml.trainer as trainer
+import siml.util as util
 
 
 class TestPrepost(unittest.TestCase):
@@ -230,6 +231,31 @@ class TestPrepost(unittest.TestCase):
         p.setting.data.interim = interim
         p.setting.data.preprocessed = preprocessed
         p.preprocess_interim_data()
+
+    def test_convert_raw_data_with_filter_function(self):
+        raw = Path('tests/data/test_prepost_to_filter/raw')
+        interim = Path('tests/data/test_prepost_to_filter/interim')
+        shutil.rmtree(interim, ignore_errors=True)
+
+        def filter_function(fem_data, raw_directory=None):
+            strain = fem_data.access_attribute('ElementalSTRAIN')
+            return np.max(np.abs(strain)) < 1e2
+
+        pre.convert_raw_data(
+            raw,
+            mandatory_variables=[
+                'elemental_strain', 'elemental_stress',
+                'modulus', 'poisson_ratio'],
+            output_base_directory=interim,
+            recursive=True, filter_function=filter_function)
+        actual_directories = sorted(util.collect_data_directories(
+            interim, required_file_names=['elemental_strain.npy']))
+        expected_directories = sorted([
+            interim / 'tet2_3_modulusx0.9000',
+            interim / 'tet2_3_modulusx1.1000',
+            interim / 'tet2_4_modulusx1.0000',
+            interim / 'tet2_4_modulusx1.1000'])
+        np.testing.assert_array_equal(actual_directories, expected_directories)
 
     def test_generate_converters(self):
         preprocessors_file = Path('tests/data/prepost/preprocessors.pkl')
