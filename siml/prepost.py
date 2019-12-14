@@ -51,9 +51,9 @@ def convert_raw_data(
             dict to be saved.
         filter_function: function, optional [None]
             Function to filter the data which can be converted. It should take
-            femio.FEMData object and pathlib.Path (data directory) as only
-            arguments and returns True (for convertable data) or False (for
-            unconvertable data).
+            femio.FEMData object, pathlib.Path (data directory), and dict_data
+            as only arguments and returns True (for convertable data) or False
+            (for unconvertable data).
         force_renew: bool, optional [False]
             If True, renew npy files even if they are alerady exist.
         finished_file: str, optional ['converted']
@@ -116,10 +116,6 @@ def convert_raw_data(
             file_type, raw_directory, read_npy=read_npy, save=False,
             read_res=read_res)
 
-    if filter_function is not None and not filter_function(
-            fem_data, raw_directory):
-        return
-
     if mandatory_variables is not None and len(mandatory_variables) > 0:
         dict_data = extract_variables(
             fem_data, mandatory_variables,
@@ -128,6 +124,10 @@ def convert_raw_data(
         dict_data = {}
     if conversion_function is not None:
         dict_data.update(conversion_function(fem_data, raw_directory))
+
+    if filter_function is not None and not filter_function(
+            fem_data, raw_directory, dict_data):
+        return
 
     # Save data
     fem_data.save(output_directory)

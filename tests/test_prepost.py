@@ -237,7 +237,7 @@ class TestPrepost(unittest.TestCase):
         interim = Path('tests/data/test_prepost_to_filter/interim')
         shutil.rmtree(interim, ignore_errors=True)
 
-        def filter_function(fem_data, raw_directory=None):
+        def filter_function(fem_data, raw_directory=None, data_dict=None):
             strain = fem_data.access_attribute('ElementalSTRAIN')
             return np.max(np.abs(strain)) < 1e2
 
