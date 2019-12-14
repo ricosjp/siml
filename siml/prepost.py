@@ -22,7 +22,8 @@ FEMIO_FILE = 'femio_npy_saved.npy'
 def convert_raw_data(
         raw_directory, *, mandatory_variables=None, optional_variables=None,
         output_base_directory='data/interim',
-        recursive=False, conversion_function=None, force_renew=False,
+        recursive=False, conversion_function=None, filter_function=None,
+        force_renew=False,
         finished_file='converted', file_type='fistr',
         required_file_names=['*.msh', '*.cnt', '*.res.0.1'], read_npy=False,
         write_ucd=True, read_res=True):
@@ -45,8 +46,14 @@ def convert_raw_data(
         recursive: bool, optional [False]
             If True, recursively convert data.
         conversion_function: function, optional [None]
-            Conversion function which takes femio.FEMData object as an only
-            argument and returns data dict to be saved.
+            Conversion function which takes femio.FEMData object and
+            pathlib.Path (data directory) as only arguments and returns data
+            dict to be saved.
+        filter_function: function, optional [None]
+            Function to filter the data which can be converted. It should take
+            femio.FEMData object and pathlib.Path (data directory) as only
+            arguments and returns True (for convertable data) or False (for
+            unconvertable data).
         force_renew: bool, optional [False]
             If True, renew npy files even if they are alerady exist.
         finished_file: str, optional ['converted']
@@ -83,6 +90,7 @@ def convert_raw_data(
                 output_base_directory=output_base_directory,
                 recursive=False,  # recursive=False to avoid infinite loop
                 conversion_function=conversion_function,
+                filter_function=filter_function,
                 force_renew=force_renew, finished_file=finished_file,
                 file_type=file_type,
                 required_file_names=required_file_names,
@@ -107,6 +115,10 @@ def convert_raw_data(
         fem_data = femio.FEMData.read_directory(
             file_type, raw_directory, read_npy=read_npy, save=False,
             read_res=read_res)
+
+    if filter_function is not None and not filter_function(
+            fem_data, raw_directory):
+        return
 
     if mandatory_variables is not None and len(mandatory_variables) > 0:
         dict_data = extract_variables(
