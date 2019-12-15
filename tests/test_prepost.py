@@ -3,6 +3,7 @@ import shutil
 import unittest
 
 import numpy as np
+import pandas as pd
 
 import siml.prepost as pre
 import siml.setting as setting
@@ -75,6 +76,37 @@ class TestPrepost(unittest.TestCase):
             array_stds[0], np.ones(array_stds.shape[1:]) * .1, decimal=1)
         np.testing.assert_array_almost_equal(
             array_stds[1], np.ones(array_stds.shape[1:]) * .05, decimal=1)
+
+    def test_convert_raw_data_bypass_femio(self):
+        data_setting = setting.DataSetting(
+            raw=Path('tests/data/csv_prepost/raw'),
+            interim=Path('tests/data/csv_prepost/interim'))
+
+        shutil.rmtree(data_setting.interim, ignore_errors=True)
+        shutil.rmtree(data_setting.preprocessed, ignore_errors=True)
+
+        def load_function(data_files, data_directory):
+            df = pd.read_csv(data_files[0], header=0, index_col=None)
+            return {
+                'a': np.reshape(df['a'].to_numpy(), (-1, 1)),
+                'b': np.reshape(df['b'].to_numpy(), (-1, 1)),
+                'c': np.reshape(df['c'].to_numpy(), (-1, 1))}
+
+        pre.convert_raw_data(
+            data_setting.raw, output_base_directory=data_setting.interim,
+            recursive=True, load_function=load_function,
+            required_file_names=['*.csv'], skip_femio=True)
+
+        interim_directory = data_setting.interim / 'train/1'
+        expected_a = np.array([[1], [2], [3], [4]])
+        expected_b = np.array([[2.1], [4.1], [6.1], [8.1]])
+        expected_c = np.array([[3.2], [7.2], [8.2], [10.2]])
+        np.testing.assert_almost_equal(
+            np.load(interim_directory / 'a.npy'), expected_a)
+        np.testing.assert_almost_equal(
+            np.load(interim_directory / 'b.npy'), expected_b, decimal=5)
+        np.testing.assert_almost_equal(
+            np.load(interim_directory / 'c.npy'), expected_c, decimal=5)
 
     def test_preprocessor(self):
         data_setting = setting.DataSetting(

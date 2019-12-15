@@ -26,7 +26,7 @@ def convert_raw_data(
         force_renew=False,
         finished_file='converted', file_type='fistr',
         required_file_names=['*.msh', '*.cnt', '*.res.0.1'], read_npy=False,
-        write_ucd=True, read_res=True):
+        write_ucd=True, read_res=True, skip_femio=False, load_function=None):
     """Convert raw data and save them in interim directory.
 
     Args:
@@ -69,6 +69,13 @@ def convert_raw_data(
             If True, write AVS UCD file with preprocessed variables.
         read_res: bool, optional [True]
             If True, read res file of FrontISTR.
+        skip_femio: bool, optional [False]
+            If True, skip femio.FEMData reading process. Useful for
+            user-defined data format such as csv, h5, etc.
+        load_function: function, optional [None]
+            Function to load data, which take list of pathlib.Path objects
+            (as required files) and pathlib.Path object (as data directory)
+            and returns data_dictionary to be saved.
     Returns:
         None
     """
@@ -94,7 +101,8 @@ def convert_raw_data(
                 force_renew=force_renew, finished_file=finished_file,
                 file_type=file_type,
                 required_file_names=required_file_names,
-                read_npy=read_npy, read_res=read_res)
+                read_npy=read_npy, read_res=read_res, skip_femio=skip_femio,
+                load_function=load_function)
 
     # Determine output directory
     raw_directory = Path(raw_directory)
@@ -109,31 +117,43 @@ def convert_raw_data(
         return
 
     # Main process
-    if read_npy and (output_directory / FEMIO_FILE).exists():
-        fem_data = femio.FEMData.read_npy_directory(output_directory)
-    else:
-        fem_data = femio.FEMData.read_directory(
-            file_type, raw_directory, read_npy=read_npy, save=False,
-            read_res=read_res)
-
-    if mandatory_variables is not None and len(mandatory_variables) > 0:
-        dict_data = extract_variables(
-            fem_data, mandatory_variables,
-            optional_variables=optional_variables)
-    else:
+    if skip_femio:
+        fem_data = None
         dict_data = {}
+    else:
+        if read_npy and (output_directory / FEMIO_FILE).exists():
+            fem_data = femio.FEMData.read_npy_directory(output_directory)
+        else:
+            fem_data = femio.FEMData.read_directory(
+                file_type, raw_directory, read_npy=read_npy, save=False,
+                read_res=read_res)
+
+        if mandatory_variables is not None and len(mandatory_variables) > 0:
+            dict_data = extract_variables(
+                fem_data, mandatory_variables,
+                optional_variables=optional_variables)
+        else:
+            dict_data = {}
+
     if conversion_function is not None:
         dict_data.update(conversion_function(fem_data, raw_directory))
+
+    if load_function is not None:
+        data_files = util.collect_files(
+            raw_directory, required_file_names)
+        dict_data.update(load_function(data_files, raw_directory))
 
     if filter_function is not None and not filter_function(
             fem_data, raw_directory, dict_data):
         return
 
     # Save data
-    fem_data.save(output_directory)
-    if write_ucd:
-        write_ucd_file(
-            output_directory, fem_data, dict_data, force_renew=force_renew)
+    if fem_data is not None:
+        fem_data.save(output_directory)
+        if write_ucd:
+            write_ucd_file(
+                output_directory, fem_data, dict_data, force_renew=force_renew)
+
     save_dict_data(output_directory, dict_data)
     (output_directory / finished_file).touch()
 
