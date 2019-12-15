@@ -1,4 +1,5 @@
 import datetime as dt
+from glob import glob
 import io
 import itertools as it
 import os
@@ -135,6 +136,21 @@ def collect_data_directories(
             Path(directory) for directory, _, sub_files
             in os.walk(base_directory, followlinks=True)]
     return found_directories
+
+
+def collect_files(directory, required_file_names):
+    """Collect data directories recursively from the base directory.
+
+    Args:
+        base_directory: pathlib.Path
+            Base directory to search directory from.
+        required_file_names: list of str
+    """
+    return [
+        found_file
+        for required_file_name in required_file_names
+        for found_file in glob(str(directory / required_file_name))
+    ]
 
 
 def files_match(file_names, required_file_names):
