@@ -31,3 +31,4 @@ __pycache__/
 .venv/
 venv/
 ENV/
+poetry.lock
