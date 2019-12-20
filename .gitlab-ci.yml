@@ -4,7 +4,9 @@ variables:
   GIT_SUBMODULE_STRATEGY: recursive
 
 before_script:
- - python3 -m pip install -r requirements.txt
+  - pip install pip poetry --upgrade
+  - poetry install
+  - poetry shell
 
 stages:
   - preprocess
