@@ -12,6 +12,7 @@ before_script:
 stages:
   - preprocess
   - test
+  - deploy
 
 preprocess:
   stage: preprocess
