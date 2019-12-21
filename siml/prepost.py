@@ -9,8 +9,8 @@ import pickle
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.sparse as sp
+import femio
 
-from . import femio
 from . import util
 from . import setting
 
