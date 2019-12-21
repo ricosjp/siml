@@ -15,7 +15,7 @@ from sklearn.decomposition import PCA
 from sklearn import preprocessing
 import yaml
 
-from femio import FEMData, FEMAttribute
+from femio.femio import FEMData, FEMAttribute
 
 
 INFERENCE_FLAG_FILE = 'inference'
