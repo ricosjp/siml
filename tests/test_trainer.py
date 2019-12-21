@@ -3,8 +3,8 @@ import shutil
 import unittest
 
 import numpy as np
+import femio
 
-import siml.femio as femio
 import siml.prepost as prepost
 import siml.setting as setting
 import siml.trainer as trainer
