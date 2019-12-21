@@ -6,8 +6,8 @@ import daz
 import numpy as np
 import optuna
 import pandas as pd
+import femio
 
-from . import femio
 from . import datasets
 from . import networks
 from . import prepost
