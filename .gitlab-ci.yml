@@ -8,7 +8,6 @@ before_script:
   - poetry config repositories.ricos https://pypi.ritc.jp
   - poetry config http-basic.ricos ricos ${RICOS_PYPI_KEY}
   - poetry install
-  - poetry shell
 
 stages:
   - preprocess
@@ -16,7 +15,7 @@ stages:
 
 preprocess:
   stage: preprocess
-  script: python3 tests/preprocess.py
+  script: poetry run python3 tests/preprocess.py
   artifacts:
     paths:
       - tests/data/linear/preprocessed
@@ -27,41 +26,41 @@ preprocess:
 test_gpu:
   stage: test
   script:
-    - python3 -m pytest tests/gpu/test_networks_gpu.py --capture=no
-    - python3 -m pytest tests/gpu/test_trainer_gpu.py --capture=no
+    - poetry run pytest tests/gpu/test_networks_gpu.py --capture=no
+    - poetry run pytest tests/gpu/test_trainer_gpu.py --capture=no
   tags:
     - gpu
 
 test_gpu_optimize:
   stage: test
-  script: python3 -m pytest tests/gpu/test_optimize_gpu.py --capture=no
+  script: poetry run pytest tests/gpu/test_optimize_gpu.py --capture=no
   tags:
     - gpu
 
 test_networks:
   stage: test
-  script: python3 -m pytest tests/test_networks.py --capture=no
+  script: poetry run pytest tests/test_networks.py --capture=no
 
 test_optimize:
   stage: test
-  script: python3 -m pytest tests/test_optimize.py --capture=no
+  script: poetry run pytest tests/test_optimize.py --capture=no
 
 test_prepost:
   stage: test
-  script: python3 -m pytest tests/test_prepost.py --capture=no
+  script: poetry run pytest tests/test_prepost.py --capture=no
 
 test_setting:
   stage: test
-  script: python3 -m pytest tests/test_setting.py --capture=no
+  script: poetry run pytest tests/test_setting.py --capture=no
 
 test_trainer:
   stage: test
-  script: python3 -m pytest tests/test_trainer.py --capture=no
+  script: poetry run pytest tests/test_trainer.py --capture=no
 
 test_trainer_long:
   stage: test
-  script: python3 -m pytest tests/test_trainer_long.py --capture=no
+  script: poetry run pytest tests/test_trainer_long.py --capture=no
 
 test_util:
   stage: test
-  script: python3 -m pytest tests/test_util.py --capture=no
+  script: poetry run pytest tests/test_util.py --capture=no
