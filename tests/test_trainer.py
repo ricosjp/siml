@@ -3,7 +3,7 @@ import shutil
 import unittest
 
 import numpy as np
-import femio
+from femio import femio
 
 import siml.prepost as prepost
 import siml.setting as setting
