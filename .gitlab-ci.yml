@@ -25,7 +25,7 @@ autopep8:
   before_script:
     - pip3 install autopep8
   script:
-    - autopep8 --diff $(find . -name "*.py")
+    - autopep8 --diff --exit-code $(find . -name "*.py")
 
 test_gpu:
   stage: test
