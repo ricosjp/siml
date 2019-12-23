@@ -6,10 +6,10 @@ import itertools as it
 from pathlib import Path
 import pickle
 
+import femio
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.sparse as sp
-from femio import femio
 
 from . import util
 from . import setting

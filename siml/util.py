@@ -7,6 +7,7 @@ from pathlib import Path
 import subprocess
 
 import chainer as ch
+from femio import FEMData, FEMAttribute
 import networkx as nx
 import numpy as np
 import scipy.sparse as sp
@@ -14,8 +15,6 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.decomposition import PCA
 from sklearn import preprocessing
 import yaml
-
-from femio.femio import FEMData, FEMAttribute
 
 
 INFERENCE_FLAG_FILE = 'inference'
