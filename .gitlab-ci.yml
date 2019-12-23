@@ -32,7 +32,7 @@ autopep8:
 pylint:
   stage: preprocess
   script:
-    - poetry run pylint -E $(find . -name "*.py")
+    - poetry run pylint --ignore-patterns=setting.py --ignored-modules=chainer -E $(find . -name "*.py")
 
 test_gpu:
   stage: test

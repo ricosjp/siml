@@ -246,7 +246,7 @@ class PreprocessConverter():
 class Identity(TransformerMixin, BaseEstimator):
     """Class to perform identity conversion (do nothing)."""
 
-    def partial_fit(cls, data):
+    def partial_fit(self, data):
         return
 
     def transform(self, data):

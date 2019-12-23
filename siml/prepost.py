@@ -698,7 +698,7 @@ def analyze_data_directories(
         f"       Coverage: {coverage:.3f}")
 
     header = ','.join(
-        f"{str_x_names}_{i}" for i in range(centers.shape[-1])) + ',' \
+        f"{str_x_names}_{i}" for i in range(list(centers.shape)[-1])) + ',' \
         + ','.join(
             f"mean_diff_{str_f_names}_{i}"
             for i in range(mean_diffs.shape[-1])) \
@@ -820,9 +820,11 @@ def _calculate_filter(x, ranges):
 
 def _obtain_bounding_box(data):
     concat_data = np.concatenate(data)
+
+    # TODO: remove list() below after astroid is updated > 2.3.3
     return np.stack([
         [np.min(concat_data[:, i]), np.max(concat_data[:, i])]
-        for i in range(concat_data.shape[-1])], axis=1)
+        for i in range(list(concat_data.shape)[-1])], axis=1)
 
 
 def _read_analyzing_data(data_directory, x_names, f_names):
