@@ -25,6 +25,7 @@ autopep8:
   before_script:
     - python3 -m pip install autopep8
   script:
+    - rm -rf siml/femio
     - autopep8 --diff --exit-code $(find . -name "*.py")
 
 test_gpu:
