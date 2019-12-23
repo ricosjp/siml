@@ -80,6 +80,8 @@ deploy:wheel:master:
   extends: .deploy:wheel
   before_script:
     - export VERSION=0.1.dev$(date +"%Y%m%d%H%M")
+  only:
+    - master
 
 deploy:wheel:tag:
   extends: .deploy:wheel
