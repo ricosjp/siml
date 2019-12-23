@@ -4,15 +4,19 @@ variables:
   GIT_SUBMODULE_STRATEGY: recursive
 
 before_script:
- - python3 -m pip install -r requirements.txt
+  - pip install pip poetry --upgrade
+  - poetry config repositories.ricos https://pypi.ritc.jp
+  - poetry config http-basic.ricos ricos ${RICOS_PYPI_KEY}
+  - poetry install
 
 stages:
   - preprocess
   - test
+  - deploy
 
 preprocess:
   stage: preprocess
-  script: python3 tests/preprocess.py
+  script: poetry run python3 tests/preprocess.py
   artifacts:
     paths:
       - tests/data/linear/preprocessed
@@ -39,41 +43,65 @@ pylint:
 test_gpu:
   stage: test
   script:
-    - python3 -m pytest tests/gpu/test_networks_gpu.py --capture=no
-    - python3 -m pytest tests/gpu/test_trainer_gpu.py --capture=no
+    - poetry run pytest tests/gpu/test_networks_gpu.py --capture=no
+    - poetry run pytest tests/gpu/test_trainer_gpu.py --capture=no
   tags:
     - gpu
 
 test_gpu_optimize:
   stage: test
-  script: python3 -m pytest tests/gpu/test_optimize_gpu.py --capture=no
+  script: poetry run pytest tests/gpu/test_optimize_gpu.py --capture=no
   tags:
     - gpu
 
 test_networks:
   stage: test
-  script: python3 -m pytest tests/test_networks.py --capture=no
+  script: poetry run pytest tests/test_networks.py --capture=no
 
 test_optimize:
   stage: test
-  script: python3 -m pytest tests/test_optimize.py --capture=no
+  script: poetry run pytest tests/test_optimize.py --capture=no
 
 test_prepost:
   stage: test
-  script: python3 -m pytest tests/test_prepost.py --capture=no
+  script: poetry run pytest tests/test_prepost.py --capture=no
 
 test_setting:
   stage: test
-  script: python3 -m pytest tests/test_setting.py --capture=no
+  script: poetry run pytest tests/test_setting.py --capture=no
 
 test_trainer:
   stage: test
-  script: python3 -m pytest tests/test_trainer.py --capture=no
+  script: poetry run pytest tests/test_trainer.py --capture=no
 
 test_trainer_long:
   stage: test
-  script: python3 -m pytest tests/test_trainer_long.py --capture=no
+  script: poetry run pytest tests/test_trainer_long.py --capture=no
 
 test_util:
   stage: test
-  script: python3 -m pytest tests/test_util.py --capture=no
+  script: poetry run pytest tests/test_util.py --capture=no
+
+.deploy:wheel:
+  stage: deploy
+  script:
+    - pip install --upgrade pip poetry
+    - poetry version $VERSION
+    - poetry config repositories.ricos https://pypi.ritc.jp
+    - poetry build -f wheel
+    - poetry publish --username ricos --password ${RICOS_PYPI_KEY} -r ricos --no-ansi -n -v
+  retry: 2
+
+deploy:wheel:master:
+  extends: .deploy:wheel
+  before_script:
+    - export VERSION=0.1.dev$(date +"%Y%m%d%H%M")
+  only:
+    - master
+
+deploy:wheel:tag:
+  extends: .deploy:wheel
+  before_script:
+    - export VERSION=$CI_COMMIT_REF_NAME
+  only:
+    - tags

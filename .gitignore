@@ -17,6 +17,7 @@ settings.txt
 __pycache__/
 *.py[cod]
 *$py.class
+*.egg-info
 
 # Numpy data
 *.npy
@@ -31,3 +32,4 @@ __pycache__/
 .venv/
 venv/
 ENV/
+poetry.lock
