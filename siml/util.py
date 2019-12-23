@@ -129,7 +129,7 @@ def collect_data_directories(
             Path(directory) for directory, _, sub_files
             in os.walk(base_directory, followlinks=True)
             if len(sub_files) > 0 and files_match(
-                    sub_files, required_file_names)]
+                sub_files, required_file_names)]
     else:
         found_directories = [
             Path(directory) for directory, _, sub_files
@@ -481,7 +481,7 @@ def calculate_adjacency_matrix(fem_data, *, n_node=None):
         e: np.unique(np.concatenate([
             nodeid2elemid[d] for d in data]))
         for e, data in zip(
-                fem_data.elements.ids, fem_data.elements.data[:, :n_node])}
+            fem_data.elements.ids, fem_data.elements.data[:, :n_node])}
     print('Creating graph')
     print(dt.datetime.now())
     graph = nx.from_dict_of_lists(element2elements)

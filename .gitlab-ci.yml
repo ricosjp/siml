@@ -24,6 +24,14 @@ preprocess:
       - tests/data/deform/preprocessed
     expire_in: 60min
 
+autopep8:
+  stage: preprocess
+  before_script:
+    - python3 -m pip install autopep8
+  script:
+    - rm -rf siml/femio
+    - autopep8 --diff --exit-code $(find . -name "*.py")
+
 test_gpu:
   stage: test
   script:

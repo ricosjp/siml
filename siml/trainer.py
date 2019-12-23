@@ -295,7 +295,7 @@ class Trainer():
         input_data = np.concatenate([
             converted_dict_data[input_info['name']]
             for input_info in self.setting.trainer.inputs], axis=1).astype(
-                    np.float32)
+            np.float32)
         if np.all([
                 output_info['name'] in dict_data
                 for output_info in self.setting.trainer.outputs]):
@@ -507,7 +507,7 @@ class Trainer():
         elif self.setting.trainer.pretrain_directory is not None:
             pretrain_directory = self.setting.trainer.pretrain_directory
             self._update_setting(
-              self.setting.trainer.pretrain_directory, only_model=True)
+                self.setting.trainer.pretrain_directory, only_model=True)
             self.setting.trainer.pretrain_directory = pretrain_directory
         elif self.setting.trainer.restart_directory is not None \
                 and self.setting.trainer.pretrain_directory is not None:

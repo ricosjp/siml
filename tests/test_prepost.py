@@ -63,10 +63,10 @@ class TestPrepost(unittest.TestCase):
         array_means = np.transpose(np.stack(means), (1, 0, 2))
         array_stds = np.transpose(np.stack(stds), (1, 0, 2))
         answer = np.array([
-                [0., 0.],
-                [0., 1.],
-                [1., 0.],
-            ])
+            [0., 0.],
+            [0., 1.],
+            [1., 0.],
+        ])
         np.testing.assert_array_almost_equal(centers, answer, decimal=1)
         np.testing.assert_array_almost_equal(
             array_means[0], answer, decimal=1)
