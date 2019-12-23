@@ -28,6 +28,14 @@ autopep8:
     - rm -rf siml/femio
     - autopep8 --diff --exit-code $(find . -name "*.py")
 
+pylint:
+  stage: preprocess
+  before_script:
+    - python3 -m pip install pylint
+    - python3 -m pip install -r requirements.txt
+  script:
+    - pylint -E $(find . -name "*.py")
+
 test_gpu:
   stage: test
   script:
