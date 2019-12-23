@@ -23,7 +23,7 @@ preprocess:
 autopep8:
   stage: preprocess
   before_script:
-    - pip3 install autopep8
+    - python3 -m pip install autopep8
   script:
     - autopep8 --diff --exit-code $(find . -name "*.py")
 
