@@ -96,13 +96,13 @@ class NRI(header.AbstractGCN):
                 with xp.cuda.Device(support.data.data.device):
                     if self.concat:
                         merged = ch.functions.concat(
-                          [h_node[support.col], h_node[support.row]], axis=1)
+                            [h_node[support.col], h_node[support.row]], axis=1)
                     else:
                         merged = h_node[support.col] - h_node[support.row]
             else:
                 if self.concat:
                     merged = ch.functions.concat(
-                      [h_node[support.col], h_node[support.row]], axis=1)
+                        [h_node[support.col], h_node[support.row]], axis=1)
                 else:
                     merged = h_node[support.col] - h_node[support.row]
             edge_emb = ch.functions.relu(
