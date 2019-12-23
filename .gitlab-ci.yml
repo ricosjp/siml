@@ -20,6 +20,13 @@ preprocess:
       - tests/data/deform/preprocessed
     expire_in: 60min
 
+autopep8:
+  stage: preprocess
+  before_script:
+    - pip3 install autopep8
+  script:
+    - autopep8 --diff $(find . -name "*.py")
+
 test_gpu:
   stage: test
   script:
