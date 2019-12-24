@@ -24,6 +24,7 @@ scipy        = "^1.4"
 [tool.poetry.dev-dependencies]
 pytest = "^5.3"
 pylint = "^2.4"
+autopep8 = "^1.4"
 
 [[tool.poetry.source]]
 name = "ricos"

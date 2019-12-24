@@ -26,11 +26,13 @@ preprocess:
 
 autopep8:
   stage: preprocess
-  before_script:
-    - python3 -m pip install autopep8
   script:
-    - rm -rf siml/femio
-    - autopep8 --diff --exit-code $(find . -name "*.py")
+    - poetry run autopep8 --diff --exit-code $(find . -name "*.py")
+
+pylint:
+  stage: preprocess
+  script:
+    - poetry run pylint --ignore-patterns=setting.py --ignored-modules=chainer -E $(find . -name "*.py")
 
 test_gpu:
   stage: test
