@@ -1,5 +1,4 @@
 image: registry.ritc.jp/ricos/machine_learning/siml
-retry: 2
 
 before_script:
   - pip install pip poetry --upgrade
@@ -26,11 +25,13 @@ autopep8:
   stage: preprocess
   script:
     - poetry run autopep8 --diff --exit-code $(find . -name "*.py")
+  retry: 2
 
 pylint:
   stage: preprocess
   script:
     - poetry run pylint --ignore-patterns=setting.py --ignored-modules=chainer -E $(find . -name "*.py")
+  retry: 2
 
 sphinx:
   stage: preprocess
@@ -39,6 +40,7 @@ sphinx:
   artifacts:
     paths:
       - doc/_build/html
+  retry: 2
 
 test_gpu:
   stage: test
