@@ -33,13 +33,14 @@ pylint:
     - poetry run pylint --ignore-patterns=setting.py --ignored-modules=chainer -E $(find . -name "*.py")
   retry: 2
 
-sphinx:
+pages:
   stage: preprocess
   script:
     - poetry run make -C doc html
+    - mv doc/_build/html public
   artifacts:
     paths:
-      - doc/_build/html
+      - public
   retry: 2
 
 test_gpu:
