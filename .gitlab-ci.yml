@@ -34,7 +34,7 @@ pylint:
   retry: 2
 
 pages:
-  stage: preprocess
+  stage: deploy
   script:
     - poetry run make -C doc html
     - mv doc/_build/html public
