@@ -21,13 +21,7 @@ class TypedDataClass:
         return cls(**dict_settings)
 
     def convert(self):
-        """Convert all fields accordingly with their type definitions.
-
-        Args:
-            None
-        Returns:
-            None
-        """
+        """Convert all fields accordingly with their type definitions.  """
         for field_name, field in self.__dataclass_fields__.items():
             try:
                 self._convert_field(field_name, field)
@@ -483,15 +477,14 @@ class PreprocessSetting:
 def write_yaml(data_class, file_name, *, overwrite=False):
     """Write YAML file of the specified dataclass object.
 
-    Args:
+    Parameters
+    -----------
         data_class: dataclasses.dataclass
             DataClass object to write.
         file_name: str or pathlib.Path
             YAML file name to write.
         overwrite: bool, optional [False]
             If True, overwrite file.
-    Returns:
-        None
     """
     file_name = Path(file_name)
     if file_name.exists() and not overwrite:

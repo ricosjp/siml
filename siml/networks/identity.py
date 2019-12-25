@@ -7,7 +7,8 @@ class Identity(ch.Chain):
     def __init__(self, block_setting):
         """Initialize the NN.
 
-        Args:
+        Parameters
+        -----------
             block_setting: siml.setting.BlockSetting
                 BlockSetting object.
         """

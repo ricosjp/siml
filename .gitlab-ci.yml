@@ -1,13 +1,16 @@
 image: registry.ritc.jp/ricos/machine_learning/siml
 
-variables:
-  GIT_SUBMODULE_STRATEGY: recursive
-
 before_script:
   - pip install pip poetry --upgrade
   - poetry config repositories.ricos https://pypi.ritc.jp
   - poetry config http-basic.ricos ricos ${RICOS_PYPI_KEY}
+  - poetry config virtualenvs.in-project true
   - poetry install
+
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - .venv
 
 stages:
   - preprocess
@@ -27,15 +30,31 @@ preprocess:
 autopep8:
   stage: preprocess
   script:
-    - poetry run autopep8 --diff --exit-code $(find . -name "*.py")
+    - poetry run autopep8 --diff --exit-code $(find siml tests -name "*.py")
+  retry: 2
 
 pylint:
   stage: preprocess
   script:
-    - poetry run pylint --ignore-patterns=setting.py --ignored-modules=chainer -E $(find . -name "*.py")
+    - poetry run pylint --ignore-patterns=setting.py --ignored-modules=chainer -E $(find siml tests -name "*.py")
+  retry: 2
+
+pages:
+  stage: deploy
+  script:
+    - poetry run make -C doc html
+    - mv doc/_build/html public
+  artifacts:
+    paths:
+      - public
+  retry: 2
+
+.test:
+  stage: test
+  retry: 2
 
 test_gpu:
-  stage: test
+  extends: .test
   script:
     - poetry run pytest tests/gpu/test_networks_gpu.py --capture=no
     - poetry run pytest tests/gpu/test_trainer_gpu.py --capture=no
@@ -43,37 +62,37 @@ test_gpu:
     - gpu
 
 test_gpu_optimize:
-  stage: test
+  extends: .test
   script: poetry run pytest tests/gpu/test_optimize_gpu.py --capture=no
   tags:
     - gpu
 
 test_networks:
-  stage: test
+  extends: .test
   script: poetry run pytest tests/test_networks.py --capture=no
 
 test_optimize:
-  stage: test
+  extends: .test
   script: poetry run pytest tests/test_optimize.py --capture=no
 
 test_prepost:
-  stage: test
+  extends: .test
   script: poetry run pytest tests/test_prepost.py --capture=no
 
 test_setting:
-  stage: test
+  extends: .test
   script: poetry run pytest tests/test_setting.py --capture=no
 
 test_trainer:
-  stage: test
+  extends: .test
   script: poetry run pytest tests/test_trainer.py --capture=no
 
 test_trainer_long:
-  stage: test
+  extends: .test
   script: poetry run pytest tests/test_trainer_long.py --capture=no
 
 test_util:
-  stage: test
+  extends: .test
   script: poetry run pytest tests/test_util.py --capture=no
 
 .deploy:wheel:

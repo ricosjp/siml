@@ -28,10 +28,12 @@ def date_string():
 def load_yaml_file(file_name):
     """Load YAML file.
 
-    Args:
+    Parameters
+    ----------
         file_name: str or pathlib.Path
             YAML file name.
-    Returns:
+    Returns
+    --------
         dict_data: dict
             YAML contents.
     """
@@ -43,9 +45,11 @@ def load_yaml_file(file_name):
 def load_yaml(source):
     """Load YAML source.
 
-    Args:
+    Parameters
+    ----------
         source: File-like object or str or pathlib.Path
-    Returns:
+    Returns
+    --------
         dict_data: dict
             YAML contents.
     """
@@ -63,7 +67,8 @@ def save_variable(
         output_directory, file_basename, data, *, dtype=np.float32):
     """Save variable data.
 
-    Args:
+    Parameters
+    ----------
         output_directory: pathlib.Path
             Save directory path.
         file_basename: str
@@ -72,7 +77,8 @@ def save_variable(
             Data to be saved.
         dtype: type, optional [np.float32]
             Data type to be saved.
-    Returns:
+    Returns
+    --------
         None
     """
     if not output_directory.exists():
@@ -94,12 +100,14 @@ def save_variable(
 def load_variable(data_directory, file_basename):
     """Load variable data.
 
-    Args:
+    Parameters
+    ----------
         output_directory: pathlib.Path
             Directory path.
         file_basename: str
             File base name without extenstion.
-    Returns:
+    Returns
+    --------
         data: numpy.ndarray or scipy.sparse.coo_matrix
     """
     if file_basename in SPARSE_DATA_NAMES:
@@ -112,12 +120,14 @@ def collect_data_directories(
         base_directory, *, required_file_names=None):
     """Collect data directories recursively from the base directory.
 
-    Args:
+    Parameters
+    ----------
         base_directory: pathlib.Path
             Base directory to search directory from.
         required_file_names: list of str
             If given, only return directories which have required files.
-    Returns:
+    Returns
+    --------
         found_directories: list of pathlib.Path
             All found directories.
     """
@@ -140,7 +150,8 @@ def collect_data_directories(
 def collect_files(directory, required_file_names):
     """Collect data directories recursively from the base directory.
 
-    Args:
+    Parameters
+    ----------
         base_directory: pathlib.Path
             Base directory to search directory from.
         required_file_names: list of str
@@ -155,10 +166,12 @@ def collect_files(directory, required_file_names):
 def files_match(file_names, required_file_names):
     """Check if file names match.
 
-    Args:
+    Parameters
+    ----------
         file_names: List[str]
         file_names: List[str]
-    Returns:
+    Returns
+    --------
         files_match: bool
             True if all files match. Otherwise False.
     """
@@ -172,10 +185,12 @@ def files_match(file_names, required_file_names):
 def files_exist(directory, file_names):
     """Check if files exist in the specified directory.
 
-    Args:
+    Parameters
+    ----------
         directory: pathlib.Path
         file_names: list of str
-    Returns:
+    Returns
+    --------
         files_exist: bool
             True if all files exist. Otherwise False.
     """
@@ -350,10 +365,13 @@ def calculate_ansys_angles(orientations):
 def calculate_rotation_angles(orientations, *, standardize=False):
     """Calculate rotation angles w.r.t global axes.
 
-    Args:
+    Parameters
+    ----------
         orients: 2-D orientation data in FrontISTR style.
         standardize: Convert range of outputs to [-.5, .5].
-    Returns:
+    Returns
+    --------
+    numpy.ndarray
         [[theta_x, theta_y, theta_z], ...], where each theta is corresponding
         to the rotation angle w.r.t each exis (Euler angles).
     """
@@ -373,16 +391,19 @@ def calculate_natural_element_shape(fem_data):
     natural coordinate, where 1st axis is 1-2 vector, 1-2 plain is
     span(1-2 vector, 1-3 vector).
 
-    Args:
-        fem_data: FEMData object
-    Returns:
-        nshape: numpy.ndarray
-            [n_node, m] shaped ndarray,
-            where m = (order1_n_node_per_element - 1) * 3 - 3.
-            -1 because the first node is always at [0, 0, 0],
-            -3 because the second node is always at [r, 0, 0] and the third
-            node is always at [s_1, s_2, 0] so ommit components which are
-            always zero.
+    Parameters
+    ----------
+    fem_data: FEMData object
+
+    Returns
+    --------
+    numpy.ndarray
+        [n_node, m] shaped ndarray,
+        where m = (order1_n_node_per_element - 1) * 3 - 3.
+
+        - -1 because the first node is always at [0, 0, 0],
+        - -3 because the second node is always at [r, 0, 0]
+        - the third node is always at [s_1, s_2, 0] so ommit components which are always zero.
     """
     n_node_per_element = fem_data.elements.data.shape[1]
     if n_node_per_element == 4:
@@ -424,15 +445,17 @@ def calculate_natural_element_shape(fem_data):
 def calculate_element_position(fem_data):
     """Calculate position of element.
 
-    Args:
-        fem_data: FEMData object
-    Returns:
-        averaged_element_positions: numpy.ndarray
-            [n_element, 3] shaped array indicating the centor of mass of
-            each element.
-        element_positions: numpy.ndarray
-            [n_element, 3 * order1_node_per_element] shaped array indicating
-            node positions associated each element.
+    Parameters
+    ----------
+    fem_data: FEMData object
+
+    Returns
+    --------
+    averaged_element_positions: numpy.ndarray
+        [n_element, 3] shaped array indicating the centor of mass of each element.
+    element_positions: numpy.ndarray
+        [n_element, 3 * order1_node_per_element] shaped array
+        indicating node positions associated each element.
     """
     n_node_per_element = fem_data.elements.data.shape[1]
     if n_node_per_element == 4:
@@ -461,14 +484,17 @@ def calculate_adjacency_matrix(fem_data, *, n_node=None):
     """Calculate graph adjacency matrix regarding elements sharing the same
     node as connected.
 
-    Args:
-        fem_data: FEMData object
-        n_node: int, optional [None]
-            the number of node of interest. n_node = 4 to extract only order
-            1 nodes in tet2 mesh.
-    Returns:
-        adj: scipy.sparse.coo_matrix
-            Adjacency matrix in COO expression.
+    Parameters
+    ----------
+    fem_data: FEMData object
+    n_node: int, optional [None]
+        the number of node of interest. n_node = 4 to extract only order
+        1 nodes in tet2 mesh.
+
+    Returns
+    --------
+    adj: scipy.sparse.coo_matrix
+        Adjacency matrix in COO expression.
     """
     if n_node is None:
         n_node = fem_data.elements.data.shape[1]
@@ -493,12 +519,15 @@ def calculate_adjacency_matrix(fem_data, *, n_node=None):
 def normalize_adj(adj):
     """Symmetrically normalize adjacency matrix.
 
-    Args:
-        adj: scipy.sparse.coo_matrix
-            Adjacency matrix in COO expression.
-    Returns:
-        normalized_adj: scipy.sparse.coo_matrix
-            Normalized adjacency matrix in COO expression.
+    Parameters
+    ----------
+    adj: scipy.sparse.coo_matrix
+        Adjacency matrix in COO expression.
+
+    Returns
+    --------
+    normalized_adj: scipy.sparse.coo_matrix
+        Normalized adjacency matrix in COO expression.
     """
     print('to_coo adj')
     print(dt.datetime.now())
@@ -521,14 +550,17 @@ def normalize_adj(adj):
 def calculate_mesh_shape(fem_data, *, n_node=None):
     """Calculate mesh shape data.
 
-    Args:
-        fem_data: FEMData objects.
-        n_node: The number of node to consider (default: use all nodes).
-    Returns:
-        [[d_12_x, d_12_y, d_12_z, d_13_x, ..., d_23_x, ...], ...], where each d
-        is corresponding to the distance between node_i and node_j in one
-        element. It with be [n_element, 3 * (n_node_per_element C 2)] shaped
-        array.
+    Parameters
+    ----------
+    fem_data: FEMData objects.
+    n_node: The number of node to consider (default: use all nodes).
+
+    Returns
+    --------
+    numpy.ndarray
+        [[d_12_x, d_12_y, d_12_z, d_13_x, ..., d_23_x, ...], ...],
+        where each `d` is corresponding to the distance between node_i and node_j in one element.
+        It with be [n_element, 3 * (n_node_per_element C 2)] shaped array.
     """
     if n_node is None:
         n_node = fem_data.elements.data.shape[1]
@@ -546,12 +578,15 @@ def calculate_mesh_shape(fem_data, *, n_node=None):
 def calculate_node_position(fem_data, *, n_node=None):
     """Calculate node relative positions.
 
-    Args:
+    Parameters
+    ----------
         fem_data: FEMData objects.
         n_node: The number of node to consider (default: use all nodes).
-    Returns:
-        [[d_12_x, d_12_y, d_12_z, d_13_x, ...], ...], where each d is
-        corresponding to the distance between node_i and node_j in one element.
+    Returns
+    --------
+    numpy.ndarray
+        [[d_12_x, d_12_y, d_12_z, d_13_x, ...], ...],
+        where each `d` is corresponding to the distance between node_i and node_j in one element.
         It with be [n_element, 3 * (n_node_per_element C 2)] shaped array.
     """
     if n_node is None:
@@ -712,13 +747,20 @@ def align_data(points):
     If you make transformation by yourself, you have to perform something
     equivalent to (points - means) @ v.T
 
-    Args:
-        points: [n_data, dim] ndarray.
-    Return
-        rotated_points: [n_data, dim] ndarray which is result of the alignment.
-        v: [dim, dim] ndarray which is rotation matrix. You have to perform
-            points @ v.T to make correct transformation.
-        means: [dim] ndarray of means.
+    Parameters
+    ----------
+    points: numpy.ndarray
+        [n_data, dim]
+
+    Returns
+    --------
+    rotated_points: numpy.ndarray
+        [n_data, dim] ndarray which is result of the alignment.
+    v: numpy.ndarray
+        [dim, dim] ndarray which is rotation matrix. You have to perform
+        points @ v.T to make correct transformation.
+    means: numpy.ndarray
+        [dim] ndarray of means.
     """
     print('Doing PCA')
     means = np.mean(points, axis=0)
@@ -756,12 +798,14 @@ def rotate_strain_like_data(rotation, data):
     with the given rotation matrix following R X R^T,
     where R is a rotation matrix and X is a rank-2 tensor.
 
-    Args:
+    Parameters
+    ----------
         rotation: numpy.ndarray
             (dim, dim) shaped matrix.
         data: numpy.ndarray
             (n, dim!) shaped array representing symmetric tensors.
-    Returns:
+    Returns
+    --------
         rotated_tensors: numpy.ndarray
             (n, dim!) shaped array.
     """
@@ -774,7 +818,8 @@ def read_fem(data_dir, *, return_femdata=False, read_fem_all=False,
              read_femio_npy=True):
     """Read FEM data.
 
-    Args:
+    Parameters
+    ----------
         data_dir: str
             Data directory name.
         return_femdata: bool, optional [False]
@@ -782,7 +827,8 @@ def read_fem(data_dir, *, return_femdata=False, read_fem_all=False,
         read_fem_all: bool, optional [False]
             If True, read FEMData all. Only effective if return_femdata is
             True.
-    Returns:
+    Returns
+    --------
         node: numpy.ndarray
             Node positions.
         disp: numpy.ndarray
@@ -826,13 +872,15 @@ def get_top_directory():
 def pad_array(array, n):
     """Pad array to the size n.
 
-    Args:
+    Parameters
+    ----------
         array: numpy.ndarray or scipy.sparse.coomatrix
             Input array of size (m, f1, f2, ...) for numpy.ndarray or (m. m)
             for scipy.sparse.coomatrix
         n: int
             Size after padding. n should be equal to or larger than m.
-    Returns:
+    Returns
+    --------
         padded_array: numpy.ndarray or scipy.sparse.coomatrix
             Padded array of size (n, f1, f2, ...) for numpy.ndarray or (n, n)
             for scipy.sparse.coomatrix.

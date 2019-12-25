@@ -22,10 +22,12 @@ class Trainer():
     def read_settings(cls, settings_yaml):
         """Read settings.yaml to generate Trainer object.
 
-        Args:
+        Parameters
+        ----------
             settings_yaml: str or pathlib.Path
                 setting.yaml file name.
-        Returns:
+        Returns
+        --------
             trainer: siml.Trainer
                 Generater Trainer object.
         """
@@ -35,14 +37,16 @@ class Trainer():
     def __init__(self, main_setting, *, optuna_trial=None):
         """Initialize Trainer object.
 
-        Args:
+        Parameters
+        ----------
             main_setting: siml.setting.MainSetting object
                 Setting descriptions.
             model: siml.networks.Network object
                 Model to be trained.
             optuna_trial: optuna.Trial
                 Optuna trial object. Used for pruning.
-        Returns:
+        Returns
+        --------
             None
         """
         self.setting = main_setting
@@ -52,9 +56,11 @@ class Trainer():
     def train(self):
         """Perform training.
 
-        Args:
+        Parameters
+        ----------
             None
-        Returns:
+        Returns
+        --------
             loss: float
                 Overall loss value.
         """
@@ -132,7 +138,8 @@ class Trainer():
             data_addition_function=None):
         """Perform inference.
 
-        Args:
+        Parameters
+        ----------
             inference_directories: list of pathlib.Path
                 Directories for inference.
             model_directory: pathlib.Path, optional [None]
@@ -178,7 +185,8 @@ class Trainer():
             data_addition_function: function, optional [None]
                 Function to add some data at simulation data writing phase.
                 If not fed, no data addition occurs.
-        Returns:
+        Returns
+        --------
             inference_results: list
             Inference results contains:
                     - input variables
@@ -324,7 +332,8 @@ class Trainer():
         """
         Infer with simplified model.
 
-        Args:
+        Parameters
+        ----------
             model_file: pathlib.Path
                 Model file name.
             raw_dict_x: dict

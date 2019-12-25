@@ -15,7 +15,8 @@ class NRI(header.AbstractGCN):
     def __init__(self, block_setting):
         """Initialize the NN.
 
-        Args:
+        Parameters
+        ----------
             block_setting: siml.setting.BlockSetting
                 BlockSetting object.
         """
@@ -60,12 +61,14 @@ class NRI(header.AbstractGCN):
     def __call__(self, x, supports):
         """Execute the NN's forward computation.
 
-        Args:
+        Parameters
+        ----------
             x: numpy.ndarray or cupy.ndarray
                 Input of the NN.
             supports: List[chainer.util.CooMatrix]
                 List of support inputs.
-        Returns:
+        Returns
+        --------
             y: numpy.ndarray of cupy.ndarray
                 Output of the NN.
         """
@@ -79,12 +82,14 @@ class NRI(header.AbstractGCN):
     def _call_single(self, x, support):
         """Execute the NN's forward computation.
 
-        Args:
+        Parameters
+        ----------
             x: numpy.ndarray or cupy.ndarray
                 Input of the NN.
             support: chainer.util.CooMatrix
                 Normalized adjacency matrix.
-        Returns:
+        Returns
+        --------
             y: numpy.ndarray of cupy.ndarray
                 Output of the NN.
         """
