@@ -29,7 +29,8 @@ def convert_raw_data(
         write_ucd=True, read_res=True, skip_femio=False, load_function=None):
     """Convert raw data and save them in interim directory.
 
-    Args:
+    Parameters
+    -----------
         raw_directory: str or pathlib.Path or list of them
             Raw data directory name.
         mandatory_variables: list of str
@@ -76,8 +77,6 @@ def convert_raw_data(
             Function to load data, which take list of pathlib.Path objects
             (as required files) and pathlib.Path object (as data directory)
             and returns data_dictionary to be saved.
-    Returns:
-        None
     """
 
     # Process all subdirectories when recursice is True
@@ -185,7 +184,8 @@ def concatenate_preprocessed_data(
 
     NOTE: It may lead data leakage so it is just for research use.
 
-    Args:
+    Parameters
+    -----------
         preprocessed_base_directories: pathlib.Path or List[pathlib.Path]
             Base directory name of preprocessed data.
         output_directory_base: pathlib.Path
@@ -257,14 +257,13 @@ class Preprocessor:
         """Preprocess interim data with preprocessing e.g. standardization and then
         save them.
 
-        Args:
+        Parameters
+        -----------
             force_renew: bool, optional [False]
                 If True, renew npy files even if they are alerady exist.
             save_func: function object, optional [None]
                 Callback function to customize save data. It should accept
                 output_directory, variable_name, and transformed_data.
-        Returns:
-            None
         """
         self.save_func = save_func
 
@@ -312,7 +311,8 @@ class Preprocessor:
             last=False):
         """Preprocess single variable.
 
-        Args:
+        Parameters
+        -----------
             data_directories: list of pathlib.Path
                 Data directories.
             variable_name: str
@@ -328,8 +328,10 @@ class Preprocessor:
                 componentwise.
             last: bool, optional [False]
                 If True, touch finished file.
-        Returns:
-            preprocess_converter: PreprocessConverter.converter object
+
+        Returns
+        --------
+        PreprocessConverter.converter object
         """
 
         # Check if data already exists
@@ -425,7 +427,8 @@ class Converter:
             data_addition_function=None):
         """Postprocess data with inversely converting them.
 
-        Args:
+        Parameters
+        -----------
             dict_data_x: dict
                 Dict of input data.
             dict_data_y: dict
@@ -447,7 +450,9 @@ class Converter:
                 Simulation file type to read simulation base.
             write_simulation_type: str, optional ['fistr']
                 Simulation file type to write.
-        Returns:
+
+        Returns
+        --------
             inversed_dict_data_x: dict
                 Inversed input data.
             inversed_dict_data_y: dict
@@ -517,14 +522,16 @@ def extract_variables(
         fem_data, mandatory_variables, *, optional_variables=None):
     """Extract variables from FEMData object to convert to data dictionary.
 
-    Args:
+    Parameters
+    -----------
         fem_data: femio.FEMData
             FEMData object to be extracted variables from.
         mandatory_variables: list of str
             Mandatory variable names.
         optional_variables: list of str, optional [None]
             Optional variable names.
-    Returns:
+    Returns
+    --------
         dict_data: dict
             Data dictionary.
     """
@@ -546,14 +553,16 @@ def extract_variables(
 def save_dict_data(output_directory, dict_data, *, dtype=np.float32):
     """Save dict_data.
 
-    Args:
+    Parameters
+    -----------
         output_directory: pathlib.Path
             Output directory path.
         dict_data: dict
             Data dictionary to be saved.
         dtype: type, optional [np.float32]
             Data type to be saved.
-    Returns:
+    Returns
+    --------
         None
     """
     for key, value in dict_data.items():
@@ -566,7 +575,8 @@ def determine_output_directory(
     """Determine output directory by replacing a string (str_replace) in the
     input_directory.
 
-    Args:
+    Parameters
+    -----------
         input_directory: pathlib.Path
             Input directory path.
         output_base_directory: pathlib.Path
@@ -598,10 +608,12 @@ def determine_output_directory(
 def normalize_adjacency_matrix(adj):
     """Symmetrically normalize adjacency matrix.
 
-    Args:
+    Parameters
+    -----------
         adj: scipy.sparse.coo_matrix
             Adjacency matrix in COO expression.
-    Returns:
+    Returns
+    --------
         normalized_adj: scipy.sparse.coo_matrix
             Normalized adjacency matrix in COO expression.
     """
@@ -624,7 +636,8 @@ def analyze_data_directories(
         magnitude_range=1.):
     """Analyze data f_name with grid over x_name.
 
-    Args:
+    Parameters
+    -----------
         data_directories: List[pathlib.Path]
             List of data directories.
         x_names: List[str]
@@ -722,7 +735,8 @@ def analyze_data_directories(
 def split_data_arrays(xs, fs, *, n_split=10, ref_index=0):
     """Split data fs with regards to grids of xs.
 
-    Args:
+    Parameters
+    -----------
         xs: List[numpy.ndarray]
             n_sample-length list contains (n_element, dim_x) shaped ndarray.
         fs: List[numpy.ndarray]

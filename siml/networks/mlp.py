@@ -9,7 +9,8 @@ class MLP(ch.ChainList):
     def __init__(self, block_setting):
         """Initialize MLP object.
 
-        Args:
+        Parameters
+        -----------
             unit_numbers: list of int
                 List of the number of units for each layer.
             activation_name: str
@@ -18,7 +19,8 @@ class MLP(ch.ChainList):
                 identity).
             dropout_ratio: float
                 The ratio of dropout. Dropout is applied to all layers.
-        Returns:
+        Returns
+        --------
             None
         """
 
@@ -35,10 +37,12 @@ class MLP(ch.ChainList):
     def __call__(self, x, supports=None):
         """Execute the NN's forward computation.
 
-        Args:
+        Parameters
+        -----------
             x: numpy.ndarray or cupy.ndarray
                 Input of the NN.
-        Returns:
+        Returns
+        --------
             y: numpy.ndarray or cupy.ndarray
                 Output of the NN.
         """

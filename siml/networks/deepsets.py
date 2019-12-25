@@ -11,7 +11,8 @@ class DeepSets(ch.Chain):
     def __init__(self, block_setting):
         """Initialize the NN.
 
-        Args:
+        Parameters
+        -----------
             block_setting: siml.setting.BlockSetting
                 BlockSetting object.
         """
@@ -35,12 +36,14 @@ class DeepSets(ch.Chain):
     def __call__(self, x, supports=None):
         """Execute the NN's forward computation.
 
-        Args:
+        Parameters
+        -----------
             x: numpy.ndarray or cupy.ndarray
                 Input of the NN.
             supports: List[chainer.util.CooMatrix]
                 List of support inputs.
-        Returns:
+        Returns
+        --------
             y: numpy.ndarray of cupy.ndarray
                 Output of the NN.
         """

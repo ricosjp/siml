@@ -18,9 +18,11 @@ class Objective():
     def __call__(self, trial):
         """Objective function to make optimization for Optuna.
 
-        Args:
+        Parameters
+        -----------
             trial: optuna.trial.Trial
-        Returns:
+        Returns
+        --------
             loss: float
                 Loss value for the trial
         """
@@ -106,12 +108,15 @@ class Objective():
 def perform_study(main_setting, db_setting=None):
     """Perform hyperparameter search study.
 
-    Args:
+    Parameters
+    -----------
         main_setting: siml.setting.MainSetting
             Main setting object.
         db_setting: siml.setting.DBSetting
             Database setting object.
-    Returns:
+
+    Returns
+    --------
         None
     """
     # Prepare study
