@@ -54,7 +54,7 @@ pages:
   retry: 2
 
 test_gpu:
-  extends: test
+  extends: .test
   script:
     - poetry run pytest tests/gpu/test_networks_gpu.py --capture=no
     - poetry run pytest tests/gpu/test_trainer_gpu.py --capture=no
@@ -62,7 +62,7 @@ test_gpu:
     - gpu
 
 test_gpu_optimize:
-  extends: test
+  extends: .test
   script: poetry run pytest tests/gpu/test_optimize_gpu.py --capture=no
   tags:
     - gpu
