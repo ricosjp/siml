@@ -1,7 +1,5 @@
 image: registry.ritc.jp/ricos/machine_learning/siml
-
-variables:
-  GIT_SUBMODULE_STRATEGY: recursive
+retry: 2
 
 before_script:
   - pip install pip poetry --upgrade
@@ -34,14 +32,13 @@ pylint:
   script:
     - poetry run pylint --ignore-patterns=setting.py --ignored-modules=chainer -E $(find . -name "*.py")
 
-pages:
-  stage: deploy
+sphinx:
+  stage: preprocess
   script:
     - poetry run make -C doc html
-    - mv doc/_build/html public
   artifacts:
     paths:
-      - public
+      - doc/_build/html
 
 test_gpu:
   stage: test
