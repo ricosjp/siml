@@ -26,6 +26,7 @@ pytest = "^5.3"
 pylint = "^2.4"
 autopep8 = "^1.4"
 sphinx = "^2.3"
+sphinx_rtd_theme = "^0.4.3"
 
 [[tool.poetry.source]]
 name = "ricos"
