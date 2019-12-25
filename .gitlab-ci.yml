@@ -49,8 +49,12 @@ pages:
       - public
   retry: 2
 
-test_gpu:
+.test:
   stage: test
+  retry: 2
+
+test_gpu:
+  extends: test
   script:
     - poetry run pytest tests/gpu/test_networks_gpu.py --capture=no
     - poetry run pytest tests/gpu/test_trainer_gpu.py --capture=no
@@ -58,37 +62,37 @@ test_gpu:
     - gpu
 
 test_gpu_optimize:
-  stage: test
+  extends: test
   script: poetry run pytest tests/gpu/test_optimize_gpu.py --capture=no
   tags:
     - gpu
 
 test_networks:
-  stage: test
+  extends: .test
   script: poetry run pytest tests/test_networks.py --capture=no
 
 test_optimize:
-  stage: test
+  extends: .test
   script: poetry run pytest tests/test_optimize.py --capture=no
 
 test_prepost:
-  stage: test
+  extends: .test
   script: poetry run pytest tests/test_prepost.py --capture=no
 
 test_setting:
-  stage: test
+  extends: .test
   script: poetry run pytest tests/test_setting.py --capture=no
 
 test_trainer:
-  stage: test
+  extends: .test
   script: poetry run pytest tests/test_trainer.py --capture=no
 
 test_trainer_long:
-  stage: test
+  extends: .test
   script: poetry run pytest tests/test_trainer_long.py --capture=no
 
 test_util:
-  stage: test
+  extends: .test
   script: poetry run pytest tests/test_util.py --capture=no
 
 .deploy:wheel:
