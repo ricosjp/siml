@@ -33,3 +33,6 @@ __pycache__/
 venv/
 ENV/
 poetry.lock
+
+# sphinx
+doc/_build
