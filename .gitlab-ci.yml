@@ -5,7 +5,6 @@ before_script:
   - poetry config repositories.ricos https://pypi.ritc.jp
   - poetry config http-basic.ricos ricos ${RICOS_PYPI_KEY}
   - poetry config virtualenvs.in-project true
-  - poetry update
   - poetry install
 
 cache:
