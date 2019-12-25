@@ -2,7 +2,11 @@
 SiML
 """
 
-import os.path as _op
-from glob import glob as _glob
-
-__all__ = [_op.splitext(module_name)[0] for module_name in _glob("*.py")]
+from siml import datasets  # NOQA
+from siml import networks  # NOQA
+from siml import optimize  # NOQA
+from siml import prepost  # NOQA
+from siml import setting  # NOQA
+from siml import trainer  # NOQA
+from siml import updaters  # NOQA
+from siml import util  # NOQA
