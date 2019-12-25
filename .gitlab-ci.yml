@@ -30,13 +30,13 @@ preprocess:
 autopep8:
   stage: preprocess
   script:
-    - poetry run autopep8 --diff --exit-code $(find . -name "*.py")
+    - poetry run autopep8 --diff --exit-code $(find siml tests -name "*.py")
   retry: 2
 
 pylint:
   stage: preprocess
   script:
-    - poetry run pylint --ignore-patterns=setting.py --ignored-modules=chainer -E $(find . -name "*.py")
+    - poetry run pylint --ignore-patterns=setting.py --ignored-modules=chainer -E $(find siml tests -name "*.py")
   retry: 2
 
 pages:
