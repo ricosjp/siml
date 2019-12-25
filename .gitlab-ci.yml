@@ -34,6 +34,15 @@ pylint:
   script:
     - poetry run pylint --ignore-patterns=setting.py --ignored-modules=chainer -E $(find . -name "*.py")
 
+pages:
+  stage: deploy
+  script:
+    - poetry run make -C doc html
+    - mv doc/_build/html public
+  artifacts:
+    paths:
+      - public
+
 test_gpu:
   stage: test
   script:
