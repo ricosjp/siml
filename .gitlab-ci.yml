@@ -4,7 +4,13 @@ before_script:
   - pip install pip poetry --upgrade
   - poetry config repositories.ricos https://pypi.ritc.jp
   - poetry config http-basic.ricos ricos ${RICOS_PYPI_KEY}
+  - poetry config virtualenvs.in-project true
   - poetry install
+
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - .venv
 
 stages:
   - preprocess
