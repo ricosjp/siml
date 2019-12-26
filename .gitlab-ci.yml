@@ -48,6 +48,8 @@ pages:
     paths:
       - public
   retry: 2
+  only:
+    - master
 
 .test:
   stage: test
