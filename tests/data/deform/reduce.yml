@@ -1,0 +1,57 @@
+data:
+  train:
+    - tests/data/deform/preprocessed/train
+  validation:
+    - tests/data/deform/preprocessed/train
+trainer:
+  lazy: true
+  output_directory: tests/data/deform/model_reduce
+  inputs:
+    - name: elemental_strain
+      dim: 6
+    - name: elemental_stress
+      dim: 6
+  support_inputs:
+    - nadj
+    - adj
+  outputs:
+    - name: global_modulus
+      dim: 1
+  prune: true
+  batch_size: 2
+  n_epoch: 50
+  log_trigger_epoch: 1
+  stop_trigger_epoch: 10
+  seed: 0
+model:
+  blocks:
+    - name: ResGCN1
+      type: res_gcn
+      destinations:
+        - MLP
+      support_input_index: 0  # assume one support input (e.g. adjacency matrix) for each block
+      nodes:
+        - -1
+        - 200
+        - 200
+      activations:
+        - relu
+        - mean
+      dropouts:
+        - 0.0
+        - 0.0
+    - name: MLP
+      type: adjustable_mlp
+      nodes:
+        - 200
+        - 200
+        - 20
+        - -1
+      activations:
+        - relu
+        - relu
+        - identity
+      dropouts:
+        - 0.0
+        - 0.0
+        - 0.0
