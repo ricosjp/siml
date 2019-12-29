@@ -2,11 +2,11 @@ import chainer as ch
 
 
 def max_pool(x):
-    return ch.functions.max(x, axis=0, keepdims=True)
+    return ch.functions.max(x, axis=-2, keepdims=True)
 
 
 def mean(x):
-    return ch.functions.mean(x, axis=0, keepdims=True)
+    return ch.functions.mean(x, axis=-2, keepdims=True)
 
 
 DICT_ACTIVATIONS = {
