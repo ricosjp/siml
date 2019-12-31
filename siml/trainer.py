@@ -105,12 +105,12 @@ class Trainer():
                 and self.setting.trainer.prune:
             self.setting.trainer.prune = False
             print('No optuna.trial fed. Set prune = False.')
+
         if self._is_gpu_supporting():
-            self.setting.trainer.gpu_id = self.setting.trainer.gpu_id
             print(f"GPU device: {self.setting.trainer.gpu_id}")
         else:
             if self.setting.trainer.gpu_id != -1:
-                print(f"GPU not found. Using CPU.")
+                raise ValueError('No GPU found.')
             self.setting.trainer.gpu_id = -1
             daz.set_daz()
             daz.set_ftz()
