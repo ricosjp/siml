@@ -56,7 +56,7 @@ class TestTrainer(unittest.TestCase):
         if tr.setting.trainer.output_directory.exists():
             shutil.rmtree(tr.setting.trainer.output_directory)
         loss = tr.train()
-        np.testing.assert_array_less(loss, 40.)
+        np.testing.assert_array_less(loss, 50.)
 
     def test_train_element_wise(self):
         main_setting = setting.MainSetting.read_settings_yaml(

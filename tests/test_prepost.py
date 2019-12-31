@@ -251,7 +251,9 @@ class TestPrepost(unittest.TestCase):
         def conversion_function(fem_data, raw_directory=None):
             adj, _ = fem_data.calculate_adjacency_matrix_element()
             nadj = pre.normalize_adjacency_matrix(adj)
-            return {'adj': adj, 'nadj': nadj}
+            global_modulus = np.mean(
+                fem_data.access_attribute('modulus'), keepdims=True)
+            return {'adj': adj, 'nadj': nadj, 'global_modulus': global_modulus}
         pre.convert_raw_data(
             Path('tests/data/deform/raw'),
             mandatory_variables=[

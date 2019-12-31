@@ -32,3 +32,5 @@ preprocess:
     method: identity
   poisson_ratio:
     method: identity
+  global_modulus:
+    method: standardize
