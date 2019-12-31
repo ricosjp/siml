@@ -21,6 +21,7 @@ pandas       = "^0.25.3"
 scikit-learn = "^0.22.0"
 scipy        = "^1.4"
 PyQt5 = "^5.14.0"
+cupy = {version = "^7.0.0", optional = true}
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.3"
@@ -28,6 +29,9 @@ pylint = "^2.4"
 autopep8 = "^1.4"
 sphinx = "^2.3"
 sphinx_rtd_theme = "^0.4.3"
+
+[tool.poetry.extras]
+cupy = ["cupy"]
 
 [[tool.poetry.source]]
 name = "ricos"
