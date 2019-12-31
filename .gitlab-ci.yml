@@ -66,6 +66,9 @@ test_gpu:
 
 test_gpu_optimize:
   extends: .test
+  before_script:
+    - *global_before
+    - poetry install -E "cupy"
   script: poetry run pytest tests/gpu/test_optimize_gpu.py --capture=no
   tags:
     - gpu
