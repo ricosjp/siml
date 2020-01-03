@@ -11,11 +11,11 @@ data:
   validation:
   - tests/data/deform/preprocessed/validation
 conversion:
-  mandatory:
+  mandatory_variables:
     - elemental_strain
     - modulus
     - poisson_ratio
-  optional:
+  optional_variables:
     - elemental_stress
 preprocess:
   adj:

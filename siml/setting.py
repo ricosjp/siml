@@ -189,8 +189,7 @@ class TrainerSetting(TypedDataClass):
         default=None, metadata={'allow_none': True})
     output_directory: Path = None
 
-    name: str = dc.field(
-        default=None, metadata={'allow_none': True})
+    name: str = 'default'
     batch_size: int = 1
     n_epoch: int = 100
     log_trigger_epoch: int = 1
@@ -357,15 +356,111 @@ class OptunaSetting(TypedDataClass):
 
 
 @dc.dataclass
-class ConversionSetting:
-    mandatory: typing.List[str] = dc.field(default_factory=list)
-    optional: typing.List[str] = dc.field(default_factory=list)
+class ConversionSetting(TypedDataClass):
+    """Dataclass for raw data converter.
+
+    Parameters
+    -----------
+    mandatory_variables: list of str
+        Mandatory variable names. If any of them are not found,
+        ValueError is raised.
+    mandatory: list of str
+        An alias of mandatory_variables.
+    optional_variables: list of str
+        Optional variable names. If any of them are not found,
+        they are ignored.
+    optional: list of str
+        An alias of optional_variables.
+    output_base_directory: str or pathlib.Path, optional ['data/interim']
+        Output base directory for the converted raw data. By default,
+        'data/interim' is the output base directory, so
+        'data/interim/aaa/bbb' directory is the output directory for
+        'data/raw/aaa/bbb' directory.
+    conversion_function: function, optional [None]
+        Conversion function which takes femio.FEMData object and
+        pathlib.Path (data directory) as only arguments and returns data
+        dict to be saved.
+    finished_file: str, optional ['converted']
+        File name to indicate that the conversion is finished.
+    file_type: str, optional ['fistr']
+        File type to be read.
+    required_file_names: list of str,
+            optional [['*.msh', '*.cnt', '*.res.0.1']]
+        Required file names.
+    skip_femio: bool, optional [False]
+        If True, skip femio.FEMData reading process. Useful for
+        user-defined data format such as csv, h5, etc.
+    """
+
+    mandatory_variables: typing.List[str] = dc.field(
+        default_factory=list)
+    optional_variables: typing.List[str] = dc.field(
+        default_factory=list)
+    mandatory: typing.List[str] = dc.field(
+        default_factory=list)
+    optional: typing.List[str] = dc.field(
+        default_factory=list)
+    finished_file: str = 'converted'
+    file_type: str = 'fistr'
+    required_file_names: typing.List[str] = dc.field(
+        default_factory=lambda: ['*.msh', '*.cnt', '*.res.0.1'])
+    skip_femio: bool = False
+
+    @classmethod
+    def read_settings_yaml(cls, settings_yaml):
+        dict_settings = util.load_yaml_file(settings_yaml)
+        data = DataSetting(**dict_settings['data'])
+        return cls(**dict_settings['raw_conversion'], data=data)
+
+    def __post_init__(self):
+        if len(self.mandatory) > len(self.mandatory_variables):
+            self.mandatory_variables = self.mandatory
+        elif len(self.mandatory) < len(self.mandatory_variables):
+            self.mandatory = self.mandatory_variables
+        else:
+            pass
+
+        if len(self.optional) > len(self.optional_variables):
+            self.optional_variables = self.optional
+        elif len(self.optional) < len(self.optional_variables):
+            self.optional = self.optional_variables
+        else:
+            pass
+
+        super().__post_init__()
+
+
+@dc.dataclass
+class PreprocessSetting:
+    preprocess: dict = dc.field(default_factory=dict)
+
+    @classmethod
+    def read_settings_yaml(cls, settings_yaml):
+        dict_settings = util.load_yaml_file(settings_yaml)
+        preprocess = dict_settings['preprocess']
+        return cls(preprocess=preprocess)
+
+    def __post_init__(self):
+        for key, value in self.preprocess.items():
+            if isinstance(value, str):
+                self.preprocess.update(
+                    {key: {'method': value, 'componentwise': True}})
+            elif isinstance(value, dict):
+                if 'method' not in value:
+                    value.update({'method': 'identity'})
+                if 'componentwise' not in value:
+                    value.update({'componentwise': True})
+                self.preprocess.update({key: value})
+            else:
+                raise ValueError('Invalid format of preprocess setting')
+        return
 
 
 @dc.dataclass
 class MainSetting:
     data: DataSetting = DataSetting()
     conversion: ConversionSetting = ConversionSetting()
+    preprocess: dict = dc.field(default_factory=dict)
     trainer: TrainerSetting = TrainerSetting()
     model: ModelSetting = ModelSetting()
     optuna: OptunaSetting = OptunaSetting()
@@ -381,7 +476,8 @@ class MainSetting:
 
     @classmethod
     def read_dict_settings(cls, dict_settings, *, name=None):
-        if 'name' not in dict_settings['trainer']:
+        if 'trainer' in dict_settings \
+                and 'name' not in dict_settings['trainer']:
             if name is None:
                 dict_settings['trainer']['name'] = 'unnamed'
             else:
@@ -395,6 +491,11 @@ class MainSetting:
                 **dict_settings['conversion'])
         else:
             conversion_setting = ConversionSetting()
+        if 'preprocess' in dict_settings:
+            preprocess_setting = PreprocessSetting(
+                dict_settings['preprocess']).preprocess
+        else:
+            preprocess_setting = PreprocessSetting().preprocess
         if 'trainer' in dict_settings:
             trainer_setting = TrainerSetting(**dict_settings['trainer'])
         else:
@@ -410,20 +511,23 @@ class MainSetting:
 
         return cls(
             data=data_setting, conversion=conversion_setting,
+            preprocess=preprocess_setting,
             trainer=trainer_setting, model=model_setting,
             optuna=optuna_setting)
 
     def __post_init__(self):
+
         input_length = np.sum(self.trainer.input_dims)
         output_length = np.sum(self.trainer.output_dims)
 
         # Infer input and output dimension if they are not specified.
         # NOTE: Basically Chainer can infer input dimension, but not the case
         # when chainer.functions.einsum is used.
-        if self.model.blocks[0].nodes[0] < 0:
-            self.model.blocks[0].nodes[0] = int(input_length)
-        if self.model.blocks[-1].nodes[-1] < 0:
-            self.model.blocks[-1].nodes[-1] = int(output_length)
+        if input_length is not None:
+            if self.model.blocks[0].nodes[0] < 0:
+                self.model.blocks[0].nodes[0] = int(input_length)
+            if self.model.blocks[-1].nodes[-1] < 0:
+                self.model.blocks[-1].nodes[-1] = int(output_length)
 
     def update_with_dict(self, new_dict):
         original_dict = dc.asdict(self)
@@ -444,34 +548,6 @@ class MainSetting:
             return original_setting
         else:
             raise ValueError(f"Unknown data type: {new_setting.__class__}")
-
-
-@dc.dataclass
-class PreprocessSetting:
-    data: DataSetting = DataSetting()
-    preprocess: dict = dc.field(default_factory=dict)
-
-    @classmethod
-    def read_settings_yaml(cls, settings_yaml):
-        dict_settings = util.load_yaml_file(settings_yaml)
-        data = DataSetting(**dict_settings['data'])
-        preprocess = dict_settings['preprocess']
-        return cls(data=data, preprocess=preprocess)
-
-    def __post_init__(self):
-        for key, value in self.preprocess.items():
-            if isinstance(value, str):
-                self.preprocess.update(
-                    {key: {'method': value, 'componentwise': True}})
-            elif isinstance(value, dict):
-                if 'method' not in value:
-                    value.update({'method': 'identity'})
-                if 'componentwise' not in value:
-                    value.update({'componentwise': True})
-                self.preprocess.update({key: value})
-            else:
-                raise ValueError('Invalid format of preprocess setting')
-        return
 
 
 def write_yaml(data_class, file_name, *, overwrite=False):

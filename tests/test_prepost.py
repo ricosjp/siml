@@ -11,6 +11,30 @@ import siml.trainer as trainer
 import siml.util as util
 
 
+def load_function(data_files, data_directory):
+    # To be used in test_convert_raw_data_bypass_femio
+    df = pd.read_csv(data_files[0], header=0, index_col=None)
+    return {
+        'a': np.reshape(df['a'].to_numpy(), (-1, 1)),
+        'b': np.reshape(df['b'].to_numpy(), (-1, 1)),
+        'c': np.reshape(df['c'].to_numpy(), (-1, 1))}
+
+
+def conversion_function(fem_data, raw_directory=None):
+    # To be used in test_preprocess_deform
+    adj, _ = fem_data.calculate_adjacency_matrix_element()
+    nadj = pre.normalize_adjacency_matrix(adj)
+    global_modulus = np.mean(
+        fem_data.access_attribute('modulus'), keepdims=True)
+    return {'adj': adj, 'nadj': nadj, 'global_modulus': global_modulus}
+
+
+def filter_function(fem_data, raw_directory=None, data_dict=None):
+    # To be used in test_convert_raw_data_with_filter_function
+    strain = fem_data.access_attribute('ElementalSTRAIN')
+    return np.max(np.abs(strain)) < 1e2
+
+
 class TestPrepost(unittest.TestCase):
 
     def test_determine_output_directory(self):
@@ -81,21 +105,18 @@ class TestPrepost(unittest.TestCase):
         data_setting = setting.DataSetting(
             raw=Path('tests/data/csv_prepost/raw'),
             interim=Path('tests/data/csv_prepost/interim'))
+        conversion_setting = setting.ConversionSetting(
+            required_file_names=['*.csv'], skip_femio=True)
+
+        main_setting = setting.MainSetting(
+            data=data_setting, conversion=conversion_setting)
 
         shutil.rmtree(data_setting.interim, ignore_errors=True)
         shutil.rmtree(data_setting.preprocessed, ignore_errors=True)
 
-        def load_function(data_files, data_directory):
-            df = pd.read_csv(data_files[0], header=0, index_col=None)
-            return {
-                'a': np.reshape(df['a'].to_numpy(), (-1, 1)),
-                'b': np.reshape(df['b'].to_numpy(), (-1, 1)),
-                'c': np.reshape(df['c'].to_numpy(), (-1, 1))}
-
-        pre.convert_raw_data(
-            data_setting.raw, output_base_directory=data_setting.interim,
-            recursive=True, load_function=load_function,
-            required_file_names=['*.csv'], skip_femio=True)
+        rc = pre.RawConverter(
+            main_setting, recursive=True, load_function=load_function)
+        rc.convert()
 
         interim_directory = data_setting.interim / 'train/1'
         expected_a = np.array([[1], [2], [3], [4]])
@@ -115,10 +136,12 @@ class TestPrepost(unittest.TestCase):
             pad=False
         )
         preprocess_setting = setting.PreprocessSetting(
-            data_setting, {
+            {
                 'identity': 'identity', 'std_scale': 'std_scale',
                 'standardize': 'standardize'}
         )
+        main_setting = setting.MainSetting(
+            preprocess=preprocess_setting.preprocess, data=data_setting)
 
         # Clean up data
         shutil.rmtree(data_setting.interim, ignore_errors=True)
@@ -142,7 +165,7 @@ class TestPrepost(unittest.TestCase):
             (interim_path / 'converted').touch()
 
         # Preprocess data
-        preprocessor = pre.Preprocessor(preprocess_setting)
+        preprocessor = pre.Preprocessor(main_setting)
         preprocessor.preprocess_interim_data()
 
         # Test preprocessed data is as desired
@@ -191,10 +214,12 @@ class TestPrepost(unittest.TestCase):
             pad=False
         )
         preprocess_setting = setting.PreprocessSetting(
-            data_setting, {
+            {
                 'identity': 'identity', 'std_scale': 'std_scale',
                 'standardize': 'standardize'}
         )
+        main_setting = setting.MainSetting(
+            preprocess=preprocess_setting.preprocess, data=data_setting)
 
         # Clean up data
         shutil.rmtree(data_setting.interim, ignore_errors=True)
@@ -218,7 +243,7 @@ class TestPrepost(unittest.TestCase):
             (interim_path / 'converted').touch()
 
         # Preprocess data
-        preprocessor = pre.Preprocessor(preprocess_setting)
+        preprocessor = pre.Preprocessor(main_setting)
         preprocessor.preprocess_interim_data()
 
         postprocessor = pre.Converter(
@@ -243,52 +268,39 @@ class TestPrepost(unittest.TestCase):
                 np.testing.assert_almost_equal(interim_data, v, decimal=5)
 
     def test_preprocess_deform(self):
-        interim = Path('tests/data/deform/test_prepost/interim')
-        preprocessed = Path('tests/data/deform/test_prepost/preprocessed')
-        shutil.rmtree(interim, ignore_errors=True)
-        shutil.rmtree(preprocessed, ignore_errors=True)
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/deform/data.yml'))
+        main_setting.data.interim = Path(
+            'tests/data/deform/test_prepost/interim')
+        main_setting.data.preprocessed = Path(
+            'tests/data/deform/test_prepost/preprocessed')
 
-        def conversion_function(fem_data, raw_directory=None):
-            adj, _ = fem_data.calculate_adjacency_matrix_element()
-            nadj = pre.normalize_adjacency_matrix(adj)
-            global_modulus = np.mean(
-                fem_data.access_attribute('modulus'), keepdims=True)
-            return {'adj': adj, 'nadj': nadj, 'global_modulus': global_modulus}
-        pre.convert_raw_data(
-            Path('tests/data/deform/raw'),
-            mandatory_variables=[
-                'elemental_strain', 'elemental_stress',
-                'modulus', 'poisson_ratio'],
-            output_base_directory=interim,
-            recursive=True, conversion_function=conversion_function)
-        p = pre.Preprocessor.read_settings('tests/data/deform/data.yml')
-        p.setting.data.interim = interim
-        p.setting.data.preprocessed = preprocessed
+        shutil.rmtree(main_setting.data.interim, ignore_errors=True)
+        shutil.rmtree(main_setting.data.preprocessed, ignore_errors=True)
+
+        raw_converter = pre.RawConverter(
+            main_setting, conversion_function=conversion_function)
+        raw_converter.convert()
+        p = pre.Preprocessor(main_setting)
         p.preprocess_interim_data()
 
     def test_convert_raw_data_with_filter_function(self):
-        raw = Path('tests/data/test_prepost_to_filter/raw')
-        interim = Path('tests/data/test_prepost_to_filter/interim')
-        shutil.rmtree(interim, ignore_errors=True)
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/test_prepost_to_filter/data.yml'))
+        shutil.rmtree(main_setting.data.interim, ignore_errors=True)
 
-        def filter_function(fem_data, raw_directory=None, data_dict=None):
-            strain = fem_data.access_attribute('ElementalSTRAIN')
-            return np.max(np.abs(strain)) < 1e2
+        raw_converter = pre.RawConverter(
+            main_setting, filter_function=filter_function)
+        raw_converter.convert()
 
-        pre.convert_raw_data(
-            raw,
-            mandatory_variables=[
-                'elemental_strain', 'elemental_stress',
-                'modulus', 'poisson_ratio'],
-            output_base_directory=interim,
-            recursive=True, filter_function=filter_function)
         actual_directories = sorted(util.collect_data_directories(
-            interim, required_file_names=['elemental_strain.npy']))
+            main_setting.data.interim,
+            required_file_names=['elemental_strain.npy']))
         expected_directories = sorted([
-            interim / 'tet2_3_modulusx0.9000',
-            interim / 'tet2_3_modulusx1.1000',
-            interim / 'tet2_4_modulusx1.0000',
-            interim / 'tet2_4_modulusx1.1000'])
+            main_setting.data.interim / 'tet2_3_modulusx0.9000',
+            main_setting.data.interim / 'tet2_3_modulusx1.1000',
+            main_setting.data.interim / 'tet2_4_modulusx1.0000',
+            main_setting.data.interim / 'tet2_4_modulusx1.1000'])
         np.testing.assert_array_equal(actual_directories, expected_directories)
 
     def test_generate_converters(self):
@@ -297,9 +309,11 @@ class TestPrepost(unittest.TestCase):
         with open(preprocessors_file, 'rb') as f:
             file_like_object_converter = pre.Converter(f)
         np.testing.assert_almost_equal(
-            real_file_converter.converters['standardize'].converter.var_,
+            real_file_converter.converters['standardize'][
+                'preprocess_converter'].var_,
             file_like_object_converter.converters[
-                'standardize'].converter.var_)
+                'standardize'][
+                    'preprocess_converter'].var_)
 
     def test_concatenate_preprocessed_data(self):
         preprocessed_base_directory = Path(

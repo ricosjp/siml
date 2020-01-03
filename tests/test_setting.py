@@ -34,3 +34,12 @@ class TestSetting(unittest.TestCase):
         self.assertEqual(
             real_file_setting.model.blocks[1].destinations,
             str_setting.model.blocks[1].destinations)
+
+    def test_main_setting(self):
+        main_setting = setting.MainSetting()
+        np.testing.assert_array_equal(
+            main_setting.conversion.required_file_names,
+            ['*.msh', '*.cnt', '*.res.0.1'])
+        self.assertEqual(
+            main_setting.data.interim,
+            Path('data/interim'))
