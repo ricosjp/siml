@@ -1,0 +1,36 @@
+data:
+  inferred: tests/data/test_prepost_to_filter/inferred
+  interim: tests/data/test_prepost_to_filter/interim
+  pad: false
+  preprocessed: tests/data/test_prepost_to_filter/preprocessed
+  raw: tests/data/test_prepost_to_filter/raw
+  test:
+  - tests/data/test_prepost_to_filter/preprocessed/test
+  train:
+  - tests/data/test_prepost_to_filter/preprocessed/train
+  validation:
+  - tests/data/test_prepost_to_filter/preprocessed/validation
+conversion:
+  mandatory_variables:
+    - elemental_strain
+    - modulus
+    - poisson_ratio
+  optional_variables:
+    - elemental_stress
+preprocess:
+  adj:
+    method: identity
+  elemental_strain:
+    method: std_scale
+    componentwise: false
+  elemental_stress:
+    method: std_scale
+    componentwise: false
+  modulus:
+    method: std_scale
+  nadj:
+    method: identity
+  poisson_ratio:
+    method: identity
+  global_modulus:
+    method: standardize
