@@ -359,7 +359,10 @@ class Preprocessor:
                 chunksize=chunksize)
 
         dict_preprocessor_settings = {
-            i[0]: preprocess_converter
+            i[0]: {
+                'method': i[1]['method'],
+                'componentwise': i[1]['componentwise'],
+                'preprocess_converter': preprocess_converter}
             for i, preprocess_converter
             in zip(preprocessor_inputs, preprocess_converters)}
         with open(
@@ -477,7 +480,8 @@ class Converter:
     def preprocess(self, dict_data_x):
         converted_dict_data_x = {
             variable_name:
-            self.converters[variable_name].transform(data)
+            self.converters[variable_name][
+                'preprocess_converter'].transform(data)
             for variable_name, data in dict_data_x.items()}
         return converted_dict_data_x
 
@@ -523,11 +527,13 @@ class Converter:
         """
         inversed_dict_data_x = {
             variable_name:
-            self.converters[variable_name].inverse_transform(data)
+            self.converters[variable_name][
+                'preprocess_converter'].inverse_transform(data)
             for variable_name, data in dict_data_x.items()}
         inversed_dict_data_y = {
             variable_name:
-            self.converters[variable_name].inverse_transform(data)
+            self.converters[variable_name][
+                'preprocess_converter'].inverse_transform(data)
             for variable_name, data in dict_data_y.items()}
 
         # Save data
