@@ -3,6 +3,8 @@
 import datetime as dt
 import io
 import itertools as it
+import multiprocessing as multi
+import os
 from pathlib import Path
 import pickle
 
@@ -19,32 +21,27 @@ DTYPE = np.float32
 FEMIO_FILE = 'femio_npy_saved.npy'
 
 
-def convert_raw_data(
-        raw_directory, *, mandatory_variables=None, optional_variables=None,
-        output_base_directory='data/interim',
-        recursive=False, conversion_function=None, filter_function=None,
-        force_renew=False,
-        finished_file='converted', file_type='fistr',
-        required_file_names=['*.msh', '*.cnt', '*.res.0.1'], read_npy=False,
-        write_ucd=True, read_res=True, skip_femio=False, load_function=None):
-    """Convert raw data and save them in interim directory.
+class RawConverter():
 
-    Parameters
-    -----------
-        raw_directory: str or pathlib.Path or list of them
-            Raw data directory name.
-        mandatory_variables: list of str
-            Mandatory variable names. If any of them are not found,
-            ValueError is raised.
-        optional_variables: list of str
-            Optional variable names. If any of them are not found,
-            they are ignored.
-        output_base_directory: str or pathlib.Path, optional ['data/interim']
-            Output base directory for the converted raw data. By default,
-            'data/interim' is the output base directory, so
-            'data/interim/aaa/bbb' directory is the output directory for
-            'data/raw/aaa/bbb' directory.
-        recursive: bool, optional [False]
+    @classmethod
+    def read_settings(cls, settings_yaml, **args):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            settings_yaml)
+        return cls(main_setting, **args)
+
+    def __init__(
+            self, main_setting, *,
+            recursive=True,
+            conversion_function=None, filter_function=None, load_function=None,
+            force_renew=False, read_npy=False, write_ucd=True, read_res=True,
+            max_process=None):
+        """Initialize converter of raw data and save them in interim directory.
+
+        Parameters
+        -----------
+        main_setting: siml.setting.MainSetting
+            MainSetting object.
+        recursive: bool, optional [True]
             If True, recursively convert data.
         conversion_function: function, optional [None]
             Conversion function which takes femio.FEMData object and
@@ -55,108 +52,174 @@ def convert_raw_data(
             femio.FEMData object, pathlib.Path (data directory), and dict_data
             as only arguments and returns True (for convertable data) or False
             (for unconvertable data).
+        load_function: function, optional [None]
+            Function to load data, which take list of pathlib.Path objects
+            (as required files) and pathlib.Path object (as data directory)
+            and returns data_dictionary to be saved.
         force_renew: bool, optional [False]
             If True, renew npy files even if they are alerady exist.
-        finished_file: str, optional ['converted']
-            File name to indicate that the conversion is finished.
-        file_type: str, optional ['fistr']
-            File type to be read.
-        required_file_names: list of str,
-                optional [['*.msh', '*.cnt', '*.res.0.1']]
-            Required file names.
         read_npy: bool, optional [False]
             If True, read .npy files instead of original files if exists.
         write_ucd: bool, optional [True]
             If True, write AVS UCD file with preprocessed variables.
         read_res: bool, optional [True]
             If True, read res file of FrontISTR.
-        skip_femio: bool, optional [False]
-            If True, skip femio.FEMData reading process. Useful for
-            user-defined data format such as csv, h5, etc.
-        load_function: function, optional [None]
-            Function to load data, which take list of pathlib.Path objects
-            (as required files) and pathlib.Path object (as data directory)
-            and returns data_dictionary to be saved.
-    """
+        max_process: int, optional [None]
+            The maximum number of processes to perform conversion.
+        """
+        self.setting = main_setting
+        self.recursive = recursive
+        self.conversion_function = conversion_function
+        self.filter_function = filter_function
+        self.load_function = load_function
+        self.force_renew = force_renew
+        self.read_npy = read_npy
+        self.write_ucd = write_ucd
+        self.read_res = read_res
+        self.max_process = determine_max_process(max_process)
+        self.setting.conversion.output_base_directory \
+            = self.setting.data.interim
 
-    # Process all subdirectories when recursice is True
-    output_base_directory = Path(output_base_directory)
-    if recursive:
-        if isinstance(raw_directory, list) or isinstance(raw_directory, set):
-            raw_directories = {util.collect_data_directories(
-                Path(d)) for d in (raw_directory)}
+    def convert(self, raw_directory=None):
+        """Perform conversion.
+
+        Parmeters
+        ---------
+        raw_directory: str or pathlib.Path or list of them, optional [None]
+            Raw data directory name. If not fed, self.setting.data.raw is used
+            instead.
+        """
+        if raw_directory is None:
+            raw_directory = self.setting.data.raw
+
+        # Process all subdirectories when recursice is True
+        if self.recursive:
+            if isinstance(raw_directory, list) or isinstance(
+                    raw_directory, set):
+                raw_directories = {util.collect_data_directories(
+                    Path(d)) for d in (raw_directory)}
+            else:
+                raw_directories = util.collect_data_directories(
+                    Path(raw_directory))
         else:
-            raw_directories = util.collect_data_directories(
-                Path(raw_directory))
+            if isinstance(raw_directory, list) or isinstance(
+                    raw_directory, set):
+                raw_directories = raw_directory
+            else:
+                raw_directories = [raw_directory]
 
-        for d in raw_directories:
-            convert_raw_data(
-                d, mandatory_variables=mandatory_variables,
-                optional_variables=optional_variables,
-                output_base_directory=output_base_directory,
-                recursive=False,  # recursive=False to avoid infinite loop
-                conversion_function=conversion_function,
-                filter_function=filter_function,
-                force_renew=force_renew, finished_file=finished_file,
-                file_type=file_type,
-                required_file_names=required_file_names,
-                read_npy=read_npy, read_res=read_res, skip_femio=skip_femio,
-                load_function=load_function)
+        chunksize = max(len(raw_directories) // self.max_process // 16, 1)
 
-    # Determine output directory
-    raw_directory = Path(raw_directory)
-    output_directory = determine_output_directory(
-        raw_directory, output_base_directory, 'raw')
+        with multi.Pool(self.max_process) as pool:
+            pool.map(
+                self.convert_single_directory, raw_directories,
+                chunksize=chunksize)
 
-    # Guard
-    if not util.files_exist(raw_directory, required_file_names):
         return
-    if (output_directory / finished_file).exists() and not force_renew:
-        print(f"Already converted. Skipped conversion: {raw_directory}")
-        return
 
-    # Main process
-    if skip_femio:
-        fem_data = None
-        dict_data = {}
-    else:
-        if read_npy and (output_directory / FEMIO_FILE).exists():
-            fem_data = femio.FEMData.read_npy_directory(output_directory)
-        else:
-            fem_data = femio.FEMData.read_directory(
-                file_type, raw_directory, read_npy=read_npy, save=False,
-                read_res=read_res)
+    def convert_single_directory(self, raw_directory):
+        """Convert single directory.
 
-        if mandatory_variables is not None and len(mandatory_variables) > 0:
-            dict_data = extract_variables(
-                fem_data, mandatory_variables,
-                optional_variables=optional_variables)
-        else:
+        Parameters
+        ----------
+        raw_directory: pathlib.Path
+            Input directory of raw data.
+
+        Returns
+        -------
+        None
+        """
+        conversion_setting = self.setting.conversion
+
+        # Determine output directory
+        raw_directory = Path(raw_directory)
+        print(f"Processing: {raw_directory}")
+        output_directory = determine_output_directory(
+            raw_directory, conversion_setting.output_base_directory, 'raw')
+
+        # Guard
+        if not util.files_exist(
+                raw_directory, conversion_setting.required_file_names):
+            return
+        if (output_directory / conversion_setting.finished_file).exists() \
+                and not self.force_renew:
+            print(
+                f"Already converted. Skipped conversion: {raw_directory}")
+            return
+
+        # Main process
+        if conversion_setting.skip_femio:
+            fem_data = None
             dict_data = {}
+        else:
+            if self.read_npy and (output_directory / FEMIO_FILE).exists():
+                fem_data = femio.FEMData.read_npy_directory(
+                    output_directory)
+            else:
+                fem_data = femio.FEMData.read_directory(
+                    conversion_setting.file_type, raw_directory,
+                    read_npy=self.read_npy, save=False,
+                    read_res=self.read_res)
 
-    if conversion_function is not None:
-        dict_data.update(conversion_function(fem_data, raw_directory))
+            if conversion_setting.mandatory_variables is not None \
+                    and len(conversion_setting.mandatory_variables) > 0:
+                dict_data = extract_variables(
+                    fem_data, conversion_setting.mandatory_variables,
+                    optional_variables=conversion_setting.optional_variables
+                )
+            else:
+                dict_data = {}
 
-    if load_function is not None:
-        data_files = util.collect_files(
-            raw_directory, required_file_names)
-        dict_data.update(load_function(data_files, raw_directory))
+        if self.conversion_function is not None:
+            dict_data.update(
+                self.conversion_function(fem_data, raw_directory))
 
-    if filter_function is not None and not filter_function(
-            fem_data, raw_directory, dict_data):
+        if self.load_function is not None:
+            data_files = util.collect_files(
+                raw_directory, conversion_setting.required_file_names)
+            dict_data.update(self.load_function(data_files, raw_directory))
+
+        if self.filter_function is not None and not self.filter_function(
+                fem_data, raw_directory, dict_data):
+            return
+
+        # Save data
+        output_directory.mkdir(parents=True, exist_ok=True)
+        if fem_data is not None:
+            fem_data.save(output_directory)
+            if self.write_ucd:
+                write_ucd_file(
+                    output_directory, fem_data, dict_data,
+                    force_renew=self.force_renew)
+
+        save_dict_data(output_directory, dict_data)
+        (output_directory / conversion_setting.finished_file).touch()
+
         return
 
-    # Save data
-    if fem_data is not None:
-        fem_data.save(output_directory)
-        if write_ucd:
-            write_ucd_file(
-                output_directory, fem_data, dict_data, force_renew=force_renew)
 
-    save_dict_data(output_directory, dict_data)
-    (output_directory / finished_file).touch()
+def determine_max_process(max_process=None):
+    """Determine maximum number of processes.
 
-    return
+    Parameters
+    ----------
+    max_process: int, optional [None]
+        Input maximum process.
+
+    Returns
+    -------
+    resultant_max_process: int
+    """
+    if hasattr(os, 'sched_getaffinity'):
+        # This is more accurate in the cluster
+        available_max_process = len(os.sched_getaffinity(0))
+    else:
+        available_max_process = os.cpu_count()
+    if max_process is None:
+        resultant_max_process = available_max_process
+    else:
+        resultant_max_process = min(available_max_process, max_process)
+    return resultant_max_process
 
 
 def write_ucd_file(
@@ -218,11 +281,11 @@ def concatenate_preprocessed_data(
     test_length = data_length - train_length - validation_length
 
     (output_directory_base / 'train').mkdir(
-        parents=True, exist_ok=overwrite)
+        parents=True, exist_ok=True)
     (output_directory_base / 'validation').mkdir(
-        parents=True, exist_ok=overwrite)
+        parents=True, exist_ok=True)
     (output_directory_base / 'test').mkdir(
-        parents=True, exist_ok=overwrite)
+        parents=True, exist_ok=True)
 
     for variable_name, data in dict_data.items():
         np.save(
@@ -245,57 +308,79 @@ class Preprocessor:
     FINISHED_FILE = 'preprocessed'
 
     @classmethod
-    def read_settings(cls, settings_yaml):
-        preprocess_setting = setting.PreprocessSetting.read_settings_yaml(
+    def read_settings(cls, settings_yaml, **args):
+        main_setting = setting.MainSetting.read_settings_yaml(
             settings_yaml)
-        return cls(preprocess_setting)
+        return cls(main_setting, **args)
 
-    def __init__(self, setting):
-        self.setting = setting
-
-    def preprocess_interim_data(self, *, force_renew=False, save_func=None):
-        """Preprocess interim data with preprocessing e.g. standardization and then
-        save them.
+    def __init__(
+            self, main_setting, force_renew=False, save_func=None,
+            str_replace='interim', max_process=None):
+        """Initialize preprocessor of interim data with preprocessing
+        e.g. standardization and then save them.
 
         Parameters
         -----------
-            force_renew: bool, optional [False]
-                If True, renew npy files even if they are alerady exist.
-            save_func: function object, optional [None]
-                Callback function to customize save data. It should accept
-                output_directory, variable_name, and transformed_data.
+        force_renew: bool, optional [False]
+            If True, renew npy files even if they are alerady exist.
+        save_func: function object, optional [None]
+            Callback function to customize save data. It should accept
+            output_directory, variable_name, and transformed_data.
+        str_replace: str, optional ['interim']
+            String to replace data directory in order to convert from interim
+            data to preprocessed data.
+        max_process: int, optional [None]
+            The maximum number of processes.
         """
+        self.setting = main_setting
+        self.force_renew = force_renew
         self.save_func = save_func
-
-        interim_directories = util.collect_data_directories(
+        self.interim_directories = util.collect_data_directories(
             self.setting.data.interim,
             required_file_names=self.REQUIRED_FILE_NAMES)
+        self.str_replace = str_replace
+        self.max_process = determine_max_process(max_process)
         if self.setting.data.pad:
             self.max_n_element = self._determine_max_n_element(
-                interim_directories, list(self.setting.preprocess.keys())[0])
+                self.interim_directories,
+                list(self.setting.preprocess.keys())[0])
 
+    def preprocess_interim_data(self):
         # Preprocess data variable by variable
-        dict_preprocessor_settings = {}
-        for variable_name, preprocess_setting \
-                in self.setting.preprocess.items():
-            preprocess_method = preprocess_setting['method']
-            componentwise = preprocess_setting['componentwise']
-            if variable_name == list(self.setting.preprocess.items())[-1][0]:
-                last = True
-            else:
-                last = False
-            preprocess_converter = self.preprocess_single_variable(
-                interim_directories, variable_name, preprocess_method,
-                str_replace='interim', force_renew=force_renew,
-                componentwise=componentwise, last=last)
-            dict_preprocessor_settings.update({
-                variable_name: {
-                    'method': preprocess_method,
-                    'preprocess_converter': preprocess_converter}})
+        preprocessor_inputs = [
+            (variable_name, preprocess_setting)
+            for variable_name, preprocess_setting
+            in self.setting.preprocess.items()]
+
+        chunksize = max(len(preprocessor_inputs) // self.max_process // 16, 1)
+        with multi.Pool(self.max_process) as pool:
+            preprocess_converters = pool.starmap(
+                self.preprocess_single_variable, preprocessor_inputs,
+                chunksize=chunksize)
+
+        dict_preprocessor_settings = {
+            i[0]: {
+                'method': i[1]['method'],
+                'componentwise': i[1]['componentwise'],
+                'preprocess_converter': preprocess_converter}
+            for i, preprocess_converter
+            in zip(preprocessor_inputs, preprocess_converters)}
         with open(
                 self.setting.data.preprocessed / 'preprocessors.pkl',
                 'wb') as f:
             pickle.dump(dict_preprocessor_settings, f)
+
+        # Touch finished files
+        for data_directory in self.interim_directories:
+            output_directory = determine_output_directory(
+                data_directory, self.setting.data.preprocessed,
+                self.str_replace)
+            (output_directory / self.FINISHED_FILE).touch()
+
+        yaml_file = self.setting.data.preprocessed / 'settings.yml'
+        if not yaml_file.exists():
+            setting.write_yaml(self.setting, yaml_file)
+
         return
 
     def _determine_max_n_element(self, data_directories, variable_name):
@@ -305,65 +390,53 @@ class Preprocessor:
             max_n_element = max(max_n_element, data.shape[0])
         return max_n_element
 
-    def preprocess_single_variable(
-            self, data_directories, variable_name, preprocess_method, *,
-            str_replace='interim', force_renew=False, componentwise=True,
-            last=False):
+    def preprocess_single_variable(self, variable_name, preprocess_setting):
         """Preprocess single variable.
 
         Parameters
         -----------
-            data_directories: list of pathlib.Path
-                Data directories.
-            variable_name: str
-                The name of the variable.
-            preprocess_method: str
-                Preprocess method name.
-            str_replace: str, optional ['interim']
-                Name to replace the input data base directory with.
-            force_renew: bool, optional [False]
-                If True, renew npy files even if they are alerady exist.
-            componentwise: bool, optional [True]
-                If True, perform preprocessing (e.g. standardization)
-                componentwise.
-            last: bool, optional [False]
-                If True, touch finished file.
+        variable_name: str
+            The name of the variable.
+        preprocess_setting: dict
+            Dictionary of preprocess setting contains 'method' and
+            'componentwise' keywords.
 
         Returns
         --------
         PreprocessConverter.converter object
         """
+        print(variable_name, preprocess_setting)
 
         # Check if data already exists
-        if not force_renew and np.any([
+        if not self.force_renew and np.any([
                 util.files_exist(
                     determine_output_directory(
                         data_directory,
-                        self.setting.data.preprocessed, str_replace),
+                        self.setting.data.preprocessed, self.str_replace),
                     self.FINISHED_FILE)
-                for data_directory in data_directories]):
+                for data_directory in self.interim_directories]):
             print(
                 'Data already exists in '
                 f"{self.setting.data.preprocessed}. Skipped.")
             return
 
         # Prepare preprocessor
-        if (data_directories[0] / (variable_name + '.npy')).exists():
+        if (self.interim_directories[0] / (variable_name + '.npy')).exists():
             ext = '.npy'
-        elif (data_directories[0] / (variable_name + '.npz')).exists():
+        elif (self.interim_directories[0] / (variable_name + '.npz')).exists():
             ext = '.npz'
         else:
             raise ValueError(
                 f"Unknown extension or file not found for {variable_name}")
         data_files = [
             data_directory / (variable_name + ext)
-            for data_directory in data_directories]
+            for data_directory in self.interim_directories]
         preprocessor = util.PreprocessConverter(
-            preprocess_method, data_files=data_files,
-            componentwise=componentwise)
+            preprocess_setting['method'], data_files=data_files,
+            componentwise=preprocess_setting['componentwise'])
 
         # Transform and save data
-        for data_directory in data_directories:
+        for data_directory in self.interim_directories:
             transformed_data = preprocessor.transform(
                 util.load_variable(data_directory, variable_name))
             if self.setting.data.pad:
@@ -371,21 +444,15 @@ class Preprocessor:
                     transformed_data, self.max_n_element)
 
             output_directory = determine_output_directory(
-                data_directory, self.setting.data.preprocessed, str_replace)
+                data_directory, self.setting.data.preprocessed,
+                self.str_replace)
             if self.save_func is None:
                 util.save_variable(
                     output_directory, variable_name, transformed_data)
-                if last:
-                    (output_directory / self.FINISHED_FILE).touch()
             else:
                 self.save_func(
                     output_directory, variable_name, transformed_data)
-                if last:
-                    (output_directory / self.FINISHED_FILE).touch()
 
-        yaml_file = self.setting.data.preprocessed / 'settings.yml'
-        if not yaml_file.exists():
-            setting.write_yaml(self.setting, yaml_file)
         return preprocessor.converter
 
 
@@ -406,15 +473,15 @@ class Converter:
                 'understood')
 
         converters = {
-            variable_name:
-            util.PreprocessConverter(value['preprocess_converter'])
+            variable_name: value
             for variable_name, value in dict_preprocessor_settings.items()}
         return converters
 
     def preprocess(self, dict_data_x):
         converted_dict_data_x = {
             variable_name:
-            self.converters[variable_name].transform(data)
+            self.converters[variable_name][
+                'preprocess_converter'].transform(data)
             for variable_name, data in dict_data_x.items()}
         return converted_dict_data_x
 
@@ -460,11 +527,13 @@ class Converter:
         """
         inversed_dict_data_x = {
             variable_name:
-            self.converters[variable_name].inverse(data)
+            self.converters[variable_name][
+                'preprocess_converter'].inverse_transform(data)
             for variable_name, data in dict_data_x.items()}
         inversed_dict_data_y = {
             variable_name:
-            self.converters[variable_name].inverse(data)
+            self.converters[variable_name][
+                'preprocess_converter'].inverse_transform(data)
             for variable_name, data in dict_data_y.items()}
 
         # Save data
@@ -512,7 +581,7 @@ class Converter:
 
     def save(self, data_dict, output_directory):
         if not output_directory.exists():
-            output_directory.mkdir(parents=True)
+            output_directory.mkdir(parents=True, exist_ok=True)
         for variable_name, data in data_dict.items():
             np.save(output_directory / f"{variable_name}.npy", data)
         return

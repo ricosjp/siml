@@ -1,15 +1,15 @@
 data:
-  inferred: tests/data/deform/inferred
-  interim: tests/data/deform/interim
+  inferred: tests/data/test_prepost_to_filter/inferred
+  interim: tests/data/test_prepost_to_filter/interim
   pad: false
-  preprocessed: tests/data/deform/preprocessed
-  raw: tests/data/deform/raw
+  preprocessed: tests/data/test_prepost_to_filter/preprocessed
+  raw: tests/data/test_prepost_to_filter/raw
   test:
-  - tests/data/deform/preprocessed/test
+  - tests/data/test_prepost_to_filter/preprocessed/test
   train:
-  - tests/data/deform/preprocessed/train
+  - tests/data/test_prepost_to_filter/preprocessed/train
   validation:
-  - tests/data/deform/preprocessed/validation
+  - tests/data/test_prepost_to_filter/preprocessed/validation
 conversion:
   mandatory_variables:
     - elemental_strain

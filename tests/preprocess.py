@@ -1,6 +1,8 @@
+import pathlib
 
 import numpy as np
 import siml.prepost as prepost
+import siml.setting as setting
 
 
 def conversion_function(fem_data, data_directory):
@@ -12,20 +14,22 @@ def conversion_function(fem_data, data_directory):
 
 
 def preprocess_deform():
-    p = prepost.Preprocessor.read_settings('tests/data/deform/data.yml')
-    prepost.convert_raw_data(
-        p.setting.data.raw, output_base_directory=p.setting.data.interim,
-        mandatory_variables=[
-            'elemental_strain', 'modulus',
-            'poisson_ratio', 'elemental_stress'],
-        recursive=True, force_renew=True,
+    main_setting = setting.MainSetting.read_settings_yaml(
+        pathlib.Path('tests/data/deform/data.yml'))
+
+    raw_converter = prepost.RawConverter(
+        main_setting, recursive=True, force_renew=True,
         conversion_function=conversion_function)
-    p.preprocess_interim_data(force_renew=True)
+    raw_converter.convert()
+
+    preprocessor = prepost.Preprocessor(main_setting, force_renew=True)
+    preprocessor.preprocess_interim_data()
 
 
 def preprocess_linear():
-    p = prepost.Preprocessor.read_settings('tests/data/linear/linear.yml')
-    p.preprocess_interim_data(force_renew=True)
+    p = prepost.Preprocessor.read_settings(
+        pathlib.Path('tests/data/linear/linear.yml'), force_renew=True)
+    p.preprocess_interim_data()
 
 
 if __name__ == '__main__':

@@ -82,7 +82,7 @@ def save_variable(
         None
     """
     if not output_directory.exists():
-        output_directory.mkdir(parents=True)
+        output_directory.mkdir(parents=True, exist_ok=True)
     if isinstance(data, np.ndarray):
         save_file_path = output_directory / (file_basename + '.npy')
         np.save(
@@ -403,7 +403,8 @@ def calculate_natural_element_shape(fem_data):
 
         - -1 because the first node is always at [0, 0, 0],
         - -3 because the second node is always at [r, 0, 0]
-        - the third node is always at [s_1, s_2, 0] so ommit components which are always zero.
+        - the third node is always at [s_1, s_2, 0] so ommit components which
+          are always zero.
     """
     n_node_per_element = fem_data.elements.data.shape[1]
     if n_node_per_element == 4:
@@ -452,7 +453,8 @@ def calculate_element_position(fem_data):
     Returns
     --------
     averaged_element_positions: numpy.ndarray
-        [n_element, 3] shaped array indicating the centor of mass of each element.
+        [n_element, 3] shaped array indicating the centor of mass of each
+        element.
     element_positions: numpy.ndarray
         [n_element, 3 * order1_node_per_element] shaped array
         indicating node positions associated each element.
@@ -559,7 +561,8 @@ def calculate_mesh_shape(fem_data, *, n_node=None):
     --------
     numpy.ndarray
         [[d_12_x, d_12_y, d_12_z, d_13_x, ..., d_23_x, ...], ...],
-        where each `d` is corresponding to the distance between node_i and node_j in one element.
+        where each `d` is corresponding to the distance between node_i and
+        node_j in one element.
         It with be [n_element, 3 * (n_node_per_element C 2)] shaped array.
     """
     if n_node is None:
@@ -586,7 +589,8 @@ def calculate_node_position(fem_data, *, n_node=None):
     --------
     numpy.ndarray
         [[d_12_x, d_12_y, d_12_z, d_13_x, ...], ...],
-        where each `d` is corresponding to the distance between node_i and node_j in one element.
+        where each `d` is corresponding to the distance between node_i and
+        node_j in one element.
         It with be [n_element, 3 * (n_node_per_element C 2)] shaped array.
     """
     if n_node is None:
