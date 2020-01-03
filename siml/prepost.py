@@ -212,7 +212,7 @@ def determine_max_process(max_process=None):
     """
     if hasattr(os, 'sched_getaffinity'):
         # This is more accurate in the cluster
-        available_max_process = os.sched_getaffinity(0)
+        available_max_process = len(os.sched_getaffinity(0))
     else:
         available_max_process = os.cpu_count()
     if max_process is None:
