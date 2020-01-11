@@ -1,10 +1,13 @@
 image: registry.ritc.jp/ricos/machine_learning/siml
 
+variables:
+  GIT_SUBMODULE_STRATEGY: recursive
+
 before_script: &global_before
   - pip install pip poetry --upgrade
-  - poetry config repositories.ricos https://pypi.ritc.jp
-  - poetry config http-basic.ricos ricos ${RICOS_PYPI_KEY}
+  - pushd lib/femio && poetry install && poetry build && popd
   - poetry config virtualenvs.in-project true
+  - pwd
   - poetry install
 
 cache:
@@ -31,13 +34,11 @@ autopep8:
   stage: preprocess
   script:
     - poetry run autopep8 --diff --exit-code $(find siml tests -name "*.py")
-  retry: 2
 
 pylint:
   stage: preprocess
   script:
     - poetry run pylint --ignore-patterns=setting.py --ignored-modules=chainer -E $(find siml tests -name "*.py")
-  retry: 2
 
 pages:
   stage: deploy
@@ -47,13 +48,11 @@ pages:
   artifacts:
     paths:
       - public
-  retry: 2
   only:
     - master
 
 .test:
   stage: test
-  retry: 2
 
 test_gpu:
   extends: .test
@@ -102,27 +101,3 @@ test_trainer_long:
 test_util:
   extends: .test
   script: poetry run pytest tests/test_util.py --capture=no
-
-.deploy:wheel:
-  stage: deploy
-  script:
-    - pip install --upgrade pip poetry
-    - poetry version $VERSION
-    - poetry config repositories.ricos https://pypi.ritc.jp
-    - poetry build -f wheel
-    - poetry publish --username ricos --password ${RICOS_PYPI_KEY} -r ricos --no-ansi -n -v
-  retry: 2
-
-deploy:wheel:master:
-  extends: .deploy:wheel
-  before_script:
-    - export VERSION=0.1.dev$(date +"%Y%m%d%H%M")
-  only:
-    - master
-
-deploy:wheel:tag:
-  extends: .deploy:wheel
-  before_script:
-    - export VERSION=$CI_COMMIT_REF_NAME
-  only:
-    - tags
