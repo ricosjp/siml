@@ -1,13 +1,13 @@
-import chainer as ch
 import numpy as np
+import torch
 
 from . import adjustable_mlp
 from . import deepsets
-from . import distributor
 from . import gcn
 from . import identity
 from . import mlp
 from . import nri
+from . import reducer
 
 
 class BlockInformation():
@@ -17,17 +17,15 @@ class BlockInformation():
         self.use_support = use_support
 
 
-class Network(ch.Chain):
+class Network(torch.nn.Module):
 
     DICT_BLOCKS = {
         'identity': BlockInformation(identity.Identity),
         'mlp': BlockInformation(mlp.MLP),
         'adjustable_mlp': BlockInformation(adjustable_mlp.AdjustableMLP),
-        'adjustable_brick_mlp': BlockInformation(
-            adjustable_mlp.AdjustableBrickMLP),
         'gcn': BlockInformation(gcn.GCN, use_support=True),
         'res_gcn': BlockInformation(gcn.ResGCN, use_support=True),
-        'distributor': BlockInformation(distributor.Distributor),
+        'reducer': BlockInformation(reducer.Reducer),
         'deepsets': BlockInformation(deepsets.DeepSets),
         'nri': BlockInformation(nri.NRI, use_support=True),
     }
@@ -38,11 +36,10 @@ class Network(ch.Chain):
         block_informations = [
             self.DICT_BLOCKS[block.type] for block
             in self.model_setting.blocks]
-        with self.init_scope():
-            self.chains = ch.ChainList(*[
-                block_information.block(block_setting)
-                for block_information, block_setting
-                in zip(block_informations, self.model_setting.blocks)])
+        self.chains = torch.nn.ModuleList([
+            block_information.block(block_setting)
+            for block_information, block_setting
+            in zip(block_informations, self.model_setting.blocks)])
         self.call_graph = self._create_call_graph()
         self.use_support = trainer_setting.support_inputs is not None
         self.support_indices = [
@@ -78,10 +75,12 @@ class Network(ch.Chain):
             raise ValueError('Destination name is not unique')
         return np.ravel(locations)
 
-    def __call__(self, x, supports=None):
-        return self._call_core(x, supports)
+    def __call__(self, x):
+        return self._call_core(x)
 
-    def _call_with_support(self, x, supports):
+    def _call_with_support(self, x_):
+        x = x_[0]
+        supports = x_[1]
         hiddens = [None] * len(self.chains)
 
         hiddens[0] = self.chains[0](x, supports)
@@ -90,7 +89,8 @@ class Network(ch.Chain):
             hiddens[i] = self.chains[i](*inputs, supports=supports)
         return hiddens[-1]
 
-    def _call_without_support(self, x, supports=None):
+    def _call_without_support(self, x_):
+        x = x_[0]
         hiddens = [None] * len(self.chains)
         hiddens[0] = self.chains[0](x)
         for i in range(1, len(hiddens)):

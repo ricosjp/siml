@@ -1,18 +1,19 @@
 import random
-import os
 
-import chainer as ch
-import daz
 import femio
+import ignite.engine as engine
+import ignite.metrics as metrics
 import numpy as np
-import optuna
+# import optuna
 import pandas as pd
+import torch
+import torch.nn.functional as functional
+from tqdm import tqdm
 
 from . import datasets
 from . import networks
 from . import prepost
 from . import setting
-from . import updaters
 from . import util
 
 
@@ -58,11 +59,12 @@ class Trainer():
 
         Parameters
         ----------
-            None
+        None
+
         Returns
         --------
-            loss: float
-                Overall loss value.
+        loss: float
+            Loss value after training.
         """
         self._prepare_training()
 
@@ -72,10 +74,22 @@ class Trainer():
             self.setting,
             self.setting.trainer.output_directory / 'settings.yaml')
 
-        self.trainer.run()
-        loss = np.min([
-            l['validation/main/loss']
-            for l in self.log_report_extension.log])
+        print(
+            'epoch'.ljust(self.setting.trainer.display_width_epoch, ' ')
+            + 'train_loss'.ljust(self.setting.trainer.display_width_loss, ' ')
+            + 'validation_loss'.ljust(
+                self.setting.trainer.display_width_loss, ' '))
+        self.pbar = tqdm(
+            initial=0, leave=False,
+            total=len(self.train_loader)
+            * self.setting.trainer.log_trigger_epoch,
+            desc=self.desc.format(0))
+
+        state = self.trainer.run(
+            self.train_loader, max_epochs=self.setting.trainer.n_epoch)
+        self.pbar.close()
+        loss = state.output
+
         return loss
 
     def _prepare_training(self):
@@ -88,17 +102,18 @@ class Trainer():
 
         # Define model
         self.model = networks.Network(self.setting.model, self.setting.trainer)
-        if self.setting.trainer.element_wise \
-                or self.setting.trainer.simplified_model:
-            element_wise = True
-        else:
-            element_wise = False
-        self.classifier = networks.Classifier(
-            self.model, lossfun=self._create_loss_function(),
-            element_batch_size=self.setting.trainer.element_batch_size,
-            element_wise=element_wise)
-        self.classifier.compute_accuracy = \
-            self.setting.trainer.compute_accuracy
+        # if self.setting.trainer.element_wise \
+        #         or self.setting.trainer.simplified_model:
+        #     element_wise = True
+        # else:
+        #     element_wise = False
+        self.loss = self._create_loss_function()
+        # self.classifier = networks.Classifier(
+        #     self.model, lossfun=self._create_loss_function(),
+        #     element_batch_size=self.setting.trainer.element_batch_size,
+        #     element_wise=element_wise)
+        # self.classifier.compute_accuracy = \
+        #     self.setting.trainer.compute_accuracy
 
         # Manage settings
         if self.optuna_trial is None \
@@ -112,15 +127,9 @@ class Trainer():
             if self.setting.trainer.gpu_id != -1:
                 raise ValueError('No GPU found.')
             self.setting.trainer.gpu_id = -1
-            daz.set_daz()
-            daz.set_ftz()
+            self.device = 'cpu'
 
-        # Generate trainer
-        self.trainer = self._generate_trainer(
-            self.setting.trainer.input_names,
-            self.setting.trainer.output_names,
-            self.setting.data.train, self.setting.data.validation,
-            supports=self.setting.trainer.support_inputs)
+        self._generate_trainer()
 
         # Manage restart and pretrain
         self._load_pretrained_model_if_needed()
@@ -245,20 +254,19 @@ class Trainer():
                 dict_dir_y = {preprocessed_data_directory: y}
 
         # Perform inference
-        with ch.using_config('train', False):
-            inference_results = [
-                self._infer_single_directory(
-                    self.prepost_converter, directory, x, dict_dir_y,
-                    save=save,
-                    overwrite=overwrite, output_directory=output_directory,
-                    write_simulation=write_simulation, write_npy=write_npy,
-                    write_yaml=write_yaml,
-                    write_simulation_base=write_simulation_base,
-                    write_simulation_stem=write_simulation_stem,
-                    write_simulation_type=write_simulation_type,
-                    read_simulation_type=read_simulation_type,
-                    data_addition_function=data_addition_function)
-                for directory, x in dict_dir_x.items()]
+        inference_results = [
+            self._infer_single_directory(
+                self.prepost_converter, directory, x, dict_dir_y,
+                save=save,
+                overwrite=overwrite, output_directory=output_directory,
+                write_simulation=write_simulation, write_npy=write_npy,
+                write_yaml=write_yaml,
+                write_simulation_base=write_simulation_base,
+                write_simulation_stem=write_simulation_stem,
+                write_simulation_type=write_simulation_type,
+                read_simulation_type=read_simulation_type,
+                data_addition_function=data_addition_function)
+            for directory, x in dict_dir_x.items()]
         return inference_results
 
     def _prepare_inference(
@@ -276,11 +284,12 @@ class Trainer():
 
         self.model = networks.Network(self.setting.model, self.setting.trainer)
         self._load_pretrained_model_if_needed(model_file=model_file)
-        self.classifier = networks.Classifier(
-            self.model, lossfun=self._create_loss_function(),
-            element_batch_size=self.setting.trainer.element_batch_size)
-        self.classifier.compute_accuracy = \
-            self.setting.trainer.compute_accuracy
+        self.loss = self._create_loss_function()
+        # self.classifier = networks.Classifier(
+        #     self.model, lossfun=self._create_loss_function(),
+        #     element_batch_size=self.setting.trainer.element_batch_size)
+        # self.classifier.compute_accuracy = \
+        #     self.setting.trainer.compute_accuracy
         if converter_parameters_pkl is None:
             converter_parameters_pkl = self.setting.data.preprocessed \
                 / 'preprocessors.pkl'
@@ -472,8 +481,7 @@ class Trainer():
         seed = self.setting.trainer.seed
         random.seed(seed)
         np.random.seed(seed)
-        if ch.cuda.available and self.setting.trainer.gpu_id >= 0:
-            ch.cuda.cupy.random.seed(seed)
+        torch.manual_seed(seed)
         return
 
     def _separate_data(self, data, descriptions, *, axis=2):
@@ -533,8 +541,11 @@ class Trainer():
             model_file = self._select_snapshot(
                 self.setting.trainer.pretrain_directory,
                 method=self.setting.trainer.snapshot_choise_method)
-        ch.serializers.load_npz(
-            model_file, self.model, path='updater/model:main/predictor/')
+
+        snapshot = self._select_snapshot(
+            self.setting.trainer.restart_directory, method='latest')
+        checkpoint = torch.load(snapshot)
+        self.model.load_state_dict(checkpoint['model_state_dict'])
         print(f"{model_file} loaded as a pretrain model.")
         return
 
@@ -543,7 +554,11 @@ class Trainer():
             return
         snapshot = self._select_snapshot(
             self.setting.trainer.restart_directory, method='latest')
-        ch.serializers.load_npz(snapshot, self.trainer)
+        checkpoint = torch.load(snapshot)
+        self.model.load_state_dict(checkpoint['model_state_dict'])
+        self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        self.epoch = checkpoint['epoch']
+        self.loss = checkpoint['loss']
         print(f"{snapshot} loaded for restart.")
         return
 
@@ -574,148 +589,141 @@ class Trainer():
             raise ValueError(f"{path} had unknown property.")
 
     def _is_gpu_supporting(self):
-        return ch.cuda.available
+        return torch.cuda.is_available()
 
-    def _generate_trainer(
-            self, x_variable_names, y_variable_names,
-            train_directories, validation_directories, *,
-            supports=None):
+    def _generate_trainer(self):
 
-        self._check_data_dimension(x_variable_names, train_directories)
-        if self.setting.trainer.lazy:
-            dataset = datasets.LazyDataSet(
-                x_variable_names, y_variable_names, train_directories,
-                supports=supports)
-            _, support_train = self._load_data(
-                x_variable_names,
-                [dataset.data_directories[0]], supports=supports)
-        else:
-            x_train, support_train = self._load_data(
-                x_variable_names, train_directories, supports=supports)
-            y_train, _ = self._load_data(y_variable_names, train_directories)
-            if supports is None:
-                dataset = ch.datasets.DictDataset(
-                    **{'x': x_train, 't': y_train})
-            else:
-                dataset = ch.datasets.DictDataset(
-                    **{'x': x_train, 't': y_train, 'supports': support_train})
-
+        self._check_data_dimension()
         if self.setting.trainer.element_wise:
             batch_size = self.setting.trainer.element_batch_size
         else:
             batch_size = self.setting.trainer.batch_size
 
-        if self.setting.trainer.iterator is setting.Iter.SERIAL:
-            train_iter = ch.iterators.SerialIterator(
-                dataset, batch_size=batch_size, shuffle=True)
-        elif self.setting.trainer.iterator is setting.Iter.MULTIPROCESS:
-            train_iter = ch.iterators.MultiprocessIterator(
-                dataset, batch_size=batch_size, shuffle=True,
-                n_processes=len(os.sched_getaffinity(0)))
-        elif self.setting.trainer.iterator is setting.Iter.MULTITHREAD:
-            train_iter = ch.iterators.MultithreadIterator(
-                dataset, batch_size=batch_size, shuffle=True, n_threads=2)
+        if self.setting.trainer.support_inputs:
+            self.prepare_batch = datasets.prepare_batch_with_support
         else:
-            train_iter = ch.iterators.SerialIterator(
-                dataset, batch_size=self.setting.trainer.batch_size,
-                shuffle=True)
+            self.prepare_batch = datasets.prepare_batch_without_support
 
-        optimizer = self._create_optimizer()
-        optimizer.setup(self.classifier)
-
-        # Converter setting
-        if self.setting.trainer.element_wise \
-                or self.setting.trainer.simplified_model:
-            converter = ch.dataset.concat_examples
+        if self.setting.trainer.lazy:
+            self.train_loader, self.validation_loader = \
+                self._get_data_loaders(datasets.LazyDataset, batch_size)
+            # dataset = datasets.LazyDataSet(
+            #     x_variable_names, y_variable_names, train_directories,
+            #     supports=supports)
+            # _, support_train = self._load_data(
+            #     x_variable_names,
+            #     [dataset.data_directories[0]], supports=supports)
         else:
-            if self.setting.trainer.support_inputs is None:
-                converter = util.concat_examples
-            else:
-                converter = util.generate_converter(support_train)
+            self.train_loader, self.validation_loader = \
+                self._get_data_loaders(datasets.OnMemoryDataset, batch_size)
 
-        # Updater setting
-        if self.setting.trainer.use_siml_updater:
-            updater = updaters.SimlUpdater(
-                train_iter, optimizer, device=self.setting.trainer.gpu_id,
-                converter=converter)
-        else:
-            updater = ch.training.updaters.StandardUpdater(
-                train_iter, optimizer, device=self.setting.trainer.gpu_id,
-                converter=converter)
+            # x_train, support_train = self._load_data(
+            #     x_variable_names, train_directories, supports=supports)
+            # y_train, _ = self._load_data(y_variable_names, train_directories)
+            # if supports is None:
+            #     dataset = ch.datasets.DictDataset(
+            #         **{'x': x_train, 't': y_train})
+            # else:
+            #     dataset = ch.datasets.DictDataset(
+            #         **{
+            #             'x': x_train, 't': y_train,
+            #             'supports': support_train})
 
-        stop_trigger = ch.training.triggers.EarlyStoppingTrigger(
-            monitor='validation/main/loss', check_trigger=(
-                self.setting.trainer.stop_trigger_epoch, 'epoch'),
-            max_trigger=(self.setting.trainer.n_epoch, 'epoch'))
+        self.optimizer = self._create_optimizer()
 
-        trainer = ch.training.Trainer(
-            updater, stop_trigger, out=self.setting.trainer.output_directory)
+        self.trainer = engine.create_supervised_trainer(
+            self.model, self.optimizer, self.loss,
+            device=self.device, prepare_batch=self.prepare_batch)
+        self.evaluator = engine.create_supervised_evaluator(
+            self.model,
+            metrics={
+                'loss': metrics.Loss(self.loss)},
+            device=self.device, prepare_batch=self.prepare_batch)
 
-        def postprocess(fig, axes, summary):
-            axes.set_yscale('log')
+        self.desc = "ITERATION - loss: {:.5e}"
 
-        self.log_report_extension = ch.training.extensions.LogReport(
-            trigger=(self.setting.trainer.log_trigger_epoch, 'epoch'))
-        trainer.extend(self.log_report_extension)
-        trainer.extend(ch.training.extensions.PrintReport(
-            ['epoch', 'main/loss', 'validation/main/loss', 'elapsed_time']))
-        trainer.extend(
-            ch.training.extensions.PlotReport(
-                ['main/loss', 'validation/main/loss'],
-                'epoch',
-                trigger=(self.setting.trainer.log_trigger_epoch, 'epoch'),
-                postprocess=postprocess))
-        trainer.extend(
-            ch.training.extensions.snapshot(
-                filename='snapshot_epoch_{.updater.epoch}'),
-            trigger=(self.setting.trainer.log_trigger_epoch, 'epoch'))
-        trainer.extend(ch.training.extensions.ProgressBar())
+        @self.trainer.on(engine.Events.ITERATION_COMPLETED(every=100))
+        def log_training_loss(engine):
+            self.pbar.desc = self.desc.format(engine.state.output)
+            self.pbar.update(100)
 
-        if self.setting.trainer.prune:
-            trainer.extend(
-                optuna.integration.ChainerPruningExtension(
-                    self.optuna_trial, 'validation/main/loss',
-                    (self.setting.trainer.stop_trigger_epoch, 'epoch')))
+        @self.trainer.on(
+            engine.Events.EPOCH_COMPLETED(
+                every=self.setting.trainer.log_trigger_epoch))
+        def log_training_results(engine):
+            self.pbar.refresh()
+            self.evaluator.run(self.train_loader)
+            metrics = self.evaluator.state.metrics
+            train_loss = metrics['loss']
 
-        # Manage validation
-        if len(validation_directories) > 0:
-            x_validation, support_validation = self._load_data(
-                x_variable_names, validation_directories, supports=supports)
-            y_validation, _ = self._load_data(
-                y_variable_names, validation_directories)
-            if supports is None:
-                validation_iter = ch.iterators.SerialIterator(
-                    ch.datasets.DictDataset(**{
-                        'x': x_validation, 't': y_validation}),
-                    batch_size=batch_size,
-                    shuffle=False, repeat=False)
-            else:
-                validation_iter = ch.iterators.SerialIterator(
-                    ch.datasets.DictDataset(**{
-                        'x': x_validation, 't': y_validation,
-                        'supports': support_validation}),
-                    batch_size=batch_size,
-                    shuffle=False, repeat=False)
-            trainer.extend(ch.training.extensions.Evaluator(
-                validation_iter, self.classifier,
-                device=self.setting.trainer.gpu_id, converter=converter))
-        return trainer
+            self.evaluator.run(self.validation_loader)
+            metrics = self.evaluator.state.metrics
+            validation_loss = metrics['loss']
+            tqdm.write(
+                f"{engine.state.epoch}".ljust(
+                    self.setting.trainer.display_width_epoch, ' ')
+                + f"{train_loss:.5e}".ljust(
+                    self.setting.trainer.display_width_loss, ' ')
+                + f"{validation_loss:.5e}".ljust(
+                    self.setting.trainer.display_width_loss, ' '))
+            self.pbar.n = self.pbar.last_print_n = 0
+
+        # TODO: Add Pruning setting
+        # if self.setting.trainer.prune:
+        #     trainer.extend(
+        #         optuna.integration.ChainerPruningExtension(
+        #             self.optuna_trial, 'validation/main/loss',
+        #             (self.setting.trainer.stop_trigger_epoch, 'epoch')))
+        return
+
+    def _get_data_loaders(self, dataset_generator, batch_size):
+        x_variable_names = self.setting.trainer.input_names
+        y_variable_names = self.setting.trainer.output_names
+        train_directories = self.setting.data.train
+        validation_directories = self.setting.data.validation
+        supports = self.setting.trainer.support_inputs
+        num_workers = self.setting.trainer.num_workers
+
+        train_dataset = dataset_generator(
+            x_variable_names, y_variable_names,
+            train_directories, supports=supports)
+        validation_dataset = dataset_generator(
+            x_variable_names, y_variable_names,
+            validation_directories, supports=supports)
+        num_workers = 1
+
+        def collate_fn(batch):
+            raise ValueError(batch)
+
+        train_loader = torch.utils.data.DataLoader(
+            train_dataset, collate_fn=collate_fn,
+            batch_size=batch_size, shuffle=True, num_workers=num_workers)
+        validation_loader = torch.utils.data.DataLoader(
+            validation_dataset, collate_fn=collate_fn,
+            batch_size=batch_size, shuffle=False, num_workers=num_workers)
+
+        return train_loader, validation_loader
 
     def _create_optimizer(self):
         optimizer_name = self.setting.trainer.optimizer.lower()
         if optimizer_name == 'adam':
-            return ch.optimizers.Adam(**self.setting.trainer.optimizer_setting)
+            return torch.optim.Adam(
+                self.model.parameters(),
+                **self.setting.trainer.optimizer_setting)
         else:
             raise ValueError(f"Unknown optimizer name: {optimizer_name}")
 
     def _create_loss_function(self):
         loss_name = self.setting.trainer.loss_function.lower()
         if loss_name == 'mse':
-            return ch.functions.mean_squared_error
+            return functional.mse_loss
         else:
             raise ValueError(f"Unknown loss function name: {loss_name}")
 
-    def _check_data_dimension(self, variable_names, directories):
+    def _check_data_dimension(self):
+        variable_names = self.setting.trainer.input_names
+        directories = self.setting.data.train
+
         data_directories = []
         for directory in directories:
             data_directories += util.collect_data_directories(

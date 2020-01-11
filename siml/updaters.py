@@ -1,5 +1,4 @@
 
-import chainer as ch
 
 
 class SimlUpdater(ch.training.updaters.StandardUpdater):

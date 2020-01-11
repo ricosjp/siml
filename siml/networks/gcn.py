@@ -1,4 +1,3 @@
-import chainer as ch
 
 from . import header
 

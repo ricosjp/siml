@@ -1,4 +1,3 @@
-import chainer as ch
 
 
 class Classifier(ch.link.Chain):

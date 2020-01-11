@@ -1,7 +1,7 @@
-import chainer as ch
+import torch
 
 
-class Identity(ch.Chain):
+class Identity(torch.nn.Module):
     """Identity block."""
 
     def __init__(self, block_setting):
@@ -12,8 +12,8 @@ class Identity(ch.Chain):
             block_setting: siml.setting.BlockSetting
                 BlockSetting object.
         """
-
         super().__init__()
+        return
 
     def __call__(self, x, supports=None):
-        return ch.functions.identity(x)
+        return x

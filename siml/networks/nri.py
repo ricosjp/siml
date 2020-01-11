@@ -1,4 +1,3 @@
-import chainer as ch
 from chainer.backends import cuda
 import numpy as np
 import scipy.sparse as sp

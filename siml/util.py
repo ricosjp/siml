@@ -6,7 +6,6 @@ import os
 from pathlib import Path
 import subprocess
 
-import chainer as ch
 from femio import FEMData, FEMAttribute
 import networkx as nx
 import numpy as np
@@ -916,3 +915,29 @@ def concatenate_variable(variables):
         return concatenatable_variables
     else:
         return concatenatable_variables, unconcatenatable_variables
+
+
+def determine_max_process(max_process=None):
+    """Determine maximum number of processes.
+
+    Parameters
+    ----------
+    max_process: int, optional [None]
+        Input maximum process.
+
+    Returns
+    -------
+    resultant_max_process: int
+    """
+    if hasattr(os, 'sched_getaffinity'):
+        # This is more accurate in the cluster
+        available_max_process = len(os.sched_getaffinity(0))
+    else:
+        available_max_process = os.cpu_count()
+    if max_process is None:
+        resultant_max_process = available_max_process
+    else:
+        resultant_max_process = min(available_max_process, max_process)
+    return resultant_max_process
+
+
