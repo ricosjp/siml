@@ -2,8 +2,9 @@ from pathlib import Path
 import shutil
 import unittest
 
-import numpy as np
 import femio
+import numpy as np
+import torch
 
 import siml.prepost as prepost
 import siml.setting as setting
@@ -262,72 +263,32 @@ class TestTrainer(unittest.TestCase):
         tr = trainer.Trainer(main_setting)
         tr._prepare_training()
         x = np.reshape(np.arange(5*3), (1, 5, 3)).astype(np.float32) * .1
-        y = (x[:, :, :2] * 2 - .5)[0]
+        y = torch.from_numpy((x[:, :, :2] * 2 - .5))
 
+        pred_y_wo_padding = tr.model({'x': torch.from_numpy(x)})
+        tr.optimizer.zero_grad()
+        loss_wo_padding = tr.loss(
+            pred_y_wo_padding, y, original_lengths=[5])
+        loss_wo_padding.backward(retain_graph=True)
+        w_grad_wo_padding = tr.model.chains[0].linears[0].weight.grad
+        b_grad_wo_padding = tr.model.chains[0].linears[0].bias.grad
+
+        tr.optimizer.zero_grad()
         padded_x = np.concatenate([x, np.zeros((1, 2, 3))], axis=1).astype(
             np.float32)
-        # padded_y = np.concatenate([y, np.zeros((1, 2, 2))], axis=1).astype(
-        #     np.float32)
-
-        tr.optimizer.zero_grad()
-        loss_wo_padding = tr.loss(x, y)
+        pred_y_w_padding = tr.model({'x': torch.from_numpy(padded_x)})
+        loss_w_padding = tr.loss(
+            pred_y_w_padding, y, original_lengths=[5])
         loss_wo_padding.backward()
-        w_grad_wo_padding = tr.model.chains[0][0].weight.grad
-        b_grad_wo_padding = tr.model.chains[0][0].bias.grad
-        tr.optimizer.zero_grad()
-        loss_w_padding = tr.classifier(
-            padded_x, y, original_lengths=([5]), report=False)
-        loss_wo_padding.backward()
-        w_grad_w_padding = tr.model.chains[0][0].weight.grad
-        b_grad_w_padding = tr.model.chains[0][0].bias.grad
+        w_grad_w_padding = tr.model.chains[0].linears[0].weight.grad
+        b_grad_w_padding = tr.model.chains[0].linears[0].bias.grad
 
         np.testing.assert_almost_equal(
-            loss_wo_padding.data, loss_w_padding.data)
-        np.testing.assert_almost_equal(w_grad_wo_padding, w_grad_w_padding)
-        np.testing.assert_almost_equal(b_grad_wo_padding, b_grad_w_padding)
-
-    def test_gradient_consistency_with_padding_with_element_batch(self):
-        main_setting = setting.MainSetting.read_settings_yaml(
-            Path('tests/data/linear/linear_element_batch.yml'))
-        main_setting.trainer.element_batch_size = 4
-        tr = trainer.Trainer(main_setting)
-        tr._prepare_training()
-        x = np.reshape(np.arange(5*3), (1, 5, 3)).astype(np.float32) * .1
-        y = (x[:, :, :2] * 2 - .5)[0]
-
-        padded_x = np.concatenate([x, np.zeros((1, 2, 3))], axis=1).astype(
-            np.float32)
-
-        tr.optimizer.zero_grad()
-        loss_wo_padding, losses_wo_padding = tr.classifier(x, y, report=False)
-        loss_wo_padding.backward()
-        w_grad_wo_padding = tr.model.chains[0][0].W.grad
-        b_grad_wo_padding = tr.model.chains[0][0].b.grad
-        tr.optimizer.zero_grad()
-        loss_w_padding, losses_w_padding = tr.classifier(
-            padded_x, y, original_lengths=([5]), report=False)
-        loss_wo_padding.backward()
-        w_grad_w_padding = tr.model.chains[0][0].W.grad
-        b_grad_w_padding = tr.model.chains[0][0].b.grad
-
+            loss_wo_padding.detach().numpy(), loss_w_padding.detach().numpy())
         np.testing.assert_almost_equal(
-            loss_wo_padding.data, loss_w_padding.data)
-        np.testing.assert_almost_equal(w_grad_wo_padding, w_grad_w_padding)
-        np.testing.assert_almost_equal(b_grad_wo_padding, b_grad_w_padding)
-
-        for l_wo, l_w in zip(losses_wo_padding, losses_w_padding):
-            tr.optimizer.zero_grad()
-            l_wo.backward()
-            w_grad_wo_padding = tr.model.chains[0][0].W.grad
-            b_grad_wo_padding = tr.model.chains[0][0].b.grad
-
-            tr.optimizer.zero_grad()
-            l_w.backward()
-            w_grad_w_padding = tr.model.chains[0][0].W.grad
-            b_grad_w_padding = tr.model.chains[0][0].b.grad
-
-            np.testing.assert_almost_equal(w_grad_wo_padding, w_grad_w_padding)
-            np.testing.assert_almost_equal(b_grad_wo_padding, b_grad_w_padding)
+            w_grad_wo_padding.numpy(), w_grad_w_padding.numpy())
+        np.testing.assert_almost_equal(
+            b_grad_wo_padding.numpy(), b_grad_w_padding.numpy())
 
     def test_train_simplified_model(self):
         setting_yaml = Path('tests/data/simplified/mlp.yml')
