@@ -168,7 +168,7 @@ def pad_sparse(sparse, length):
 def prepare_batch_with_support(batch, device=None, non_blocking=False):
     return {
         'x': convert_tensor(
-                batch['x'], device=device, non_blocking=non_blocking),
+            batch['x'], device=device, non_blocking=non_blocking),
         'supports': convert_sparse_tensor(
             batch['supports'], device=device, non_blocking=non_blocking),
         'original_lengths': batch['original_lengths'],
@@ -187,6 +187,6 @@ def convert_sparse_tensor(sparse_info, device=None, non_blocking=False):
 def prepare_batch_without_support(batch, device=None, non_blocking=False):
     return {
         'x': convert_tensor(
-                batch['x'], device=device, non_blocking=non_blocking),
+            batch['x'], device=device, non_blocking=non_blocking),
         'original_lengths': batch['original_lengths'],
     }, convert_tensor(batch['t'], device=device, non_blocking=non_blocking)

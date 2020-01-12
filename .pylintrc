@@ -1,0 +1,2 @@
+[TYPECHECK]
+generated-members=torch.*,os.sched_getaffinity,iteration
