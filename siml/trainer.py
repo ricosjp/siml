@@ -4,7 +4,6 @@ import time
 import femio
 import ignite.engine as engine
 import ignite.metrics as metrics
-import ignite.handlers as handlers
 import numpy as np
 import matplotlib.pyplot as plt
 # import optuna
@@ -303,6 +302,7 @@ class Trainer():
         self.model = networks.Network(self.setting.model, self.setting.trainer)
         self._load_pretrained_model_if_needed(model_file=model_file)
         self.loss = self._create_loss_function()
+        self.model.eval()
         # self.classifier = networks.Classifier(
         #     self.model, lossfun=self._create_loss_function(),
         #     element_batch_size=self.setting.trainer.element_batch_size)
@@ -407,8 +407,10 @@ class Trainer():
             write_simulation_type='fistr', read_simulation_type='fistr',
             data_addition_function=None):
 
+        x = torch.from_numpy(x)
+
         # Inference
-        inferred_y = self.model(x).data
+        inferred_y = self.model((x,))
         if len(x.shape) == 2:
             x = x[None, :, :]
             inferred_y = inferred_y[None, :, :]
@@ -429,12 +431,11 @@ class Trainer():
 
         # Compute loss
         if answer_y is not None:
+            answer_y = torch.from_numpy(answer_y)
             if len(answer_y.shape) == 2:
-                loss = self.classifier.lossfun(
-                    inferred_y[0], answer_y).data
+                loss = self.loss(inferred_y[0], answer_y).detach().numpy()
             elif len(answer_y.shape) == 3:
-                loss = self.classifier.lossfun(
-                    inferred_y, answer_y).data
+                loss = self.loss(inferred_y, answer_y).detach().numpy()
             else:
                 raise ValueError(
                     f"Unknown shape of answer_y: {answer_y.shape}")
@@ -505,7 +506,7 @@ class Trainer():
     def _separate_data(self, data, descriptions, *, axis=2):
         data_dict = {}
         index = 0
-        data = np.swapaxes(data, 0, axis)
+        data = np.swapaxes(data.detach(), 0, axis)
         for description in descriptions:
             data_dict.update({
                 description['name']:
@@ -555,13 +556,13 @@ class Trainer():
         if self.setting.trainer.pretrain_directory is None \
                 and model_file is None:
             return
-        if model_file is None:
-            model_file = self._select_snapshot(
+        if model_file:
+            snapshot = model_file
+        else:
+            snapshot = self._select_snapshot(
                 self.setting.trainer.pretrain_directory,
                 method=self.setting.trainer.snapshot_choise_method)
 
-        snapshot = self._select_snapshot(
-            self.setting.trainer.restart_directory, method='latest')
         checkpoint = torch.load(snapshot)
         self.model.load_state_dict(checkpoint['model_state_dict'])
         print(f"{model_file} loaded as a pretrain model.")
@@ -587,19 +588,23 @@ class Trainer():
         if path.is_file():
             return path
         elif path.is_dir():
-            snapshots = path.glob('snapshot_*')
+            snapshots = path.glob('snapshot_epoch_*')
             if method == 'latest':
                 return max(snapshots, key=lambda p: p.stat().st_ctime)
             elif method == 'best':
-                df = pd.read_json(path / 'log')
+                df = pd.read_csv(
+                    path / 'log.csv', header=0, index_col=None,
+                    skipinitialspace=True)
                 best_epoch = df['epoch'].iloc[
-                    df['validation/main/loss'].idxmin()]
-                return path / f"snapshot_epoch_{best_epoch}"
+                    df['validation_loss'].idxmin()]
+                return path / f"snapshot_epoch_{best_epoch}.pth"
             elif method == 'train_best':
-                df = pd.read_json(path / 'log')
+                df = pd.read_csv(
+                    path / 'log.csv', header=0, index_col=None,
+                    skipinitialspace=True)
                 best_epoch = df['epoch'].iloc[
-                    df['main/loss'].idxmin()]
-                return path / f"snapshot_epoch_{best_epoch}"
+                    df['train_loss'].idxmin()]
+                return path / f"snapshot_epoch_{best_epoch}.pth"
             else:
                 raise ValueError(f"Unknown snapshot choise method: {method}")
 
@@ -694,6 +699,17 @@ class Trainer():
                 + self._display_mergin(f"{elapsed_time:.1f}", 'elapsed_time'))
             self.pbar.n = self.pbar.last_print_n = 0
 
+            # Save checkpoint
+            torch.save(
+                {
+                    'epoch': engine.state.epoch,
+                    'validation_loss': validation_loss,
+                    'model_state_dict': self.model.state_dict(),
+                    'optimizer_state_dict': self.optimizer.state_dict()
+                },
+                self.setting.trainer.output_directory
+                / f"snapshot_epoch_{engine.state.epoch}.pth")
+
             # Write log
             with open(self.log_file, 'a') as f:
                 f.write(
@@ -719,16 +735,16 @@ class Trainer():
                 engine.Events.EPOCH_COMPLETED)
             return priority
 
-        handler = handlers.ModelCheckpoint(
-            dirname=self.setting.trainer.output_directory,
-            filename_prefix='checkpoint', create_dir=False,
-            n_saved=self.setting.trainer.n_epoch
-            // self.setting.trainer.log_trigger_epoch,
-            score_function=score_function)
-        self.trainer.add_event_handler(
-            engine.Events.EPOCH_COMPLETED(
-                every=self.setting.trainer.log_trigger_epoch), handler,
-            {'model': self.model})
+        # handler = handlers.ModelCheckpoint(
+        #     dirname=self.setting.trainer.output_directory,
+        #     filename_prefix='checkpoint', create_dir=False,
+        #     n_saved=self.setting.trainer.n_epoch
+        #     // self.setting.trainer.log_trigger_epoch,
+        #     score_function=score_function)
+        # self.trainer.add_event_handler(
+        #     engine.Events.EPOCH_COMPLETED(
+        #         every=self.setting.trainer.log_trigger_epoch), handler,
+        #     {'model': self.model})
 
         # TODO: Add early stopping
 

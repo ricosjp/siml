@@ -21,10 +21,10 @@ trainer:
     - name: y
       dim: 2
   prune: true
-  batch_size: 1
-  n_epoch: 7000
-  log_trigger_epoch: 1000
-  stop_trigger_epoch: 7000
+  batch_size: 100
+  n_epoch: 3000
+  log_trigger_epoch: 500
+  stop_trigger_epoch: 3000
   seed: 0
 model:
   blocks:

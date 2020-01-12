@@ -206,7 +206,8 @@ class TestTrainer(unittest.TestCase):
 
         res_from_raw = tr.infer(
             model_file=Path(
-                'tests/data/deform/incomplete_pretrained/snapshot_epoch_5000'),
+                'tests/data/deform/incomplete_pretrained/'
+                'snapshot_epoch_5000.pth'),
             raw_data_directory=Path(
                 'tests/data/deform/external/tet2_4_modulusx0.9500'),
             converter_parameters_pkl=Path(
@@ -262,12 +263,12 @@ class TestTrainer(unittest.TestCase):
         # padded_y = np.concatenate([y, np.zeros((1, 2, 2))], axis=1).astype(
         #     np.float32)
 
-        tr.classifier.cleargrads()
-        loss_wo_padding = tr.classifier(x, y, report=False)
+        tr.optimizer.zero_grad()
+        loss_wo_padding = tr.loss(x, y, report=False)
         loss_wo_padding.backward()
         w_grad_wo_padding = tr.model.chains[0][0].W.grad
         b_grad_wo_padding = tr.model.chains[0][0].b.grad
-        tr.classifier.cleargrads()
+        tr.optimizer.zero_grad()
         loss_w_padding = tr.classifier(
             padded_x, y, original_lengths=([5]), report=False)
         loss_wo_padding.backward()
@@ -291,12 +292,12 @@ class TestTrainer(unittest.TestCase):
         padded_x = np.concatenate([x, np.zeros((1, 2, 3))], axis=1).astype(
             np.float32)
 
-        tr.classifier.cleargrads()
+        tr.optimizer.zero_grad()
         loss_wo_padding, losses_wo_padding = tr.classifier(x, y, report=False)
         loss_wo_padding.backward()
         w_grad_wo_padding = tr.model.chains[0][0].W.grad
         b_grad_wo_padding = tr.model.chains[0][0].b.grad
-        tr.classifier.cleargrads()
+        tr.optimizer.zero_grad()
         loss_w_padding, losses_w_padding = tr.classifier(
             padded_x, y, original_lengths=([5]), report=False)
         loss_wo_padding.backward()
@@ -309,12 +310,12 @@ class TestTrainer(unittest.TestCase):
         np.testing.assert_almost_equal(b_grad_wo_padding, b_grad_w_padding)
 
         for l_wo, l_w in zip(losses_wo_padding, losses_w_padding):
-            tr.classifier.cleargrads()
+            tr.optimizer.zero_grad()
             l_wo.backward()
             w_grad_wo_padding = tr.model.chains[0][0].W.grad
             b_grad_wo_padding = tr.model.chains[0][0].b.grad
 
-            tr.classifier.cleargrads()
+            tr.optimizer.zero_grad()
             l_w.backward()
             w_grad_w_padding = tr.model.chains[0][0].W.grad
             b_grad_w_padding = tr.model.chains[0][0].b.grad
@@ -340,7 +341,7 @@ class TestTrainer(unittest.TestCase):
     def test_infer_simplified_model(self):
         setting_yaml = Path('tests/data/simplified/mlp.yml')
         model_file = Path(
-            'tests/data/simplified/pretrained/snapshot_epoch_1000')
+            'tests/data/simplified/pretrained/snapshot_epoch_1000.pth')
         converter_parameters_pkl = Path(
             'tests/data/simplified/pretrained/preprocessors.pkl')
         tr = trainer.Trainer.read_settings(setting_yaml)

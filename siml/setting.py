@@ -586,6 +586,8 @@ def write_yaml(data_class, file_name, *, overwrite=False):
 def _standardize_data(data):
     if isinstance(data, list):
         return [_standardize_data(d) for d in data]
+    elif isinstance(data, tuple):
+        return [_standardize_data(d) for d in data]
     elif isinstance(data, slice):
         return [data.start, data.stop, data.step]
     elif isinstance(data, dict):

@@ -19,7 +19,13 @@ class MLP(header.AbstractMLP):
             y: numpy.ndarray or cupy.ndarray
                 Output of the NN.
         """
-        h = x[:, :, self.input_selection]
+        if len(x.shape) == 2:
+            h = x[:, self.input_selection]
+        elif len(x.shape) == 3:
+            h = x[:, :, self.input_selection]
+        else:
+            raise ValueError(f"Unknown input shape: {x.shape}")
+
         for linear, dropout_ratio, activation in zip(
                 self.linears, self.dropout_ratios, self.activations):
             h = linear(h)

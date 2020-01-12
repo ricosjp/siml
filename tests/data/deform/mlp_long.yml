@@ -33,11 +33,11 @@ model:
       type: adjustable_mlp
       nodes:
         - -1
-        - 50
+        - 100
         - -1
       activations:
         - relu
         - identity
       dropouts:
-        - 0.3
+        - 0.0
         - 0.0
