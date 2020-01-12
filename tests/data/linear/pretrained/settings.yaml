@@ -65,7 +65,7 @@ preprocess:
     componentwise: true
     method: standardize
 trainer:
-  batch_size: 1
+  batch_size: 100
   compute_accuracy: false
   display_mergin: 5
   element_batch_size: -1
@@ -84,14 +84,14 @@ trainer:
     name: x2
   iterator: serial
   lazy: true
-  log_trigger_epoch: 1000
+  log_trigger_epoch: 500
   loss_function: mse
-  n_epoch: 7000
+  n_epoch: 3000
   name: linear
   num_workers: 4
   optimizer: adam
   optimizer_setting:
-    betas: !!python/tuple
+    betas:
     - 0.9
     - 0.99
     eps: 1.0e-08
@@ -112,7 +112,7 @@ trainer:
   seed: 0
   simplified_model: false
   snapshot_choise_method: best
-  stop_trigger_epoch: 7000
+  stop_trigger_epoch: 3000
   support_input: null
   support_inputs: null
   use_siml_updater: true

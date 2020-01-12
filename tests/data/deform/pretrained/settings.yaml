@@ -38,7 +38,7 @@ model:
     destinations:
     - Output
     dropouts:
-    - 0.3
+    - 0.0
     - 0.0
     hidden_activation: rely
     hidden_dropout: 0.5
@@ -53,7 +53,7 @@ model:
     name: MLP
     nodes:
     - 7
-    - 50
+    - 100
     - 6
     optional: {}
     output_activation: identity
@@ -93,7 +93,7 @@ trainer:
   num_workers: 4
   optimizer: adam
   optimizer_setting:
-    betas: !!python/tuple
+    betas:
     - 0.9
     - 0.99
     eps: 1.0e-08
