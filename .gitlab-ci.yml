@@ -10,11 +10,6 @@ before_script: &global_before
   - pwd
   - poetry install
 
-cache:
-  key: ${CI_COMMIT_REF_SLUG}
-  paths:
-    - .venv
-
 stages:
   - preprocess
   - test
