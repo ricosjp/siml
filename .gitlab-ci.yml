@@ -9,6 +9,7 @@ before_script: &global_before
   - poetry config virtualenvs.in-project true
   - pwd
   - poetry install
+  - poetry update
 
 stages:
   - preprocess
