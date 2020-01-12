@@ -1,10 +1,23 @@
 conversion:
+  file_type: fistr
+  finished_file: converted
   mandatory:
+  - elemental_strain
+  - modulus
+  - poisson_ratio
+  mandatory_variables:
   - elemental_strain
   - modulus
   - poisson_ratio
   optional:
   - elemental_stress
+  optional_variables:
+  - elemental_stress
+  required_file_names:
+  - '*.msh'
+  - '*.cnt'
+  - '*.res.0.1'
+  skip_femio: false
 data:
   inferred: data/inferred
   interim: data/interim
@@ -42,6 +55,7 @@ model:
     - 7
     - 50
     - 6
+    optional: {}
     output_activation: identity
     output_dropout: 0.0
     support_input_index: 0
@@ -51,9 +65,11 @@ optuna:
   n_trial: 100
   output_base_directory: models/optuna
   setting: {}
+preprocess: {}
 trainer:
   batch_size: 2
   compute_accuracy: false
+  display_mergin: 5
   element_batch_size: -1
   element_wise: false
   gpu_id: -1
@@ -74,14 +90,15 @@ trainer:
   loss_function: mse
   n_epoch: 5000
   name: mlp_long
+  num_workers: 4
   optimizer: adam
   optimizer_setting:
-    alpha: 0.001
-    beta1: 0.9
-    beta2: 0.99
+    betas: !!python/tuple
+    - 0.9
+    - 0.99
     eps: 1.0e-08
-    eta: 1.0
-    weight_decay_rate: 0
+    lr: 0.001
+    weight_decay: 0
   optuna_trial: null
   output_dims:
   - 6

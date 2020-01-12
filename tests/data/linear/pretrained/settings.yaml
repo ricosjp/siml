@@ -1,6 +1,15 @@
 conversion:
+  file_type: fistr
+  finished_file: converted
   mandatory: []
+  mandatory_variables: []
   optional: []
+  optional_variables: []
+  required_file_names:
+  - '*.msh'
+  - '*.cnt'
+  - '*.res.0.1'
+  skip_femio: false
 data:
   inferred: data/inferred
   interim: tests/data/linear/interim
@@ -35,6 +44,7 @@ model:
     nodes:
     - 3
     - 2
+    optional: {}
     output_activation: identity
     output_dropout: 0.0
     support_input_index: 0
@@ -44,9 +54,20 @@ optuna:
   n_trial: 100
   output_base_directory: models/optuna
   setting: {}
+preprocess:
+  x1:
+    componentwise: true
+    method: standardize
+  x2:
+    componentwise: true
+    method: std_scale
+  y:
+    componentwise: true
+    method: standardize
 trainer:
   batch_size: 1
   compute_accuracy: false
+  display_mergin: 5
   element_batch_size: -1
   element_wise: false
   gpu_id: -1
@@ -67,14 +88,15 @@ trainer:
   loss_function: mse
   n_epoch: 7000
   name: linear
+  num_workers: 4
   optimizer: adam
   optimizer_setting:
-    alpha: 0.001
-    beta1: 0.9
-    beta2: 0.99
+    betas: !!python/tuple
+    - 0.9
+    - 0.99
     eps: 1.0e-08
-    eta: 1.0
-    weight_decay_rate: 0
+    lr: 0.001
+    weight_decay: 0
   optuna_trial: null
   output_dims:
   - 2
