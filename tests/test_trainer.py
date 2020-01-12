@@ -270,16 +270,16 @@ class TestTrainer(unittest.TestCase):
         #     np.float32)
 
         tr.optimizer.zero_grad()
-        loss_wo_padding = tr.loss(x, y, report=False)
+        loss_wo_padding = tr.loss(x, y)
         loss_wo_padding.backward()
-        w_grad_wo_padding = tr.model.chains[0][0].W.grad
-        b_grad_wo_padding = tr.model.chains[0][0].b.grad
+        w_grad_wo_padding = tr.model.chains[0][0].weight.grad
+        b_grad_wo_padding = tr.model.chains[0][0].bias.grad
         tr.optimizer.zero_grad()
         loss_w_padding = tr.classifier(
             padded_x, y, original_lengths=([5]), report=False)
         loss_wo_padding.backward()
-        w_grad_w_padding = tr.model.chains[0][0].W.grad
-        b_grad_w_padding = tr.model.chains[0][0].b.grad
+        w_grad_w_padding = tr.model.chains[0][0].weight.grad
+        b_grad_w_padding = tr.model.chains[0][0].bias.grad
 
         np.testing.assert_almost_equal(
             loss_wo_padding.data, loss_w_padding.data)
