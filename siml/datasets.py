@@ -75,16 +75,74 @@ class OnMemoryDataset(BaseDataset):
         return self.data[i]
 
 
+def collate_fn_with_support(batch):
+    padded_x = pad_dense_sequence(batch, 'x')
+    padded_t = pad_dense_sequence(batch, 't')
+    length = padded_x.shape[1]
+    padded_supports = pad_sparse_sequence(batch, 'supports', length)
+    return {
+        'x': padded_x, 't': padded_t,
+        'supports': padded_supports}
+
+
+def collate_fn_without_support(batch):
+    padded_x = pad_dense_sequence(batch, 'x')
+    padded_t = pad_dense_sequence(batch, 't')
+    return {'x': padded_x, 't': padded_t}
+
+
+def pad_dense_sequence(batch, key):
+    return torch.nn.utils.rnn.pad_sequence(
+        [b[key] for b in batch], batch_first=True)
+
+
+def pad_sparse_sequence(batch, key, length):
+    return [[pad_sparse(s, length) for s in b[key]] for b in batch]
+
+
+def pad_sparse(sparse, length):
+    """Pad sparse matrix.
+
+    Parameters
+    ----------
+    sparse: scipy.sparse.coo_matrix
+    length: int
+
+    Returns
+    -------
+    padded_sparse: dict
+        NOTE: So far dict is returned due to the lack of DataLoader support for
+        sparse tensor https://github.com/pytorch/pytorch/issues/20248 .
+        The dict will be converted to the sparse tensor at the timing of
+        prepare_batch is called.
+    """
+    indices = torch.LongTensor([sparse.row, sparse.col])
+    values = torch.from_numpy(sparse.data)
+
+    return {
+        'indices': indices, 'values': values,
+        'size': torch.Size((length, length))}
+
+
 def prepare_batch_with_support(batch, device=None, non_blocking=False):
     return (
         (
             convert_tensor(
                 batch['x'], device=device, non_blocking=non_blocking),
-            convert_tensor(
+            convert_sparse_tensor(
                 batch['supports'], device=device, non_blocking=non_blocking),
         ),
         convert_tensor(
             batch['t'], device=device, non_blocking=non_blocking))
+
+
+def convert_sparse_tensor(sparse_info, device=None, non_blocking=False):
+    return [
+        [
+            torch.sparse_coo_tensor(
+                s['indices'], s['values'], s['size']).to(device)
+            for s in si]
+        for si in sparse_info]
 
 
 def prepare_batch_without_support(batch, device=None, non_blocking=False):

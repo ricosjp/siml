@@ -26,7 +26,7 @@ class AdjustableMLP(header.AbstractMLP):
         h = x[:, :, self.input_selection]
         for linear, dropout_ratio, activation in zip(
                 self.linears, self.dropout_ratios, self.activations):
-            h = torch.einsum('nmf,gf->nmg', h, linear.W) + linear.b
+            h = torch.einsum('nmf,gf->nmg', h, linear.weight) + linear.bias
             h = functional.dropout(h, p=dropout_ratio, training=self.training)
             h = activation(h)
         return h

@@ -18,6 +18,7 @@ numpy        = "^1.17"
 numpy-stl    = "^2.10"
 optuna       = "^0.19.0"
 pandas       = "^0.25.3"
+pytorch-ignite = {version = "^0.2", allow-prereleases = true}
 scikit-learn = "^0.22.0"
 scipy        = "^1.4"
 PyQt5 = {version = "^5.14.0", optional = true}

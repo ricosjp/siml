@@ -1,9 +1,12 @@
 import random
+import time
 
 import femio
 import ignite.engine as engine
 import ignite.metrics as metrics
+import ignite.handlers as handlers
 import numpy as np
+import matplotlib.pyplot as plt
 # import optuna
 import pandas as pd
 import torch
@@ -66,31 +69,46 @@ class Trainer():
         loss: float
             Loss value after training.
         """
-        self._prepare_training()
 
         print(f"Ouput directory: {self.setting.trainer.output_directory}")
         self.setting.trainer.output_directory.mkdir(parents=True)
+
+        self._prepare_training()
+
         setting.write_yaml(
             self.setting,
             self.setting.trainer.output_directory / 'settings.yaml')
 
         print(
-            'epoch'.ljust(self.setting.trainer.display_width_epoch, ' ')
-            + 'train_loss'.ljust(self.setting.trainer.display_width_loss, ' ')
-            + 'validation_loss'.ljust(
-                self.setting.trainer.display_width_loss, ' '))
+            self._display_mergin('epoch')
+            + self._display_mergin('train_loss')
+            + self._display_mergin('validation_loss')
+            + self._display_mergin('elapsed_time'))
+        with open(self.log_file, 'w') as f:
+            f.write('epoch, train_loss, validation_loss, elapsed_time\n')
         self.pbar = tqdm(
             initial=0, leave=False,
             total=len(self.train_loader)
             * self.setting.trainer.log_trigger_epoch,
             desc=self.desc.format(0))
+        self.start_time = time.time()
 
-        state = self.trainer.run(
+        self.trainer.run(
             self.train_loader, max_epochs=self.setting.trainer.n_epoch)
         self.pbar.close()
-        loss = state.output
 
-        return loss
+        self.evaluator.run(self.validation_loader)
+        metrics = self.evaluator.state.metrics
+        # raise ValueError(self.evaluator.state)
+        validation_loss = metrics['loss']
+
+        return validation_loss
+
+    def _display_mergin(self, input_string, reference_string=None):
+        if not reference_string:
+            reference_string = input_string
+        return input_string.ljust(
+            len(reference_string) + self.setting.trainer.display_mergin, ' ')
 
     def _prepare_training(self):
         self.set_seed()
@@ -600,8 +618,10 @@ class Trainer():
             batch_size = self.setting.trainer.batch_size
 
         if self.setting.trainer.support_inputs:
+            self.collate_fn = datasets.collate_fn_with_support
             self.prepare_batch = datasets.prepare_batch_with_support
         else:
+            self.collate_fn = datasets.collate_fn_without_support
             self.prepare_batch = datasets.prepare_batch_without_support
 
         if self.setting.trainer.lazy:
@@ -642,10 +662,14 @@ class Trainer():
 
         self.desc = "ITERATION - loss: {:.5e}"
 
-        @self.trainer.on(engine.Events.ITERATION_COMPLETED(every=100))
+        tick = max(len(self.train_loader) // 100, 1)
+        @self.trainer.on(engine.Events.ITERATION_COMPLETED(every=tick))
         def log_training_loss(engine):
             self.pbar.desc = self.desc.format(engine.state.output)
-            self.pbar.update(100)
+            self.pbar.update(tick)
+
+        self.log_file = self.setting.trainer.output_directory / 'log.csv'
+        self.plot_file = self.setting.trainer.output_directory / 'plot.png'
 
         @self.trainer.on(
             engine.Events.EPOCH_COMPLETED(
@@ -655,18 +679,58 @@ class Trainer():
             self.evaluator.run(self.train_loader)
             metrics = self.evaluator.state.metrics
             train_loss = metrics['loss']
+            elapsed_time = time.time() - self.start_time
 
             self.evaluator.run(self.validation_loader)
             metrics = self.evaluator.state.metrics
             validation_loss = metrics['loss']
+
+            # Print log
             tqdm.write(
-                f"{engine.state.epoch}".ljust(
-                    self.setting.trainer.display_width_epoch, ' ')
-                + f"{train_loss:.5e}".ljust(
-                    self.setting.trainer.display_width_loss, ' ')
-                + f"{validation_loss:.5e}".ljust(
-                    self.setting.trainer.display_width_loss, ' '))
+                self._display_mergin(f"{engine.state.epoch}", 'epoch')
+                + self._display_mergin(f"{train_loss:.5e}", 'train_loss')
+                + self._display_mergin(
+                    f"{validation_loss:.5e}", 'validation_loss')
+                + self._display_mergin(f"{elapsed_time:.1f}", 'elapsed_time'))
             self.pbar.n = self.pbar.last_print_n = 0
+
+            # Write log
+            with open(self.log_file, 'a') as f:
+                f.write(
+                    f"{engine.state.epoch}, {train_loss:.5e}, "
+                    f"{validation_loss:.5e}, {elapsed_time:.1f}\n")
+
+            # Plot
+            fig = plt.figure()
+            df = pd.read_csv(
+                self.log_file, header=0, index_col=None, skipinitialspace=True)
+            plt.plot(df['epoch'], df['train_loss'], label='train loss')
+            plt.plot(
+                df['epoch'], df['validation_loss'], label='validation loss')
+            plt.xlabel('epoch')
+            plt.ylabel('loss')
+            plt.yscale('log')
+            plt.legend()
+            plt.savefig(self.plot_file)
+            plt.close(fig)
+
+        def score_function(engine_):
+            priority = engine_.state.get_event_attrib_value(
+                engine.Events.EPOCH_COMPLETED)
+            return priority
+
+        handler = handlers.ModelCheckpoint(
+            dirname=self.setting.trainer.output_directory,
+            filename_prefix='checkpoint', create_dir=False,
+            n_saved=self.setting.trainer.n_epoch
+            // self.setting.trainer.log_trigger_epoch,
+            score_function=score_function)
+        self.trainer.add_event_handler(
+            engine.Events.EPOCH_COMPLETED(
+                every=self.setting.trainer.log_trigger_epoch), handler,
+            {'model': self.model})
+
+        # TODO: Add early stopping
 
         # TODO: Add Pruning setting
         # if self.setting.trainer.prune:
@@ -692,14 +756,11 @@ class Trainer():
             validation_directories, supports=supports)
         num_workers = 1
 
-        def collate_fn(batch):
-            raise ValueError(batch)
-
         train_loader = torch.utils.data.DataLoader(
-            train_dataset, collate_fn=collate_fn,
+            train_dataset, collate_fn=self.collate_fn,
             batch_size=batch_size, shuffle=True, num_workers=num_workers)
         validation_loader = torch.utils.data.DataLoader(
-            validation_dataset, collate_fn=collate_fn,
+            validation_dataset, collate_fn=self.collate_fn,
             batch_size=batch_size, shuffle=False, num_workers=num_workers)
 
         return train_loader, validation_loader

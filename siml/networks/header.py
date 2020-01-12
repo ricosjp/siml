@@ -70,11 +70,12 @@ class AbstractGCN(torch.nn.Module):
         """
 
         super().__init__()
+
         nodes = block_setting.nodes
-        with self.init_scope():
-            self.subchains = torch.nn.ModuleList([
-                torch.nn.Linear(n1, n2)
-                for n1, n2 in zip(nodes[:-1], nodes[1:])])
+        self.subchains = torch.nn.ModuleList([
+            torch.nn.Linear(n1, n2)
+            for n1, n2 in zip(nodes[:-1], nodes[1:])])
+
         self.activations = [
             DICT_ACTIVATIONS[activation]
             for activation in block_setting.activations]

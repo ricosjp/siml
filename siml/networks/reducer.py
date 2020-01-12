@@ -14,8 +14,8 @@ class Reducer(torch.nn.Module):
                 BlockSetting object.
         """
         super().__init__()
-        if 'operator' in self.block_setting.optional:
-            str_op = self.block_setting.optional['operator']
+        if 'operator' in block_setting.optional:
+            str_op = block_setting.optional['operator']
             if str_op == 'add':
                 self.op = torch.add
             elif str_op == 'mul':
@@ -27,7 +27,7 @@ class Reducer(torch.nn.Module):
 
         return
 
-    def __call__(self, xs, op=None, supports=None):
+    def __call__(self, *xs, op=None, supports=None):
         if len(xs) == 1:
             return xs[0]
 

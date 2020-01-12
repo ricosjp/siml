@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 import torch
 
@@ -26,6 +28,7 @@ class Network(torch.nn.Module):
         'gcn': BlockInformation(gcn.GCN, use_support=True),
         'res_gcn': BlockInformation(gcn.ResGCN, use_support=True),
         'reducer': BlockInformation(reducer.Reducer),
+        'distributor': BlockInformation(reducer.Reducer),  # For backward compatibility  # NOQA
         'deepsets': BlockInformation(deepsets.DeepSets),
         'nri': BlockInformation(nri.NRI, use_support=True),
     }
@@ -33,15 +36,27 @@ class Network(torch.nn.Module):
     def __init__(self, model_setting, trainer_setting):
         super().__init__()
         self.model_setting = model_setting
+
+        for block in self.model_setting.blocks:
+            if 'distributor' == block.type:
+                warnings.warn(
+                    'distributor type is deprecated. Use reducer',
+                    DeprecationWarning)
+
         block_informations = [
             self.DICT_BLOCKS[block.type] for block
             in self.model_setting.blocks]
+
+        self.use_support_informations = [
+            block_information.use_support
+            for block_information in block_informations]
+        self.use_support = np.any(self.use_support_informations)
+
         self.chains = torch.nn.ModuleList([
             block_information.block(block_setting)
             for block_information, block_setting
             in zip(block_informations, self.model_setting.blocks)])
         self.call_graph = self._create_call_graph()
-        self.use_support = trainer_setting.support_inputs is not None
         self.support_indices = [
             block_setting.support_input_index
             if block_information.use_support else 0
@@ -86,7 +101,10 @@ class Network(torch.nn.Module):
         hiddens[0] = self.chains[0](x, supports)
         for i in range(1, len(hiddens)):
             inputs = [hiddens[input_node] for input_node in self.call_graph[i]]
-            hiddens[i] = self.chains[i](*inputs, supports=supports)
+            if self.use_support_informations[i]:
+                hiddens[i] = self.chains[i](*inputs, supports=supports)
+            else:
+                hiddens[i] = self.chains[i](*inputs)
         return hiddens[-1]
 
     def _call_without_support(self, x_):
@@ -94,6 +112,6 @@ class Network(torch.nn.Module):
         hiddens = [None] * len(self.chains)
         hiddens[0] = self.chains[0](x)
         for i in range(1, len(hiddens)):
-            for input_node in self.call_graph[i]:
-                hiddens[i] = self.chains[i](hiddens[input_node])
+            inputs = [hiddens[input_node] for input_node in self.call_graph[i]]
+            hiddens[i] = self.chains[i](*inputs)
         return hiddens[-1]

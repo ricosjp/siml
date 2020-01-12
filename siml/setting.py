@@ -173,8 +173,7 @@ class TrainerSetting(TypedDataClass):
         If True, load data lazily.
     num_workers: int, optional [None]
         The number of workers to load data.
-    display_width_epoch: int, optional [10]
-    display_width_loss: int, optional [15]
+    display_mergin: int, optional [5]
     """
 
     inputs: typing.List[dict] = dc.field(default_factory=list)
@@ -226,8 +225,7 @@ class TrainerSetting(TypedDataClass):
     lazy: bool = True
     num_workers: int = dc.field(
         default=None, metadata={'allow_none': True})
-    display_width_epoch: int = 10
-    display_width_loss: int = 15
+    display_mergin: int = 5
 
     def __post_init__(self):
         if self.element_wise and self.lazy:
@@ -300,6 +298,8 @@ class BlockSetting(TypedDataClass):
     activations: typing.List[str] = dc.field(
         default_factory=lambda: ['identity'])
     dropouts: typing.List[float] = dc.field(default_factory=lambda: [0.])
+
+    optional: dict = dc.field(default_factory=dict)
 
     # Parameters for dynamic definition of layers
     hidden_nodes: int = dc.field(
