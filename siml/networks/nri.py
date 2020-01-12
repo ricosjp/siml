@@ -1,9 +1,9 @@
-from chainer.backends import cuda
+
 import numpy as np
 import scipy.sparse as sp
+import torch
 
 from . import header
-from .. import util
 
 
 class NRI(header.AbstractGCN):
@@ -21,41 +21,36 @@ class NRI(header.AbstractGCN):
         """
         super().__init__(block_setting, create_subchain=False)
         self.concat = True
-        with self.init_scope():
-            if self.concat:
-                self.edge_parameters = ch.ChainList(*[
-                    ch.links.Linear(n1 * 2, n2) for n1, n2
-                    in zip(block_setting.nodes[:-1], block_setting.nodes[1:])])
-            else:
-                self.edge_parameters = ch.ChainList(*[
-                    ch.links.Linear(n1, n2) for n1, n2
-                    in zip(block_setting.nodes[:-1], block_setting.nodes[1:])])
-            self.node_parameters = ch.ChainList(*[
-                ch.links.Linear(n, n) for n in block_setting.nodes[1:]])
+        if self.concat:
+            self.edge_parameters = torch.nn.ModuleList([
+                torch.nn.Linear(n1 * 2, n2) for n1, n2
+                in zip(block_setting.nodes[:-1], block_setting.nodes[1:])])
+        else:
+            self.edge_parameters = torch.nn.ModuleList([
+                torch.nn.Linear(n1, n2) for n1, n2
+                in zip(block_setting.nodes[:-1], block_setting.nodes[1:])])
+        self.node_parameters = torch.nn.ModuleList([
+            torch.nn.Linear(n, n) for n in block_setting.nodes[1:]])
 
     def make_reduce_matrix(self, nadj, *, mean=False):
-        data = np.ones(len(nadj.col), dtype=np.float32)
-        row = np.arange(len(nadj.col))
-        if ch.cuda.available:
-            col = ch.cuda.cupy.asnumpy(nadj.col)
-        else:
-            col = nadj.col
-        shape = (len(row), nadj.shape[0])
+        col = nadj._indices()[1].numpy()
+        data = np.ones(len(col), dtype=np.float32)
+        row = np.arange(len(col))
+        shape = torch.Size((len(row), nadj.shape[0]))
+
         if mean:
             rm = sp.coo_matrix((data, (row, col)))
             degrees = np.array(rm.sum(0))
             normalized_rm = rm.multiply(1. / degrees)
 
-            if hasattr(nadj.data.data, 'device'):
-                reduce_matrix = util.convert_sparse_to_chainer(
-                    normalized_rm, device=nadj.data.data.device.id)
-            else:
-                reduce_matrix = util.convert_sparse_to_chainer(
-                    normalized_rm)
+            reduce_matrix = torch.sparse_coo_tensor(
+                torch.LongTensor([row, col]),
+                torch.FloatTensor(normalized_rm.data), shape)
         else:
-            reduce_matrix = ch.utils.CooMatrix(data, row, col, shape)
+            reduce_matrix = torch.sparse_coo_tensor(
+                torch.LongTensor([row, col]), torch.FloatTensor(data), shape)
 
-        return reduce_matrix
+        return reduce_matrix.to(nadj.device)
 
     def __call__(self, x, supports):
         """Execute the NN's forward computation.
@@ -71,7 +66,7 @@ class NRI(header.AbstractGCN):
             y: numpy.ndarray of cupy.ndarray
                 Output of the NN.
         """
-        hs = ch.functions.stack([
+        hs = torch.stack([
             self._call_single(
                 x_[:, self.input_selection],
                 supports_[self.support_input_index])
@@ -94,26 +89,18 @@ class NRI(header.AbstractGCN):
         """
         h_node = x
         reduce_matrix = self.make_reduce_matrix(support, mean=True)
+        row = support._indices()[0].numpy()
+        col = support._indices()[1].numpy()
         for i in range(len(self.edge_parameters)):
-            xp = cuda.get_array_module(x)
-            if hasattr(support.data.data, 'device'):
-                with xp.cuda.Device(support.data.data.device):
-                    if self.concat:
-                        merged = ch.functions.concat(
-                            [h_node[support.col], h_node[support.row]], axis=1)
-                    else:
-                        merged = h_node[support.col] - h_node[support.row]
+            if self.concat:
+                merged = torch.cat(
+                    [h_node[col], h_node[row]], dim=1)
             else:
-                if self.concat:
-                    merged = ch.functions.concat(
-                        [h_node[support.col], h_node[support.row]], axis=1)
-                else:
-                    merged = h_node[support.col] - h_node[support.row]
-            edge_emb = ch.functions.relu(
-                self.edge_parameters[i](merged))
+                merged = h_node[col] - h_node[row]
 
-            h_edge = ch.functions.sparse_matmul(
-                reduce_matrix, edge_emb, transa=True)
-            h_node = ch.functions.relu(self.node_parameters[i](h_edge))
+            edge_emb = self.activations[i](self.edge_parameters[i](merged))
+
+            h_edge = torch.sparse.mm(reduce_matrix.transpose(0, 1), edge_emb)
+            h_node = self.activations[i](self.node_parameters[i](h_edge))
 
         return h_node

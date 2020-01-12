@@ -20,8 +20,8 @@ class DeepSets(torch.nn.Module):
         """
 
         super().__init__()
-        self.lambdas = AdjustableMLP(block_setting, last_identity=True)
-        self.gammas = AdjustableMLP(block_setting, last_identity=True)
+        self.lambda_ = AdjustableMLP(block_setting, last_identity=True)
+        self.gamma = AdjustableMLP(block_setting, last_identity=True)
         self.activations = [
             header.DICT_ACTIVATIONS[activation]
             for activation in block_setting.activations]
