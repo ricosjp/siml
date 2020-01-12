@@ -66,20 +66,32 @@ class TestTrainer(unittest.TestCase):
             shutil.rmtree(tr.setting.trainer.output_directory)
         loss = tr.train()
         np.testing.assert_array_less(loss, 10.)
+        self.assertEqual(len(tr.train_loader.dataset), 400)
+        self.assertEqual(tr.trainer.state.iteration, 400 // 10 * 100)
 
     def test_train_element_batch(self):
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/linear/linear_element_batch.yml'))
-        tr = trainer.Trainer(main_setting)
-        if tr.setting.trainer.output_directory.exists():
-            shutil.rmtree(tr.setting.trainer.output_directory)
-        loss = tr.train()
-        np.testing.assert_array_less(loss, 10.)
+        tr_element_batch = trainer.Trainer(main_setting)
+        if tr_element_batch.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr_element_batch.setting.trainer.output_directory)
+        loss_element_batch = tr_element_batch.train()
 
-    def test_siml_updater_equivalent(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/linear/linear_element_batch.yml'))
+        main_setting.trainer.element_batch_size = -1
+        tr_std = trainer.Trainer(main_setting)
+        if tr_std.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr_std.setting.trainer.output_directory)
+        loss_std = tr_std.train()
+
+        self.assertLess(loss_element_batch, loss_std)
+
+    def test_updater_equivalent(self):
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/linear/linear_element_batch.yml'))
 
+        main_setting.trainer.batch_size = 1
         main_setting.trainer.element_batch_size = 100000
         eb1_tr = trainer.Trainer(main_setting)
         if eb1_tr.setting.trainer.output_directory.exists():
@@ -92,14 +104,7 @@ class TestTrainer(unittest.TestCase):
             shutil.rmtree(ebneg_tr.setting.trainer.output_directory)
         ebneg_loss = ebneg_tr.train()
 
-        main_setting.trainer.use_siml_updater = False
-        std_tr = trainer.Trainer(main_setting)
-        if std_tr.setting.trainer.output_directory.exists():
-            shutil.rmtree(std_tr.setting.trainer.output_directory)
-        std_loss = std_tr.train()
-
-        np.testing.assert_almost_equal(eb1_loss, std_loss)
-        np.testing.assert_almost_equal(ebneg_loss, std_loss)
+        np.testing.assert_almost_equal(eb1_loss, ebneg_loss)
 
     def test_train_element_learning_rate(self):
         main_setting = setting.MainSetting.read_settings_yaml(

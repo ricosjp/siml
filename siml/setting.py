@@ -174,6 +174,10 @@ class TrainerSetting(TypedDataClass):
     num_workers: int, optional [None]
         The number of workers to load data.
     display_mergin: int, optional [5]
+    non_blocking: bool [True]
+        If True and this copy is between CPU and GPU, the copy may occur
+        asynchronously with respect to the host. For other cases, this argument
+        has no effect.
     """
 
     inputs: typing.List[dict] = dc.field(default_factory=list)
@@ -226,6 +230,7 @@ class TrainerSetting(TypedDataClass):
     num_workers: int = dc.field(
         default=None, metadata={'allow_none': True})
     display_mergin: int = 5
+    non_blocking: bool = True
 
     def __post_init__(self):
         if self.element_wise and self.lazy:

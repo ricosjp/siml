@@ -94,8 +94,8 @@ class Network(torch.nn.Module):
         return self._call_core(x)
 
     def _call_with_support(self, x_):
-        x = x_[0]
-        supports = x_[1]
+        x = x_['x']
+        supports = x_['supports']
         hiddens = [None] * len(self.chains)
 
         hiddens[0] = self.chains[0](x, supports)
@@ -108,7 +108,7 @@ class Network(torch.nn.Module):
         return hiddens[-1]
 
     def _call_without_support(self, x_):
-        x = x_[0]
+        x = x_['x']
         hiddens = [None] * len(self.chains)
         hiddens[0] = self.chains[0](x)
         for i in range(1, len(hiddens)):

@@ -21,7 +21,7 @@ class BaseDataset(torch.utils.data.Dataset):
                 directory, required_file_names=[f"{x_variable_names[0]}.npy"])
         self.data_directories = np.unique(data_directories)
 
-        if len(self) == 0:
+        if len(self.data_directories) == 0:
             raise ValueError(f"No data dound in {directories}")
 
         return
@@ -56,6 +56,29 @@ class LazyDataset(BaseDataset):
         return self._load_data(data_directory)
 
 
+class ElementWiseDataset(BaseDataset):
+
+    def __init__(
+            self, x_variable_names, y_variable_names, directories, *,
+            supports=None):
+        super().__init__(
+            x_variable_names, y_variable_names, directories, supports=supports)
+        print(f"Loading data for: {directories}")
+        loaded_data = [
+            self._load_data(data_directory)
+            for data_directory in self.data_directories]
+        self.x = np.concatenate([ld['x'] for ld in loaded_data])
+        self.t = np.concatenate([ld['t'] for ld in loaded_data])
+        return
+
+    def __len__(self):
+        return len(self.x)
+
+    def __getitem__(self, i):
+        return {
+            'x': torch.from_numpy(self.x[i]), 't': torch.from_numpy(self.t[i])}
+
+
 class OnMemoryDataset(BaseDataset):
 
     def __init__(
@@ -67,28 +90,46 @@ class OnMemoryDataset(BaseDataset):
         self.data = [
             self._load_data(data_directory)
             for data_directory in self.data_directories]
-
-    def __len__(self):
-        return len(self.data_directories)
+        return
 
     def __getitem__(self, i):
         return self.data[i]
 
 
 def collate_fn_with_support(batch):
-    padded_x = pad_dense_sequence(batch, 'x')
-    padded_t = pad_dense_sequence(batch, 't')
-    length = padded_x.shape[1]
+    x = pad_dense_sequence(batch, 'x')
+    t = concatenate_sequence(batch, 't')
+    length = x.shape[1]
     padded_supports = pad_sparse_sequence(batch, 'supports', length)
+
+    original_lengths = [b['x'].shape[0] for b in batch]
+
     return {
-        'x': padded_x, 't': padded_t,
-        'supports': padded_supports}
+        'x': x, 't': t, 'supports': padded_supports,
+        'original_lengths': original_lengths}
 
 
 def collate_fn_without_support(batch):
-    padded_x = pad_dense_sequence(batch, 'x')
-    padded_t = pad_dense_sequence(batch, 't')
-    return {'x': padded_x, 't': padded_t}
+    x = pad_dense_sequence(batch, 'x')
+    t = concatenate_sequence(batch, 't')
+
+    original_lengths = [b['x'].shape[0] for b in batch]
+
+    return {'x': x, 't': t, 'original_lengths': original_lengths}
+
+
+def concatenate_sequence(batch, key):
+    return torch.cat([b[key] for b in batch])
+
+
+def collate_fn_element_wise(batch):
+    x = stack_sequence(batch, 'x')
+    t = stack_sequence(batch, 't')
+    return {'x': x, 't': t, 'original_lengths': None}
+
+
+def stack_sequence(batch, key):
+    return torch.stack([b[key] for b in batch])
 
 
 def pad_dense_sequence(batch, key):
@@ -125,15 +166,13 @@ def pad_sparse(sparse, length):
 
 
 def prepare_batch_with_support(batch, device=None, non_blocking=False):
-    return (
-        (
-            convert_tensor(
+    return {
+        'x': convert_tensor(
                 batch['x'], device=device, non_blocking=non_blocking),
-            convert_sparse_tensor(
-                batch['supports'], device=device, non_blocking=non_blocking),
-        ),
-        convert_tensor(
-            batch['t'], device=device, non_blocking=non_blocking))
+        'supports': convert_sparse_tensor(
+            batch['supports'], device=device, non_blocking=non_blocking),
+        'original_lengths': batch['original_lengths'],
+    }, convert_tensor(batch['t'], device=device, non_blocking=non_blocking)
 
 
 def convert_sparse_tensor(sparse_info, device=None, non_blocking=False):
@@ -146,10 +185,8 @@ def convert_sparse_tensor(sparse_info, device=None, non_blocking=False):
 
 
 def prepare_batch_without_support(batch, device=None, non_blocking=False):
-    return (
-        (
-            convert_tensor(
+    return {
+        'x': convert_tensor(
                 batch['x'], device=device, non_blocking=non_blocking),
-        ),
-        convert_tensor(
-            batch['t'], device=device, non_blocking=non_blocking))
+        'original_lengths': batch['original_lengths'],
+    }, convert_tensor(batch['t'], device=device, non_blocking=non_blocking)

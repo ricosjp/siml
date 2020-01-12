@@ -2,8 +2,7 @@ import random
 import time
 
 import femio
-import ignite.engine as engine
-import ignite.metrics as metrics
+import ignite
 import numpy as np
 import matplotlib.pyplot as plt
 # import optuna
@@ -119,18 +118,12 @@ class Trainer():
 
         # Define model
         self.model = networks.Network(self.setting.model, self.setting.trainer)
-        # if self.setting.trainer.element_wise \
-        #         or self.setting.trainer.simplified_model:
-        #     element_wise = True
-        # else:
-        #     element_wise = False
+        if self.setting.trainer.element_wise \
+                or self.setting.trainer.simplified_model:
+            self.element_wise = True
+        else:
+            self.element_wise = False
         self.loss = self._create_loss_function()
-        # self.classifier = networks.Classifier(
-        #     self.model, lossfun=self._create_loss_function(),
-        #     element_batch_size=self.setting.trainer.element_batch_size,
-        #     element_wise=element_wise)
-        # self.classifier.compute_accuracy = \
-        #     self.setting.trainer.compute_accuracy
 
         # Manage settings
         if self.optuna_trial is None \
@@ -303,11 +296,6 @@ class Trainer():
         self._load_pretrained_model_if_needed(model_file=model_file)
         self.loss = self._create_loss_function()
         self.model.eval()
-        # self.classifier = networks.Classifier(
-        #     self.model, lossfun=self._create_loss_function(),
-        #     element_batch_size=self.setting.trainer.element_batch_size)
-        # self.classifier.compute_accuracy = \
-        #     self.setting.trainer.compute_accuracy
         if converter_parameters_pkl is None:
             converter_parameters_pkl = self.setting.data.preprocessed \
                 / 'preprocessors.pkl'
@@ -410,7 +398,9 @@ class Trainer():
         x = torch.from_numpy(x)
 
         # Inference
-        inferred_y = self.model((x,))
+        self.model.eval()
+        with torch.no_grad():
+            inferred_y = self.model({'x': x})
         if len(x.shape) == 2:
             x = x[None, :, :]
             inferred_y = inferred_y[None, :, :]
@@ -617,58 +607,60 @@ class Trainer():
     def _generate_trainer(self):
 
         self._check_data_dimension()
-        if self.setting.trainer.element_wise:
-            batch_size = self.setting.trainer.element_batch_size
+        if self.element_wise:
+            if self.setting.trainer.element_batch_size > 0:
+                batch_size = self.setting.trainer.element_batch_size
+            else:
+                if self.setting.trainer.simplified_model:
+                    batch_size = self.setting.trainer.batch_size
+                else:
+                    raise ValueError(
+                        'element_batch_size is '
+                        f"{self.setting.trainer.element_batch_size} < 1 "
+                        'while element_wise is set to be true.')
         else:
+            if self.setting.trainer.element_batch_size > 1 \
+                    and self.setting.trainer.batch_size > 1:
+                raise ValueError(
+                    'batch_size cannot be > 1 when element_batch_size > 1.')
             batch_size = self.setting.trainer.batch_size
 
         if self.setting.trainer.support_inputs:
             self.collate_fn = datasets.collate_fn_with_support
             self.prepare_batch = datasets.prepare_batch_with_support
         else:
-            self.collate_fn = datasets.collate_fn_without_support
-            self.prepare_batch = datasets.prepare_batch_without_support
+            if self.element_wise:
+                self.collate_fn = datasets.collate_fn_element_wise
+                self.prepare_batch = datasets.prepare_batch_without_support
+            else:
+                self.collate_fn = datasets.collate_fn_without_support
+                self.prepare_batch = datasets.prepare_batch_without_support
 
         if self.setting.trainer.lazy:
             self.train_loader, self.validation_loader = \
                 self._get_data_loaders(datasets.LazyDataset, batch_size)
-            # dataset = datasets.LazyDataSet(
-            #     x_variable_names, y_variable_names, train_directories,
-            #     supports=supports)
-            # _, support_train = self._load_data(
-            #     x_variable_names,
-            #     [dataset.data_directories[0]], supports=supports)
         else:
-            self.train_loader, self.validation_loader = \
-                self._get_data_loaders(datasets.OnMemoryDataset, batch_size)
-
-            # x_train, support_train = self._load_data(
-            #     x_variable_names, train_directories, supports=supports)
-            # y_train, _ = self._load_data(y_variable_names, train_directories)
-            # if supports is None:
-            #     dataset = ch.datasets.DictDataset(
-            #         **{'x': x_train, 't': y_train})
-            # else:
-            #     dataset = ch.datasets.DictDataset(
-            #         **{
-            #             'x': x_train, 't': y_train,
-            #             'supports': support_train})
+            if self.element_wise:
+                self.train_loader, self.validation_loader = \
+                    self._get_data_loaders(
+                        datasets.ElementWiseDataset, batch_size)
+            else:
+                self.train_loader, self.validation_loader = \
+                    self._get_data_loaders(
+                        datasets.OnMemoryDataset, batch_size)
 
         self.optimizer = self._create_optimizer()
 
-        self.trainer = engine.create_supervised_trainer(
-            self.model, self.optimizer, self.loss,
-            device=self.device, prepare_batch=self.prepare_batch)
-        self.evaluator = engine.create_supervised_evaluator(
-            self.model,
-            metrics={
-                'loss': metrics.Loss(self.loss)},
-            device=self.device, prepare_batch=self.prepare_batch)
+        self.trainer = self._create_supervised_trainer()
+        # self.evaluator = ignite.engine.create_supervised_evaluator(
+        #     self.model, metrics={'loss': ignite.metrics.Loss(self.loss)},
+        #     device=self.device, prepare_batch=self.prepare_batch)
+        self.evaluator = self._create_supervised_evaluator()
 
         self.desc = "ITERATION - loss: {:.5e}"
 
         tick = max(len(self.train_loader) // 100, 1)
-        @self.trainer.on(engine.Events.ITERATION_COMPLETED(every=tick))
+        @self.trainer.on(ignite.engine.Events.ITERATION_COMPLETED(every=tick))
         def log_training_loss(engine):
             self.pbar.desc = self.desc.format(engine.state.output)
             self.pbar.update(tick)
@@ -677,7 +669,7 @@ class Trainer():
         self.plot_file = self.setting.trainer.output_directory / 'plot.png'
 
         @self.trainer.on(
-            engine.Events.EPOCH_COMPLETED(
+            ignite.engine.Events.EPOCH_COMPLETED(
                 every=self.setting.trainer.log_trigger_epoch))
         def log_training_results(engine):
             self.pbar.refresh()
@@ -696,7 +688,7 @@ class Trainer():
                 + self._display_mergin(f"{train_loss:.5e}", 'train_loss')
                 + self._display_mergin(
                     f"{validation_loss:.5e}", 'validation_loss')
-                + self._display_mergin(f"{elapsed_time:.1f}", 'elapsed_time'))
+                + self._display_mergin(f"{elapsed_time:.2f}", 'elapsed_time'))
             self.pbar.n = self.pbar.last_print_n = 0
 
             # Save checkpoint
@@ -714,7 +706,7 @@ class Trainer():
             with open(self.log_file, 'a') as f:
                 f.write(
                     f"{engine.state.epoch}, {train_loss:.5e}, "
-                    f"{validation_loss:.5e}, {elapsed_time:.1f}\n")
+                    f"{validation_loss:.5e}, {elapsed_time:.2f}\n")
 
             # Plot
             fig = plt.figure()
@@ -730,31 +722,76 @@ class Trainer():
             plt.savefig(self.plot_file)
             plt.close(fig)
 
-        def score_function(engine_):
-            priority = engine_.state.get_event_attrib_value(
-                engine.Events.EPOCH_COMPLETED)
-            return priority
-
-        # handler = handlers.ModelCheckpoint(
-        #     dirname=self.setting.trainer.output_directory,
-        #     filename_prefix='checkpoint', create_dir=False,
-        #     n_saved=self.setting.trainer.n_epoch
-        #     // self.setting.trainer.log_trigger_epoch,
-        #     score_function=score_function)
-        # self.trainer.add_event_handler(
-        #     engine.Events.EPOCH_COMPLETED(
-        #         every=self.setting.trainer.log_trigger_epoch), handler,
-        #     {'model': self.model})
-
         # TODO: Add early stopping
 
         # TODO: Add Pruning setting
-        # if self.setting.trainer.prune:
-        #     trainer.extend(
-        #         optuna.integration.ChainerPruningExtension(
-        #             self.optuna_trial, 'validation/main/loss',
-        #             (self.setting.trainer.stop_trigger_epoch, 'epoch')))
         return
+
+    def _create_supervised_trainer(self):
+        if self.device:
+            self.model.to(self.device)
+
+        def update_with_element_batch(x, y, model, optimizer):
+            y_pred = model(x)
+
+            optimizer.zero_grad()
+            for _y_pred, _y in zip(y_pred, y):
+                split_y_pred = torch.split(
+                    _y_pred, self.setting.trainer.element_batch_size)
+                split_y = torch.split(
+                    _y, self.setting.trainer.element_batch_size)
+                for syp, sy in zip(split_y_pred, split_y):
+                    optimizer.zero_grad()
+                    loss = self.loss(y_pred, y)
+                    loss.backward(retain_graph=True)
+                    self.optimizer.step()
+
+            loss = self.loss(y_pred, y)
+            return loss
+
+        def update_standard(x, y, model, optimizer):
+            optimizer.zero_grad()
+            y_pred = model(x)
+            loss = self.loss(y_pred, y, x['original_lengths'])
+            loss.backward()
+            self.optimizer.step()
+            return loss
+
+        if not self.element_wise \
+                and self.setting.trainer.element_batch_size > 0:
+            update_function = update_with_element_batch
+        else:
+            update_function = update_standard
+
+        def update_model(engine, batch):
+            self.model.train()
+            x, y = self.prepare_batch(
+                batch, device=self.device,
+                non_blocking=self.setting.trainer.non_blocking)
+            loss = update_function(x, y, self.model, self.optimizer)
+            return loss.item()
+
+        return ignite.engine.Engine(update_model)
+
+    def _create_supervised_evaluator(self):
+        if self.device:
+            self.model.to(self.device)
+
+        def _inference(engine, batch):
+            self.model.eval()
+            with torch.no_grad():
+                x, y = self.prepare_batch(
+                    batch, device=self.device,
+                    non_blocking=self.setting.trainer.non_blocking)
+                y_pred = self.model(x)
+            return y_pred, y, x['original_lengths']
+
+        engine = ignite.engine.Engine(_inference)
+
+        metrics = {'loss': ignite.metrics.Loss(self.loss)}
+        for name, metric in metrics.items():
+            metric.attatch(engine, name)
+        return engine
 
     def _get_data_loaders(self, dataset_generator, batch_size):
         x_variable_names = self.setting.trainer.input_names
@@ -770,7 +807,6 @@ class Trainer():
         validation_dataset = dataset_generator(
             x_variable_names, y_variable_names,
             validation_directories, supports=supports)
-        num_workers = 1
 
         train_loader = torch.utils.data.DataLoader(
             train_dataset, collate_fn=self.collate_fn,
@@ -793,9 +829,23 @@ class Trainer():
     def _create_loss_function(self):
         loss_name = self.setting.trainer.loss_function.lower()
         if loss_name == 'mse':
-            return functional.mse_loss
+            loss_core = functional.mse_loss
         else:
             raise ValueError(f"Unknown loss function name: {loss_name}")
+
+        def loss_function_with_padding(y_pred, y, original_lengths):
+            concatenated_y_pred = torch.cat([
+                _yp[:_l] for _yp, _l in zip(y_pred, original_lengths)])
+            print(original_lengths)
+            return loss_core(concatenated_y_pred, y)
+
+        def loss_function_without_padding(y_pred, y, original_length=None):
+            return loss_core(y_pred, y)
+
+        if self.element_wise or self.setting.trainer.batch_size == 1:
+            return loss_function_without_padding
+        else:
+            return loss_function_with_padding
 
     def _check_data_dimension(self):
         variable_names = self.setting.trainer.input_names
