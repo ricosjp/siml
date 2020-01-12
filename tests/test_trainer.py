@@ -80,6 +80,7 @@ class TestTrainer(unittest.TestCase):
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/linear/linear_element_batch.yml'))
         main_setting.trainer.element_batch_size = -1
+        main_setting.trainer.batch_size = 2
         tr_std = trainer.Trainer(main_setting)
         if tr_std.setting.trainer.output_directory.exists():
             shutil.rmtree(tr_std.setting.trainer.output_directory)

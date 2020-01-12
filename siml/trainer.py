@@ -2,7 +2,8 @@ import random
 import time
 
 import femio
-import ignite
+import ignite.engine as engine
+# import ignite.metrics as metrics
 import numpy as np
 import matplotlib.pyplot as plt
 # import optuna
@@ -96,9 +97,10 @@ class Trainer():
         self.pbar.close()
 
         self.evaluator.run(self.validation_loader)
-        metrics = self.evaluator.state.metrics
-        # raise ValueError(self.evaluator.state)
-        validation_loss = metrics['loss']
+        state = self.evaluator.state
+        validation_loss = state.output
+        # metrics = self.evaluator.state.metrics
+        # validation_loss = metrics['loss']
 
         return validation_loss
 
@@ -294,7 +296,13 @@ class Trainer():
 
         self.model = networks.Network(self.setting.model, self.setting.trainer)
         self._load_pretrained_model_if_needed(model_file=model_file)
-        self.loss = self._create_loss_function()
+
+        if self.setting.trainer.element_wise \
+                or self.setting.trainer.simplified_model:
+            self.element_wise = True
+        else:
+            self.element_wise = False
+        self.loss = self._create_loss_function(pad=False)
         self.model.eval()
         if converter_parameters_pkl is None:
             converter_parameters_pkl = self.setting.data.preprocessed \
@@ -652,15 +660,16 @@ class Trainer():
         self.optimizer = self._create_optimizer()
 
         self.trainer = self._create_supervised_trainer()
-        # self.evaluator = ignite.engine.create_supervised_evaluator(
-        #     self.model, metrics={'loss': ignite.metrics.Loss(self.loss)},
+        # self.evaluator = engine.create_supervised_evaluator(
+        #     self.model, metrics={'loss': metrics.Loss(functional.mse_loss)},
         #     device=self.device, prepare_batch=self.prepare_batch)
         self.evaluator = self._create_supervised_evaluator()
 
         self.desc = "ITERATION - loss: {:.5e}"
 
         tick = max(len(self.train_loader) // 100, 1)
-        @self.trainer.on(ignite.engine.Events.ITERATION_COMPLETED(every=tick))
+
+        @self.trainer.on(engine.Events.ITERATION_COMPLETED(every=tick))
         def log_training_loss(engine):
             self.pbar.desc = self.desc.format(engine.state.output)
             self.pbar.update(tick)
@@ -669,18 +678,22 @@ class Trainer():
         self.plot_file = self.setting.trainer.output_directory / 'plot.png'
 
         @self.trainer.on(
-            ignite.engine.Events.EPOCH_COMPLETED(
+            engine.Events.EPOCH_COMPLETED(
                 every=self.setting.trainer.log_trigger_epoch))
         def log_training_results(engine):
             self.pbar.refresh()
             self.evaluator.run(self.train_loader)
-            metrics = self.evaluator.state.metrics
-            train_loss = metrics['loss']
+            state = self.evaluator.state
+            train_loss = state.output
+            # metrics = self.evaluator.state.metrics
+            # train_loss = metrics['loss']
             elapsed_time = time.time() - self.start_time
 
             self.evaluator.run(self.validation_loader)
-            metrics = self.evaluator.state.metrics
-            validation_loss = metrics['loss']
+            state = self.evaluator.state
+            validation_loss = state.output
+            # metrics = self.evaluator.state.metrics
+            # validation_loss = metrics['loss']
 
             # Print log
             tqdm.write(
@@ -771,7 +784,7 @@ class Trainer():
             loss = update_function(x, y, self.model, self.optimizer)
             return loss.item()
 
-        return ignite.engine.Engine(update_model)
+        return engine.Engine(update_model)
 
     def _create_supervised_evaluator(self):
         if self.device:
@@ -784,14 +797,20 @@ class Trainer():
                     batch, device=self.device,
                     non_blocking=self.setting.trainer.non_blocking)
                 y_pred = self.model(x)
-            return y_pred, y, x['original_lengths']
+            loss = self.loss(y_pred, y, x['original_lengths'])
+            # return y_pred, y, {'original_lengths': x['original_lengths']}
+            return loss
 
-        engine = ignite.engine.Engine(_inference)
+        evaluator_engine = engine.Engine(_inference)
 
-        metrics = {'loss': ignite.metrics.Loss(self.loss)}
-        for name, metric in metrics.items():
-            metric.attatch(engine, name)
-        return engine
+        # metrics = {'loss': metrics.Loss(errornous_loss)}
+        # metrics = {'loss': ignite.metrics.Loss(self.loss)}
+        # for name, metric in metrics.items():
+        # metric.attatch(evaluator_engine, 'loss')
+        # metrics.Loss(errornous_loss).attatch(evaluator_engine, 'loss')
+        # for name, metric in {'loss': metrics.Loss(errornous_loss)}.items():
+        #     metric.attatch(evaluator_engine, name)
+        return evaluator_engine
 
     def _get_data_loaders(self, dataset_generator, batch_size):
         x_variable_names = self.setting.trainer.input_names
@@ -800,6 +819,7 @@ class Trainer():
         validation_directories = self.setting.data.validation
         supports = self.setting.trainer.support_inputs
         num_workers = self.setting.trainer.num_workers
+        num_workers = 0
 
         train_dataset = dataset_generator(
             x_variable_names, y_variable_names,
@@ -826,7 +846,7 @@ class Trainer():
         else:
             raise ValueError(f"Unknown optimizer name: {optimizer_name}")
 
-    def _create_loss_function(self):
+    def _create_loss_function(self, pad=None):
         loss_name = self.setting.trainer.loss_function.lower()
         if loss_name == 'mse':
             loss_core = functional.mse_loss
@@ -836,16 +856,21 @@ class Trainer():
         def loss_function_with_padding(y_pred, y, original_lengths):
             concatenated_y_pred = torch.cat([
                 _yp[:_l] for _yp, _l in zip(y_pred, original_lengths)])
-            print(original_lengths)
             return loss_core(concatenated_y_pred, y)
 
         def loss_function_without_padding(y_pred, y, original_length=None):
             return loss_core(y_pred, y)
 
-        if self.element_wise or self.setting.trainer.batch_size == 1:
-            return loss_function_without_padding
+        if pad is None:
+            if self.element_wise or self.setting.trainer.batch_size == 1:
+                return loss_function_without_padding
+            else:
+                return loss_function_with_padding
         else:
-            return loss_function_with_padding
+            if pad:
+                return loss_function_with_padding
+            else:
+                return loss_function_without_padding
 
     def _check_data_dimension(self):
         variable_names = self.setting.trainer.input_names
