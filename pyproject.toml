@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "siml"
-version = "0.1.0"
-description = ""
+version = "0.1.5"
+description = "SiML - a Simulation ML library"
 authors = []
 
 [tool.poetry.dependencies]
