@@ -6,7 +6,6 @@ import os
 from pathlib import Path
 import subprocess
 
-import chainer as ch
 from femio import FEMData, FEMAttribute
 import networkx as nx
 import numpy as np
@@ -674,68 +673,6 @@ def dir2name(dir_name):
         return name
 
 
-def concat_examples(batch, device=None):
-    x = ch.dataset.to_device(
-        device, ch.functions.pad_sequence([b['x'] for b in batch]).data)
-    original_lengths = [b['x'].shape[0] for b in batch]
-    t = ch.dataset.to_device(
-        device, np.concatenate([b['t'] for b in batch]))
-    return {'x': x, 't': t, 'original_lengths': original_lengths}
-
-
-def generate_converter(support_train):
-    # NOTE: Assume orders are the same for all support inputs
-    sparse = support_train[0][0]
-    order = ch.utils.get_order(sparse.row, sparse.col)
-
-    def convert_example_with_support(batch, device=None):
-        x = ch.dataset.to_device(
-            device, ch.functions.pad_sequence([b['x'] for b in batch]).data)
-        original_lengths = [b['x'].shape[0] for b in batch]
-        t = ch.dataset.to_device(
-            device, np.concatenate([b['t'] for b in batch]))
-        length = x.shape[1]
-        supports = [
-            [
-                convert_sparse_to_chainer(
-                    pad_sparse(sparse, length), device=device, order=order)
-                for sparse in b['supports']]
-            for b in batch]
-        return {
-            'x': x, 't': t, 'supports': supports,
-            'original_lengths': original_lengths}
-
-    return convert_example_with_support
-
-
-def pad_sparse_sequence(sparse_sequence):
-    length = np.max([s.shape[0] for s in sparse_sequence])
-    return [pad_sparse(s, length) for s in sparse_sequence]
-
-
-def pad_sparse(sparse_matrix, length):
-    return sp.coo_matrix(
-        (sparse_matrix.data, (sparse_matrix.row, sparse_matrix.col)),
-        shape=(length, length))
-
-
-def element_wise_converter(batch, device=None):
-    x = ch.dataset.to_device(
-        device, np.concatenate([b['x'] for b in batch]))
-    t = ch.dataset.to_device(
-        device, np.concatenate([b['t'] for b in batch]))
-    return {'x': x, 't': t}
-
-
-def convert_sparse_to_chainer(_sparse, *, device=-1, order=None, xp=np):
-    sparse = ch.utils.CooMatrix(
-        ch.dataset.to_device(device, _sparse.data),
-        ch.dataset.to_device(device, _sparse.row),
-        ch.dataset.to_device(device, _sparse.col),
-        _sparse.shape, order='C')
-    return sparse
-
-
 def calc_eigs_symmetric_sparse(sparse_mat):
     print('eig')
     dim = sparse_mat.shape[0]
@@ -916,3 +853,27 @@ def concatenate_variable(variables):
         return concatenatable_variables
     else:
         return concatenatable_variables, unconcatenatable_variables
+
+
+def determine_max_process(max_process=None):
+    """Determine maximum number of processes.
+
+    Parameters
+    ----------
+    max_process: int, optional [None]
+        Input maximum process.
+
+    Returns
+    -------
+    resultant_max_process: int
+    """
+    if hasattr(os, 'sched_getaffinity'):
+        # This is more accurate in the cluster
+        available_max_process = len(os.sched_getaffinity(0))
+    else:
+        available_max_process = os.cpu_count()
+    if max_process is None:
+        resultant_max_process = available_max_process
+    else:
+        resultant_max_process = min(available_max_process, max_process)
+    return resultant_max_process

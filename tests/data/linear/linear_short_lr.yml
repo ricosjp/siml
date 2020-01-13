@@ -23,7 +23,7 @@ trainer:
   seed: 0
   optimizer: adam
   optimizer_setting:
-    alpha: 0.01
+    lr: 0.01
 model:
   blocks:
     - type: adjustable_mlp

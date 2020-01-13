@@ -4,7 +4,6 @@ import datetime as dt
 import io
 import itertools as it
 import multiprocessing as multi
-import os
 from pathlib import Path
 import pickle
 
@@ -76,7 +75,7 @@ class RawConverter():
         self.read_npy = read_npy
         self.write_ucd = write_ucd
         self.read_res = read_res
-        self.max_process = determine_max_process(max_process)
+        self.max_process = util.determine_max_process(max_process)
         self.setting.conversion.output_base_directory \
             = self.setting.data.interim
 
@@ -198,30 +197,6 @@ class RawConverter():
         return
 
 
-def determine_max_process(max_process=None):
-    """Determine maximum number of processes.
-
-    Parameters
-    ----------
-    max_process: int, optional [None]
-        Input maximum process.
-
-    Returns
-    -------
-    resultant_max_process: int
-    """
-    if hasattr(os, 'sched_getaffinity'):
-        # This is more accurate in the cluster
-        available_max_process = len(os.sched_getaffinity(0))
-    else:
-        available_max_process = os.cpu_count()
-    if max_process is None:
-        resultant_max_process = available_max_process
-    else:
-        resultant_max_process = min(available_max_process, max_process)
-    return resultant_max_process
-
-
 def write_ucd_file(
         output_directory, fem_data, dict_data=None, force_renew=False):
     if dict_data is not None:
@@ -339,7 +314,7 @@ class Preprocessor:
             self.setting.data.interim,
             required_file_names=self.REQUIRED_FILE_NAMES)
         self.str_replace = str_replace
-        self.max_process = determine_max_process(max_process)
+        self.max_process = util.determine_max_process(max_process)
         if self.setting.data.pad:
             self.max_n_element = self._determine_max_n_element(
                 self.interim_directories,

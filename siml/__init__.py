@@ -8,5 +8,4 @@ from siml import optimize  # NOQA
 from siml import prepost  # NOQA
 from siml import setting  # NOQA
 from siml import trainer  # NOQA
-from siml import updaters  # NOQA
 from siml import util  # NOQA

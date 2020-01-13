@@ -1,13 +1,15 @@
-import chainer as ch
+import warnings
+
 import numpy as np
+import torch
 
 from . import adjustable_mlp
 from . import deepsets
-from . import distributor
 from . import gcn
 from . import identity
 from . import mlp
 from . import nri
+from . import reducer
 
 
 class BlockInformation():
@@ -17,17 +19,16 @@ class BlockInformation():
         self.use_support = use_support
 
 
-class Network(ch.Chain):
+class Network(torch.nn.Module):
 
     DICT_BLOCKS = {
         'identity': BlockInformation(identity.Identity),
         'mlp': BlockInformation(mlp.MLP),
         'adjustable_mlp': BlockInformation(adjustable_mlp.AdjustableMLP),
-        'adjustable_brick_mlp': BlockInformation(
-            adjustable_mlp.AdjustableBrickMLP),
         'gcn': BlockInformation(gcn.GCN, use_support=True),
         'res_gcn': BlockInformation(gcn.ResGCN, use_support=True),
-        'distributor': BlockInformation(distributor.Distributor),
+        'reducer': BlockInformation(reducer.Reducer),
+        'distributor': BlockInformation(reducer.Reducer),  # For backward compatibility  # NOQA
         'deepsets': BlockInformation(deepsets.DeepSets),
         'nri': BlockInformation(nri.NRI, use_support=True),
     }
@@ -35,16 +36,27 @@ class Network(ch.Chain):
     def __init__(self, model_setting, trainer_setting):
         super().__init__()
         self.model_setting = model_setting
+
+        for block in self.model_setting.blocks:
+            if 'distributor' == block.type:
+                warnings.warn(
+                    'distributor type is deprecated. Use reducer',
+                    DeprecationWarning)
+
         block_informations = [
             self.DICT_BLOCKS[block.type] for block
             in self.model_setting.blocks]
-        with self.init_scope():
-            self.chains = ch.ChainList(*[
-                block_information.block(block_setting)
-                for block_information, block_setting
-                in zip(block_informations, self.model_setting.blocks)])
+
+        self.use_support_informations = [
+            block_information.use_support
+            for block_information in block_informations]
+        self.use_support = np.any(self.use_support_informations)
+
+        self.chains = torch.nn.ModuleList([
+            block_information.block(block_setting)
+            for block_information, block_setting
+            in zip(block_informations, self.model_setting.blocks)])
         self.call_graph = self._create_call_graph()
-        self.use_support = trainer_setting.support_inputs is not None
         self.support_indices = [
             block_setting.support_input_index
             if block_information.use_support else 0
@@ -78,22 +90,28 @@ class Network(ch.Chain):
             raise ValueError('Destination name is not unique')
         return np.ravel(locations)
 
-    def __call__(self, x, supports=None):
-        return self._call_core(x, supports)
+    def __call__(self, x):
+        return self._call_core(x)
 
-    def _call_with_support(self, x, supports):
+    def _call_with_support(self, x_):
+        x = x_['x']
+        supports = x_['supports']
         hiddens = [None] * len(self.chains)
 
         hiddens[0] = self.chains[0](x, supports)
         for i in range(1, len(hiddens)):
             inputs = [hiddens[input_node] for input_node in self.call_graph[i]]
-            hiddens[i] = self.chains[i](*inputs, supports=supports)
+            if self.use_support_informations[i]:
+                hiddens[i] = self.chains[i](*inputs, supports=supports)
+            else:
+                hiddens[i] = self.chains[i](*inputs)
         return hiddens[-1]
 
-    def _call_without_support(self, x, supports=None):
+    def _call_without_support(self, x_):
+        x = x_['x']
         hiddens = [None] * len(self.chains)
         hiddens[0] = self.chains[0](x)
         for i in range(1, len(hiddens)):
-            for input_node in self.call_graph[i]:
-                hiddens[i] = self.chains[i](hiddens[input_node])
+            inputs = [hiddens[input_node] for input_node in self.call_graph[i]]
+            hiddens[i] = self.chains[i](*inputs)
         return hiddens[-1]

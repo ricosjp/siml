@@ -171,6 +171,13 @@ class TrainerSetting(TypedDataClass):
         element_wise = True.
     lazy: bool, optional [True]
         If True, load data lazily.
+    num_workers: int, optional [None]
+        The number of workers to load data.
+    display_mergin: int, optional [5]
+    non_blocking: bool [True]
+        If True and this copy is between CPU and GPU, the copy may occur
+        asynchronously with respect to the host. For other cases, this argument
+        has no effect.
     """
 
     inputs: typing.List[dict] = dc.field(default_factory=list)
@@ -220,6 +227,10 @@ class TrainerSetting(TypedDataClass):
     optimizer_setting: dict = dc.field(
         default=None, metadata={'convert': False, 'allow_none': True})
     lazy: bool = True
+    num_workers: int = dc.field(
+        default=None, metadata={'allow_none': True})
+    display_mergin: int = 5
+    non_blocking: bool = True
 
     def __post_init__(self):
         if self.element_wise and self.lazy:
@@ -246,14 +257,15 @@ class TrainerSetting(TypedDataClass):
                 self.support_inputs = [self.support_input]
         if self.optimizer_setting is None:
             self.optimizer_setting = {
-                'alpha': 0.001,
-                'beta1': 0.9,
-                'beta2': 0.99,
+                'lr': 0.001,
+                'betas': (0.9, 0.99),
                 'eps': 1e-8,
-                'eta': 1.0,
-                'weight_decay_rate': 0}
+                'weight_decay': 0}
         if self.element_wise or self.simplified_model:
             self.use_siml_updater = False
+
+        if self.num_workers is None:
+            self.num_workers = util.determine_max_process()
 
         super().__post_init__()
 
@@ -291,6 +303,8 @@ class BlockSetting(TypedDataClass):
     activations: typing.List[str] = dc.field(
         default_factory=lambda: ['identity'])
     dropouts: typing.List[float] = dc.field(default_factory=lambda: [0.])
+
+    optional: dict = dc.field(default_factory=dict)
 
     # Parameters for dynamic definition of layers
     hidden_nodes: int = dc.field(
@@ -576,6 +590,8 @@ def write_yaml(data_class, file_name, *, overwrite=False):
 
 def _standardize_data(data):
     if isinstance(data, list):
+        return [_standardize_data(d) for d in data]
+    elif isinstance(data, tuple):
         return [_standardize_data(d) for d in data]
     elif isinstance(data, slice):
         return [data.start, data.stop, data.step]
