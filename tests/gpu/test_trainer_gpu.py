@@ -19,7 +19,7 @@ class TestTrainerGPU(unittest.TestCase):
         tr = trainer.Trainer(main_setting)
         if tr.setting.trainer.output_directory.exists():
             shutil.rmtree(tr.setting.trainer.output_directory)
-        loss = tr.train()
+        loss = tr.train().cpu()
         np.testing.assert_array_less(loss, 3.)
 
     @testing.attr.multi_gpu(2)
@@ -30,5 +30,5 @@ class TestTrainerGPU(unittest.TestCase):
         tr = trainer.Trainer(main_setting)
         if tr.setting.trainer.output_directory.exists():
             shutil.rmtree(tr.setting.trainer.output_directory)
-        loss = tr.train()
+        loss = tr.train().cpu()
         np.testing.assert_array_less(loss, 1e-5)

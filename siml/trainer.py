@@ -134,7 +134,11 @@ class Trainer():
             print('No optuna.trial fed. Set prune = False.')
 
         if self._is_gpu_supporting():
-            print(f"GPU device: {self.setting.trainer.gpu_id}")
+            if self.setting.trainer.gpu_id != -1:
+                self.device = f"cuda:{self.setting.trainer.gpu_id}"
+                print(f"GPU device: {self.setting.trainer.gpu_id}")
+            else:
+                self.device = 'cpu'
         else:
             if self.setting.trainer.gpu_id != -1:
                 raise ValueError('No GPU found.')

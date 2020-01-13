@@ -33,7 +33,7 @@ class NRI(header.AbstractGCN):
             torch.nn.Linear(n, n) for n in block_setting.nodes[1:]])
 
     def make_reduce_matrix(self, nadj, *, mean=False):
-        col = nadj._indices()[1].numpy()
+        col = nadj._indices()[1].cpu().numpy()
         data = np.ones(len(col), dtype=np.float32)
         row = np.arange(len(col))
         shape = torch.Size((len(row), nadj.shape[0]))
@@ -89,8 +89,8 @@ class NRI(header.AbstractGCN):
         """
         h_node = x
         reduce_matrix = self.make_reduce_matrix(support, mean=True)
-        row = support._indices()[0].numpy()
-        col = support._indices()[1].numpy()
+        row = support._indices()[0].cpu().numpy()
+        col = support._indices()[1].cpu().numpy()
         for i in range(len(self.edge_parameters)):
             if self.concat:
                 merged = torch.cat(
