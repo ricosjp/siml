@@ -3,11 +3,10 @@ image: registry.ritc.jp/ricos/machine_learning/siml
 variables:
   GIT_SUBMODULE_STRATEGY: recursive
 
-before_script: &global_before
+before_script:
   - pip install pip poetry --upgrade
   - pushd lib/femio && poetry install && poetry build && popd
   - poetry config virtualenvs.in-project true
-  - pwd
   - poetry install
   - poetry update
 
@@ -52,9 +51,6 @@ pages:
 
 test_gpu:
   extends: .test
-  before_script:
-    - *global_before
-    - poetry install -E "cupy"
   script:
     - poetry run pytest tests/gpu/test_networks_gpu.py --capture=no
     - poetry run pytest tests/gpu/test_trainer_gpu.py --capture=no
@@ -63,9 +59,6 @@ test_gpu:
 
 test_gpu_optimize:
   extends: .test
-  before_script:
-    - *global_before
-    - poetry install -E "cupy"
   script: poetry run pytest tests/gpu/test_optimize_gpu.py --capture=no
   tags:
     - gpu
