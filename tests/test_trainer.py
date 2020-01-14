@@ -324,3 +324,24 @@ class TestTrainer(unittest.TestCase):
         rmse = np.mean((inversed_dict_y['c'] - answer_raw_dict_y['c'])**2)**.5
         self.assertLess(rmse, 5.)
         self.assertLess(loss, 2e-3)
+
+    def test_evaluation_loss_not_depending_on_batch_size(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/deform/mlp.yml'))
+
+        if main_setting.trainer.output_directory.exists():
+            shutil.rmtree(main_setting.trainer.output_directory)
+        main_setting.trainer.validation_batch_size = 1
+        tr_batch_1 = trainer.Trainer(main_setting)
+        loss_batch_1 = tr_batch_1.train()
+
+        if main_setting.trainer.output_directory.exists():
+            shutil.rmtree(main_setting.trainer.output_directory)
+        main_setting.trainer.validation_batch_size = 2
+        tr_batch_2 = trainer.Trainer(main_setting)
+        loss_batch_2 = tr_batch_2.train()
+
+        self.assertEqual(tr_batch_1.validation_loader.batch_size, 1)
+        self.assertEqual(tr_batch_2.validation_loader.batch_size, 2)
+
+        np.testing.assert_array_almost_equal(loss_batch_1, loss_batch_2)
