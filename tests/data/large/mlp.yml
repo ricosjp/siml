@@ -1,0 +1,43 @@
+data:
+  preprocessed: tests/data/large/preprocessed
+  train:
+    - tests/data/large/preprocessed
+  validation:
+    - tests/data/large/preprocessed
+preprocess:
+  x1: standardize
+  y: standardize
+trainer:
+  output_directory: tests/data/large/mlp
+  lazy: true
+  inputs:
+    - name: x
+      dim: 1000
+  outputs:
+    - name: y
+      dim: 1000
+  prune: true
+  batch_size: 10
+  n_epoch: 2
+  log_trigger_epoch: 1
+  stop_trigger_epoch: 10
+  seed: 0
+model:
+  blocks:
+    - type: adjustable_mlp
+      nodes:
+        - -1
+        - 1000
+        - 1000
+        - 1000
+        - -1
+      activations:
+        - relu
+        - relu
+        - relu
+        - identity
+      dropouts:
+        - 0.0
+        - 0.0
+        - 0.0
+        - 0.0
