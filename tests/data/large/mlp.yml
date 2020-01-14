@@ -1,9 +1,9 @@
 data:
   preprocessed: tests/data/large/preprocessed
   train:
-    - tests/data/large/preprocessed
+    - tests/data/large/preprocessed/train
   validation:
-    - tests/data/large/preprocessed
+    - tests/data/large/preprocessed/validation
 preprocess:
   x1: standardize
   y: standardize
@@ -12,10 +12,10 @@ trainer:
   lazy: true
   inputs:
     - name: x
-      dim: 1000
+      dim: 100
   outputs:
     - name: y
-      dim: 1000
+      dim: 100
   prune: true
   batch_size: 10
   n_epoch: 2
@@ -27,17 +27,11 @@ model:
     - type: adjustable_mlp
       nodes:
         - -1
-        - 1000
-        - 1000
-        - 1000
+        - 100
         - -1
       activations:
         - relu
-        - relu
-        - relu
         - identity
       dropouts:
-        - 0.0
-        - 0.0
         - 0.0
         - 0.0
