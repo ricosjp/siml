@@ -18,7 +18,7 @@ def generate_data(time_length):
 
     x3 = np.ones(t.shape) * y1_initial
     x4 = np.ones(t.shape) * y2_initial
-    x = np.concatenate([t, x1, x2, x3, x4], axis=2)
+    x = np.concatenate([x1, x2, x3, x4], axis=2)
 
     y1 = np.zeros((len(x), 1, 1))
     y1[0] = y1_initial
@@ -32,7 +32,7 @@ def generate_data(time_length):
             - 0.3 * x[i, 0, 1] - 0.5 * x[i, 0, 2]) * .1
 
     y = np.concatenate([y1, y2], axis=2)
-    return x, y
+    return t, x, y
 
 
 def main():
@@ -47,7 +47,7 @@ def main():
     n_train_data = 100
     for i in range(n_train_data):
         time_length = np.random.randint(*range_time_length)
-        x, y = generate_data(time_length)
+        t, x, y = generate_data(time_length)
 
         # plt.plot(x[:, 0, 0], x[:, 0, 1])
         # plt.plot(x[:, 0, 0], x[:, 0, 2])
@@ -58,16 +58,18 @@ def main():
 
         output_directory = output_root / f"train/{i}"
         output_directory.mkdir(parents=True)
+        np.save(output_directory / 't.npy', t.astype(np.float32))
         np.save(output_directory / 'x.npy', x.astype(np.float32))
         np.save(output_directory / 'y.npy', y.astype(np.float32))
 
     n_validation_data = 10
     for i in range(n_validation_data):
         time_length = np.random.randint(*range_time_length)
-        x, y = generate_data(time_length)
+        t, x, y = generate_data(time_length)
 
         output_directory = output_root / f"validation/{i}"
         output_directory.mkdir(parents=True)
+        np.save(output_directory / 't.npy', t.astype(np.float32))
         np.save(output_directory / 'x.npy', x.astype(np.float32))
         np.save(output_directory / 'y.npy', y.astype(np.float32))
 

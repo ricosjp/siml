@@ -177,6 +177,10 @@ class TrainerSetting(TypedDataClass):
         (so-called "1D simulation"), which focuses on only a few inputs and
         outputs. The behavior of the trainer will be similar to that with
         element_wise = True.
+    time_series: bool, optional [False]
+        If True, regard the data as time series. In that case, the data shape
+        will be [seq, batch, element, feature] instead of the default
+        [batch, element, feature] shape.
     lazy: bool, optional [True]
         If True, load data lazily.
     num_workers: int, optional [None]
@@ -231,6 +235,7 @@ class TrainerSetting(TypedDataClass):
     seed: int = 0
     element_wise: bool = False
     simplified_model: bool = False
+    time_series: bool = False
     element_batch_size: int = -1
     validation_element_batch_size: int = dc.field(
         default=None, metadata={'allow_none': True})

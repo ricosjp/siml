@@ -22,7 +22,7 @@ class BaseDataset(torch.utils.data.Dataset):
         self.data_directories = np.unique(data_directories)
 
         if len(self.data_directories) == 0:
-            raise ValueError(f"No data dound in {directories}")
+            raise ValueError(f"No data found in {directories}")
 
         return
 

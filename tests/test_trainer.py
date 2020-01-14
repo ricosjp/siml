@@ -347,9 +347,6 @@ class TestTrainer(unittest.TestCase):
         np.testing.assert_array_almost_equal(loss_batch_1, loss_batch_2)
 
     def test_train_time_series_simplified_data(self):
-        # Generate data
-        raise ValueError
-
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/simplified_timeseries/lstm.yml'))
 
@@ -357,7 +354,7 @@ class TestTrainer(unittest.TestCase):
             shutil.rmtree(main_setting.trainer.output_directory)
         tr = trainer.Trainer(main_setting)
         loss = tr.train()
-        self.assertLess(loss, 1.)
+        self.assertLess(loss, .1)
 
     def test_train_time_series_mesh_data(self):
         raise ValueError

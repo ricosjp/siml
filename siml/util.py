@@ -845,7 +845,7 @@ def concatenate_variable(variables):
         [
             variable for variable in variables
             if isinstance(variable, np.ndarray)],
-        axis=1)
+        axis=-1)
     unconcatenatable_variables = [
         variable for variable in variables
         if not isinstance(variable, np.ndarray)]

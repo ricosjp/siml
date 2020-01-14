@@ -116,11 +116,14 @@ class Trainer():
 
         # Define model
         self.model = networks.Network(self.setting.model, self.setting.trainer)
-        if self.setting.trainer.element_wise \
-                or self.setting.trainer.simplified_model:
-            self.element_wise = True
-        else:
+        if self.setting.trainer.time_series:
             self.element_wise = False
+        else:
+            if self.setting.trainer.element_wise \
+                    or self.setting.trainer.simplified_model:
+                self.element_wise = True
+            else:
+                self.element_wise = False
         self.loss = self._create_loss_function()
 
         # Manage settings
