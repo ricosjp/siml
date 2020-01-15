@@ -89,3 +89,27 @@ test_trainer_long:
 test_util:
   extends: .test
   script: python3.7 -m pytest tests/test_util.py --capture=no
+
+.deploy:wheel:
+  stage: deploy
+  script:
+    - python3.7 -m pip install --upgrade pip poetry
+    - python3.7 -m poetry version $VERSION
+    - python3.7 -m poetry config repositories.ricos https://pypi.ritc.jp
+    - python3.7 -m poetry build -f wheel
+    - python3.7 -m poetry publish --username ricos --password ${RICOS_PYPI_KEY} -r ricos --no-ansi -n -v
+  retry: 2
+
+deploy:wheel:master:
+  extends: .deploy:wheel
+  before_script:
+    - export VERSION=0.2.dev$(date +"%Y%m%d%H%M")
+  only:
+    - master
+
+deploy:wheel:tag:
+  extends: .deploy:wheel
+  before_script:
+    - export VERSION=$CI_COMMIT_REF_NAME
+  only:
+    - tags
