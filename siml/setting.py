@@ -141,8 +141,10 @@ class TrainerSetting(TypedDataClass):
         Optimizer to be used for training.
     compute_accuracy: bool, optional [False]
         If True, compute accuracy.
-    batch_size: int, optional [10]
-        Batch size.
+    batch_size: int, optional [1]
+        Batch size for train dataset.
+    validation_batch_size: int, optional [1]
+        Batch size for validation dataset.
     n_epoch: int, optional [1000]
         The number of epochs.
     gpu_id: int, optional [-1]
@@ -164,6 +166,12 @@ class TrainerSetting(TypedDataClass):
         (so no graph information can be used). With this option,
         element_batch_size will be used for trainer's batch size as it is
         "element wise" training.
+    element_batch_size: int, optional [-1]
+        If positive, split one mesh int element_batch_size and perform update
+        multiple times for one mesh. In case of element_wise is True,
+        element_batch_size is the batch size in the usual sence.
+    validation_element_batch_size: int, optional [-1]
+        element_batch_size for validation dataset.
     simplified_model: bool, optional [False]
         If True, regard the target simulation as simplified simulation
         (so-called "1D simulation"), which focuses on only a few inputs and
@@ -198,6 +206,8 @@ class TrainerSetting(TypedDataClass):
 
     name: str = 'default'
     batch_size: int = 1
+    validation_batch_size: int = dc.field(
+        default=None, metadata={'allow_none': True})
     n_epoch: int = 100
     log_trigger_epoch: int = 1
     stop_trigger_epoch: int = 10
@@ -222,6 +232,8 @@ class TrainerSetting(TypedDataClass):
     element_wise: bool = False
     simplified_model: bool = False
     element_batch_size: int = -1
+    validation_element_batch_size: int = dc.field(
+        default=None, metadata={'allow_none': True})
     use_siml_updater: bool = True
     iterator: Iter = Iter.SERIAL
     optimizer_setting: dict = dc.field(
@@ -240,6 +252,12 @@ class TrainerSetting(TypedDataClass):
             raise ValueError(
                 'Both simplified_model and lazy cannot be True '
                 'at the same time')
+
+        if self.validation_batch_size is None:
+            self.validation_batch_size = self.batch_size
+
+        if self.validation_element_batch_size is None:
+            self.validation_element_batch_size = self.element_batch_size
 
         self.input_names = [i['name'] for i in self.inputs]
         self.input_dims = [i['dim'] for i in self.inputs]
@@ -266,6 +284,7 @@ class TrainerSetting(TypedDataClass):
 
         if self.num_workers is None:
             self.num_workers = util.determine_max_process()
+            print(f"The number of workers is set to: {self.num_workers}")
 
         super().__post_init__()
 

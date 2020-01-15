@@ -21,6 +21,7 @@ DICT_ACTIVATIONS = {
     'sigmoid': functional.sigmoid,
     'tanh': functional.tanh,
     'max_pool': max_pool,
+    'max': max_pool,
     'mean': mean,
 }
 

@@ -2,8 +2,7 @@ import random
 import time
 
 import femio
-import ignite.engine as engine
-# import ignite.metrics as metrics
+import ignite
 import numpy as np
 import matplotlib.pyplot as plt
 # import optuna
@@ -97,10 +96,7 @@ class Trainer():
         self.pbar.close()
 
         self.evaluator.run(self.validation_loader)
-        state = self.evaluator.state
-        validation_loss = state.output
-        # metrics = self.evaluator.state.metrics
-        # validation_loss = metrics['loss']
+        validation_loss = self.evaluator.state.metrics['loss']
 
         return validation_loss
 
@@ -622,9 +618,13 @@ class Trainer():
         if self.element_wise:
             if self.setting.trainer.element_batch_size > 0:
                 batch_size = self.setting.trainer.element_batch_size
+                validation_batch_size = \
+                    self.setting.trainer.validation_element_batch_size
             else:
                 if self.setting.trainer.simplified_model:
                     batch_size = self.setting.trainer.batch_size
+                    validation_batch_size \
+                        = self.setting.trainer.validation_batch_size
                 else:
                     raise ValueError(
                         'element_batch_size is '
@@ -636,6 +636,7 @@ class Trainer():
                 raise ValueError(
                     'batch_size cannot be > 1 when element_batch_size > 1.')
             batch_size = self.setting.trainer.batch_size
+            validation_batch_size = self.setting.trainer.validation_batch_size
 
         if self.setting.trainer.support_inputs:
             self.collate_fn = datasets.collate_fn_with_support
@@ -650,30 +651,30 @@ class Trainer():
 
         if self.setting.trainer.lazy:
             self.train_loader, self.validation_loader = \
-                self._get_data_loaders(datasets.LazyDataset, batch_size)
+                self._get_data_loaders(
+                    datasets.LazyDataset, batch_size, validation_batch_size)
         else:
             if self.element_wise:
                 self.train_loader, self.validation_loader = \
                     self._get_data_loaders(
-                        datasets.ElementWiseDataset, batch_size)
+                        datasets.ElementWiseDataset, batch_size,
+                        validation_batch_size)
             else:
                 self.train_loader, self.validation_loader = \
                     self._get_data_loaders(
-                        datasets.OnMemoryDataset, batch_size)
+                        datasets.OnMemoryDataset, batch_size,
+                        validation_batch_size)
 
         self.optimizer = self._create_optimizer()
 
         self.trainer = self._create_supervised_trainer()
-        # self.evaluator = engine.create_supervised_evaluator(
-        #     self.model, metrics={'loss': metrics.Loss(functional.mse_loss)},
-        #     device=self.device, prepare_batch=self.prepare_batch)
         self.evaluator = self._create_supervised_evaluator()
 
         self.desc = "ITERATION - loss: {:.5e}"
 
         tick = max(len(self.train_loader) // 100, 1)
 
-        @self.trainer.on(engine.Events.ITERATION_COMPLETED(every=tick))
+        @self.trainer.on(ignite.engine.Events.ITERATION_COMPLETED(every=tick))
         def log_training_loss(engine):
             self.pbar.desc = self.desc.format(engine.state.output)
             self.pbar.update(tick)
@@ -682,22 +683,18 @@ class Trainer():
         self.plot_file = self.setting.trainer.output_directory / 'plot.png'
 
         @self.trainer.on(
-            engine.Events.EPOCH_COMPLETED(
+            ignite.engine.Events.EPOCH_COMPLETED(
                 every=self.setting.trainer.log_trigger_epoch))
         def log_training_results(engine):
             self.pbar.refresh()
+
             self.evaluator.run(self.train_loader)
-            state = self.evaluator.state
-            train_loss = state.output
-            # metrics = self.evaluator.state.metrics
-            # train_loss = metrics['loss']
-            elapsed_time = time.time() - self.start_time
+            train_loss = self.evaluator.state.metrics['loss']
 
             self.evaluator.run(self.validation_loader)
-            state = self.evaluator.state
-            validation_loss = state.output
-            # metrics = self.evaluator.state.metrics
-            # validation_loss = metrics['loss']
+            validation_loss = self.evaluator.state.metrics['loss']
+
+            elapsed_time = time.time() - self.start_time
 
             # Print log
             tqdm.write(
@@ -788,7 +785,7 @@ class Trainer():
             loss = update_function(x, y, self.model, self.optimizer)
             return loss.item()
 
-        return engine.Engine(update_model)
+        return ignite.engine.Engine(update_model)
 
     def _create_supervised_evaluator(self):
         if self.device:
@@ -801,29 +798,24 @@ class Trainer():
                     batch, device=self.device,
                     non_blocking=self.setting.trainer.non_blocking)
                 y_pred = self.model(x)
-            loss = self.loss(y_pred, y, x['original_lengths'])
-            # return y_pred, y, {'original_lengths': x['original_lengths']}
-            return loss
+                return y_pred, y, {'original_lengths': x['original_lengths']}
 
-        evaluator_engine = engine.Engine(_inference)
+        evaluator_engine = ignite.engine.Engine(_inference)
 
-        # metrics = {'loss': metrics.Loss(errornous_loss)}
-        # metrics = {'loss': ignite.metrics.Loss(self.loss)}
-        # for name, metric in metrics.items():
-        # metric.attatch(evaluator_engine, 'loss')
-        # metrics.Loss(errornous_loss).attatch(evaluator_engine, 'loss')
-        # for name, metric in {'loss': metrics.Loss(errornous_loss)}.items():
-        #     metric.attatch(evaluator_engine, name)
+        metrics = {'loss': ignite.metrics.Loss(self.loss)}
+
+        for name, metric in metrics.items():
+            metric.attach(evaluator_engine, name)
         return evaluator_engine
 
-    def _get_data_loaders(self, dataset_generator, batch_size):
+    def _get_data_loaders(
+            self, dataset_generator, batch_size, validation_batch_size):
         x_variable_names = self.setting.trainer.input_names
         y_variable_names = self.setting.trainer.output_names
         train_directories = self.setting.data.train
         validation_directories = self.setting.data.validation
         supports = self.setting.trainer.support_inputs
         num_workers = self.setting.trainer.num_workers
-        num_workers = 0
 
         train_dataset = dataset_generator(
             x_variable_names, y_variable_names,
@@ -837,7 +829,8 @@ class Trainer():
             batch_size=batch_size, shuffle=True, num_workers=num_workers)
         validation_loader = torch.utils.data.DataLoader(
             validation_dataset, collate_fn=self.collate_fn,
-            batch_size=batch_size, shuffle=False, num_workers=num_workers)
+            batch_size=validation_batch_size, shuffle=False,
+            num_workers=num_workers)
 
         return train_loader, validation_loader
 
@@ -862,7 +855,7 @@ class Trainer():
                 _yp[:_l] for _yp, _l in zip(y_pred, original_lengths)])
             return loss_core(concatenated_y_pred, y)
 
-        def loss_function_without_padding(y_pred, y, original_length=None):
+        def loss_function_without_padding(y_pred, y, original_lengths=None):
             return loss_core(y_pred, y)
 
         if pad is None:

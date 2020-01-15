@@ -10,9 +10,11 @@ else
 endif
 
 build:
-	docker build -t $(CI_REGISTRY_IMAGE) . 
+	docker build -t $(CI_REGISTRY_IMAGE) \
+		-f Dockerfile ..
 
+run:
+	docker run -it --runtime=nvidia --rm $(CI_REGISTRY_IMAGE) /bin/bash
 
 push: login build
 	docker push $(CI_REGISTRY_IMAGE)
-

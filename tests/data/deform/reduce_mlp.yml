@@ -19,8 +19,8 @@ trainer:
       dim: 1
   prune: true
   batch_size: 2
-  n_epoch: 30
-  log_trigger_epoch: 1
+  n_epoch: 50
+  log_trigger_epoch: 10
   stop_trigger_epoch: 10
   seed: 0
 model:
@@ -31,13 +31,13 @@ model:
       type: adjustable_mlp
       nodes:
         - -1
-        - 200
-        - 200
-        - 200
+        - 32
+        - 64
+        - 128
       activations:
         - relu
         - relu
-        - mean
+        - max
       dropouts:
         - 0.0
         - 0.0
@@ -45,15 +45,18 @@ model:
     - name: MLP2
       type: adjustable_mlp
       nodes:
-        - 200
-        - 200
-        - 20
+        - 128
+        - 64
+        - 32
+        - 16
         - -1
       activations:
         - relu
         - relu
+        - relu
         - identity
       dropouts:
+        - 0.0
         - 0.0
         - 0.0
         - 0.0
