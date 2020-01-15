@@ -47,7 +47,7 @@ class TestTrainerGPU(unittest.TestCase):
         n_element = 20000
 
         n_train_data = 50
-        output_root = main_setting.data.train[0]
+        output_root = main_setting.data.train[0]  # pylint: disable=E1136
         if output_root.exists():
             shutil.rmtree(output_root)
         for i in range(n_train_data):
@@ -59,7 +59,7 @@ class TestTrainerGPU(unittest.TestCase):
             np.save(output_directory / 'y.npy', y.astype(np.float32))
 
         n_validation_data = 2
-        output_root = main_setting.data.validation[0]
+        output_root = main_setting.data.validation[0]  # pylint: disable=E1136
         if output_root.exists():
             shutil.rmtree(output_root)
         for i in range(n_validation_data):
