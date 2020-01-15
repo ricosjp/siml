@@ -642,14 +642,20 @@ class Trainer():
             validation_batch_size = self.setting.trainer.validation_batch_size
 
         if self.setting.trainer.support_inputs:
-            self.collate_fn = datasets.collate_fn_with_support
+            if self.setting.trainer.time_series:
+                self.collate_fn = datasets.collate_fn_time_with_support
+            else:
+                self.collate_fn = datasets.collate_fn_with_support
             self.prepare_batch = datasets.prepare_batch_with_support
         else:
             if self.element_wise:
                 self.collate_fn = datasets.collate_fn_element_wise
                 self.prepare_batch = datasets.prepare_batch_without_support
             else:
-                self.collate_fn = datasets.collate_fn_without_support
+                if self.setting.trainer.time_series:
+                    self.collate_fn = datasets.collate_fn_time_without_support
+                else:
+                    self.collate_fn = datasets.collate_fn_without_support
                 self.prepare_batch = datasets.prepare_batch_without_support
 
         if self.setting.trainer.lazy:
@@ -769,7 +775,7 @@ class Trainer():
         def update_standard(x, y, model, optimizer):
             optimizer.zero_grad()
             y_pred = model(x)
-            loss = self.loss(y_pred, y, x['original_lengths'])
+            loss = self.loss(y_pred, y, x['original_shapes'])
             loss.backward()
             self.optimizer.step()
             return loss
@@ -801,7 +807,7 @@ class Trainer():
                     batch, device=self.device,
                     non_blocking=self.setting.trainer.non_blocking)
                 y_pred = self.model(x)
-                return y_pred, y, {'original_lengths': x['original_lengths']}
+                return y_pred, y, {'original_shapes': x['original_shapes']}
 
         evaluator_engine = ignite.engine.Engine(_inference)
 
@@ -854,24 +860,39 @@ class Trainer():
         else:
             raise ValueError(f"Unknown loss function name: {loss_name}")
 
-        def loss_function_with_padding(y_pred, y, original_lengths):
+        def loss_function_with_padding(y_pred, y, original_shapes):
             concatenated_y_pred = torch.cat([
-                _yp[:_l] for _yp, _l in zip(y_pred, original_lengths)])
+                _yp[:_l[0]] for _yp, _l in zip(y_pred, original_shapes)])
             return loss_core(concatenated_y_pred, y)
 
-        def loss_function_without_padding(y_pred, y, original_lengths=None):
+        def loss_function_without_padding(y_pred, y, original_shapes=None):
             return loss_core(y_pred, y)
 
-        if pad is None:
-            if self.element_wise or self.setting.trainer.batch_size == 1:
-                return loss_function_without_padding
-            else:
-                return loss_function_with_padding
+        def loss_function_time_with_padding(y_pred, y, original_shapes):
+            try:
+                concatenated_y_pred = torch.cat([
+                    y_pred[:s[0], i_batch, :s[1]].reshape(-1)
+                    for i_batch, s in enumerate(original_shapes)])
+            except:
+                raise ValueError(original_shapes)
+            concatenated_y = torch.cat([
+                y[:s[0], i_batch, :s[1]].reshape(-1)
+                for i_batch, s in enumerate(original_shapes)])
+            return loss_core(concatenated_y_pred, concatenated_y)
+
+        if self.setting.trainer.time_series:
+            return loss_function_time_with_padding
         else:
-            if pad:
-                return loss_function_with_padding
+            if pad is None:
+                if self.element_wise or self.setting.trainer.batch_size == 1:
+                    return loss_function_without_padding
+                else:
+                    return loss_function_with_padding
             else:
-                return loss_function_without_padding
+                if pad:
+                    return loss_function_with_padding
+                else:
+                    return loss_function_without_padding
 
     def _check_data_dimension(self):
         variable_names = self.setting.trainer.input_names

@@ -2,6 +2,9 @@
 import torch
 import torch.nn.functional as functional
 
+from . import adjustable_mlp
+from .. import setting
+
 
 def identity(x):
     return x
@@ -59,7 +62,9 @@ class AbstractMLP(torch.nn.Module):
 
 class AbstractGCN(torch.nn.Module):
 
-    def __init__(self, block_setting, *, create_subchain=True):
+    def __init__(
+            self, block_setting,
+            *, create_subchain=True, adjustable_subchain=False):
         """Initialize the NN.
 
         Parameters
@@ -68,14 +73,29 @@ class AbstractGCN(torch.nn.Module):
                 BlockSetting object.
             create_subchain: bool, optional [True]
                 If True, create subchain to be trained.
+            adjustable_subchain: bool, optional [False]
+                If True, create subchain as a stack of AdjustableMLP layers
+                instead of that of toch.nn.Linear layers.
         """
 
         super().__init__()
 
         nodes = block_setting.nodes
-        self.subchains = torch.nn.ModuleList([
-            torch.nn.Linear(n1, n2)
-            for n1, n2 in zip(nodes[:-1], nodes[1:])])
+        if adjustable_subchain:
+            block_settings = [
+                setting.BlockSetting(
+                    nodes=[n1, n2], activations=['identity'],
+                    dropouts=[dropout])
+                for n1, n2, dropout
+                in zip(nodes[:-1], nodes[1:], block_setting.dropouts)]
+            self.subchains = torch.nn.ModuleList([
+                adjustable_mlp.AdjustableMLP(bs)
+                for bs in block_settings
+            ])
+        else:
+            self.subchains = torch.nn.ModuleList([
+                torch.nn.Linear(n1, n2)
+                for n1, n2 in zip(nodes[:-1], nodes[1:])])
 
         self.activations = [
             DICT_ACTIVATIONS[activation]
@@ -99,11 +119,20 @@ class AbstractGCN(torch.nn.Module):
             y: numpy.ndarray of cupy.ndarray
                 Output of the NN.
         """
-        hs = torch.stack([
-            self._call_single(
-                x_[:, self.input_selection],
-                supports_[self.support_input_index])
-            for x_, supports_ in zip(x, supports)])
+        if len(x.shape) == 3:
+            hs = torch.stack([
+                self._call_single(
+                    x_[:, self.input_selection],
+                    supports_[self.support_input_index])
+                for x_, supports_ in zip(x, supports)])
+        else:
+            hs = torch.stack([
+                torch.stack([
+                    self._call_single(
+                        x__[:, self.input_selection],
+                        supports_[self.support_input_index])
+                    for x__, supports_ in zip(x_, supports)])
+                for x_ in x])
         return hs
 
     def _call_single(self, x, support):

@@ -37,7 +37,8 @@ class LSTM(torch.nn.Module):
                 Output of the NN.
         """
         shape = x.shape
-        h = x[:, :, :, self.input_selection].view(shape[0], shape[1], -1)
+        h = x[:, :, :, self.input_selection].view(
+            shape[0], shape[1] * shape[2], -1)
         for lstm_layer in self.lstm_layers:
             h, _ = lstm_layer(h)
         return h.view(shape[0], shape[1], shape[2], h.shape[-1])
