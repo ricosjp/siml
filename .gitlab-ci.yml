@@ -37,7 +37,7 @@ pylint:
 pages:
   stage: deploy
   script:
-    - python3.7 -m make -C doc html
+    - make -C doc html
     - mv doc/_build/html public
   artifacts:
     paths:

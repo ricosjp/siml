@@ -3,6 +3,7 @@ FROM nvidia/cuda:10.1-base
 RUN apt-get update -y && \
   apt-get install -y --no-install-recommends \
   git \
+  make \
   python3.7 \
   python3.7-dev \
   python3.7-distutils \
