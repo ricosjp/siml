@@ -21,7 +21,7 @@ trainer:
     - name: y
       dim: 2
   prune: true
-  batch_size: 100
+  batch_size: 2
   n_epoch: 3000
   log_trigger_epoch: 500
   stop_trigger_epoch: 3000

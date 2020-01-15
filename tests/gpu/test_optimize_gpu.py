@@ -16,6 +16,8 @@ class TestOptimizeGPU(unittest.TestCase):
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/deform/optuna.yml'))
         main_setting.trainer.gpu_id = 1
+        main_setting.trainer.num_workers = 0  # Serial
+        main_setting.optuna.n_trial = 2
         if main_setting.optuna.output_base_directory.exists():
             shutil.rmtree(main_setting.optuna.output_base_directory)
         study = optimize.perform_study(main_setting)

@@ -18,6 +18,7 @@ class TestTrainerGPU(unittest.TestCase):
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/deform/general_block.yml'))
         main_setting.trainer.gpu_id = 1
+        main_setting.trainer.num_workers = 0  # Serial
         tr = trainer.Trainer(main_setting)
         if tr.setting.trainer.output_directory.exists():
             shutil.rmtree(tr.setting.trainer.output_directory)
@@ -29,6 +30,7 @@ class TestTrainerGPU(unittest.TestCase):
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/linear/linear.yml'))
         main_setting.trainer.gpu_id = 1
+        main_setting.trainer.num_workers = 0  # Serial
         tr = trainer.Trainer(main_setting)
         if tr.setting.trainer.output_directory.exists():
             shutil.rmtree(tr.setting.trainer.output_directory)
@@ -90,7 +92,7 @@ class TestTrainerGPU(unittest.TestCase):
 
         if main_setting.trainer.output_directory.exists():
             shutil.rmtree(main_setting.trainer.output_directory)
-        main_setting.trainer.num_workers = util.determine_max_process(4)
+        main_setting.trainer.num_workers = util.determine_max_process(2)
         main_setting.trainer.non_blocking = False
         tr_workers_4_blocking = trainer.Trainer(main_setting)
         tr_workers_4_blocking.train()
@@ -100,8 +102,8 @@ class TestTrainerGPU(unittest.TestCase):
 
         # Confirm multiprocess is faster
         self.assertLess(
-            df_workers_4_blocking['elapsed_time'][-1],
-            df_workers_0['elapsed_time'][-1])
+            df_workers_4_blocking['elapsed_time'].iloc[-1],
+            df_workers_0['elapsed_time'].iloc[-1])
         self.assertLess(
-            df_workers_4['elapsed_time'][-1],
-            df_workers_4_blocking['elapsed_time'][-1])
+            df_workers_4['elapsed_time'].iloc[-1],
+            df_workers_4_blocking['elapsed_time'].iloc[-1])
