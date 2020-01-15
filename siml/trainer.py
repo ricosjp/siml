@@ -868,12 +868,9 @@ class Trainer():
             return loss_core(y_pred, y)
 
         def loss_function_time_with_padding(y_pred, y, original_shapes):
-            try:
-                concatenated_y_pred = torch.cat([
-                    y_pred[:s[0], i_batch, :s[1]].reshape(-1)
-                    for i_batch, s in enumerate(original_shapes)])
-            except:
-                raise ValueError(original_shapes)
+            concatenated_y_pred = torch.cat([
+                y_pred[:s[0], i_batch, :s[1]].reshape(-1)
+                for i_batch, s in enumerate(original_shapes)])
             concatenated_y = torch.cat([
                 y[:s[0], i_batch, :s[1]].reshape(-1)
                 for i_batch, s in enumerate(original_shapes)])
