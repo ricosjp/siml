@@ -22,7 +22,7 @@ class BaseDataset(torch.utils.data.Dataset):
         self.data_directories = np.unique(data_directories)
 
         if len(self.data_directories) == 0:
-            raise ValueError(f"No data dound in {directories}")
+            raise ValueError(f"No data found in {directories}")
 
         return
 
@@ -99,23 +99,48 @@ class OnMemoryDataset(BaseDataset):
 def collate_fn_with_support(batch):
     x = pad_dense_sequence(batch, 'x')
     t = concatenate_sequence(batch, 't')
-    length = x.shape[1]
-    padded_supports = pad_sparse_sequence(batch, 'supports', length)
+    max_element_length = x.shape[-2]
+    padded_supports = pad_sparse_sequence(
+        batch, 'supports', max_element_length)
 
-    original_lengths = [b['x'].shape[0] for b in batch]
+    original_shapes = [b['x'].shape[:1] for b in batch]
 
     return {
         'x': x, 't': t, 'supports': padded_supports,
-        'original_lengths': original_lengths}
+        'original_shapes': original_shapes}
+
+
+def collate_fn_time_with_support(batch):
+    x = pad_time_dense_sequence(batch, 'x')
+    t = pad_time_dense_sequence(batch, 't')
+    max_element_length = x.shape[-2]
+    padded_supports = pad_sparse_sequence(
+        batch, 'supports', max_element_length)
+
+    original_shapes = [[b['x'].shape[0], b['x'].shape[-2]] for b in batch]
+
+    return {
+        'x': x, 't': t, 'supports': padded_supports,
+        'original_shapes': original_shapes}
 
 
 def collate_fn_without_support(batch):
     x = pad_dense_sequence(batch, 'x')
     t = concatenate_sequence(batch, 't')
 
-    original_lengths = [b['x'].shape[0] for b in batch]
+    original_shapes = [b['x'].shape[:1] for b in batch]
 
-    return {'x': x, 't': t, 'original_lengths': original_lengths}
+    return {'x': x, 't': t, 'original_shapes': original_shapes}
+
+
+def collate_fn_time_without_support(batch):
+    x = pad_time_dense_sequence(batch, 'x')
+    t = pad_time_dense_sequence(batch, 't')
+
+    original_shapes = [[b['x'].shape[0], b['x'].shape[-2]] for b in batch]
+
+    return {
+        'x': x, 't': t, 'original_shapes': original_shapes}
 
 
 def concatenate_sequence(batch, key):
@@ -125,7 +150,7 @@ def concatenate_sequence(batch, key):
 def collate_fn_element_wise(batch):
     x = stack_sequence(batch, 'x')
     t = stack_sequence(batch, 't')
-    return {'x': x, 't': t, 'original_lengths': None}
+    return {'x': x, 't': t, 'original_shapes': None}
 
 
 def stack_sequence(batch, key):
@@ -135,6 +160,27 @@ def stack_sequence(batch, key):
 def pad_dense_sequence(batch, key):
     return torch.nn.utils.rnn.pad_sequence(
         [b[key] for b in batch], batch_first=True)
+
+
+def pad_time_dense_sequence(batch, key):
+    data = [b[key] for b in batch]
+
+    max_time_lengths = np.max([d.shape[0] for d in data])
+    time_padded_data = [
+        pad_time_direction(d, max_time_lengths) for d in data]
+    padded_data = torch.nn.utils.rnn.pad_sequence(
+        [d.permute(1, 0, 2) for d in time_padded_data],
+        batch_first=True).permute(2, 0, 1, 3)
+    return padded_data
+
+
+def pad_time_direction(data, time_length):
+    if len(data) == time_length:
+        return data
+    remaining_length = time_length - len(data)
+    zeros = torch.zeros((remaining_length, *data.shape[1:]))
+    padded_data = torch.cat([data, zeros])
+    return padded_data
 
 
 def pad_sparse_sequence(batch, key, length):
@@ -171,7 +217,7 @@ def prepare_batch_with_support(batch, device=None, non_blocking=False):
             batch['x'], device=device, non_blocking=non_blocking),
         'supports': convert_sparse_tensor(
             batch['supports'], device=device, non_blocking=non_blocking),
-        'original_lengths': batch['original_lengths'],
+        'original_shapes': batch['original_shapes'],
     }, convert_tensor(batch['t'], device=device, non_blocking=non_blocking)
 
 
@@ -188,5 +234,5 @@ def prepare_batch_without_support(batch, device=None, non_blocking=False):
     return {
         'x': convert_tensor(
             batch['x'], device=device, non_blocking=non_blocking),
-        'original_lengths': batch['original_lengths'],
+        'original_shapes': batch['original_shapes'],
     }, convert_tensor(batch['t'], device=device, non_blocking=non_blocking)

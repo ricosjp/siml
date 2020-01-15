@@ -7,6 +7,7 @@ from . import adjustable_mlp
 from . import deepsets
 from . import gcn
 from . import identity
+from . import lstm
 from . import mlp
 from . import nri
 from . import reducer
@@ -31,6 +32,7 @@ class Network(torch.nn.Module):
         'distributor': BlockInformation(reducer.Reducer),  # For backward compatibility  # NOQA
         'deepsets': BlockInformation(deepsets.DeepSets),
         'nri': BlockInformation(nri.NRI, use_support=True),
+        'lstm': BlockInformation(lstm.LSTM),
     }
 
     def __init__(self, model_setting, trainer_setting):

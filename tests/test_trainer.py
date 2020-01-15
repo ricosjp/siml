@@ -268,7 +268,7 @@ class TestTrainer(unittest.TestCase):
         pred_y_wo_padding = tr.model({'x': torch.from_numpy(x)})
         tr.optimizer.zero_grad()
         loss_wo_padding = tr.loss(
-            pred_y_wo_padding, y, original_lengths=[5])
+            pred_y_wo_padding, y, original_shapes=[[5]])
         loss_wo_padding.backward(retain_graph=True)
         w_grad_wo_padding = tr.model.chains[0].linears[0].weight.grad
         b_grad_wo_padding = tr.model.chains[0].linears[0].bias.grad
@@ -278,7 +278,7 @@ class TestTrainer(unittest.TestCase):
             np.float32)
         pred_y_w_padding = tr.model({'x': torch.from_numpy(padded_x)})
         loss_w_padding = tr.loss(
-            pred_y_w_padding, y, original_lengths=[5])
+            pred_y_w_padding, y, original_shapes=[[5]])
         loss_wo_padding.backward()
         w_grad_w_padding = tr.model.chains[0].linears[0].weight.grad
         b_grad_w_padding = tr.model.chains[0].linears[0].bias.grad
@@ -345,3 +345,33 @@ class TestTrainer(unittest.TestCase):
         self.assertEqual(tr_batch_2.validation_loader.batch_size, 2)
 
         np.testing.assert_array_almost_equal(loss_batch_1, loss_batch_2)
+
+    def test_train_time_series_simplified_data(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/simplified_timeseries/lstm.yml'))
+
+        if main_setting.trainer.output_directory.exists():
+            shutil.rmtree(main_setting.trainer.output_directory)
+        tr = trainer.Trainer(main_setting)
+        loss = tr.train()
+        self.assertLess(loss, .1)
+
+    def test_train_time_series_mesh_data_w_support(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/deform_timeseries/lstm_w_support.yml'))
+
+        if main_setting.trainer.output_directory.exists():
+            shutil.rmtree(main_setting.trainer.output_directory)
+        tr = trainer.Trainer(main_setting)
+        loss = tr.train()
+        self.assertLess(loss, 1e-1)
+
+    def test_train_time_series_mesh_data_wo_support(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/deform_timeseries/lstm_wo_support.yml'))
+
+        if main_setting.trainer.output_directory.exists():
+            shutil.rmtree(main_setting.trainer.output_directory)
+        tr = trainer.Trainer(main_setting)
+        loss = tr.train()
+        self.assertLess(loss, 1e-1)
