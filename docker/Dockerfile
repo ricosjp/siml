@@ -1,8 +1,19 @@
-FROM tiangolo/python-machine-learning:cuda9.1-python3.7
+FROM nvidia/cuda:10.1-base
 
-RUN apt-get update \
- && apt-get -y install cuda-libraries-9-1 cuda-nvcc-9-1 cuda-libraries-dev-9-1 \
- && python3 -m pip install 'cupy-cuda91==7.0.0b2' \
- && apt-get clean      \
- && rm -rf /var/lib/apt/lists/*
+RUN apt-get update -y && \
+  apt-get install -y --no-install-recommends \
+  git \
+  make \
+  python3.7 \
+  python3.7-dev \
+  python3.7-distutils \
+  python3-pip
 
+COPY ./pyproject.toml /src/pyproject.toml
+COPY ./lib /src/lib
+WORKDIR /src
+
+RUN python3.7 -m pip install -U setuptools \
+  && python3.7 -m pip install -U pip poetry \
+  && python3.7 -m poetry config virtualenvs.create false \
+  && python3.7 -m poetry install \

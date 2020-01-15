@@ -825,7 +825,6 @@ class Trainer():
         validation_directories = self.setting.data.validation
         supports = self.setting.trainer.support_inputs
         num_workers = self.setting.trainer.num_workers
-        num_workers = 0
 
         train_dataset = dataset_generator(
             x_variable_names, y_variable_names,
