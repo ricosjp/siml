@@ -4,11 +4,9 @@ variables:
   GIT_SUBMODULE_STRATEGY: recursive
 
 before_script:
-  - pip install pip poetry --upgrade
-  - pushd lib/femio && poetry install && poetry build && popd
-  - poetry config virtualenvs.in-project true
-  - poetry install
-  - poetry update
+  - cd lib/femio && python3.7 -m poetry config virtualenvs.create false && python3.7 -m poetry install && python3.7 -m poetry build && cd ../..
+  - python3.7 -m poetry install
+  - python3.7 -m poetry update
 
 stages:
   - preprocess
@@ -17,7 +15,7 @@ stages:
 
 preprocess:
   stage: preprocess
-  script: poetry run python3 tests/preprocess.py
+  script: python3.7 tests/preprocess.py
   artifacts:
     paths:
       - tests/data/linear/preprocessed
@@ -28,17 +26,18 @@ preprocess:
 autopep8:
   stage: preprocess
   script:
-    - poetry run autopep8 --diff --exit-code $(find siml tests -name "*.py")
+    - python3.7 -m autopep8 --diff --exit-code $(find siml tests -name "*.py")
 
 pylint:
   stage: preprocess
   script:
-    - poetry run pylint --ignore-patterns=setting.py -E $(find siml tests -name "*.py")
+    - python3.7 -m pylint --ignore-patterns=setting.py -E $(find siml tests -name "*.py")
+  allow_failure: true
 
 pages:
   stage: deploy
   script:
-    - poetry run make -C doc html
+    - python3.7 -m make -C doc html
     - mv doc/_build/html public
   artifacts:
     paths:
@@ -52,41 +51,41 @@ pages:
 test_gpu:
   extends: .test
   script:
-    - poetry run pytest tests/gpu/test_networks_gpu.py --capture=no
-    - poetry run pytest tests/gpu/test_trainer_gpu.py --capture=no
+    - python3.7 -m pytest tests/gpu/test_networks_gpu.py --capture=no
+    - python3.7 -m pytest tests/gpu/test_trainer_gpu.py --capture=no
   tags:
     - gpu
 
 test_gpu_optimize:
   extends: .test
-  script: poetry run pytest tests/gpu/test_optimize_gpu.py --capture=no
+  script: python3.7 -m pytest tests/gpu/test_optimize_gpu.py --capture=no
   tags:
     - gpu
 
 test_networks:
   extends: .test
-  script: poetry run pytest tests/test_networks.py --capture=no
+  script: python3.7 -m pytest tests/test_networks.py --capture=no
 
 test_optimize:
   extends: .test
-  script: poetry run pytest tests/test_optimize.py --capture=no
+  script: python3.7 -m pytest tests/test_optimize.py --capture=no
 
 test_prepost:
   extends: .test
-  script: poetry run pytest tests/test_prepost.py --capture=no
+  script: python3.7 -m pytest tests/test_prepost.py --capture=no
 
 test_setting:
   extends: .test
-  script: poetry run pytest tests/test_setting.py --capture=no
+  script: python3.7 -m pytest tests/test_setting.py --capture=no
 
 test_trainer:
   extends: .test
-  script: poetry run pytest tests/test_trainer.py --capture=no
+  script: python3.7 -m pytest tests/test_trainer.py --capture=no
 
 test_trainer_long:
   extends: .test
-  script: poetry run pytest tests/test_trainer_long.py --capture=no
+  script: python3.7 -m pytest tests/test_trainer_long.py --capture=no
 
 test_util:
   extends: .test
-  script: poetry run pytest tests/test_util.py --capture=no
+  script: python3.7 -m pytest tests/test_util.py --capture=no
