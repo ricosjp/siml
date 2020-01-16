@@ -251,10 +251,28 @@ class PreprocessConverter():
         return
 
     def transform(self, data):
-        return self.converter.transform(data)
+        shape = data.shape
+        if len(shape) == 2:
+            return self.converter.transform(data)
+        elif len(shape) == 3:
+            reshaped = np.reshape(data, (shape[0] * shape[1], shape[2]))
+            transformed_reshaped = self.converter.transform(reshaped)
+            transformed = np.reshape(transformed_reshaped, shape)
+            return transformed
+        else:
+            raise ValueError(f"Data shape {data.shape} not understood")
 
     def inverse(self, data):
-        return self.converter.inverse_transform(data)
+        shape = data.shape
+        if len(shape) == 2:
+            return self.converter.inverse_transform(data)
+        elif len(shape) == 3:
+            reshaped = np.reshape(data, (shape[0] * shape[1], shape[2]))
+            transformed_reshaped = self.inverse_transform.transform(reshaped)
+            transformed = np.reshape(transformed_reshaped, shape)
+            return transformed
+        else:
+            raise ValueError(f"Data shape {data.shape} not understood")
 
 
 class Identity(TransformerMixin, BaseEstimator):
