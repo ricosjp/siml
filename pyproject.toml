@@ -8,7 +8,7 @@ authors = []
 python = "^3.7"
 
 PyYAML       = "^5.2"
-femio        = {path = "lib/femio/dist/femio-0.1.0-py3-none-any.whl"}
+femio        = {version = "^0.1.4", source = "ricos"}
 joblib       = "^0.14.1"
 matplotlib   = "^3.1"
 networkx     = "^2.4"
@@ -29,6 +29,10 @@ pylint = "^2.4"
 autopep8 = "^1.4"
 sphinx = "^2.3"
 sphinx_rtd_theme = "^0.4.3"
+
+[[tool.poetry.source]]
+name = "ricos"
+url = "https://pypi.ritc.jp/simple"
 
 [tool.poetry.extras]
 cupy = ["cupy"]

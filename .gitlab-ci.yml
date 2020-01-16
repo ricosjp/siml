@@ -4,7 +4,9 @@ variables:
   GIT_SUBMODULE_STRATEGY: recursive
 
 before_script:
-  - cd lib/femio && python3.7 -m poetry config virtualenvs.create false && python3.7 -m poetry install && python3.7 -m poetry build && cd ../..
+  - python3.7 -m poetry config virtualenvs.create false
+  - python3.7 -m poetry config repositories.ricos https://pypi.ritc.jp
+  - python3.7 -m poetry config http-basic.ricos ricos ${RICOS_PYPI_KEY}
   - python3.7 -m poetry install
   - python3.7 -m poetry update
 
