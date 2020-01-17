@@ -27,13 +27,12 @@ preprocess:
 autopep8:
   stage: preprocess
   script:
-    - python3.7 -m autopep8 --diff --exit-code $(find siml tests -name "*.py")
+    - python3.7 -m autopep8 --diff --exit-code $(find siml tests -name "*.py") --init-hook="import sys; sys.setrecursionlimit(2000)"
 
 pylint:
   stage: preprocess
   script:
     - python3.7 -m pylint --ignore-patterns=setting.py -E $(find siml tests -name "*.py")
-  allow_failure: true
 
 pages:
   stage: deploy

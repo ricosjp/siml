@@ -1,2 +1,2 @@
 [TYPECHECK]
-generated-members=torch.*,os.sched_getaffinity,iteration,metrics
+generated-members=torch.*,optuna.*,os.sched_getaffinity,iteration,metrics
