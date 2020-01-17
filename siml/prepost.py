@@ -319,6 +319,9 @@ class Preprocessor:
             self.max_n_element = self._determine_max_n_element(
                 self.interim_directories,
                 list(self.setting.preprocess.keys())[0])
+        if len(self.interim_directories) == 0:
+            raise ValueError(
+                'No converted data found. Perform conversion first.')
 
     def preprocess_interim_data(self):
         # Preprocess data variable by variable
