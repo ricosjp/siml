@@ -1,0 +1,16 @@
+data:
+  raw: tests/data/csv_timeseries/raw
+  interim: tests/data/csv_timeseries/interim
+  preprocessed: tests/data/csv_timeseries/preprocessed
+  inferred: tests/data/csv_timeseries/inferred
+  train:
+    - tests/data/csv_timeseries/preprocessed/train
+  validation:
+    - tests/data/csv_timeseries/preprocessed/train
+preprocess:
+  a:
+    method: standardize
+    componentwise: true
+  b:
+    method: standardize
+    componentwise: false

@@ -8,7 +8,6 @@ before_script:
   - python3.7 -m poetry config repositories.ricos https://pypi.ritc.jp
   - python3.7 -m poetry config http-basic.ricos ricos ${RICOS_PYPI_KEY}
   - python3.7 -m poetry install
-  - python3.7 -m poetry update
 
 stages:
   - preprocess
@@ -33,8 +32,7 @@ autopep8:
 pylint:
   stage: preprocess
   script:
-    - python3.7 -m pylint --ignore-patterns=setting.py -E $(find siml tests -name "*.py")
-  allow_failure: true
+    - python3.7 -m pylint --ignore-patterns=setting.py -E $(find siml tests -name "*.py") --init-hook="import sys; sys.setrecursionlimit(2000)"
 
 pages:
   stage: deploy

@@ -242,19 +242,56 @@ class PreprocessConverter():
         self.converter = converter
         return
 
+    def apply_data_with_rehspe_if_needed(
+            self, data, function, return_applied=True):
+        shape = data.shape
+        if len(shape) == 2:
+            applied = function(data)
+            if return_applied:
+                return applied
+            else:
+                return
+        elif len(shape) == 3:
+            reshaped = np.reshape(data, (shape[0] * shape[1], shape[2]))
+            applied_rehsped = function(reshaped)
+            if return_applied:
+                applied = np.reshape(applied_rehsped, shape)
+                return applied
+            else:
+                return
+        else:
+            raise ValueError(f"Data shape {data.shape} not understood")
+
     def lazy_read_files(self, data_files, componentwise=True):
         for data_file in data_files:
-            data = np.load(data_file)
+            data = self.load_file(data_file)
             if not componentwise:
                 data = np.reshape(data, (-1, 1))
-            self.converter.partial_fit(data)
+                self.converter.partial_fit(data)
+            else:
+                self.apply_data_with_rehspe_if_needed(
+                    data, self.converter.partial_fit, return_applied=False)
         return
 
+    def load_file(self, data_file):
+        data = np.load(data_file)
+        print(data_file)
+        if isinstance(data, np.ndarray):
+            return data
+        else:
+            data = sp.load_npz(data_file)
+            if sp.issparse(data):
+                return data
+            else:
+                raise ValueError(f"Data type not understood for: {data_file}")
+
     def transform(self, data):
-        return self.converter.transform(data)
+        return self.apply_data_with_rehspe_if_needed(
+            data, self.converter.transform)
 
     def inverse(self, data):
-        return self.converter.inverse_transform(data)
+        return self.apply_data_with_rehspe_if_needed(
+            data, self.converter.inverse_transform)
 
 
 class Identity(TransformerMixin, BaseEstimator):

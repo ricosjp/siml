@@ -352,3 +352,12 @@ class TestPrepost(unittest.TestCase):
             shutil.rmtree(tr.setting.trainer.output_directory)
         loss = tr.train()
         np.testing.assert_array_less(loss, 1e-5)
+
+    def test_preprocess_timeseries_data(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/csv_timeseries/lstm.yml'))
+
+        shutil.rmtree(main_setting.data.preprocessed, ignore_errors=True)
+
+        p = pre.Preprocessor(main_setting)
+        p.preprocess_interim_data()
