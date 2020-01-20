@@ -309,11 +309,9 @@ class TestPrepost(unittest.TestCase):
         with open(preprocessors_file, 'rb') as f:
             file_like_object_converter = pre.Converter(f)
         np.testing.assert_almost_equal(
-            real_file_converter.converters['standardize'][
-                'preprocess_converter'].var_,
+            real_file_converter.converters['standardize'].converter.var_,
             file_like_object_converter.converters[
-                'standardize'][
-                    'preprocess_converter'].var_)
+                'standardize'].converter.var_)
 
     def test_concatenate_preprocessed_data(self):
         preprocessed_base_directory = Path(
@@ -330,10 +328,14 @@ class TestPrepost(unittest.TestCase):
             answer = np.concatenate([
                 np.load(preprocessed_base_directory / f"0/{name}.npy"),
                 np.load(preprocessed_base_directory / f"1/{name}.npy")])
-            np.testing.assert_almost_equal(np.max(actual), np.max(answer))
-            np.testing.assert_almost_equal(np.min(actual), np.min(answer))
-            np.testing.assert_almost_equal(np.std(actual), np.std(answer))
-            np.testing.assert_almost_equal(np.mean(actual), np.mean(answer))
+            np.testing.assert_almost_equal(
+                np.max(actual), np.max(answer), decimal=5)
+            np.testing.assert_almost_equal(
+                np.min(actual), np.min(answer), decimal=5)
+            np.testing.assert_almost_equal(
+                np.std(actual), np.std(answer), decimal=5)
+            np.testing.assert_almost_equal(
+                np.mean(actual), np.mean(answer), decimal=5)
 
     def test_train_concatenated_data(self):
         preprocessed_base_directory = Path(
@@ -361,3 +363,15 @@ class TestPrepost(unittest.TestCase):
 
         p = pre.Preprocessor(main_setting)
         p.preprocess_interim_data()
+
+        c = pre.Converter(
+            main_setting.data.preprocessed / 'preprocessors.pkl')
+        original_dict_x = {
+            'a': np.load(main_setting.data.interim / 'train/0/a.npy')}
+        preprocessed_dict_x = c.preprocess(original_dict_x)
+        postprocessed_dict_x, _ = c.postprocess(preprocessed_dict_x, {})
+        np.testing.assert_almost_equal(
+            preprocessed_dict_x['a'],
+            np.load(main_setting.data.preprocessed / 'train/0/a.npy'))
+        np.testing.assert_almost_equal(
+            original_dict_x['a'], postprocessed_dict_x['a'])

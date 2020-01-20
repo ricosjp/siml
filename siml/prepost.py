@@ -441,25 +441,29 @@ class Converter:
 
     def _generate_converters(self, converter_parameters_pkl):
         if isinstance(converter_parameters_pkl, io.BufferedIOBase):
-            dict_preprocessor_settings = pickle.load(converter_parameters_pkl)
+            converter_parameters = pickle.load(converter_parameters_pkl)
         elif isinstance(converter_parameters_pkl, Path):
             with open(converter_parameters_pkl, 'rb') as f:
-                dict_preprocessor_settings = pickle.load(f)
+                converter_parameters = pickle.load(f)
         else:
             raise ValueError(
                 f"Input type {converter_parameters_pkl.__class__} not "
                 'understood')
+        preprocess_setting = setting.PreprocessSetting(
+            preprocess=converter_parameters)
 
         converters = {
-            variable_name: value
-            for variable_name, value in dict_preprocessor_settings.items()}
+            variable_name:
+            util.PreprocessConverter(
+                value['preprocess_converter'],
+                componentwise=value['componentwise'])
+            for variable_name, value in preprocess_setting.preprocess.items()}
         return converters
 
     def preprocess(self, dict_data_x):
         converted_dict_data_x = {
             variable_name:
-            self.converters[variable_name][
-                'preprocess_converter'].transform(data)
+            self.converters[variable_name].transform(data)
             for variable_name, data in dict_data_x.items()}
         return converted_dict_data_x
 
@@ -505,13 +509,11 @@ class Converter:
         """
         inversed_dict_data_x = {
             variable_name:
-            self.converters[variable_name][
-                'preprocess_converter'].inverse_transform(data)
+            self.converters[variable_name].inverse(data)
             for variable_name, data in dict_data_x.items()}
         inversed_dict_data_y = {
             variable_name:
-            self.converters[variable_name][
-                'preprocess_converter'].inverse_transform(data)
+            self.converters[variable_name].inverse(data)
             for variable_name, data in dict_data_y.items()}
 
         # Save data

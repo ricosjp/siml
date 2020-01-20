@@ -11,6 +11,8 @@ data:
   validation:
   - tests/data/deform_timeseries/preprocessed/validation
 preprocess:
+  t:
+    method: standardize
   strain:
     method: std_scale
     componentwise: false

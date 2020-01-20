@@ -116,14 +116,7 @@ class Trainer():
 
         # Define model
         self.model = networks.Network(self.setting.model, self.setting.trainer)
-        if self.setting.trainer.time_series:
-            self.element_wise = False
-        else:
-            if self.setting.trainer.element_wise \
-                    or self.setting.trainer.simplified_model:
-                self.element_wise = True
-            else:
-                self.element_wise = False
+        self.element_wise = self._determine_element_wise()
         self.loss = self._create_loss_function()
 
         # Manage settings
@@ -149,6 +142,16 @@ class Trainer():
         # Manage restart and pretrain
         self._load_pretrained_model_if_needed()
         self._load_restart_model_if_needed()
+
+    def _determine_element_wise(self):
+        if self.setting.trainer.time_series:
+            return False
+        else:
+            if self.setting.trainer.element_wise \
+                    or self.setting.trainer.simplified_model:
+                return True
+            else:
+                return False
 
     def infer(
             self, *, model_directory=None, model_file=None,
@@ -300,11 +303,7 @@ class Trainer():
         self.model = networks.Network(self.setting.model, self.setting.trainer)
         self._load_pretrained_model_if_needed(model_file=model_file)
 
-        if self.setting.trainer.element_wise \
-                or self.setting.trainer.simplified_model:
-            self.element_wise = True
-        else:
-            self.element_wise = False
+        self.element_wise = self._determine_element_wise()
         self.loss = self._create_loss_function(pad=False)
         self.model.eval()
         if converter_parameters_pkl is None:
@@ -415,9 +414,10 @@ class Trainer():
         if len(x.shape) == 2:
             x = x[None, :, :]
             inferred_y = inferred_y[None, :, :]
-        dict_var_x = self._separate_data(x, self.setting.trainer.inputs)
+        dict_var_x = self._separate_data(
+            x.numpy(), self.setting.trainer.inputs)
         dict_var_inferred_y = self._separate_data(
-            inferred_y, self.setting.trainer.outputs)
+            inferred_y.numpy(), self.setting.trainer.outputs)
 
         # Postprocess
         inversed_dict_x, inversed_dict_y = postprocessor.postprocess(
@@ -432,14 +432,17 @@ class Trainer():
 
         # Compute loss
         if answer_y is not None:
-            answer_y = torch.from_numpy(answer_y)
-            if len(answer_y.shape) == 2:
-                loss = self.loss(inferred_y[0], answer_y).detach().numpy()
-            elif len(answer_y.shape) == 3:
-                loss = self.loss(inferred_y, answer_y).detach().numpy()
-            else:
-                raise ValueError(
-                    f"Unknown shape of answer_y: {answer_y.shape}")
+            with torch.no_grad():
+                answer_y = torch.from_numpy(answer_y)
+                if len(answer_y.shape) == 2:
+                    loss = self.loss(inferred_y[0], answer_y).numpy()
+                elif len(answer_y.shape) == 3:
+                    loss = self.loss(inferred_y, answer_y).numpy()
+                elif len(answer_y.shape) == 4:
+                    loss = self.loss(inferred_y, answer_y).numpy()
+                else:
+                    raise ValueError(
+                        f"Unknown shape of answer_y: {answer_y.shape}")
         else:
             # Answer data does not exist
             loss = None
@@ -504,10 +507,10 @@ class Trainer():
         torch.manual_seed(seed)
         return
 
-    def _separate_data(self, data, descriptions, *, axis=2):
+    def _separate_data(self, data, descriptions, *, axis=-1):
         data_dict = {}
         index = 0
-        data = np.swapaxes(data.detach(), 0, axis)
+        data = np.swapaxes(data, 0, axis)
         for description in descriptions:
             data_dict.update({
                 description['name']:
@@ -566,7 +569,7 @@ class Trainer():
 
         checkpoint = torch.load(snapshot)
         self.model.load_state_dict(checkpoint['model_state_dict'])
-        print(f"{model_file} loaded as a pretrain model.")
+        print(f"{snapshot} loaded as a pretrain model.")
         return
 
     def _load_restart_model_if_needed(self):
@@ -876,19 +879,22 @@ class Trainer():
                 for i_batch, s in enumerate(original_shapes)])
             return loss_core(concatenated_y_pred, concatenated_y)
 
-        if self.setting.trainer.time_series:
-            return loss_function_time_with_padding
+        if pad is None:
+            if self.element_wise or self.setting.trainer.batch_size == 1:
+                return loss_function_without_padding
+            else:
+                if self.setting.trainer.time_series:
+                    return loss_function_time_with_padding
+                else:
+                    return loss_function_with_padding
         else:
-            if pad is None:
-                if self.element_wise or self.setting.trainer.batch_size == 1:
-                    return loss_function_without_padding
+            if pad:
+                if self.setting.trainer.time_series:
+                    return loss_function_time_with_padding
                 else:
                     return loss_function_with_padding
             else:
-                if pad:
-                    return loss_function_with_padding
-                else:
-                    return loss_function_without_padding
+                return loss_function_without_padding
 
     def _check_data_dimension(self):
         variable_names = self.setting.trainer.input_names
@@ -953,15 +959,28 @@ class Trainer():
                 return np.concatenate(data), None
         if return_dict:
             if len(supports) > 0:
-                return {
-                    data_directory: [d[None, :], [s]]
+                if self.setting.trainer.time_series:
+                    return {
+                        data_directory: [d[:, None], [s]]
 
-                    for data_directory, d, s
-                    in zip(data_directories, data, support_data)}
+                        for data_directory, d, s
+                        in zip(data_directories, data, support_data)}
+                else:
+                    return {
+                        data_directory: [d[None, :], [s]]
+
+                        for data_directory, d, s
+                        in zip(data_directories, data, support_data)}
             else:
-                return {
-                    data_directory: d[None, :]
+                if self.setting.trainer.time_series:
+                    return {
+                        data_directory: d[:, None]
 
-                    for data_directory, d in zip(data_directories, data)}
+                        for data_directory, d in zip(data_directories, data)}
+                else:
+                    return {
+                        data_directory: d[None, :]
+
+                        for data_directory, d in zip(data_directories, data)}
         else:
             return data, support_data
