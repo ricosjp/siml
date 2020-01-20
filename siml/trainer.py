@@ -1,3 +1,4 @@
+import pathlib
 import random
 import time
 
@@ -162,7 +163,7 @@ class Trainer():
             write_simulation_base=None, write_simulation_stem=None,
             read_simulation_type='fistr', write_simulation_type='fistr',
             converter_parameters_pkl=None, conversion_function=None,
-            data_addition_function=None):
+            data_addition_function=None, accomodate_length=None):
         """Perform inference.
 
         Parameters
@@ -212,6 +213,8 @@ class Trainer():
             data_addition_function: function, optional [None]
                 Function to add some data at simulation data writing phase.
                 If not fed, no data addition occurs.
+            accomodate_length: int
+                If specified, duplicate initial state to initialize RNN state.
         Returns
         --------
             inference_results: list
@@ -230,7 +233,13 @@ class Trainer():
             if preprocessed_data_directory is None:
                 input_directories = self.setting.data.test
             else:
-                input_directories = [preprocessed_data_directory]
+                if isinstance(preprocessed_data_directory, str) \
+                        or isinstance(
+                            preprocessed_data_directory, pathlib.Path):
+                    input_directories = [preprocessed_data_directory]
+                elif isinstance(preprocessed_data_directory, list) \
+                        or isinstance(preprocessed_data_directory, set):
+                    input_directories = preprocessed_data_directory
 
             dict_dir_x = self._load_data(
                 self.setting.trainer.input_names, input_directories,
@@ -283,7 +292,8 @@ class Trainer():
                 write_simulation_stem=write_simulation_stem,
                 write_simulation_type=write_simulation_type,
                 read_simulation_type=read_simulation_type,
-                data_addition_function=data_addition_function)
+                data_addition_function=data_addition_function,
+                accomodate_length=accomodate_length) + (directory,)
             for directory, x in dict_dir_x.items()]
         return inference_results
 
@@ -353,7 +363,7 @@ class Trainer():
     def infer_simplified_model(
             self, model_file, raw_dict_x, *,
             answer_raw_dict_y=None, model_directory=None,
-            converter_parameters_pkl=None):
+            converter_parameters_pkl=None, accomodate_length=None):
         """
         Infer with simplified model.
 
@@ -369,6 +379,8 @@ class Trainer():
                 Model directory name.
             converter_parameters_pkl: pathlib.Path
                 Converter parameters pkl data.
+            accomodate_length: int
+                If specified, duplicate initial state to initialize RNN state.
         """
         self._prepare_inference(
             model_file, model_directory=model_directory,
@@ -394,7 +406,8 @@ class Trainer():
             answer_y = None
 
         _, inversed_dict_y, loss = self._infer_single_data(
-            self.prepost_converter, x, answer_y=answer_y)
+            self.prepost_converter, x, answer_y=answer_y,
+            accomodate_length=accomodate_length)
         return inversed_dict_y, loss
 
     def _infer_single_data(
@@ -403,14 +416,20 @@ class Trainer():
             output_directory=None, write_simulation=False, write_npy=True,
             write_simulation_base=None, write_simulation_stem=None,
             write_simulation_type='fistr', read_simulation_type='fistr',
-            data_addition_function=None):
+            data_addition_function=None, accomodate_length=None):
 
+        if accomodate_length:
+            x = np.concatenate([x[:accomodate_length], x])
         x = torch.from_numpy(x)
 
         # Inference
         self.model.eval()
         with torch.no_grad():
             inferred_y = self.model({'x': x})
+        if accomodate_length:
+            inferred_y = inferred_y[accomodate_length:]
+            x = x[accomodate_length:]
+
         if len(x.shape) == 2:
             x = x[None, :, :]
             inferred_y = inferred_y[None, :, :]
@@ -418,6 +437,10 @@ class Trainer():
             x.numpy(), self.setting.trainer.inputs)
         dict_var_inferred_y = self._separate_data(
             inferred_y.numpy(), self.setting.trainer.outputs)
+        if answer_y is not None:
+            dict_var_answer_y = self._separate_data(
+                answer_y, self.setting.trainer.outputs)
+            dict_var_x.update(dict_var_answer_y)
 
         # Postprocess
         inversed_dict_x, inversed_dict_y = postprocessor.postprocess(
@@ -456,7 +479,7 @@ class Trainer():
             write_yaml=True,
             write_simulation_base=None, write_simulation_stem=None,
             write_simulation_type='fistr', read_simulation_type='fistr',
-            data_addition_function=None):
+            data_addition_function=None, accomodate_length=False):
 
         if directory in dict_dir_y:
             # Answer data exists
@@ -483,7 +506,8 @@ class Trainer():
             write_simulation_stem=write_simulation_stem,
             write_simulation_type=write_simulation_type,
             read_simulation_type=read_simulation_type,
-            data_addition_function=data_addition_function)
+            data_addition_function=data_addition_function,
+            accomodate_length=accomodate_length)
 
         if loss is not None:
             print(f"data: {directory}")
@@ -952,9 +976,15 @@ class Trainer():
                     'Cannot use support_input if '
                     'element_wise or simplified_model is True')
             if return_dict:
-                return {
-                    data_directory:
-                    d for data_directory, d in zip(data_directories, data)}
+                if self.setting.trainer.time_series:
+                    return {
+                        data_directory: d[:, None]
+                        for data_directory, d
+                        in zip(data_directories, data)}
+                else:
+                    return {
+                        data_directory:
+                        d for data_directory, d in zip(data_directories, data)}
             else:
                 return np.concatenate(data), None
         if return_dict:
@@ -975,8 +1005,8 @@ class Trainer():
                 if self.setting.trainer.time_series:
                     return {
                         data_directory: d[:, None]
-
-                        for data_directory, d in zip(data_directories, data)}
+                        for data_directory, d
+                        in zip(data_directories, data)}
                 else:
                     return {
                         data_directory: d[None, :]
