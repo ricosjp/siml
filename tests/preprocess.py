@@ -26,6 +26,14 @@ def preprocess_deform():
     preprocessor.preprocess_interim_data()
 
 
+def preprocess_deform_timeseries():
+    main_setting = setting.MainSetting.read_settings_yaml(
+        pathlib.Path('tests/data/deform_timeseries/data.yml'))
+
+    preprocessor = prepost.Preprocessor(main_setting, force_renew=True)
+    preprocessor.preprocess_interim_data()
+
+
 def preprocess_linear():
     p = prepost.Preprocessor.read_settings(
         pathlib.Path('tests/data/linear/linear.yml'), force_renew=True)
@@ -34,4 +42,5 @@ def preprocess_linear():
 
 if __name__ == '__main__':
     preprocess_deform()
+    preprocess_deform_timeseries()
     preprocess_linear()

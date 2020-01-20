@@ -1,0 +1,25 @@
+data:
+  inferred: tests/data/deform_timeseries/inferred
+  interim: tests/data/deform_timeseries/interim
+  pad: false
+  preprocessed: tests/data/deform_timeseries/preprocessed
+  raw: tests/data/deform_timeseries/raw
+  test:
+  - tests/data/deform_timeseries/preprocessed/test
+  train:
+  - tests/data/deform_timeseries/preprocessed/train
+  validation:
+  - tests/data/deform_timeseries/preprocessed/validation
+preprocess:
+  t:
+    method: standardize
+  strain:
+    method: std_scale
+    componentwise: false
+  stress:
+    method: std_scale
+    componentwise: false
+  modulus:
+    method: std_scale
+  nadj:
+    method: identity

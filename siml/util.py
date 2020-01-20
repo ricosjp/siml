@@ -252,7 +252,18 @@ class PreprocessConverter():
             else:
                 return
         elif len(shape) == 3:
+            # Time series
             reshaped = np.reshape(data, (shape[0] * shape[1], shape[2]))
+            applied_rehsped = function(reshaped)
+            if return_applied:
+                applied = np.reshape(applied_rehsped, shape)
+                return applied
+            else:
+                return
+        elif len(shape) == 4:
+            # Batched time series
+            reshaped = np.reshape(
+                data, (shape[0] * shape[1] * shape[2], shape[3]))
             applied_rehsped = function(reshaped)
             if return_applied:
                 applied = np.reshape(applied_rehsped, shape)
@@ -275,7 +286,6 @@ class PreprocessConverter():
 
     def load_file(self, data_file):
         data = np.load(data_file)
-        print(data_file)
         if isinstance(data, np.ndarray):
             return data
         else:

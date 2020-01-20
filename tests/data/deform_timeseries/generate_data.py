@@ -13,11 +13,11 @@ DELTA_T = .1
 
 def main():
 
-    reference_directory = Path('tests/data/deform/preprocessed/train')
+    reference_directory = Path('tests/data/deform/interim/train')
     output_root = Path('tests/data/deform_timeseries')
 
-    if (output_root / 'preprocessed').exists():
-        shutil.rmtree(output_root / 'preprocessed')
+    if (output_root / 'interim').exists():
+        shutil.rmtree(output_root / 'interim')
 
     range_time_length = (100, 200)
 

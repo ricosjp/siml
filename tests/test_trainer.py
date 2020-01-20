@@ -364,7 +364,7 @@ class TestTrainer(unittest.TestCase):
             shutil.rmtree(main_setting.trainer.output_directory)
         tr = trainer.Trainer(main_setting)
         loss = tr.train()
-        self.assertLess(loss, 1e-1)
+        self.assertLess(loss, 1.)
 
     def test_train_time_series_mesh_data_wo_support(self):
         main_setting = setting.MainSetting.read_settings_yaml(
@@ -374,4 +374,26 @@ class TestTrainer(unittest.TestCase):
             shutil.rmtree(main_setting.trainer.output_directory)
         tr = trainer.Trainer(main_setting)
         loss = tr.train()
-        self.assertLess(loss, 1e-1)
+        self.assertLess(loss, 1.)
+
+    def test_infer_timeseries(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/deform_timeseries/pretrained/settings.yaml'))
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        preprocessed_data_directory = Path(
+            'tests/data/deform_timeseries/preprocessed/train'
+            '/tet2_3_modulusx1.0000')
+        res = tr.infer(
+            model_directory=Path('tests/data/deform_timeseries/pretrained'),
+            preprocessed_data_directory=preprocessed_data_directory,
+            converter_parameters_pkl=Path(
+                'tests/data/deform_timeseries/preprocessed/preprocessors.pkl'))
+        np.testing.assert_almost_equal(
+            res[0][1]['stress'][:, 0] * 1e-5,
+            np.load(
+                'tests/data/deform_timeseries/interim/train'
+                '/tet2_3_modulusx1.0000/stress.npy') * 1e-5,
+            decimal=3)
+        np.testing.assert_array_less(res[0][2], 1e-3)
