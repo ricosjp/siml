@@ -289,7 +289,6 @@ class TrainerSetting(TypedDataClass):
 
         if self.num_workers is None:
             self.num_workers = util.determine_max_process()
-            print(f"The number of workers is set to: {self.num_workers}")
 
         super().__post_init__()
 
