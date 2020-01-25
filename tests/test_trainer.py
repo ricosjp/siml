@@ -397,3 +397,15 @@ class TestTrainer(unittest.TestCase):
                 '/tet2_3_modulusx1.0000/stress.npy') * 1e-5,
             decimal=3)
         np.testing.assert_array_less(res[0][2], 1e-3)
+
+    def test_early_stopping(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/linear/use_pretrained.yml'))
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        tr.train()
+        self.assertLess(tr.trainer.state.epoch, main_setting.trainer.n_epoch)
+        self.assertEqual(
+            tr.trainer.state.epoch % main_setting.trainer.stop_trigger_epoch,
+            0)

@@ -105,6 +105,13 @@ class Objective():
                 f"Unknown data type: {default_settings.__class__}")
 
 
+def study_callback(study, frozen_trial):
+    if frozen_trial.state == optuna.structs.TrialState.PRUNED:
+        study._log_completed_trial(frozen_trial.number, frozen_trial.value)
+    print(f"Current best trial number: {study.best_trial.number}")
+    return
+
+
 def perform_study(main_setting, db_setting=None):
     """Perform hyperparameter search study.
 
@@ -137,12 +144,14 @@ def perform_study(main_setting, db_setting=None):
     study = optuna.create_study(
         study_name=study_name,
         storage=storage,
-        sampler=optuna.samplers.TPESampler(seed=main_setting.trainer.seed),
+        sampler=optuna.samplers.TPESampler(),
         load_if_exists=True, pruner=optuna.pruners.MedianPruner())
     objective = Objective(main_setting, output_directory)
 
     # Optimize
-    study.optimize(objective, n_trials=main_setting.optuna.n_trial, catch=())
+    study.optimize(
+        objective, n_trials=main_setting.optuna.n_trial, catch=(),
+        callbacks=(study_callback,))
 
     # Visualize the best result
     print('=== Best Trial ===')

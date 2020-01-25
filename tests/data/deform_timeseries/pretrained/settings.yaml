@@ -139,7 +139,7 @@ trainer:
   seed: 0
   simplified_model: false
   snapshot_choise_method: best
-  stop_trigger_epoch: 10
+  stop_trigger_epoch: 100
   support_input: null
   support_inputs: null
   time_series: true
