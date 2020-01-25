@@ -134,12 +134,20 @@ class Trainer():
                         'So far both data_parallel and time_series cannot be '
                         'True')
                 self.device = 'cuda:0'
+                self.output_device = self.device
                 gpu_count = torch.cuda.device_count()
                 self.model = torch.nn.DataParallel(self.model)
                 self.model.to(self.device)
                 print(f"Data parallel enabled with {gpu_count} GPUs.")
+            elif self.setting.trainer.model_parallel:
+                self.device = 'cuda:0'
+                gpu_count = torch.cuda.device_count()
+                self.output_device = f"cuda:{gpu_count-1}"
+                print(f"Model parallel enabled with {gpu_count} GPUs.")
             elif self.setting.trainer.gpu_id != -1:
                 self.device = f"cuda:{self.setting.trainer.gpu_id}"
+                self.output_device = self.device
+                self.model.to(self.device)
                 print(f"GPU device: {self.setting.trainer.gpu_id}")
             else:
                 self.device = 'cpu'
@@ -815,8 +823,6 @@ class Trainer():
         return
 
     def _create_supervised_trainer(self):
-        if self.device:
-            self.model.to(self.device)
 
         def update_with_element_batch(x, y, model, optimizer):
             y_pred = model(x)
@@ -853,7 +859,7 @@ class Trainer():
         def update_model(engine, batch):
             self.model.train()
             x, y = self.prepare_batch(
-                batch, device=self.device,
+                batch, device=self.device, output_device=self.output_device,
                 non_blocking=self.setting.trainer.non_blocking)
             loss = update_function(x, y, self.model, self.optimizer)
             return loss.item()
@@ -861,14 +867,13 @@ class Trainer():
         return ignite.engine.Engine(update_model)
 
     def _create_supervised_evaluator(self):
-        if self.device:
-            self.model.to(self.device)
 
         def _inference(engine, batch):
             self.model.eval()
             with torch.no_grad():
                 x, y = self.prepare_batch(
                     batch, device=self.device,
+                    output_device=self.output_device,
                     non_blocking=self.setting.trainer.non_blocking)
                 y_pred = self.model(x)
                 return y_pred, y, {'original_shapes': x['original_shapes']}

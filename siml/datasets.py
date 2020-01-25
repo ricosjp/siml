@@ -212,14 +212,16 @@ def pad_sparse(sparse, length):
         'size': torch.Size((length, length))}
 
 
-def prepare_batch_with_support(batch, device=None, non_blocking=False):
+def prepare_batch_with_support(
+        batch, device=None, output_device=None, non_blocking=False):
     return {
         'x': convert_tensor(
             batch['x'], device=device, non_blocking=non_blocking),
         'supports': convert_sparse_info(
             batch['supports'], device=device, non_blocking=non_blocking),
         'original_shapes': batch['original_shapes'],
-    }, convert_tensor(batch['t'], device=device, non_blocking=non_blocking)
+    }, convert_tensor(
+        batch['t'], device=output_device, non_blocking=non_blocking)
 
 
 def convert_sparse_info(sparse_info, device=None, non_blocking=False):
@@ -247,9 +249,11 @@ def convert_sparse_tensor(sparse_info, device=None, non_blocking=False):
         for si in sparse_info]
 
 
-def prepare_batch_without_support(batch, device=None, non_blocking=False):
+def prepare_batch_without_support(
+        batch, device=None, output_device=None, non_blocking=False):
     return {
         'x': convert_tensor(
             batch['x'], device=device, non_blocking=non_blocking),
         'original_shapes': batch['original_shapes'],
-    }, convert_tensor(batch['t'], device=device, non_blocking=non_blocking)
+    }, convert_tensor(
+        batch['t'], device=output_device, non_blocking=non_blocking)

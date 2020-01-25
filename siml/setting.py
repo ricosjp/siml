@@ -330,6 +330,8 @@ class BlockSetting(TypedDataClass):
     activations: typing.List[str] = dc.field(
         default_factory=lambda: ['identity'])
     dropouts: typing.List[float] = dc.field(default_factory=lambda: [0.])
+    device: int = dc.field(
+        default=None, metadata={'allow_none': True})
 
     optional: dict = dc.field(default_factory=dict)
 
