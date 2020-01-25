@@ -223,6 +223,7 @@ def prepare_batch_with_support(batch, device=None, non_blocking=False):
 
 
 def convert_sparse_info(sparse_info, device=None, non_blocking=False):
+    device = 'cpu'
     return [
         [{
             'row': convert_tensor(
@@ -239,7 +240,8 @@ def convert_sparse_tensor(sparse_info, device=None, non_blocking=False):
     return [
         [
             torch.sparse_coo_tensor(
-                torch.stack([s['row'], s['col']]), s['values'], s['size']
+                torch.stack([s['row'], s['col']]),
+                s['values'], s['size']
             ).to(device)
             for s in si]
         for si in sparse_info]

@@ -129,6 +129,10 @@ class Trainer():
 
         if self._is_gpu_supporting():
             if self.setting.trainer.data_parallel:
+                if self.setting.trainer.time_series:
+                    raise ValueError(
+                        'So far both data_parallel and time_series cannot be '
+                        'True')
                 self.device = 'cuda:0'
                 gpu_count = torch.cuda.device_count()
                 self.model = torch.nn.DataParallel(self.model)

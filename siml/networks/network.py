@@ -96,7 +96,10 @@ class Network(torch.nn.Module):
 
     def _forward_with_support(self, x_):
         x = x_['x']
-        supports = datasets.convert_sparse_tensor(x_['supports'])
+        # Due to lack of support of sparse matrix of scatter in DataParallel
+        # and coo_matrix, convert sparse in the forward
+        supports = datasets.convert_sparse_tensor(
+            x_['supports'], device=x.device)
         hiddens = [None] * len(self.chains)
 
         hiddens[0] = self.chains[0](x, supports)
