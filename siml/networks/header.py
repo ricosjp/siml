@@ -1,6 +1,5 @@
 
 import torch
-import torch.nn.functional as functional
 
 from . import adjustable_mlp
 from .. import setting
@@ -20,9 +19,9 @@ def mean(x):
 
 DICT_ACTIVATIONS = {
     'identity': identity,
-    'relu': functional.relu,
-    'sigmoid': functional.sigmoid,
-    'tanh': functional.tanh,
+    'relu': torch.relu,
+    'sigmoid': torch.sigmoid,
+    'tanh': torch.tanh,
     'max_pool': max_pool,
     'max': max_pool,
     'mean': mean,
@@ -56,7 +55,7 @@ class AbstractMLP(torch.nn.Module):
             dropout_ratio for dropout_ratio in block_setting.dropouts]
         self.input_selection = block_setting.input_selection
 
-    def __call__(self, x, support=None):
+    def forward(self, x, support=None):
         raise NotImplementedError
 
 
@@ -105,7 +104,7 @@ class AbstractGCN(torch.nn.Module):
         self.support_input_index = block_setting.support_input_index
         self.input_selection = block_setting.input_selection
 
-    def __call__(self, x, supports):
+    def forward(self, x, supports):
         """Execute the NN's forward computation.
 
         Parameters
@@ -121,19 +120,19 @@ class AbstractGCN(torch.nn.Module):
         """
         if len(x.shape) == 3:
             hs = torch.stack([
-                self._call_single(
+                self._forward_single(
                     x_[:, self.input_selection],
                     supports_[self.support_input_index])
                 for x_, supports_ in zip(x, supports)])
         else:
             hs = torch.stack([
                 torch.stack([
-                    self._call_single(
+                    self._forward_single(
                         x__[:, self.input_selection],
                         supports_[self.support_input_index])
                     for x__, supports_ in zip(x_, supports)])
                 for x_ in x])
         return hs
 
-    def _call_single(self, x, support):
+    def _forward_single(self, x, support):
         raise NotImplementedError

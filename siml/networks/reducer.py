@@ -27,7 +27,7 @@ class Reducer(torch.nn.Module):
 
         return
 
-    def __call__(self, *xs, op=None, supports=None):
+    def forward(self, *xs, op=None, supports=None):
         if len(xs) == 1:
             return xs[0]
 

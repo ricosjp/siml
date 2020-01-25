@@ -52,7 +52,7 @@ class NRI(header.AbstractGCN):
 
         return reduce_matrix.to(nadj.device)
 
-    def __call__(self, x, supports):
+    def forward(self, x, supports):
         """Execute the NN's forward computation.
 
         Parameters
@@ -67,13 +67,13 @@ class NRI(header.AbstractGCN):
                 Output of the NN.
         """
         hs = torch.stack([
-            self._call_single(
+            self._forward_single(
                 x_[:, self.input_selection],
                 supports_[self.support_input_index])
             for x_, supports_ in zip(x, supports)])
         return hs
 
-    def _call_single(self, x, support):
+    def _forward_single(self, x, support):
         """Execute the NN's forward computation.
 
         Parameters

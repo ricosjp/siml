@@ -5,7 +5,8 @@ data:
     - tests/data/deform/preprocessed/train
 trainer:
   output_directory: tests/data/deform/nri
-  lazy: true
+  lazy: false
+  num_workers: 0
   inputs:
     - name: elemental_strain
       dim: 6

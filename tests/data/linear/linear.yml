@@ -12,6 +12,7 @@ preprocess:
 trainer:
   output_directory: tests/data/linear/long
   lazy: false
+  num_workers: 0
   inputs:
     - name: x1
       dim: 2

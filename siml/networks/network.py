@@ -66,9 +66,9 @@ class Network(torch.nn.Module):
             in zip(block_informations, self.model_setting.blocks)]
 
         if self.use_support:
-            self._call_core = self._call_with_support
+            self._forward_core = self._forward_with_support
         else:
-            self._call_core = self._call_without_support
+            self._forward_core = self._forward_without_support
 
     def _create_call_graph(self):
         list_destinations = [
@@ -92,10 +92,10 @@ class Network(torch.nn.Module):
             raise ValueError('Destination name is not unique')
         return np.ravel(locations)
 
-    def __call__(self, x):
-        return self._call_core(x)
+    def forward(self, x):
+        return self._forward_core(x)
 
-    def _call_with_support(self, x_):
+    def _forward_with_support(self, x_):
         x = x_['x']
         supports = x_['supports']
         hiddens = [None] * len(self.chains)
@@ -109,7 +109,7 @@ class Network(torch.nn.Module):
                 hiddens[i] = self.chains[i](*inputs)
         return hiddens[-1]
 
-    def _call_without_support(self, x_):
+    def _forward_without_support(self, x_):
         x = x_['x']
         hiddens = [None] * len(self.chains)
         hiddens[0] = self.chains[0](x)

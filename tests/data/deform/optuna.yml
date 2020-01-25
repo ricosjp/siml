@@ -62,7 +62,8 @@ optuna:
           output_dropout: 0.0
           hidden_layers: hidden_layers
 trainer:
-  lazy: true
+  lazy: false
+  num_workers: 0
   outputs:
     - name: elemental_stress
       dim: 6

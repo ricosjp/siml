@@ -13,6 +13,7 @@ trainer:
   output_directory: tests/data/simplified/long
   simplified_model: true
   lazy: false
+  num_workers: 0
   inputs:
     - name: a
       dim: 3

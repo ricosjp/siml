@@ -12,6 +12,7 @@ conversion:
     - elemental_stress
 trainer:
   lazy: false
+  num_workers: 0
   output_directory: tests/data/deform/long
   inputs:
     - name: elemental_strain

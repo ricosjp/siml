@@ -11,7 +11,7 @@ class AdjustableMLP(header.AbstractMLP):
     are sample size, dimension, feature, and converted feature,
     respectively."""
 
-    def __call__(self, x, supports=None):
+    def forward(self, x, supports=None):
         """Execute the NN's forward computation.
 
         Parameters

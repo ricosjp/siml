@@ -4,7 +4,8 @@ data:
   validation:
     - tests/data/linear/preprocessed/train
 trainer:
-  lazy: true
+  lazy: false
+  num_workers: 0
   element_wise: false
   output_directory: tests/data/linear/lr
   inputs:

@@ -5,6 +5,7 @@ data:
     - tests/data/deform/preprocessed/train
 trainer:
   lazy: true
+  num_workers: 0
   output_directory: tests/data/deform/tmp
   inputs:
     - name: elemental_strain

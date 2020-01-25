@@ -7,7 +7,7 @@ from . import header
 class MLP(header.AbstractMLP):
     """Multi Layer Perceptron."""
 
-    def __call__(self, x, supports=None):
+    def forward(self, x, supports=None):
         """Execute the NN's forward computation.
 
         Parameters
