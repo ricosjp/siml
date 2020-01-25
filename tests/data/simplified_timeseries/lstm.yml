@@ -9,6 +9,7 @@ trainer:
   simplified_model: true
   time_series: true
   lazy: false
+  num_workers: 0
   inputs:
     - name: t
       dim: 1

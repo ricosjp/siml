@@ -5,6 +5,7 @@ data:
     - tests/data/linear/preprocessed/train
 trainer:
   lazy: false
+  num_workers: 0
   output_directory: tests/data/linear/tmp
   inputs:
     - name: x1

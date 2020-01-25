@@ -4,7 +4,8 @@ data:
   validation:
     - tests/data/deform/preprocessed/train
 trainer:
-  lazy: true
+  lazy: false
+  num_workers: 0
   output_directory: tests/data/deform/model_reduce_mlp
   inputs:
     - name: elemental_strain

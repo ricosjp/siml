@@ -11,7 +11,8 @@ conversion:
   optional:
     - elemental_stress
 trainer:
-  lazy: true
+  lazy: false
+  num_workers: 0
   output_directory: tests/data/deform/mlp
   inputs:
     - name: elemental_strain
