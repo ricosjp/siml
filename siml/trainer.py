@@ -1,3 +1,4 @@
+import enum
 import pathlib
 import random
 import time
@@ -6,7 +7,7 @@ import femio
 import ignite
 import numpy as np
 import matplotlib.pyplot as plt
-# import optuna
+import optuna
 import pandas as pd
 import torch
 import torch.nn.functional as functional
@@ -707,7 +708,6 @@ class Trainer():
         self.evaluator = self._create_supervised_evaluator()
 
         self.desc = "ITERATION - loss: {:.5e}"
-
         tick = max(len(self.train_loader) // 100, 1)
 
         @self.trainer.on(ignite.engine.Events.ITERATION_COMPLETED(every=tick))
@@ -772,9 +772,34 @@ class Trainer():
             plt.savefig(self.plot_file)
             plt.close(fig)
 
-        # TODO: Add early stopping
+        # Add early stopping
+        class StopTriggerEvents(enum.Enum):
+            EVALUATED = 'evaluated'
 
-        # TODO: Add Pruning setting
+        @self.trainer.on(
+            ignite.engine.Events.EPOCH_COMPLETED(
+                every=self.setting.trainer.stop_trigger_epoch))
+        def fire_stop_trigger(engine):
+            self.evaluator.fire_event(StopTriggerEvents.EVALUATED)
+
+        def score_function(engine):
+            return -engine.state.metrics['loss']
+
+        self.evaluator.register_events(*StopTriggerEvents)
+        self.early_stopping_handler = ignite.handlers.EarlyStopping(
+            patience=self.setting.trainer.patience,
+            score_function=score_function,
+            trainer=self.trainer)
+        self.evaluator.add_event_handler(
+            StopTriggerEvents.EVALUATED, self.early_stopping_handler)
+
+        # Add pruning setting
+        if self.optuna_trial is not None:
+            pruning_handler = optuna.integration.PyTorchIgnitePruningHandler(
+                self.optuna_trial, 'loss', self.trainer)
+            self.evaluator.add_event_handler(
+                StopTriggerEvents.EVALUATED, pruning_handler)
+
         return
 
     def _create_supervised_trainer(self):

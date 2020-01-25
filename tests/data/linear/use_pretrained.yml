@@ -12,54 +12,24 @@ conversion:
   skip_femio: false
 data:
   inferred: data/inferred
-  interim: data/interim
+  interim: tests/data/linear/interim
   pad: false
-  preprocessed: tests/data/deform_timeseries/preprocessed
+  preprocessed: tests/data/linear/preprocessed
   raw: data/raw
   test:
   - data/preprocessed/test
   train:
-  - tests/data/deform_timeseries/preprocessed/train
+  - tests/data/linear/preprocessed/train
   validation:
-  - tests/data/deform_timeseries/preprocessed/train
+  - tests/data/linear/preprocessed/validation
 model:
   blocks:
   - activations:
-    - identity
-    - identity
-    destinations:
-    - MLP
-    dropouts:
-    - 0.0
-    - 0.0
-    hidden_activation: rely
-    hidden_dropout: 0.5
-    hidden_layers: null
-    hidden_nodes: null
-    input_dropout: 0.0
-    input_indices: null
-    input_slice:
-    - 0
-    - null
-    - 1
-    name: LSTM
-    nodes:
-    - 8
-    - 100
-    - 100
-    optional: {}
-    output_activation: identity
-    output_dropout: 0.0
-    support_input_index: 0
-    type: lstm
-  - activations:
-    - relu
     - identity
     destinations:
     - Output
     dropouts:
     - 0.0
-    - 0.0
     hidden_activation: rely
     hidden_dropout: 0.5
     hidden_layers: null
@@ -70,11 +40,10 @@ model:
     - 0
     - null
     - 1
-    name: MLP
+    name: Block
     nodes:
-    - 100
-    - 10
-    - 6
+    - 3
+    - 2
     optional: {}
     output_activation: identity
     output_dropout: 0.0
@@ -85,37 +54,42 @@ optuna:
   n_trial: 100
   output_base_directory: models/optuna
   setting: {}
-preprocess: {}
+preprocess:
+  x1:
+    componentwise: true
+    method: standardize
+  x2:
+    componentwise: true
+    method: std_scale
+  y:
+    componentwise: true
+    method: standardize
 trainer:
-  batch_size: 6
+  pretrain_directory: tests/data/linear/pretrained
+  batch_size: 100
   compute_accuracy: false
   display_mergin: 5
   element_batch_size: -1
   element_wise: false
   gpu_id: -1
   input_dims:
-  - 1
-  - 6
+  - 2
   - 1
   input_names:
-  - t
-  - strain
-  - modulus
+  - x1
+  - x2
   inputs:
+  - dim: 2
+    name: x1
   - dim: 1
-    name: t
-  - dim: 6
-    name: strain
-  - dim: 1
-    name: modulus
+    name: x2
   iterator: serial
   lazy: false
-  log_trigger_epoch: 50
-  loss_function: mse
-  n_epoch: 1000
-  name: lstm_long
-  non_blocking: true
   num_workers: 0
+  log_trigger_epoch: 100
+  loss_function: mse
+  n_epoch: 5000
+  name: linear
   optimizer: adam
   optimizer_setting:
     betas:
@@ -126,24 +100,20 @@ trainer:
     weight_decay: 0
   optuna_trial: null
   output_dims:
-  - 6
-  output_directory: tests/data/deform_timeseries/long
+  - 2
+  output_directory: tests/data/linear/long
   output_names:
-  - stress
+  - y
   outputs:
-  - dim: 6
-    name: stress
-  pretrain_directory: null
+  - dim: 2
+    name: y
   prune: false
   restart_directory: null
   seed: 0
   simplified_model: false
   snapshot_choise_method: best
-  stop_trigger_epoch: 100
+  stop_trigger_epoch: 200
   support_input: null
   support_inputs: null
-  time_series: true
   use_siml_updater: true
-  validation_batch_size: 6
   validation_directories: []
-  validation_element_batch_size: -1

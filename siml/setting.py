@@ -213,8 +213,6 @@ class TrainerSetting(TypedDataClass):
     validation_batch_size: int = dc.field(
         default=None, metadata={'allow_none': True})
     n_epoch: int = 100
-    log_trigger_epoch: int = 1
-    stop_trigger_epoch: int = 10
 
     validation_directories: typing.List[Path] = dc.field(
         default_factory=lambda: [])
@@ -228,6 +226,7 @@ class TrainerSetting(TypedDataClass):
     gpu_id: int = -1
     log_trigger_epoch: int = 1
     stop_trigger_epoch: int = 10
+    patience: int = 3
     optuna_trial: optuna.Trial = dc.field(
         default=None, metadata={'convert': False, 'allow_none': True})
     prune: bool = False
@@ -289,6 +288,10 @@ class TrainerSetting(TypedDataClass):
 
         if self.num_workers is None:
             self.num_workers = util.determine_max_process()
+
+        if (self.stop_trigger_epoch // self.log_trigger_epoch) == 0:
+            raise ValueError(
+                f"Set stop_trigger_epoch larger than log_trigger_epoch")
 
         super().__post_init__()
 
