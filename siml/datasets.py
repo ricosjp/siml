@@ -203,11 +203,12 @@ def pad_sparse(sparse, length):
         The dict will be converted to the sparse tensor at the timing of
         prepare_batch is called.
     """
-    indices = torch.LongTensor([sparse.row, sparse.col])
+    row = torch.LongTensor(sparse.row)
+    col = torch.LongTensor(sparse.col)
     values = torch.from_numpy(sparse.data)
 
     return {
-        'indices': indices, 'values': values,
+        'row': row, 'col': col, 'values': values,
         'size': torch.Size((length, length))}
 
 
@@ -215,17 +216,31 @@ def prepare_batch_with_support(batch, device=None, non_blocking=False):
     return {
         'x': convert_tensor(
             batch['x'], device=device, non_blocking=non_blocking),
-        'supports': convert_sparse_tensor(
+        'supports': convert_sparse_info(
             batch['supports'], device=device, non_blocking=non_blocking),
         'original_shapes': batch['original_shapes'],
     }, convert_tensor(batch['t'], device=device, non_blocking=non_blocking)
+
+
+def convert_sparse_info(sparse_info, device=None, non_blocking=False):
+    return [
+        [{
+            'row': convert_tensor(
+                s['row'], device=device, non_blocking=non_blocking),
+            'col': convert_tensor(
+                s['col'], device=device, non_blocking=non_blocking),
+            'values': convert_tensor(
+                s['values'], device=device, non_blocking=non_blocking),
+            'size': s['size'],
+        } for s in si] for si in sparse_info]
 
 
 def convert_sparse_tensor(sparse_info, device=None, non_blocking=False):
     return [
         [
             torch.sparse_coo_tensor(
-                s['indices'], s['values'], s['size']).to(device)
+                torch.stack([s['row'], s['col']]), s['values'], s['size']
+            ).to(device)
             for s in si]
         for si in sparse_info]
 

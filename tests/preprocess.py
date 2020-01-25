@@ -1,4 +1,5 @@
 import pathlib
+import shutil
 
 import numpy as np
 import siml.prepost as prepost
@@ -40,7 +41,34 @@ def preprocess_linear():
     p.preprocess_interim_data()
 
 
+def generate_large():
+    n_feat = 100
+    n_element = 20000
+
+    def generate_data(root_dir, n_data):
+        if root_dir.exists():
+            shutil.rmtree(root_dir)
+        for i in range(n_data):
+            x = np.random.rand(n_element, n_feat)
+            y = x * 2.
+            output_directory = root_dir / f"{i}"
+            output_directory.mkdir(parents=True)
+            np.save(output_directory / 'x.npy', x.astype(np.float32))
+            np.save(output_directory / 'y.npy', y.astype(np.float32))
+
+    output_root = pathlib.Path('tests/data/large/preprocessed')
+    train_root = output_root / 'train'
+    n_train_data = 50
+    generate_data(train_root, n_train_data)
+
+    validation_root = output_root / 'validation'
+    n_validation_data = 2
+    generate_data(validation_root, n_validation_data)
+    return
+
+
 if __name__ == '__main__':
     preprocess_deform()
     preprocess_deform_timeseries()
     preprocess_linear()
+    generate_large()

@@ -190,6 +190,10 @@ class TrainerSetting(TypedDataClass):
         If True and this copy is between CPU and GPU, the copy may occur
         asynchronously with respect to the host. For other cases, this argument
         has no effect.
+    data_parallel: bool [False]
+        If True, perform data parallel on GPUs.
+    model_parallel: bool [False]
+        If True, perform model parallel on GPUs.
     """
 
     inputs: typing.List[dict] = dc.field(default_factory=list)
@@ -248,6 +252,9 @@ class TrainerSetting(TypedDataClass):
     display_mergin: int = 5
     non_blocking: bool = True
 
+    data_parallel: bool = False
+    model_parallel: bool = False
+
     def __post_init__(self):
         if self.element_wise and self.lazy:
             self.lazy = False
@@ -294,12 +301,6 @@ class TrainerSetting(TypedDataClass):
                 f"Set stop_trigger_epoch larger than log_trigger_epoch")
 
         super().__post_init__()
-
-    # def overwrite_element_wise_setting(self):
-    #     print(f"element_wise is True. Overwrite settings.")
-    #     self.batch_size = self.element_batch_size
-    #     self.element_batch_size = -1
-    #     self.use_siml_updater = False
 
     def update_output_directory(self, *, id_=None, base=None):
         if base is None:

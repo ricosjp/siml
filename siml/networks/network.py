@@ -3,6 +3,7 @@ import warnings
 import numpy as np
 import torch
 
+from .. import datasets
 from . import adjustable_mlp
 from . import deepsets
 from . import gcn
@@ -65,11 +66,6 @@ class Network(torch.nn.Module):
             for block_information, block_setting
             in zip(block_informations, self.model_setting.blocks)]
 
-        if self.use_support:
-            self._forward_core = self._forward_with_support
-        else:
-            self._forward_core = self._forward_without_support
-
     def _create_call_graph(self):
         list_destinations = [
             block.destinations for block in self.model_setting.blocks]
@@ -93,11 +89,14 @@ class Network(torch.nn.Module):
         return np.ravel(locations)
 
     def forward(self, x):
-        return self._forward_core(x)
+        if self.use_support:
+            return self._forward_with_support(x)
+        else:
+            return self._forward_without_support(x)
 
     def _forward_with_support(self, x_):
         x = x_['x']
-        supports = x_['supports']
+        supports = datasets.convert_sparse_tensor(x_['supports'])
         hiddens = [None] * len(self.chains)
 
         hiddens[0] = self.chains[0](x, supports)

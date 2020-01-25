@@ -128,13 +128,21 @@ class Trainer():
             print('No optuna.trial fed. Set prune = False.')
 
         if self._is_gpu_supporting():
-            if self.setting.trainer.gpu_id != -1:
+            if self.setting.trainer.data_parallel:
+                self.device = 'cuda:0'
+                gpu_count = torch.cuda.device_count()
+                self.model = torch.nn.DataParallel(self.model)
+                self.model.to(self.device)
+                print(f"Data parallel enabled with {gpu_count} GPUs.")
+            elif self.setting.trainer.gpu_id != -1:
                 self.device = f"cuda:{self.setting.trainer.gpu_id}"
                 print(f"GPU device: {self.setting.trainer.gpu_id}")
             else:
                 self.device = 'cpu'
         else:
-            if self.setting.trainer.gpu_id != -1:
+            if self.setting.trainer.gpu_id != -1 \
+                    or self.setting.trainer.data_parallel \
+                    or self.setting.trainer.model_parallel:
                 raise ValueError('No GPU found.')
             self.setting.trainer.gpu_id = -1
             self.device = 'cpu'
