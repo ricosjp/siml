@@ -4,6 +4,7 @@ RUN apt-get update -y && \
   apt-get install -y --no-install-recommends \
   git \
   make \
+  gcc \
   python3.7 \
   python3.7-dev \
   python3.7-distutils \
@@ -17,3 +18,4 @@ RUN python3.7 -m pip install -U setuptools \
   && python3.7 -m pip install -U pip poetry \
   && python3.7 -m poetry config virtualenvs.create false \
   && python3.7 -m poetry install \
+  && python3.7 -m poetry update
