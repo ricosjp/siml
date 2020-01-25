@@ -27,7 +27,7 @@ class DeepSets(torch.nn.Module):
             for activation in block_setting.activations]
         self.input_selection = block_setting.input_selection
 
-    def __call__(self, x, supports=None):
+    def forward(self, x, supports=None):
         """Execute the NN's forward computation.
 
         Parameters

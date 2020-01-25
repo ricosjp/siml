@@ -15,5 +15,5 @@ class Identity(torch.nn.Module):
         super().__init__()
         return
 
-    def __call__(self, x, supports=None):
+    def forward(self, x, supports=None):
         return x

@@ -860,6 +860,7 @@ class Trainer():
             x_variable_names, y_variable_names,
             validation_directories, supports=supports)
 
+        print(f"num_workers for data_loader: {num_workers}")
         train_loader = torch.utils.data.DataLoader(
             train_dataset, collate_fn=self.collate_fn,
             batch_size=batch_size, shuffle=True, num_workers=num_workers)
@@ -892,7 +893,7 @@ class Trainer():
             return loss_core(concatenated_y_pred, y)
 
         def loss_function_without_padding(y_pred, y, original_shapes=None):
-            return loss_core(y_pred, y)
+            return loss_core(y_pred.view(y.shape), y)
 
         def loss_function_time_with_padding(y_pred, y, original_shapes):
             concatenated_y_pred = torch.cat([
