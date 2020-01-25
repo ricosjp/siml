@@ -151,6 +151,7 @@ class Trainer():
                 print(f"GPU device: {self.setting.trainer.gpu_id}")
             else:
                 self.device = 'cpu'
+                self.output_device = self.device
         else:
             if self.setting.trainer.gpu_id != -1 \
                     or self.setting.trainer.data_parallel \
@@ -158,6 +159,7 @@ class Trainer():
                 raise ValueError('No GPU found.')
             self.setting.trainer.gpu_id = -1
             self.device = 'cpu'
+            self.output_device = self.device
 
         self._generate_trainer()
 
