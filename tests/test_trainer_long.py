@@ -34,9 +34,6 @@ class TestTrainer(unittest.TestCase):
     def test_train_lstm_long(self):
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/deform_timeseries/lstm_long.yml'))
-        main_setting.trainer.num_workers = 0  # Serial
-        main_setting.trainer.n_epoch = 200
-        main_setting.trainer.log_trigger_epoch = 50
         tr = trainer.Trainer(main_setting)
         if tr.setting.trainer.output_directory.exists():
             shutil.rmtree(tr.setting.trainer.output_directory)
