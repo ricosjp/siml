@@ -279,9 +279,13 @@ class TrainerSetting(TypedDataClass):
             self.update_output_directory()
         if self.support_input is not None:
             if self.support_inputs is not None:
-                raise ValueError(
-                    'Both support_input and support_inputs cannot be '
-                    'specified.')
+                if len(self.support_inputs) == 1 \
+                        and self.support_inputs[0] == self.support_input:
+                    pass
+                else:
+                    raise ValueError(
+                        'support_input and support_inputs are set '
+                        'inconsistently.')
             else:
                 self.support_inputs = [self.support_input]
         if self.optimizer_setting is None:

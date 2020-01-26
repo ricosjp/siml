@@ -2,6 +2,7 @@
 from ignite.utils import convert_tensor
 import numpy as np
 import torch
+from tqdm import tqdm
 
 from . import util
 
@@ -29,13 +30,15 @@ class BaseDataset(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.data_directories)
 
-    def _load_data(self, data_directory):
+    def _load_data(self, data_directory, pbar=None):
         x_data = util.concatenate_variable([
             util.load_variable(data_directory, x_variable_name)
             for x_variable_name in self.x_variable_names])
         y_data = util.concatenate_variable([
             util.load_variable(data_directory, y_variable_name)
             for y_variable_name in self.y_variable_names])
+        if pbar:
+            pbar.update()
         if self.supports is None:
             return {
                 'x': torch.from_numpy(x_data), 't': torch.from_numpy(y_data)}
@@ -63,10 +66,14 @@ class ElementWiseDataset(BaseDataset):
             supports=None):
         super().__init__(
             x_variable_names, y_variable_names, directories, supports=supports)
-        print(f"Loading data for: {directories}")
+        print('Loading data')
+        pbar = tqdm(
+            initial=0, leave=False, total=len(self.data_directories),
+            ncols=80, ascii=True)
         loaded_data = [
-            self._load_data(data_directory)
+            self._load_data(data_directory, pbar)
             for data_directory in self.data_directories]
+        pbar.close()
         self.x = np.concatenate([ld['x'] for ld in loaded_data])
         self.t = np.concatenate([ld['t'] for ld in loaded_data])
         return
@@ -86,10 +93,15 @@ class OnMemoryDataset(BaseDataset):
             supports=None):
         super().__init__(
             x_variable_names, y_variable_names, directories, supports=supports)
-        print(f"Loading data for: {directories}")
+
+        print('Loading data')
+        pbar = tqdm(
+            initial=0, leave=False, total=len(self.data_directories),
+            ncols=80, ascii=True)
         self.data = [
-            self._load_data(data_directory)
+            self._load_data(data_directory, pbar)
             for data_directory in self.data_directories]
+        pbar.close()
         return
 
     def __getitem__(self, i):
