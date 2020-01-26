@@ -344,7 +344,7 @@ class BlockSetting(TypedDataClass):
         default=None, metadata={'allow_none': True})
     hidden_layers: int = dc.field(
         default=None, metadata={'allow_none': True})
-    hidden_activation: str = 'rely'
+    hidden_activation: str = 'relu'
     output_activation: str = 'identity'
     input_dropout: float = 0.0
     hidden_dropout: float = 0.5
