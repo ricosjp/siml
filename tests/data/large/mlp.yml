@@ -17,8 +17,8 @@ trainer:
     - name: y
       dim: 100
   prune: true
-  batch_size: 10
-  n_epoch: 2
+  batch_size: 5
+  n_epoch: 5
   log_trigger_epoch: 1
   stop_trigger_epoch: 10
   seed: 0
@@ -28,10 +28,13 @@ model:
       nodes:
         - -1
         - 100
+        - 100
         - -1
       activations:
         - relu
+        - relu
         - identity
       dropouts:
+        - 0.0
         - 0.0
         - 0.0

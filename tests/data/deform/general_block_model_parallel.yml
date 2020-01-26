@@ -6,6 +6,7 @@ data:
 trainer:
   lazy: false
   num_workers: 0
+  model_parallel: true
   output_directory: tests/data/deform/tmp
   inputs:
     - name: elemental_strain
@@ -32,6 +33,7 @@ model:
         - ResGCN2
         - MLP
       support_input_index: 0  # assume one support input (e.g. adjacency matrix) for each block
+      device: 0
       nodes:
         - -1
         - 10
@@ -41,6 +43,7 @@ model:
         - 0.3
     - name: ResGCN2
       type: res_gcn
+      device: 0
       destinations:
         - Distributor
       support_input_index: 1
@@ -56,6 +59,7 @@ model:
         - 0.3
     - name: MLP
       type: adjustable_mlp
+      device: 0
       destinations:
         - Distributor
       nodes:
@@ -70,9 +74,11 @@ model:
         - 0.0
     - name: Distributor
       type: distributor
+      device: 0
       destinations:
         - ResGCN3
     - name: ResGCN3
+      device: 1
       type: res_gcn
       support_input_index: 0
       nodes:

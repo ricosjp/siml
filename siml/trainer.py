@@ -1,3 +1,4 @@
+from collections import OrderedDict
 import enum
 import pathlib
 import random
@@ -77,7 +78,7 @@ class Trainer():
 
         setting.write_yaml(
             self.setting,
-            self.setting.trainer.output_directory / 'settings.yaml')
+            self.setting.trainer.output_directory / 'settings.yml')
 
         print(
             self._display_mergin('epoch')
@@ -90,7 +91,7 @@ class Trainer():
             initial=0, leave=False,
             total=len(self.train_loader)
             * self.setting.trainer.log_trigger_epoch,
-            desc=self.desc.format(0))
+            desc=self.desc.format(0), ncols=80, ascii=True)
         self.start_time = time.time()
 
         self.trainer.run(
@@ -128,16 +129,38 @@ class Trainer():
             print('No optuna.trial fed. Set prune = False.')
 
         if self._is_gpu_supporting():
-            if self.setting.trainer.gpu_id != -1:
+            if self.setting.trainer.data_parallel:
+                if self.setting.trainer.time_series:
+                    raise ValueError(
+                        'So far both data_parallel and time_series cannot be '
+                        'True')
+                self.device = 'cuda:0'
+                self.output_device = self.device
+                gpu_count = torch.cuda.device_count()
+                self.model = torch.nn.DataParallel(self.model)
+                self.model.to(self.device)
+                print(f"Data parallel enabled with {gpu_count} GPUs.")
+            elif self.setting.trainer.model_parallel:
+                self.device = 'cuda:0'
+                gpu_count = torch.cuda.device_count()
+                self.output_device = f"cuda:{gpu_count-1}"
+                print(f"Model parallel enabled with {gpu_count} GPUs.")
+            elif self.setting.trainer.gpu_id != -1:
                 self.device = f"cuda:{self.setting.trainer.gpu_id}"
+                self.output_device = self.device
+                self.model.to(self.device)
                 print(f"GPU device: {self.setting.trainer.gpu_id}")
             else:
                 self.device = 'cpu'
+                self.output_device = self.device
         else:
-            if self.setting.trainer.gpu_id != -1:
+            if self.setting.trainer.gpu_id != -1 \
+                    or self.setting.trainer.data_parallel \
+                    or self.setting.trainer.model_parallel:
                 raise ValueError('No GPU found.')
             self.setting.trainer.gpu_id = -1
             self.device = 'cpu'
+            self.output_device = self.device
 
         self._generate_trainer()
 
@@ -547,7 +570,7 @@ class Trainer():
         if path.is_file():
             yaml_file = path
         elif path.is_dir():
-            yamls = list(path.glob('*.yaml'))
+            yamls = list(path.glob('*.y*ml'))
             if len(yamls) != 1:
                 raise ValueError(f"{len(yamls)} yaml files found in {path}")
             yaml_file = yamls[0]
@@ -593,7 +616,15 @@ class Trainer():
                 method=self.setting.trainer.snapshot_choise_method)
 
         checkpoint = torch.load(snapshot)
-        self.model.load_state_dict(checkpoint['model_state_dict'])
+
+        if len(self.model.state_dict()) != len(checkpoint['model_state_dict']):
+            raise ValueError('Model parameter length invalid')
+        # Convert new state_dict in case DataParallel wraps model
+        model_state_dict = OrderedDict({
+            key: value for key, value in zip(
+                self.model.state_dict().keys(),
+                checkpoint['model_state_dict'].values())})
+        self.model.load_state_dict(model_state_dict)
         print(f"{snapshot} loaded as a pretrain model.")
         return
 
@@ -707,7 +738,7 @@ class Trainer():
         self.trainer = self._create_supervised_trainer()
         self.evaluator = self._create_supervised_evaluator()
 
-        self.desc = "ITERATION - loss: {:.5e}"
+        self.desc = "loss: {:.5e}"
         tick = max(len(self.train_loader) // 100, 1)
 
         @self.trainer.on(ignite.engine.Events.ITERATION_COMPLETED(every=tick))
@@ -803,8 +834,6 @@ class Trainer():
         return
 
     def _create_supervised_trainer(self):
-        if self.device:
-            self.model.to(self.device)
 
         def update_with_element_batch(x, y, model, optimizer):
             y_pred = model(x)
@@ -841,7 +870,7 @@ class Trainer():
         def update_model(engine, batch):
             self.model.train()
             x, y = self.prepare_batch(
-                batch, device=self.device,
+                batch, device=self.device, output_device=self.output_device,
                 non_blocking=self.setting.trainer.non_blocking)
             loss = update_function(x, y, self.model, self.optimizer)
             return loss.item()
@@ -849,14 +878,13 @@ class Trainer():
         return ignite.engine.Engine(update_model)
 
     def _create_supervised_evaluator(self):
-        if self.device:
-            self.model.to(self.device)
 
         def _inference(engine, batch):
             self.model.eval()
             with torch.no_grad():
                 x, y = self.prepare_batch(
                     batch, device=self.device,
+                    output_device=self.output_device,
                     non_blocking=self.setting.trainer.non_blocking)
                 y_pred = self.model(x)
                 return y_pred, y, {'original_shapes': x['original_shapes']}

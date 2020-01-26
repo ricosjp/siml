@@ -2,6 +2,7 @@
 from ignite.utils import convert_tensor
 import numpy as np
 import torch
+from tqdm import tqdm
 
 from . import util
 
@@ -29,13 +30,15 @@ class BaseDataset(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.data_directories)
 
-    def _load_data(self, data_directory):
+    def _load_data(self, data_directory, pbar=None):
         x_data = util.concatenate_variable([
             util.load_variable(data_directory, x_variable_name)
             for x_variable_name in self.x_variable_names])
         y_data = util.concatenate_variable([
             util.load_variable(data_directory, y_variable_name)
             for y_variable_name in self.y_variable_names])
+        if pbar:
+            pbar.update()
         if self.supports is None:
             return {
                 'x': torch.from_numpy(x_data), 't': torch.from_numpy(y_data)}
@@ -63,10 +66,14 @@ class ElementWiseDataset(BaseDataset):
             supports=None):
         super().__init__(
             x_variable_names, y_variable_names, directories, supports=supports)
-        print(f"Loading data for: {directories}")
+        print('Loading data')
+        pbar = tqdm(
+            initial=0, leave=False, total=len(self.data_directories),
+            ncols=80, ascii=True)
         loaded_data = [
-            self._load_data(data_directory)
+            self._load_data(data_directory, pbar)
             for data_directory in self.data_directories]
+        pbar.close()
         self.x = np.concatenate([ld['x'] for ld in loaded_data])
         self.t = np.concatenate([ld['t'] for ld in loaded_data])
         return
@@ -86,10 +93,15 @@ class OnMemoryDataset(BaseDataset):
             supports=None):
         super().__init__(
             x_variable_names, y_variable_names, directories, supports=supports)
-        print(f"Loading data for: {directories}")
+
+        print('Loading data')
+        pbar = tqdm(
+            initial=0, leave=False, total=len(self.data_directories),
+            ncols=80, ascii=True)
         self.data = [
-            self._load_data(data_directory)
+            self._load_data(data_directory, pbar)
             for data_directory in self.data_directories]
+        pbar.close()
         return
 
     def __getitem__(self, i):
@@ -203,36 +215,57 @@ def pad_sparse(sparse, length):
         The dict will be converted to the sparse tensor at the timing of
         prepare_batch is called.
     """
-    indices = torch.LongTensor([sparse.row, sparse.col])
+    row = torch.LongTensor(sparse.row)
+    col = torch.LongTensor(sparse.col)
     values = torch.from_numpy(sparse.data)
 
     return {
-        'indices': indices, 'values': values,
+        'row': row, 'col': col, 'values': values,
         'size': torch.Size((length, length))}
 
 
-def prepare_batch_with_support(batch, device=None, non_blocking=False):
+def prepare_batch_with_support(
+        batch, device=None, output_device=None, non_blocking=False):
     return {
         'x': convert_tensor(
             batch['x'], device=device, non_blocking=non_blocking),
-        'supports': convert_sparse_tensor(
+        'supports': convert_sparse_info(
             batch['supports'], device=device, non_blocking=non_blocking),
         'original_shapes': batch['original_shapes'],
-    }, convert_tensor(batch['t'], device=device, non_blocking=non_blocking)
+    }, convert_tensor(
+        batch['t'], device=output_device, non_blocking=non_blocking)
+
+
+def convert_sparse_info(sparse_info, device=None, non_blocking=False):
+    device = 'cpu'
+    return [
+        [{
+            'row': convert_tensor(
+                s['row'], device=device, non_blocking=non_blocking),
+            'col': convert_tensor(
+                s['col'], device=device, non_blocking=non_blocking),
+            'values': convert_tensor(
+                s['values'], device=device, non_blocking=non_blocking),
+            'size': s['size'],
+        } for s in si] for si in sparse_info]
 
 
 def convert_sparse_tensor(sparse_info, device=None, non_blocking=False):
     return [
         [
             torch.sparse_coo_tensor(
-                s['indices'], s['values'], s['size']).to(device)
+                torch.stack([s['row'], s['col']]),
+                s['values'], s['size']
+            ).to(device)
             for s in si]
         for si in sparse_info]
 
 
-def prepare_batch_without_support(batch, device=None, non_blocking=False):
+def prepare_batch_without_support(
+        batch, device=None, output_device=None, non_blocking=False):
     return {
         'x': convert_tensor(
             batch['x'], device=device, non_blocking=non_blocking),
         'original_shapes': batch['original_shapes'],
-    }, convert_tensor(batch['t'], device=device, non_blocking=non_blocking)
+    }, convert_tensor(
+        batch['t'], device=output_device, non_blocking=non_blocking)

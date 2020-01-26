@@ -3,6 +3,7 @@ import warnings
 import numpy as np
 import torch
 
+from .. import datasets
 from . import adjustable_mlp
 from . import deepsets
 from . import gcn
@@ -53,9 +54,12 @@ class Network(torch.nn.Module):
             block_information.use_support
             for block_information in block_informations]
         self.use_support = np.any(self.use_support_informations)
+        self.devices = [
+            block_setting.device
+            for block_setting in self.model_setting.blocks]
 
         self.chains = torch.nn.ModuleList([
-            block_information.block(block_setting)
+            block_information.block(block_setting).to(block_setting.device)
             for block_information, block_setting
             in zip(block_informations, self.model_setting.blocks)])
         self.call_graph = self._create_call_graph()
@@ -64,11 +68,6 @@ class Network(torch.nn.Module):
             if block_information.use_support else 0
             for block_information, block_setting
             in zip(block_informations, self.model_setting.blocks)]
-
-        if self.use_support:
-            self._forward_core = self._forward_with_support
-        else:
-            self._forward_core = self._forward_without_support
 
     def _create_call_graph(self):
         list_destinations = [
@@ -93,17 +92,27 @@ class Network(torch.nn.Module):
         return np.ravel(locations)
 
     def forward(self, x):
-        return self._forward_core(x)
+        if self.use_support:
+            return self._forward_with_support(x)
+        else:
+            return self._forward_without_support(x)
 
     def _forward_with_support(self, x_):
         x = x_['x']
-        supports = x_['supports']
+        # Due to lack of support of sparse matrix of scatter in DataParallel
+        # and coo_matrix, convert sparse in the forward
+        supports = datasets.convert_sparse_tensor(
+            x_['supports'], device=x.device)
         hiddens = [None] * len(self.chains)
 
         hiddens[0] = self.chains[0](x, supports)
         for i in range(1, len(hiddens)):
-            inputs = [hiddens[input_node] for input_node in self.call_graph[i]]
+            device = self.devices[i]
+            inputs = [
+                hiddens[input_node].to(device)
+                for input_node in self.call_graph[i]]
             if self.use_support_informations[i]:
+                supports = [[s.to(device) for s in sp] for sp in supports]
                 hiddens[i] = self.chains[i](*inputs, supports=supports)
             else:
                 hiddens[i] = self.chains[i](*inputs)
@@ -114,6 +123,9 @@ class Network(torch.nn.Module):
         hiddens = [None] * len(self.chains)
         hiddens[0] = self.chains[0](x)
         for i in range(1, len(hiddens)):
-            inputs = [hiddens[input_node] for input_node in self.call_graph[i]]
+            device = self.devices[i]
+            inputs = [
+                hiddens[input_node].to(device)
+                for input_node in self.call_graph[i]]
             hiddens[i] = self.chains[i](*inputs)
         return hiddens[-1]

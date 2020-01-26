@@ -190,6 +190,10 @@ class TrainerSetting(TypedDataClass):
         If True and this copy is between CPU and GPU, the copy may occur
         asynchronously with respect to the host. For other cases, this argument
         has no effect.
+    data_parallel: bool [False]
+        If True, perform data parallel on GPUs.
+    model_parallel: bool [False]
+        If True, perform model parallel on GPUs.
     """
 
     inputs: typing.List[dict] = dc.field(default_factory=list)
@@ -248,6 +252,9 @@ class TrainerSetting(TypedDataClass):
     display_mergin: int = 5
     non_blocking: bool = True
 
+    data_parallel: bool = False
+    model_parallel: bool = False
+
     def __post_init__(self):
         if self.element_wise and self.lazy:
             self.lazy = False
@@ -272,9 +279,13 @@ class TrainerSetting(TypedDataClass):
             self.update_output_directory()
         if self.support_input is not None:
             if self.support_inputs is not None:
-                raise ValueError(
-                    'Both support_input and support_inputs cannot be '
-                    'specified.')
+                if len(self.support_inputs) == 1 \
+                        and self.support_inputs[0] == self.support_input:
+                    pass
+                else:
+                    raise ValueError(
+                        'support_input and support_inputs are set '
+                        'inconsistently.')
             else:
                 self.support_inputs = [self.support_input]
         if self.optimizer_setting is None:
@@ -294,12 +305,6 @@ class TrainerSetting(TypedDataClass):
                 f"Set stop_trigger_epoch larger than log_trigger_epoch")
 
         super().__post_init__()
-
-    # def overwrite_element_wise_setting(self):
-    #     print(f"element_wise is True. Overwrite settings.")
-    #     self.batch_size = self.element_batch_size
-    #     self.element_batch_size = -1
-    #     self.use_siml_updater = False
 
     def update_output_directory(self, *, id_=None, base=None):
         if base is None:
@@ -329,6 +334,8 @@ class BlockSetting(TypedDataClass):
     activations: typing.List[str] = dc.field(
         default_factory=lambda: ['identity'])
     dropouts: typing.List[float] = dc.field(default_factory=lambda: [0.])
+    device: int = dc.field(
+        default=None, metadata={'allow_none': True})
 
     optional: dict = dc.field(default_factory=dict)
 
@@ -337,7 +344,7 @@ class BlockSetting(TypedDataClass):
         default=None, metadata={'allow_none': True})
     hidden_layers: int = dc.field(
         default=None, metadata={'allow_none': True})
-    hidden_activation: str = 'rely'
+    hidden_activation: str = 'relu'
     output_activation: str = 'identity'
     input_dropout: float = 0.0
     hidden_dropout: float = 0.5
