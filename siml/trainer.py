@@ -333,6 +333,7 @@ class Trainer():
             else:
                 self.setting.trainer.pretrain_directory = model_directory
             self._update_setting_if_needed()
+        self.device = 'cpu'
 
         self.model = networks.Network(self.setting.model, self.setting.trainer)
         self._load_pretrained_model_if_needed(model_file=model_file)
@@ -615,7 +616,7 @@ class Trainer():
                 self.setting.trainer.pretrain_directory,
                 method=self.setting.trainer.snapshot_choise_method)
 
-        checkpoint = torch.load(snapshot)
+        checkpoint = torch.load(snapshot, map_location=self.device)
 
         if len(self.model.state_dict()) != len(checkpoint['model_state_dict']):
             raise ValueError('Model parameter length invalid')
