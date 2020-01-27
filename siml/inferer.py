@@ -169,6 +169,9 @@ class Inferer(trainer.Trainer):
             model_file = None
         elif model_path.is_file():
             model_file = model_path
+        else:
+            raise ValueError(
+                f"{model_path} is neither file nor directory.")
 
         self.model = networks.Network(
             self.setting.model, self.setting.trainer)
