@@ -17,7 +17,7 @@ class Inferer(trainer.Trainer):
             self, model_path=None, *,
             save=True, overwrite=False, output_directory=None,
             preprocessed_data_directory=None, raw_data_directory=None,
-            raw_data_basename=None,
+            raw_data_basename=None, raw_data_file=None,
             write_simulation=False, write_npy=True, write_yaml=True,
             write_simulation_base=None, write_simulation_stem=None,
             read_simulation_type='fistr', write_simulation_type='fistr',
@@ -43,6 +43,8 @@ class Inferer(trainer.Trainer):
                 will be used.
             raw_data_basename: pathlib.Path, optional [None]
                 Raw data basename (without extention).
+            raw_data_file: pathlib.Path, optional [None]
+                Raw data file name.
             write_simulation: bool, optional [False]
                 If True, write simulation data file(s) based on the inference.
             write_npy: bool, optional [True]
@@ -256,7 +258,7 @@ class Inferer(trainer.Trainer):
             [
                 preprocessed_x[variable_name]
                 for variable_name in self.setting.trainer.input_names],
-            axis=1).astype(np.float32)
+            axis=-1).astype(np.float32)
 
         if answer_raw_dict_y is not None:
             answer_preprocessed_y = self.prepost_converter.preprocess(
@@ -265,7 +267,7 @@ class Inferer(trainer.Trainer):
                 [
                     answer_preprocessed_y[variable_name]
                     for variable_name in self.setting.trainer.output_names],
-                axis=1).astype(np.float32)
+                axis=-1).astype(np.float32)
         else:
             answer_y = None
 
@@ -281,6 +283,9 @@ class Inferer(trainer.Trainer):
             write_simulation_base=None, write_simulation_stem=None,
             write_simulation_type='fistr', read_simulation_type='fistr',
             data_addition_function=None, accomodate_length=None):
+
+        if self.setting.trainer.time_series and len(x.shape) == 3:
+            x = x[:, None, :, :]
 
         if accomodate_length:
             x = np.concatenate([x[:accomodate_length], x])
