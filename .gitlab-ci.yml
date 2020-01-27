@@ -85,7 +85,7 @@ test_other:
     - python3.7 -m pytest tests/test_prepost.py --capture=no
     - python3.7 -m pytest tests/test_setting.py --capture=no
     - python3.7 -m pytest tests/test_util.py --capture=no
-    - python3.7 -m pytest tests/test_infer.py --capture=no
+    - python3.7 -m pytest tests/test_inferer.py --capture=no
 
 .deploy:wheel:
   stage: deploy
