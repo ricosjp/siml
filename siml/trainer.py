@@ -95,8 +95,9 @@ class Trainer():
             self.train_loader, max_epochs=self.setting.trainer.n_epoch)
         self.pbar.close()
 
-        self.evaluator.run(self.validation_loader)
-        validation_loss = self.evaluator.state.metrics['loss']
+        df = pd.read_csv(
+            self.log_file, header=0, index_col=None, skipinitialspace=True)
+        validation_loss = np.min(df['validation_loss'])
 
         return validation_loss
 
