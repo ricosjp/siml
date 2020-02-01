@@ -17,7 +17,6 @@ import yaml
 
 
 INFERENCE_FLAG_FILE = 'inference'
-SPARSE_DATA_NAMES = ['adj', 'nadj']
 
 
 def date_string():
@@ -109,10 +108,12 @@ def load_variable(data_directory, file_basename):
     --------
         data: numpy.ndarray or scipy.sparse.coo_matrix
     """
-    if file_basename in SPARSE_DATA_NAMES:
+    if (data_directory / (file_basename + '.npy')).exists():
+        return np.load(data_directory / (file_basename + '.npy'))
+    elif (data_directory / (file_basename + '.npz')).exists():
         return sp.load_npz(data_directory / (file_basename + '.npz'))
     else:
-        return np.load(data_directory / (file_basename + '.npy'))
+        raise ValueError(f"File type not understuud for: {file_basename}")
 
 
 def collect_data_directories(
