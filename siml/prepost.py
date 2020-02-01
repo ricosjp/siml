@@ -54,7 +54,7 @@ class RawConverter():
         load_function: function, optional [None]
             Function to load data, which take list of pathlib.Path objects
             (as required files) and pathlib.Path object (as data directory)
-            and returns data_dictionary to be saved.
+            and returns data_dictionary and fem_data (can be None) to be saved.
         force_renew: bool, optional [False]
             If True, renew npy files even if they are alerady exist.
         read_npy: bool, optional [False]
@@ -176,7 +176,9 @@ class RawConverter():
         if self.load_function is not None:
             data_files = util.collect_files(
                 raw_directory, conversion_setting.required_file_names)
-            dict_data.update(self.load_function(data_files, raw_directory))
+            loaded_dict_data, fem_data = self.load_function(
+                data_files, raw_directory)
+            dict_data.update(loaded_dict_data)
 
         if self.filter_function is not None and not self.filter_function(
                 fem_data, raw_directory, dict_data):
