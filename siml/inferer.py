@@ -22,61 +22,66 @@ class Inferer(trainer.Trainer):
             write_simulation_base=None, write_simulation_stem=None,
             read_simulation_type='fistr', write_simulation_type='fistr',
             converter_parameters_pkl=None, conversion_function=None,
+            load_function=None,
             data_addition_function=None, accomodate_length=None):
         """Perform inference.
 
         Parameters
         ----------
-            model_path: pathlib.Path, optional [None]
-                Model directory or file path. If not fed,
-                TrainerSetting.pretrain_directory will be used.
-            save: bool, optional [False]
-                If True, save inference results.
-            output_directory: pathlib.Path, optional [None]
-                Output directory name. If not fed, data/inferred will be the
-                default output directory base.
-            preprocessed_data_directory: pathlib.Path, optional [None]
-                Preprocessed data directories. If not fed, DataSetting.test
-                will be used.
-            raw_data_directory: pathlib.Path, optional [None]
-                Raw data directories. If not fed, DataSetting.test
-                will be used.
-            raw_data_basename: pathlib.Path, optional [None]
-                Raw data basename (without extention).
-            raw_data_file: pathlib.Path, optional [None]
-                Raw data file name.
-            write_simulation: bool, optional [False]
-                If True, write simulation data file(s) based on the inference.
-            write_npy: bool, optional [True]
-                If True, write npy files of inferences.
-            write_yaml: bool, optional [True]
-                If True, write yaml file used to make inference.
-            write_simulation_base: pathlib.Path, optional [None]
-                Base of simulation data to be used for write_simulation option.
-                If not fed, try to find from the input directories.
-            read_simulation_type: str, optional ['fistr']
-                Simulation file type to read.
-            write_simulation_type: str, optional ['fistr']
-                Simulation file type to write.
-            converter_parameters_pkl: pathlib.Path, optional [None]
-                Pickel file of converter parameters. IF not fed,
-                DataSetting.preprocessed is used.
-            conversion_function: function, optional [None]
-                Conversion function to preprocess raw data. It should receive
-                two parameters, fem_data and raw_directory. If not fed,
-                no additional conversion occurs.
-            data_addition_function: function, optional [None]
-                Function to add some data at simulation data writing phase.
-                If not fed, no data addition occurs.
-            accomodate_length: int
-                If specified, duplicate initial state to initialize RNN state.
+        model_path: pathlib.Path, optional [None]
+            Model directory or file path. If not fed,
+            TrainerSetting.pretrain_directory will be used.
+        save: bool, optional [False]
+            If True, save inference results.
+        output_directory: pathlib.Path, optional [None]
+            Output directory name. If not fed, data/inferred will be the
+            default output directory base.
+        preprocessed_data_directory: pathlib.Path, optional [None]
+            Preprocessed data directories. If not fed, DataSetting.test
+            will be used.
+        raw_data_directory: pathlib.Path, optional [None]
+            Raw data directories. If not fed, DataSetting.test
+            will be used.
+        raw_data_basename: pathlib.Path, optional [None]
+            Raw data basename (without extention).
+        raw_data_file: pathlib.Path, optional [None]
+            Raw data file name.
+        write_simulation: bool, optional [False]
+            If True, write simulation data file(s) based on the inference.
+        write_npy: bool, optional [True]
+            If True, write npy files of inferences.
+        write_yaml: bool, optional [True]
+            If True, write yaml file used to make inference.
+        write_simulation_base: pathlib.Path, optional [None]
+            Base of simulation data to be used for write_simulation option.
+            If not fed, try to find from the input directories.
+        read_simulation_type: str, optional ['fistr']
+            Simulation file type to read.
+        write_simulation_type: str, optional ['fistr']
+            Simulation file type to write.
+        converter_parameters_pkl: pathlib.Path, optional [None]
+            Pickel file of converter parameters. IF not fed,
+            DataSetting.preprocessed is used.
+        conversion_function: function, optional [None]
+            Conversion function to preprocess raw data. It should receive
+            two parameters, fem_data and raw_directory. If not fed,
+            no additional conversion occurs.
+        load_function: function, optional [None]
+            Function to load data, which take list of pathlib.Path objects
+            (as required files) and pathlib.Path object (as data directory)
+            and returns data_dictionary and fem_data (can be None) to be saved.
+        data_addition_function: function, optional [None]
+            Function to add some data at simulation data writing phase.
+            If not fed, no data addition occurs.
+        accomodate_length: int
+            If specified, duplicate initial state to initialize RNN state.
         Returns
         --------
-            inference_results: list
+        inference_results: list
             Inference results contains:
-                    - input variables
-                    - output variables
-                    - loss
+                - input variables
+                - output variables
+                - loss
         """
         self._prepare_inference(
             pathlib.Path(model_path),
@@ -128,7 +133,8 @@ class Inferer(trainer.Trainer):
                 raw_data_directory=raw_data_directory,
                 raw_data_stem=raw_data_stem,
                 prepost_converter=self.prepost_converter,
-                conversion_function=conversion_function)
+                conversion_function=conversion_function,
+                load_function=load_function)
             dict_dir_x = {preprocessed_data_directory: x}
             if y is None:
                 dict_dir_y = {}
@@ -189,16 +195,28 @@ class Inferer(trainer.Trainer):
 
     def _preprocess_data(
             self, simulation_type, prepost_converter, raw_data_directory,
-            *, raw_data_stem=None,
-            conversion_function=None):
-        fem_data = femio.FEMData.read_directory(
-            simulation_type, raw_data_directory, stem=raw_data_stem,
-            save=False)
-        dict_data = prepost.extract_variables(
-            fem_data, self.setting.conversion.mandatory,
-            optional_variables=self.setting.conversion.optional)
+            *, raw_data_stem=None, conversion_function=None,
+            load_function=None):
+        if self.setting.conversion.skip_femio:
+            dict_data = {}
+        else:
+            fem_data = femio.FEMData.read_directory(
+                simulation_type, raw_data_directory, stem=raw_data_stem,
+                save=False)
+            dict_data = prepost.extract_variables(
+                fem_data, self.setting.conversion.mandatory,
+                optional_variables=self.setting.conversion.optional)
+
         if conversion_function is not None:
             dict_data.update(conversion_function(fem_data, raw_data_directory))
+
+        if load_function is not None:
+            data_files = util.collect_files(
+                raw_data_directory,
+                self.setting.conversion.required_file_names)
+            loaded_dict_data, _ = load_function(
+                data_files, raw_data_directory)
+            dict_data.update(loaded_dict_data)
 
         converted_dict_data = prepost_converter.preprocess(dict_data)
         input_data = np.concatenate([
