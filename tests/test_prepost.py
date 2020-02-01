@@ -17,7 +17,7 @@ def load_function(data_files, data_directory):
     return {
         'a': np.reshape(df['a'].to_numpy(), (-1, 1)),
         'b': np.reshape(df['b'].to_numpy(), (-1, 1)),
-        'c': np.reshape(df['c'].to_numpy(), (-1, 1))}
+        'c': np.reshape(df['c'].to_numpy(), (-1, 1))}, None
 
 
 def conversion_function(fem_data, raw_directory=None):

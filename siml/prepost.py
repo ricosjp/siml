@@ -54,7 +54,7 @@ class RawConverter():
         load_function: function, optional [None]
             Function to load data, which take list of pathlib.Path objects
             (as required files) and pathlib.Path object (as data directory)
-            and returns data_dictionary to be saved.
+            and returns data_dictionary and fem_data (can be None) to be saved.
         force_renew: bool, optional [False]
             If True, renew npy files even if they are alerady exist.
         read_npy: bool, optional [False]
@@ -176,7 +176,9 @@ class RawConverter():
         if self.load_function is not None:
             data_files = util.collect_files(
                 raw_directory, conversion_setting.required_file_names)
-            dict_data.update(self.load_function(data_files, raw_directory))
+            loaded_dict_data, fem_data = self.load_function(
+                data_files, raw_directory)
+            dict_data.update(loaded_dict_data)
 
         if self.filter_function is not None and not self.filter_function(
                 fem_data, raw_directory, dict_data):
@@ -185,11 +187,12 @@ class RawConverter():
         # Save data
         output_directory.mkdir(parents=True, exist_ok=True)
         if fem_data is not None:
+            fem_data = update_fem_data(fem_data, dict_data)
             fem_data.save(output_directory)
             if self.write_ucd:
-                write_ucd_file(
-                    output_directory, fem_data, dict_data,
-                    force_renew=self.force_renew)
+                fem_data.write(
+                    'ucd', output_directory / 'mesh.inp',
+                    overwrite=self.force_renew)
 
         save_dict_data(output_directory, dict_data)
         (output_directory / conversion_setting.finished_file).touch()
@@ -197,22 +200,26 @@ class RawConverter():
         return
 
 
-def write_ucd_file(
-        output_directory, fem_data, dict_data=None, force_renew=False):
-    if dict_data is not None:
-        # Merge dict_data to fem_data
-        for key, value in dict_data.items():
-            if key in ['adj', 'nadj']:
-                continue
-            try:
+def update_fem_data(fem_data, dict_data):
+    for key, value in dict_data.items():
+        if isinstance(value, np.ndarray):
+            len_data = len(value)
+            if len_data == len(fem_data.nodes.ids):
+                # Nodal data
+                fem_data.nodal_data.update({
+                    key: femio.FEMAttribute(
+                        key, fem_data.nodes.ids, value)})
+            elif len_data == len(fem_data.elements.ids):
                 fem_data.elemental_data.update({
                     key: femio.FEMAttribute(
                         key, fem_data.elements.ids, value)})
-            except ValueError:
-                print(f"{key} is skipped for writing in UCD")
+            else:
+                print(f"{key} is skipped to include in fem_data")
                 continue
+        else:
+            print(f"{key} is skipped to include in fem_data")
 
-    fem_data.write('ucd', output_directory / 'mesh.inp', overwrite=force_renew)
+    return fem_data
 
 
 def concatenate_preprocessed_data(
