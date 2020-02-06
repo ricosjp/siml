@@ -23,7 +23,8 @@ class Inferer(trainer.Trainer):
             read_simulation_type='fistr', write_simulation_type='fistr',
             converter_parameters_pkl=None, conversion_function=None,
             load_function=None,
-            data_addition_function=None, accomodate_length=None):
+            data_addition_function=None, accomodate_length=None,
+            required_file_names=[]):
         """Perform inference.
 
         Parameters
@@ -70,6 +71,8 @@ class Inferer(trainer.Trainer):
             Function to load data, which take list of pathlib.Path objects
             (as required files) and pathlib.Path object (as data directory)
             and returns data_dictionary and fem_data (can be None) to be saved.
+        required_file_names: List[str], optional [[]]
+            Required file names for load_function.
         data_addition_function: function, optional [None]
             Function to add some data at simulation data writing phase.
             If not fed, no data addition occurs.
@@ -154,7 +157,9 @@ class Inferer(trainer.Trainer):
                 write_simulation_type=write_simulation_type,
                 read_simulation_type=read_simulation_type,
                 data_addition_function=data_addition_function,
-                accomodate_length=accomodate_length) + (directory,)
+                accomodate_length=accomodate_length,
+                load_function=load_function,
+                required_file_names=required_file_names) + (directory,)
             for directory, x in dict_dir_x.items()]
         return inference_results
 
@@ -300,7 +305,8 @@ class Inferer(trainer.Trainer):
             output_directory=None, write_simulation=False, write_npy=True,
             write_simulation_base=None, write_simulation_stem=None,
             write_simulation_type='fistr', read_simulation_type='fistr',
-            data_addition_function=None, accomodate_length=None):
+            data_addition_function=None, accomodate_length=None,
+            load_function=None, required_file_names=[]):
 
         if self.setting.trainer.time_series and len(x.shape) == 3:
             x = x[:, None, :, :]
@@ -338,6 +344,9 @@ class Inferer(trainer.Trainer):
             write_simulation_stem=write_simulation_stem,
             write_simulation_type=write_simulation_type,
             read_simulation_type=read_simulation_type,
+            skip_femio=self.setting.conversion.skip_femio,
+            load_function=load_function,
+            required_file_names=required_file_names,
             data_addition_function=data_addition_function)
 
         # Compute loss
@@ -366,7 +375,8 @@ class Inferer(trainer.Trainer):
             write_yaml=True,
             write_simulation_base=None, write_simulation_stem=None,
             write_simulation_type='fistr', read_simulation_type='fistr',
-            data_addition_function=None, accomodate_length=False):
+            data_addition_function=None, accomodate_length=False,
+            load_function=None, required_file_names):
 
         if directory in dict_dir_y:
             # Answer data exists
@@ -385,8 +395,7 @@ class Inferer(trainer.Trainer):
             output_directory = None
 
         inversed_dict_x, inversed_dict_y, loss = self._infer_single_data(
-            postprocessor, x, answer_y=answer_y,
-            overwrite=overwrite,
+            postprocessor, x, answer_y=answer_y, overwrite=overwrite,
             output_directory=output_directory,
             write_simulation=write_simulation, write_npy=write_npy,
             write_simulation_base=write_simulation_base,
@@ -394,7 +403,8 @@ class Inferer(trainer.Trainer):
             write_simulation_type=write_simulation_type,
             read_simulation_type=read_simulation_type,
             data_addition_function=data_addition_function,
-            accomodate_length=accomodate_length)
+            accomodate_length=accomodate_length, load_function=load_function,
+            required_file_names=required_file_names)
 
         if loss is not None:
             print(f"data: {directory}")

@@ -479,8 +479,9 @@ class Converter:
             overwrite=False, save_x=False, write_simulation=False,
             write_npy=True, write_simulation_stem=None,
             write_simulation_base=None, read_simulation_type='fistr',
-            write_simulation_type='fistr',
-            data_addition_function=None):
+            write_simulation_type='fistr', skip_femio=False,
+            load_function=None,
+            data_addition_function=None, required_file_names=[]):
         """Postprocess data with inversely converting them.
 
         Parameters
@@ -506,6 +507,15 @@ class Converter:
                 Simulation file type to read simulation base.
             write_simulation_type: str, optional ['fistr']
                 Simulation file type to write.
+            skip_femio: bool, optional [False]
+                If True, skip femio to read simulation base.
+            load_function: callable, optional [None]
+                Load function taking data_files and data_directory as inputs,
+                and returns data_dict and fem_data.
+            required_file_names: List[str], optional [[]]
+                Required file names for load function.
+            data_addition_function=callable, optional [None]
+                Function to add some data to existing fem_data.
 
         Returns
         --------
@@ -539,7 +549,9 @@ class Converter:
                     write_simulation_stem=write_simulation_stem,
                     read_simulation_type=read_simulation_type,
                     write_simulation_type=write_simulation_type,
-                    data_addition_function=data_addition_function)
+                    data_addition_function=data_addition_function,
+                    skip_femio=skip_femio, load_function=load_function,
+                    required_file_names=required_file_names)
 
         return inversed_dict_data_x, inversed_dict_data_y
 
@@ -548,10 +560,25 @@ class Converter:
             write_simulation_stem=None,
             read_simulation_type='fistr', data_addition_function=None,
             write_simulation_type='fistr',
-            overwrite=False):
-        fem_data = femio.FEMData.read_directory(
-            read_simulation_type, write_simulation_base,
-            stem=write_simulation_stem, save=False)
+            overwrite=False, skip_femio=False, load_function=None,
+            required_file_names=[]):
+        if not skip_femio:
+            fem_data = femio.FEMData.read_directory(
+                read_simulation_type, write_simulation_base,
+                stem=write_simulation_stem, save=False)
+        elif load_function:
+            if len(required_file_names) == 0:
+                raise ValueError(
+                    'Please specify required_file_names when skip_femio '
+                    'is True.')
+            print(write_simulation_base, required_file_names)
+            data_files = util.collect_files(
+                write_simulation_base, required_file_names)
+            _, fem_data = load_function(data_files, write_simulation_base)
+        else:
+            raise ValueError(
+                'When skip_femio is True, please feed load_function.')
+
         for k, v in dict_data_y.items():
             fem_data.overwrite_attribute(k, v[0])
         if data_addition_function is not None:
