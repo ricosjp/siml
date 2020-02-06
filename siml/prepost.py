@@ -571,10 +571,11 @@ class Converter:
                 raise ValueError(
                     'Please specify required_file_names when skip_femio '
                     'is True.')
-            print(write_simulation_base, required_file_names)
             data_files = util.collect_files(
                 write_simulation_base, required_file_names)
-            _, fem_data = load_function(data_files, write_simulation_base)
+            data_dict, fem_data = load_function(
+                data_files, write_simulation_base)
+            fem_data = update_fem_data(fem_data, data_dict)
         else:
             raise ValueError(
                 'When skip_femio is True, please feed load_function.')
