@@ -57,11 +57,8 @@ class BaseDataset(torch.utils.data.Dataset):
                     initial=0, leave=False, total=len(data_directories),
                     ncols=80, ascii=True))
 
-        self.pbar.close()
+        pbar.close()
         return data
-
-    def _load_with_pbar(self, data_directory):
-        return self._load_data(data_directory, self.pbar)
 
     def _load_data(self, data_directory, pbar=None):
         x_data = util.concatenate_variable([
