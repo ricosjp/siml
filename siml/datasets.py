@@ -1,3 +1,4 @@
+import multiprocessing as multi
 
 from ignite.utils import convert_tensor
 import numpy as np
@@ -11,10 +12,11 @@ class BaseDataset(torch.utils.data.Dataset):
 
     def __init__(
             self, x_variable_names, y_variable_names, directories, *,
-            supports=None):
+            supports=None, num_workers=0):
         self.x_variable_names = x_variable_names
         self.y_variable_names = y_variable_names
         self.supports = supports
+        self.num_workers = num_workers
 
         data_directories = []
         for directory in directories:
@@ -29,6 +31,37 @@ class BaseDataset(torch.utils.data.Dataset):
 
     def __len__(self):
         return len(self.data_directories)
+
+    def _load_all_data(self, data_directories):
+        print('Loading data')
+
+        # if self.num_workers < 1:
+        if True:
+            # Single process
+            pbar = tqdm(
+                initial=0, leave=False, total=len(data_directories),
+                ncols=80, ascii=True)
+            data = [
+                self._load_data(data_directory, pbar)
+                for data_directory in data_directories]
+        else:
+            # TODO: After upgrading to Python3.8, activate this block to
+            # communicate large data
+            # https://stackoverflow.com/questions/47776486/python-struct-error-i-format-requires-2147483648-number-2147483647  # NOQA
+            # https://github.com/python/cpython/pull/10305
+            chunksize = max(len(data_directories) // self.num_workers // 16, 1)
+            with multi.Pool(self.num_workers) as pool:
+                data = list(tqdm(
+                    pool.imap(
+                        self._load_data, data_directories, chunksize=chunksize),
+                    initial=0, leave=False, total=len(data_directories),
+                    ncols=80, ascii=True))
+
+        self.pbar.close()
+        return data
+
+    def _load_with_pbar(self, data_directory):
+        return self._load_data(data_directory, self.pbar)
 
     def _load_data(self, data_directory, pbar=None):
         x_data = util.concatenate_variable([
@@ -63,17 +96,13 @@ class ElementWiseDataset(BaseDataset):
 
     def __init__(
             self, x_variable_names, y_variable_names, directories, *,
-            supports=None):
+            supports=None, num_workers=0):
         super().__init__(
-            x_variable_names, y_variable_names, directories, supports=supports)
-        print('Loading data')
-        pbar = tqdm(
-            initial=0, leave=False, total=len(self.data_directories),
-            ncols=80, ascii=True)
-        loaded_data = [
-            self._load_data(data_directory, pbar)
-            for data_directory in self.data_directories]
-        pbar.close()
+            x_variable_names, y_variable_names, directories, supports=supports,
+            num_workers=num_workers)
+
+        loaded_data = self._load_all_data(self.data_directories)
+
         self.x = np.concatenate([ld['x'] for ld in loaded_data])
         self.t = np.concatenate([ld['t'] for ld in loaded_data])
         return
@@ -90,18 +119,12 @@ class OnMemoryDataset(BaseDataset):
 
     def __init__(
             self, x_variable_names, y_variable_names, directories, *,
-            supports=None):
+            supports=None, num_workers=0):
         super().__init__(
-            x_variable_names, y_variable_names, directories, supports=supports)
+            x_variable_names, y_variable_names, directories, supports=supports,
+            num_workers=num_workers)
 
-        print('Loading data')
-        pbar = tqdm(
-            initial=0, leave=False, total=len(self.data_directories),
-            ncols=80, ascii=True)
-        self.data = [
-            self._load_data(data_directory, pbar)
-            for data_directory in self.data_directories]
-        pbar.close()
+        self.data = self._load_all_data(self.data_directories)
         return
 
     def __getitem__(self, i):

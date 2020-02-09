@@ -536,10 +536,10 @@ class Trainer():
 
         train_dataset = dataset_generator(
             x_variable_names, y_variable_names,
-            train_directories, supports=supports)
+            train_directories, supports=supports, num_workers=num_workers)
         validation_dataset = dataset_generator(
             x_variable_names, y_variable_names,
-            validation_directories, supports=supports)
+            validation_directories, supports=supports, num_workers=num_workers)
 
         print(f"num_workers for data_loader: {num_workers}")
         train_loader = torch.utils.data.DataLoader(
