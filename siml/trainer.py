@@ -367,12 +367,22 @@ class Trainer():
         self.evaluator = self._create_supervised_evaluator()
 
         self.desc = "loss: {:.5e}"
-        tick = max(len(self.train_loader) // 100, 1)
+        trainer_tick = max(len(self.train_loader) // 100, 1)
 
-        @self.trainer.on(ignite.engine.Events.ITERATION_COMPLETED(every=tick))
+        @self.trainer.on(
+            ignite.engine.Events.ITERATION_COMPLETED(every=trainer_tick))
         def log_training_loss(engine):
             self.pbar.desc = self.desc.format(engine.state.output)
-            self.pbar.update(tick)
+            self.pbar.update(trainer_tick)
+
+        evaluator_tick = max(
+            (len(self.train_loader) + len(self.validation_loader)) // 100, 1)
+
+        @self.evaluator.on(
+            ignite.engine.Events.ITERATION_COMPLETED(every=evaluator_tick))
+        def log_evaluation(engine):
+            print('hi!')
+            self.evaluation_pbar.update(evaluator_tick)
 
         self.log_file = self.setting.trainer.output_directory / 'log.csv'
         self.plot_file = self.setting.trainer.output_directory / 'plot.png'
@@ -383,11 +393,16 @@ class Trainer():
         def log_training_results(engine):
             self.pbar.refresh()
 
+            self.evaluation_pbar = tqdm(
+                initial=0, leave=False,
+                total=len(self.train_loader) + len(self.validation_loader),
+                ncols=80, ascii=True)
             self.evaluator.run(self.train_loader)
             train_loss = self.evaluator.state.metrics['loss']
 
             self.evaluator.run(self.validation_loader)
             validation_loss = self.evaluator.state.metrics['loss']
+            self.evaluation_pbar.close()
 
             elapsed_time = time.time() - self.start_time
 
