@@ -84,16 +84,10 @@ class Trainer():
             + self._display_mergin('elapsed_time'))
         with open(self.log_file, 'w') as f:
             f.write('epoch, train_loss, validation_loss, elapsed_time\n')
-        self.pbar = tqdm(
-            initial=0, leave=False,
-            total=len(self.train_loader)
-            * self.setting.trainer.log_trigger_epoch,
-            desc=self.desc.format(0), ncols=80, ascii=True)
         self.start_time = time.time()
 
         self.trainer.run(
             self.train_loader, max_epochs=self.setting.trainer.n_epoch)
-        self.pbar.close()
 
         df = pd.read_csv(
             self.log_file, header=0, index_col=None, skipinitialspace=True)
@@ -367,15 +361,38 @@ class Trainer():
         self.evaluator = self._create_supervised_evaluator()
 
         self.desc = "loss: {:.5e}"
-        tick = max(len(self.train_loader) // 100, 1)
+        trainer_tick = max(len(self.train_loader) // 100, 1)
 
-        @self.trainer.on(ignite.engine.Events.ITERATION_COMPLETED(every=tick))
+        @self.trainer.on(
+            ignite.engine.Events.ITERATION_COMPLETED(every=trainer_tick))
         def log_training_loss(engine):
             self.pbar.desc = self.desc.format(engine.state.output)
-            self.pbar.update(tick)
+            self.pbar.update(trainer_tick)
+
+        self.evaluator_desc = "evaluating"
+        evaluator_tick = max(
+            (len(self.train_loader) + len(self.validation_loader)) // 100, 1)
+
+        @self.evaluator.on(
+            ignite.engine.Events.ITERATION_COMPLETED(every=evaluator_tick))
+        def log_evaluation(engine):
+            self.evaluation_pbar.desc = self.evaluator_desc
+            self.evaluation_pbar.update(evaluator_tick)
 
         self.log_file = self.setting.trainer.output_directory / 'log.csv'
         self.plot_file = self.setting.trainer.output_directory / 'plot.png'
+
+        @self.trainer.on(ignite.engine.Events.EPOCH_STARTED)
+        def open_pbar(engine):
+            self.pbar = tqdm(
+                initial=0, leave=False,
+                total=len(self.train_loader)
+                * self.setting.trainer.log_trigger_epoch,
+                desc=self.desc.format(0), ncols=80, ascii=True)
+
+        @self.trainer.on(ignite.engine.Events.EPOCH_COMPLETED)
+        def close_pbar(engine):
+            self.pbar.close()
 
         @self.trainer.on(
             ignite.engine.Events.EPOCH_COMPLETED(
@@ -383,11 +400,16 @@ class Trainer():
         def log_training_results(engine):
             self.pbar.refresh()
 
+            self.evaluation_pbar = tqdm(
+                initial=0, leave=False,
+                total=len(self.train_loader) + len(self.validation_loader),
+                desc=self.evaluator_desc, ncols=80, ascii=True)
             self.evaluator.run(self.train_loader)
             train_loss = self.evaluator.state.metrics['loss']
 
             self.evaluator.run(self.validation_loader)
             validation_loss = self.evaluator.state.metrics['loss']
+            self.evaluation_pbar.close()
 
             elapsed_time = time.time() - self.start_time
 
