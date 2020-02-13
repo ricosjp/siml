@@ -215,7 +215,7 @@ description = "FEM I/O Tool"
 name = "femio"
 optional = false
 python-versions = ">=3.6,<4.0"
-version = "0.1.6"
+version = "0.1.7.dev202002131747"
 
 [package.dependencies]
 matplotlib = ">=3.1,<4.0"
@@ -687,7 +687,7 @@ description = "A lightweight library to help with training neural networks in Py
 name = "pytorch-ignite"
 optional = false
 python-versions = "*"
-version = "0.4.0.dev20200212"
+version = "0.3.0"
 
 [package.dependencies]
 torch = "*"
@@ -1000,7 +1000,7 @@ PyQt5 = ["PyQt5"]
 cupy = []
 
 [metadata]
-content-hash = "ac96c5ffabf8592de335611dc89c7930a2d4f61564b9674f394dcd092e18d60a"
+content-hash = "34667826f2cfc430d39b98216b8a11cc33db6217653679bb0b73cc084ed110be"
 python-versions = "^3.7"
 
 [metadata.files]
@@ -1076,7 +1076,7 @@ enum34 = [
     {file = "enum34-1.1.6.zip", hash = "sha256:2d81cbbe0e73112bdfe6ef8576f2238f2ba27dd0d55752a776c41d38b7da2850"},
 ]
 femio = [
-    {file = "femio-0.1.6-py3-none-any.whl", hash = "md5:d27ed8a2c903998fc89e381b4b984b9e"},
+    {file = "femio-0.1.7.dev202002131747-py3-none-any.whl", hash = "md5:5cc59b69971b0b61afdab5e252334954"},
 ]
 filelock = [
     {file = "filelock-3.0.12-py3-none-any.whl", hash = "sha256:929b7d63ec5b7d6b71b0fa5ac14e030b3f70b75747cef1b10da9b879fef15836"},
@@ -1396,8 +1396,9 @@ python-utils = [
     {file = "python_utils-2.3.0-py2.py3-none-any.whl", hash = "sha256:e25f840564554eaded56eaa395bca507b0b9e9f0ae5ecb13a8cb785305c56d25"},
 ]
 pytorch-ignite = [
-    {file = "pytorch-ignite-0.4.0.dev20200212.tar.gz", hash = "sha256:5902d78a7e7bc23ff5dc7fc449156b8e324ec29892f28be12b2aa20073826feb"},
-    {file = "pytorch_ignite-0.4.0.dev20200212-py2.py3-none-any.whl", hash = "sha256:caa765e25196477e67c0a1a81e4a3ab418bcae3f501519aebda2da81af0b0c0f"},
+    {file = "pytorch-ignite-0.3.0.tar.gz", hash = "sha256:d39ec25cf592308d6c30bb10f1bc5038fc68ad20c8639750ac504d9e8b25074c"},
+    {file = "pytorch_ignite-0.3.0-py2.py3-none-any.whl", hash = "sha256:bea739029fa96059ee36ab3376a99fdd3930d7ad94151c6eef04d2b91bd217bd"},
+    {file = "pytorch_ignite-0.3.0-py3.6.egg", hash = "sha256:bd815dc57d81c860363faa74bbd574a3ac55aa5c5bdeadf58bbd50fd74c1a5ac"},
 ]
 pytz = [
     {file = "pytz-2019.3-py2.py3-none-any.whl", hash = "sha256:1c557d7d0e871de1f5ccd5833f60fb2550652da6be2693c1e02300743d21500d"},
