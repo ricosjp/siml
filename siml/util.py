@@ -214,8 +214,10 @@ class PreprocessConverter():
         else:
             raise ValueError(f"Unsupported setting_data: {setting_data}")
 
+        self.componentwise = componentwise
+
         if data_files is not None:
-            self.lazy_read_files(data_files, componentwise)
+            self.lazy_read_files(data_files)
         return
 
     def _init_with_dict(self, setting_dict):
@@ -245,44 +247,79 @@ class PreprocessConverter():
 
     def apply_data_with_rehspe_if_needed(
             self, data, function, return_applied=True):
-        shape = data.shape
-        if len(shape) == 2:
+        if isinstance(data, np.ndarray):
+            return self.apply_numpy_data_with_reshape_if_needed(
+                data, function, return_applied=return_applied)
+        elif isinstance(data, sp.coo_matrix):
+            return self.apply_sparse_data_with_reshape_if_needed(
+                data, function, return_applied=return_applied)
+        else:
+            raise ValueError(f"Unsupported data type: {data.__class__}")
+
+    def apply_sparse_data_with_reshape_if_needed(
+            self, data, function, return_applied=True):
+        if self.componentwise:
             applied = function(data)
             if return_applied:
-                return applied
-            else:
-                return
-        elif len(shape) == 3:
-            # Time series
-            reshaped = np.reshape(data, (shape[0] * shape[1], shape[2]))
-            applied_rehsped = function(reshaped)
-            if return_applied:
-                applied = np.reshape(applied_rehsped, shape)
-                return applied
-            else:
-                return
-        elif len(shape) == 4:
-            # Batched time series
-            reshaped = np.reshape(
-                data, (shape[0] * shape[1] * shape[2], shape[3]))
-            applied_rehsped = function(reshaped)
-            if return_applied:
-                applied = np.reshape(applied_rehsped, shape)
-                return applied
+                return applied.tocoo()
             else:
                 return
         else:
-            raise ValueError(f"Data shape {data.shape} not understood")
+            shape = data.shape
+            reshaped = data.reshape((shape[0] * shape[1], 1))
+            applied_reshaped = function(reshaped)
+            if return_applied:
+                return applied_reshaped.reshape(shape).tocoo()
+            else:
+                return
 
-    def lazy_read_files(self, data_files, componentwise=True):
+    def apply_numpy_data_with_reshape_if_needed(
+            self, data, function, return_applied=True):
+        shape = data.shape
+
+        if self.componentwise:
+            if len(shape) == 2:
+                applied = function(data)
+                if return_applied:
+                    return applied
+                else:
+                    return
+            elif len(shape) == 3:
+                # Time series
+                reshaped = np.reshape(data, (shape[0] * shape[1], shape[2]))
+                applied_reshaped = function(reshaped)
+                if return_applied:
+                    applied = np.reshape(applied_reshaped, shape)
+                    return applied
+                else:
+                    return
+            elif len(shape) == 4:
+                # Batched time series
+                reshaped = np.reshape(
+                    data, (shape[0] * shape[1] * shape[2], shape[3]))
+                applied_reshaped = function(reshaped)
+                if return_applied:
+                    applied = np.reshape(applied_reshaped, shape)
+                    return applied
+                else:
+                    return
+            else:
+                raise ValueError(f"Data shape {data.shape} not understood")
+
+        else:
+            reshaped = np.reshape(data, (-1, 1))
+            applied_reshaped = function(reshaped)
+            if return_applied:
+                applied = np.reshape(applied_reshaped, shape)
+                return applied
+            else:
+                return
+
+    def lazy_read_files(self, data_files):
         for data_file in data_files:
             data = self.load_file(data_file)
-            if not componentwise:
-                data = np.reshape(data, (-1, 1))
-                self.converter.partial_fit(data)
-            else:
-                self.apply_data_with_rehspe_if_needed(
-                    data, self.converter.partial_fit, return_applied=False)
+            self.apply_data_with_rehspe_if_needed(
+                data, self.converter.partial_fit, return_applied=False)
         return
 
     def load_file(self, data_file):
