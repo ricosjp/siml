@@ -5,6 +5,7 @@
 # Data directory
 data/*
 tests/data/*
+models
 *_models/*
 
 # Figures

@@ -4,6 +4,7 @@ import unittest
 
 import numpy as np
 import pandas as pd
+import scipy.sparse as sp
 
 import siml.prepost as pre
 import siml.setting as setting
@@ -24,9 +25,13 @@ def conversion_function(fem_data, raw_directory=None):
     # To be used in test_preprocess_deform
     adj, _ = fem_data.calculate_adjacency_matrix_element()
     nadj = pre.normalize_adjacency_matrix(adj)
+    x_grad, y_grad, z_grad = \
+        fem_data.calculate_spatial_gradient_adjacency_matrices('elemental')
     global_modulus = np.mean(
         fem_data.access_attribute('modulus'), keepdims=True)
-    return {'adj': adj, 'nadj': nadj, 'global_modulus': global_modulus}
+    return {
+        'adj': adj, 'nadj': nadj, 'global_modulus': global_modulus,
+        'x_grad': x_grad, 'y_grad': y_grad, 'z_grad': z_grad}
 
 
 def filter_function(fem_data, raw_directory=None, data_dict=None):
@@ -283,6 +288,28 @@ class TestPrepost(unittest.TestCase):
         raw_converter.convert()
         p = pre.Preprocessor(main_setting)
         p.preprocess_interim_data()
+
+        interim_strain = np.load(
+            'tests/data/deform/test_prepost/interim/train/'
+            'tet2_3_modulusx1.0000/elemental_strain.npy')
+        preprocessed_strain = np.load(
+            'tests/data/deform/test_prepost/preprocessed/train/'
+            'tet2_3_modulusx1.0000/elemental_strain.npy')
+        ratio_strain = interim_strain / preprocessed_strain
+        np.testing.assert_almost_equal(
+            ratio_strain - np.mean(ratio_strain), 0.)
+
+        interim_y_grad = sp.load_npz(
+            'tests/data/deform/test_prepost/interim/train/'
+            'tet2_3_modulusx1.0000/y_grad.npz')
+        preprocessed_y_grad = sp.load_npz(
+            'tests/data/deform/test_prepost/preprocessed/train/'
+            'tet2_3_modulusx1.0000/y_grad.npz')
+
+        ratio_y_grad = interim_y_grad.toarray() \
+            / preprocessed_y_grad.toarray()
+        np.testing.assert_almost_equal(
+            ratio_y_grad - np.mean(ratio_y_grad), 0.)
 
     def test_convert_raw_data_with_filter_function(self):
         main_setting = setting.MainSetting.read_settings_yaml(
