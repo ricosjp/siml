@@ -1,7 +1,6 @@
 
 import torch
 
-from . import adjustable_mlp
 from .. import setting
 
 
@@ -62,7 +61,7 @@ class AbstractGCN(torch.nn.Module):
 
     def __init__(
             self, block_setting,
-            *, create_subchain=True, adjustable_subchain=False):
+            *, create_subchain=True, residual=False):
         """Initialize the NN.
 
         Parameters
@@ -71,33 +70,46 @@ class AbstractGCN(torch.nn.Module):
                 BlockSetting object.
             create_subchain: bool, optional [True]
                 If True, create subchain to be trained.
-            adjustable_subchain: bool, optional [False]
-                If True, create subchain as a stack of AdjustableMLP layers
-                instead of that of toch.nn.Linear layers.
+            residual: bool, optional [False]
+                If True, make the network residual.
         """
 
         super().__init__()
+        self.residual = residual
 
         self.multiple_networks = block_setting.optional.get(
             'multiple_networks', True)
         if create_subchain:
             self.subchains, self.subchain_indices = self._create_subchains(
-                block_setting, adjustable_subchain)
+                block_setting)
 
-        self.activations = [
-            DICT_ACTIVATIONS[activation]
-            for activation in block_setting.activations]
         self.dropout_ratios = [
             dropout_ratio for dropout_ratio in block_setting.dropouts]
 
+        if self.residual:
+            activations = [
+                DICT_ACTIVATIONS[activation]
+                for activation in block_setting.activations]
+            self.activations = activations[:-1] \
+                + [DICT_ACTIVATIONS['identity']] \
+                + [activations[-1]]
+            nodes = block_setting.nodes
+            if nodes[0] == nodes[-1]:
+                self.shortcut = identity
+            else:
+                self.shortcut = torch.nn.Linear(nodes[0], nodes[-1])
+        else:
+            self.activations = [
+                DICT_ACTIVATIONS[activation]
+                for activation in block_setting.activations]
+
     def _create_subchains(
-            self, block_setting, adjustable_subchain=False,
+            self, block_setting,
             twice_input_nodes=False, square_weight=False, start_index=0):
         if self.multiple_networks:
             subchains = torch.nn.ModuleList([
                 self._create_subsubchain(
                     block_setting,
-                    adjustable_subchain=adjustable_subchain,
                     twice_input_nodes=twice_input_nodes,
                     square_weight=square_weight, start_index=start_index)
                 for _ in block_setting.support_input_indices])
@@ -107,7 +119,6 @@ class AbstractGCN(torch.nn.Module):
             subchains = torch.nn.ModuleList([
                 self._create_subsubchain(
                     block_setting,
-                    adjustable_subchain=adjustable_subchain,
                     twice_input_nodes=twice_input_nodes,
                     square_weight=square_weight, start_index=start_index)])
             subchain_indices = [0] * len(
@@ -116,7 +127,7 @@ class AbstractGCN(torch.nn.Module):
         return subchains, subchain_indices
 
     def _create_subsubchain(
-            self, block_setting, adjustable_subchain=False,
+            self, block_setting,
             twice_input_nodes=False, square_weight=False, start_index=0):
         nodes = block_setting.nodes[start_index:]
         if twice_input_nodes:
@@ -130,20 +141,8 @@ class AbstractGCN(torch.nn.Module):
             node_tuples = [
                 (n1 * factor, n2) for n1, n2 in zip(nodes[:-1], nodes[1:])]
 
-        if adjustable_subchain:
-            block_settings = [
-                setting.BlockSetting(
-                    nodes=node_tuple, activations=['identity'],
-                    dropouts=[dropout])
-                for node_tuple, dropout
-                in zip(node_tuples, block_setting.dropouts)]
-            return torch.nn.ModuleList([
-                adjustable_mlp.AdjustableMLP(bs)
-                for bs in block_settings
-            ])
-        else:
-            return torch.nn.ModuleList([
-                torch.nn.Linear(*node_tuple) for node_tuple in node_tuples])
+        return torch.nn.ModuleList([
+            torch.nn.Linear(*node_tuple) for node_tuple in node_tuples])
 
     def forward(self, x, supports):
         """Execute the NN's forward computation.
@@ -172,12 +171,15 @@ class AbstractGCN(torch.nn.Module):
         return hs
 
     def _forward_single(self, x, supports):
-        try:
+        if self.residual:
+            h_res = torch.sum(torch.stack([
+                self._forward_single_core(x, self.subchain_indices[i], support)
+                for i, support in enumerate(supports)]), dim=0)
+            return self.activations[-1](h_res + self.shortcut(x))
+        else:
             return torch.sum(torch.stack([
                 self._forward_single_core(x, self.subchain_indices[i], support)
                 for i, support in enumerate(supports)]), dim=0)
-        except IndexError:
-            raise ValueError(self.subchain_indices, len(supports))
 
     def _forward_single_core(self, x, subchain_index, support):
         raise NotImplementedError
