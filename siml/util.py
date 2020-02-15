@@ -229,7 +229,6 @@ class PreprocessConverter():
         else:
             raise ValueError(f"Unsupported setting_data: {setting_data}")
 
-
     def _init_with_dict(self, setting_dict):
         preprocess_method = setting_dict['method']
         self._init_with_str(preprocess_method)
