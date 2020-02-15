@@ -48,11 +48,30 @@ class TestNetwork(unittest.TestCase):
         if tr.setting.trainer.output_directory.exists():
             shutil.rmtree(tr.setting.trainer.output_directory)
         loss = tr.train()
-        np.testing.assert_array_less(loss, 5.)
+        np.testing.assert_array_less(loss, 1.)
+
+    def test_gcn(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/deform/gcn.yml'))
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, 1.)
 
     def test_nri(self):
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/deform/nri.yml'))
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, 1.)
+
+    def test_nri_non_concat(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/deform/nri.yml'))
+        main_setting.model.blocks[0].optional['concat'] = False
         tr = trainer.Trainer(main_setting)
         if tr.setting.trainer.output_directory.exists():
             shutil.rmtree(tr.setting.trainer.output_directory)
@@ -71,6 +90,25 @@ class TestNetwork(unittest.TestCase):
     def test_reduce_mlp(self):
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/deform/reduce_mlp.yml'))
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, 1.)
+
+    def test_deform_gradient(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/deform/res_gcn_grad.yml'))
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, 1.)
+
+    def test_deform_gradient_share(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/deform/res_gcn_grad.yml'))
+        main_setting.model.blocks[0].optional['multiple_networks'] = False
         tr = trainer.Trainer(main_setting)
         if tr.setting.trainer.output_directory.exists():
             shutil.rmtree(tr.setting.trainer.output_directory)

@@ -25,7 +25,6 @@ class DeepSets(torch.nn.Module):
         self.activations = [
             header.DICT_ACTIVATIONS[activation]
             for activation in block_setting.activations]
-        self.input_selection = block_setting.input_selection
 
     def forward(self, x, supports=None):
         """Execute the NN's forward computation.
@@ -41,7 +40,7 @@ class DeepSets(torch.nn.Module):
             y: numpy.ndarray of cupy.ndarray
                 Output of the NN.
         """
-        h = x[:, :, self.input_selection]
+        h = x
         h = self.activations[-1](
             self.lambda_(h) + header.max_pool(self.gamma(h)))
         return h

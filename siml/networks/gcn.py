@@ -13,9 +13,10 @@ class GCN(header.AbstractGCN):
         super().__init__(
             block_setting, create_subchain=True, adjustable_subchain=True)
 
-    def _forward_single(self, x, support):
+    def _forward_single_core(self, x, subchain_index, support):
         h = x
-        for subchain, activation in zip(self.subchains, self.activations):
+        for subchain, activation in zip(
+                self.subchains[subchain_index], self.activations):
             h = subchain(h)
             h = activation(torch.sparse.mm(support, h))
         return h
@@ -35,10 +36,11 @@ class ResGCN(GCN):
         else:
             self.shortcut = torch.nn.Linear(nodes[0], nodes[-1])
 
-    def _forward_single(self, x, support):
+    def _forward_single_core(self, x, subchain_index, support):
         h = x
 
-        for subchain, activation in zip(self.subchains, self.activations):
+        for subchain, activation in zip(
+                self.subchains[subchain_index], self.activations):
             h = subchain(h)
             h = activation(torch.sparse.mm(support, h))
         return self.activations[-1](h + self.shortcut(x))

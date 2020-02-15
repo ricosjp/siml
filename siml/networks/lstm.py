@@ -20,7 +20,6 @@ class LSTM(torch.nn.Module):
             torch.nn.LSTM(n1, n2, dropout=do)
             for n1, n2, do
             in zip(nodes[:-1], nodes[1:], block_setting.dropouts)])
-        self.input_selection = block_setting.input_selection
 
     def forward(self, x, supports=None):
         """Execute the NN's forward computation.
@@ -37,7 +36,7 @@ class LSTM(torch.nn.Module):
                 Output of the NN.
         """
         shape = x.shape
-        h = x[:, :, :, self.input_selection].view(
+        h = x.view(
             shape[0], shape[1] * shape[2], -1)
         for lstm_layer in self.lstm_layers:
             h, _ = lstm_layer(h)

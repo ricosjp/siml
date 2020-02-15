@@ -53,7 +53,8 @@ class BaseDataset(torch.utils.data.Dataset):
             with multi.Pool(self.num_workers) as pool:
                 data = list(tqdm(
                     pool.imap(
-                        self._load_data, data_directories, chunksize=chunksize),
+                        self._load_data, data_directories,
+                        chunksize=chunksize),
                     initial=0, leave=False, total=len(data_directories),
                     ncols=80, ascii=True))
 
@@ -271,14 +272,14 @@ def convert_sparse_info(sparse_info, device=None, non_blocking=False):
 
 
 def convert_sparse_tensor(sparse_info, device=None, non_blocking=False):
-    return [
+    return np.array([
         [
             torch.sparse_coo_tensor(
                 torch.stack([s['row'], s['col']]),
                 s['values'], s['size']
             ).to(device)
             for s in si]
-        for si in sparse_info]
+        for si in sparse_info])
 
 
 def prepare_batch_without_support(
