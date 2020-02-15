@@ -245,7 +245,7 @@ class PreprocessConverter():
             self.is_erroneous = self.is_standard_scaler_var_nan
         elif preprocess_method == 'min_max':
             self.converter = preprocessing.MinMaxScaler()
-        elif preprocess_method == 'min_abs':
+        elif preprocess_method == 'max_abs':
             self.converter = preprocessing.MaxAbsScaler()
         else:
             raise ValueError(
@@ -343,7 +343,8 @@ class PreprocessConverter():
             # https://github.com/scikit-learn/scikit-learn/issues/16448
             if self.is_erroneous():
                 if self.retry_count < self.MAX_RETRY:
-                    print(f"Retry: {self.retry_count + 1}")
+                    print(
+                        f"Retry for {file_name.stem}: {self.retry_count + 1}")
                     self.retry_count = self.retry_count + 1
                     np.random.shuffle(data_files)
                     self._init_converter()

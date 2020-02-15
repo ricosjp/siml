@@ -38,7 +38,7 @@ preprocess:
     method: std_scale
     componentwise: false
   y_grad:
-    method: std_scale
+    method: max_abs
     componentwise: false
   z_grad:
     method: std_scale
