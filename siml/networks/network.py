@@ -30,7 +30,8 @@ class Network(torch.nn.Module):
         'gcn': BlockInformation(gcn.GCN, use_support=True),
         'res_gcn': BlockInformation(gcn.ResGCN, use_support=True),
         'reducer': BlockInformation(reducer.Reducer),
-        'distributor': BlockInformation(reducer.Reducer),  # For backward compatibility  # NOQA
+        'distributor': BlockInformation(
+            reducer.Reducer),  # For backward compatibility
         'deepsets': BlockInformation(deepsets.DeepSets),
         'nri': BlockInformation(nri.NRI, use_support=True),
         'lstm': BlockInformation(lstm.LSTM),
@@ -101,31 +102,40 @@ class Network(torch.nn.Module):
         x = x_['x']
         # Due to lack of support of sparse matrix of scatter in DataParallel
         # and coo_matrix, convert sparse in the forward
+        block_settings = self.model_setting.blocks
         supports = datasets.convert_sparse_tensor(
             x_['supports'], device=x.device)
         hiddens = [None] * len(self.chains)
 
-        hiddens[0] = self.chains[0](x, supports)
+        hiddens[0] = self.chains[0](
+            x[..., block_settings[0].input_selection],
+            supports[:, block_settings[0].support_input_indices])
         for i in range(1, len(hiddens)):
             device = self.devices[i]
             inputs = [
-                hiddens[input_node].to(device)
+                hiddens[input_node][
+                    ..., block_settings[i].input_selection].to(device)
                 for input_node in self.call_graph[i]]
             if self.use_support_informations[i]:
-                supports = [[s.to(device) for s in sp] for sp in supports]
-                hiddens[i] = self.chains[i](*inputs, supports=supports)
+                selected_supports = [
+                    [s.to(device) for s in sp] for sp
+                    in supports[:, block_settings[i].support_input_indices]]
+                hiddens[i] = self.chains[i](
+                    *inputs, supports=selected_supports)
             else:
                 hiddens[i] = self.chains[i](*inputs)
         return hiddens[-1]
 
     def _forward_without_support(self, x_):
+        block_settings = self.model_setting.blocks
         x = x_['x']
         hiddens = [None] * len(self.chains)
-        hiddens[0] = self.chains[0](x)
+        hiddens[0] = self.chains[0](x[..., block_settings[0].input_selection])
         for i in range(1, len(hiddens)):
             device = self.devices[i]
             inputs = [
-                hiddens[input_node].to(device)
+                hiddens[input_node][
+                    ..., block_settings[i].input_selection].to(device)
                 for input_node in self.call_graph[i]]
             hiddens[i] = self.chains[i](*inputs)
         return hiddens[-1]

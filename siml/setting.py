@@ -328,7 +328,10 @@ class BlockSetting(TypedDataClass):
     input_slice: slice = slice(0, None, 1)
     input_indices: typing.List[int] = dc.field(
         default=None, metadata={'allow_none': True})
-    support_input_index: int = 0
+    support_input_index: int = dc.field(
+        default=None, metadata={'allow_none': True})
+    support_input_indices: typing.List[int] = dc.field(
+        default=None, metadata={'allow_none': True})
     nodes: typing.List[int] = dc.field(
         default_factory=lambda: [-1, -1])
     activations: typing.List[str] = dc.field(
@@ -371,6 +374,14 @@ class BlockSetting(TypedDataClass):
             self.input_selection = self.input_indices
         else:
             self.input_selection = self.input_slice
+
+        if self.support_input_indices is None:
+            if self.support_input_index is None:
+                self.support_input_indices = [0]
+            else:
+                self.support_input_indices = [self.support_input_index]
+
+        return
 
 
 @dc.dataclass

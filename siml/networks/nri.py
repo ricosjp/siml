@@ -20,17 +20,12 @@ class NRI(header.AbstractGCN):
                 BlockSetting object.
         """
         super().__init__(block_setting, create_subchain=False)
-        self.concat = True
-        if self.concat:
-            self.edge_parameters = torch.nn.ModuleList([
-                torch.nn.Linear(n1 * 2, n2) for n1, n2
-                in zip(block_setting.nodes[:-1], block_setting.nodes[1:])])
-        else:
-            self.edge_parameters = torch.nn.ModuleList([
-                torch.nn.Linear(n1, n2) for n1, n2
-                in zip(block_setting.nodes[:-1], block_setting.nodes[1:])])
-        self.node_parameters = torch.nn.ModuleList([
-            torch.nn.Linear(n, n) for n in block_setting.nodes[1:]])
+        self.concat = block_setting.optional.get(
+            'concat', True)
+        self.edge_parameters, self.subchain_indices = self._create_subchains(
+            block_setting, twice_input_nodes=self.concat)
+        self.node_parameters, _ = self._create_subchains(
+            block_setting, square_weight=True, start_index=1)
 
     def make_reduce_matrix(self, nadj, *, mean=False):
         col = nadj._indices()[1].cpu().numpy()
@@ -52,28 +47,7 @@ class NRI(header.AbstractGCN):
 
         return reduce_matrix.to(nadj.device)
 
-    def forward(self, x, supports):
-        """Execute the NN's forward computation.
-
-        Parameters
-        ----------
-            x: numpy.ndarray or cupy.ndarray
-                Input of the NN.
-            supports: List[chainer.util.CooMatrix]
-                List of support inputs.
-        Returns
-        --------
-            y: numpy.ndarray of cupy.ndarray
-                Output of the NN.
-        """
-        hs = torch.stack([
-            self._forward_single(
-                x_[:, self.input_selection],
-                supports_[self.support_input_index])
-            for x_, supports_ in zip(x, supports)])
-        return hs
-
-    def _forward_single(self, x, support):
+    def _forward_single_core(self, x, subchain_index, support):
         """Execute the NN's forward computation.
 
         Parameters
@@ -91,16 +65,24 @@ class NRI(header.AbstractGCN):
         reduce_matrix = self.make_reduce_matrix(support, mean=True)
         row = support._indices()[0].cpu().numpy()
         col = support._indices()[1].cpu().numpy()
-        for i in range(len(self.edge_parameters)):
+        for i in range(len(self.edge_parameters[subchain_index])):
             if self.concat:
                 merged = torch.cat(
-                    [h_node[col], h_node[row]], dim=1)
+                    [h_node[col], h_node[row]], dim=-1)
             else:
                 merged = h_node[col] - h_node[row]
 
-            edge_emb = self.activations[i](self.edge_parameters[i](merged))
+            edge_emb = self.activations[i](
+                self.edge_parameters[subchain_index][i](merged))
 
             h_edge = torch.sparse.mm(reduce_matrix.transpose(0, 1), edge_emb)
-            h_node = self.activations[i](self.node_parameters[i](h_edge))
+            try:
+                h_node = self.activations[i](
+                    self.node_parameters[subchain_index][i](h_edge))
+            except RuntimeError:
+                raise ValueError(
+                    self.node_parameters[subchain_index][i],
+                    self.edge_parameters[subchain_index][i],
+                    h_edge.shape)
 
         return h_node
