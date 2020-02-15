@@ -204,21 +204,31 @@ def files_exist(directory, file_names):
 
 class PreprocessConverter():
 
+    MAX_RETRY = 3
+
     def __init__(self, setting_data, *, data_files=None, componentwise=True):
-        if isinstance(setting_data, dict):
-            self._init_with_dict(setting_data)
-        elif isinstance(setting_data, str):
-            self._init_with_str(setting_data)
-        elif isinstance(setting_data, BaseEstimator):
-            self._init_with_converter(setting_data)
-        else:
-            raise ValueError(f"Unsupported setting_data: {setting_data}")
+        self.is_erroneous = None
+        self.setting_data = setting_data
+
+        self._init_converter()
 
         self.componentwise = componentwise
+        self.retry_count = 0
 
         if data_files is not None:
             self.lazy_read_files(data_files)
         return
+
+    def _init_converter(self):
+        if isinstance(self.setting_data, dict):
+            self._init_with_dict(self.setting_data)
+        elif isinstance(self.setting_data, str):
+            self._init_with_str(self.setting_data)
+        elif isinstance(self.setting_data, BaseEstimator):
+            self._init_with_converter(self.setting_data)
+        else:
+            raise ValueError(f"Unsupported setting_data: {setting_data}")
+
 
     def _init_with_dict(self, setting_dict):
         preprocess_method = setting_dict['method']
@@ -230,8 +240,10 @@ class PreprocessConverter():
             self.converter = Identity()
         elif preprocess_method == 'standardize':
             self.converter = preprocessing.StandardScaler()
+            self.is_erroneous = self.is_standard_scaler_var_nan
         elif preprocess_method == 'std_scale':
             self.converter = preprocessing.StandardScaler(with_mean=False)
+            self.is_erroneous = self.is_standard_scaler_var_nan
         elif preprocess_method == 'min_max':
             self.converter = preprocessing.MinMaxScaler()
         elif preprocess_method == 'min_abs':
@@ -248,13 +260,18 @@ class PreprocessConverter():
     def apply_data_with_rehspe_if_needed(
             self, data, function, return_applied=True):
         if isinstance(data, np.ndarray):
-            return self.apply_numpy_data_with_reshape_if_needed(
+            result = self.apply_numpy_data_with_reshape_if_needed(
                 data, function, return_applied=return_applied)
         elif isinstance(data, sp.coo_matrix):
-            return self.apply_sparse_data_with_reshape_if_needed(
+            result = self.apply_sparse_data_with_reshape_if_needed(
                 data, function, return_applied=return_applied)
         else:
             raise ValueError(f"Unsupported data type: {data.__class__}")
+
+        return result
+
+    def is_standard_scaler_var_nan(self):
+        return np.any(np.isnan(self.converter.var_))
 
     def apply_sparse_data_with_reshape_if_needed(
             self, data, function, return_applied=True):
@@ -320,6 +337,21 @@ class PreprocessConverter():
             data = self.load_file(data_file)
             self.apply_data_with_rehspe_if_needed(
                 data, self.converter.partial_fit, return_applied=False)
+
+        if self.is_erroneous is not None:
+            # NOTE: Check varianve is not none for StandardScaler with sparse
+            # data. Related to
+            # https://github.com/scikit-learn/scikit-learn/issues/16448
+            if self.is_erroneous():
+                if self.retry_count < self.MAX_RETRY:
+                    print(f"Retry: {self.retry_count + 1}")
+                    self.retry_count = self.retry_count + 1
+                    np.random.shuffle(data_files)
+                    self._init_converter()
+                    self.lazy_read_files(data_files)
+                else:
+                    raise ValueError('Retry exhausted. Check the data.')
+
         return
 
     def load_file(self, data_file):
