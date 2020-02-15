@@ -344,7 +344,7 @@ class PreprocessConverter():
             if self.is_erroneous():
                 if self.retry_count < self.MAX_RETRY:
                     print(
-                        f"Retry for {file_name.stem}: {self.retry_count + 1}")
+                        f"Retry for {data_file.stem}: {self.retry_count + 1}")
                     self.retry_count = self.retry_count + 1
                     np.random.shuffle(data_files)
                     self._init_converter()
