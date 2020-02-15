@@ -227,7 +227,7 @@ class PreprocessConverter():
         elif isinstance(self.setting_data, BaseEstimator):
             self._init_with_converter(self.setting_data)
         else:
-            raise ValueError(f"Unsupported setting_data: {setting_data}")
+            raise ValueError(f"Unsupported setting_data: {self.setting_data}")
 
     def _init_with_dict(self, setting_dict):
         preprocess_method = setting_dict['method']
