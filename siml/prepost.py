@@ -526,11 +526,11 @@ class Converter:
         """
         inversed_dict_data_x = {
             variable_name:
-            self.converters[variable_name].inverse(data)
+            self.converters[variable_name].inverse(data)[0]
             for variable_name, data in dict_data_x.items()}
         inversed_dict_data_y = {
             variable_name:
-            self.converters[variable_name].inverse(data)
+            self.converters[variable_name].inverse(data)[0]
             for variable_name, data in dict_data_y.items()}
 
         # Save data
@@ -561,7 +561,7 @@ class Converter:
             read_simulation_type='fistr', data_addition_function=None,
             write_simulation_type='fistr',
             overwrite=False, skip_femio=False, load_function=None,
-            required_file_names=[]):
+            required_file_names=[], convert_to_order1=True):
         if not skip_femio:
             fem_data = femio.FEMData.read_directory(
                 read_simulation_type, write_simulation_base,
@@ -580,8 +580,10 @@ class Converter:
             raise ValueError(
                 'When skip_femio is True, please feed load_function.')
 
-        for k, v in dict_data_y.items():
-            fem_data.overwrite_attribute(k, v[0])
+        if convert_to_order1:
+            fem_data = fem_data.to_first_order()
+
+        fem_data = update_fem_data(fem_data, dict_data_y)
         if data_addition_function is not None:
             fem_data = data_addition_function(fem_data)
 
