@@ -31,6 +31,16 @@ class TestTrainer(unittest.TestCase):
         loss = tr.train()
         np.testing.assert_array_less(loss, 1e-2)
 
+    def test_train_res_gcn(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/deform/res_gcn_long.yml'))
+        main_setting.trainer.num_workers = 0  # Serial
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, 1e-2)
+
     def test_train_lstm_long(self):
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/deform_timeseries/lstm_long.yml'))
