@@ -216,11 +216,11 @@ def pad_time_direction(data, time_length):
     return padded_data
 
 
-def pad_sparse_sequence(batch, key, length):
+def pad_sparse_sequence(batch, key, length=None):
     return [[pad_sparse(s, length) for s in b[key]] for b in batch]
 
 
-def pad_sparse(sparse, length):
+def pad_sparse(sparse, length=None):
     """Pad sparse matrix.
 
     Parameters
@@ -239,10 +239,14 @@ def pad_sparse(sparse, length):
     row = torch.LongTensor(sparse.row)
     col = torch.LongTensor(sparse.col)
     values = torch.from_numpy(sparse.data)
+    if length is None:
+        shape = sparse.shape
+    else:
+        shape = (length, length)
 
     return {
         'row': row, 'col': col, 'values': values,
-        'size': torch.Size((length, length))}
+        'size': torch.Size(shape)}
 
 
 def prepare_batch_with_support(

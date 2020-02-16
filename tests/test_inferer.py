@@ -200,7 +200,7 @@ class TestInferer(unittest.TestCase):
 
     def test_infer_res_gcn(self):
         main_setting = setting.MainSetting.read_settings_yaml(
-            Path('tests/data/deform/pretrained_res_gcn/settings.yaml'))
+            Path('tests/data/deform/pretrained_res_gcn/settings.yml'))
         ir = inferer.Inferer(main_setting)
         if ir.setting.trainer.output_directory.exists():
             shutil.rmtree(ir.setting.trainer.output_directory)
@@ -212,9 +212,9 @@ class TestInferer(unittest.TestCase):
             converter_parameters_pkl=Path(
                 'tests/data/deform/preprocessed/preprocessors.pkl'))
         np.testing.assert_almost_equal(
-            res[0]['dict_y']['stress'][:, 0] * 1e-5,
+            res[0]['dict_y']['elemental_stress'][0] * 1e-5,
             np.load(
                 'tests/data/deform/interim/train'
-                '/tet2_3_modulusx1.0000/stress.npy') * 1e-5,
+                '/tet2_3_modulusx1.0000/elemental_stress.npy') * 1e-5,
             decimal=3)
         np.testing.assert_array_less(res[0]['loss'], 1e-3)

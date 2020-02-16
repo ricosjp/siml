@@ -4,6 +4,7 @@ import femio
 import numpy as np
 import torch
 
+from . import datasets
 from . import networks
 from . import prepost
 from . import setting
@@ -106,7 +107,7 @@ class Inferer(trainer.Trainer):
 
             dict_dir_x = self._load_data(
                 self.setting.trainer.input_names, input_directories,
-                return_dict=True)
+                return_dict=True, supports=self.setting.trainer.support_inputs)
             dict_dir_y = self._load_data(
                 self.setting.trainer.output_names, input_directories,
                 return_dict=True)
@@ -301,7 +302,7 @@ class Inferer(trainer.Trainer):
 
     def _infer_single_data(
             self, postprocessor, x, *, answer_y=None,
-            overwrite=False,
+            overwrite=False, supports=None,
             output_directory=None, write_simulation=False, write_npy=True,
             write_simulation_base=None, write_simulation_stem=None,
             write_simulation_type='fistr', read_simulation_type='fistr',
@@ -311,6 +312,12 @@ class Inferer(trainer.Trainer):
         if self.setting.trainer.time_series and len(x.shape) == 3:
             x = x[:, None, :, :]
 
+        if supports is not None:
+            converted_supports = [[
+                datasets.pad_sparse(s) for s in supports[0]]]
+        else:
+            converted_supports = None
+
         if accomodate_length:
             x = np.concatenate([x[:accomodate_length], x])
         x = torch.from_numpy(x)
@@ -318,7 +325,7 @@ class Inferer(trainer.Trainer):
         # Inference
         self.model.eval()
         with torch.no_grad():
-            inferred_y = self.model({'x': x})
+            inferred_y = self.model({'x': x, 'supports': converted_supports})
         if accomodate_length:
             inferred_y = inferred_y[accomodate_length:]
             x = x[accomodate_length:]
@@ -378,6 +385,11 @@ class Inferer(trainer.Trainer):
             data_addition_function=None, accomodate_length=False,
             load_function=None, required_file_names):
 
+        if isinstance(x, list):
+            x, supports = x
+        else:
+            supports = None
+
         if directory in dict_dir_y:
             # Answer data exists
             answer_y = dict_dir_y[directory]
@@ -396,7 +408,7 @@ class Inferer(trainer.Trainer):
 
         inversed_dict_x, inversed_dict_y, loss = self._infer_single_data(
             postprocessor, x, answer_y=answer_y, overwrite=overwrite,
-            output_directory=output_directory,
+            output_directory=output_directory, supports=supports,
             write_simulation=write_simulation, write_npy=write_npy,
             write_simulation_base=write_simulation_base,
             write_simulation_stem=write_simulation_stem,
