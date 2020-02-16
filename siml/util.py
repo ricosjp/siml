@@ -204,19 +204,30 @@ def files_exist(directory, file_names):
 
 class PreprocessConverter():
 
+    MAX_RETRY = 3
+
     def __init__(self, setting_data, *, data_files=None, componentwise=True):
-        if isinstance(setting_data, dict):
-            self._init_with_dict(setting_data)
-        elif isinstance(setting_data, str):
-            self._init_with_str(setting_data)
-        elif isinstance(setting_data, BaseEstimator):
-            self._init_with_converter(setting_data)
-        else:
-            raise ValueError(f"Unsupported setting_data: {setting_data}")
+        self.is_erroneous = None
+        self.setting_data = setting_data
+
+        self._init_converter()
+
+        self.componentwise = componentwise
+        self.retry_count = 0
 
         if data_files is not None:
-            self.lazy_read_files(data_files, componentwise)
+            self.lazy_read_files(data_files)
         return
+
+    def _init_converter(self):
+        if isinstance(self.setting_data, dict):
+            self._init_with_dict(self.setting_data)
+        elif isinstance(self.setting_data, str):
+            self._init_with_str(self.setting_data)
+        elif isinstance(self.setting_data, BaseEstimator):
+            self._init_with_converter(self.setting_data)
+        else:
+            raise ValueError(f"Unsupported setting_data: {self.setting_data}")
 
     def _init_with_dict(self, setting_dict):
         preprocess_method = setting_dict['method']
@@ -228,11 +239,13 @@ class PreprocessConverter():
             self.converter = Identity()
         elif preprocess_method == 'standardize':
             self.converter = preprocessing.StandardScaler()
+            self.is_erroneous = self.is_standard_scaler_var_nan
         elif preprocess_method == 'std_scale':
             self.converter = preprocessing.StandardScaler(with_mean=False)
+            self.is_erroneous = self.is_standard_scaler_var_nan
         elif preprocess_method == 'min_max':
             self.converter = preprocessing.MinMaxScaler()
-        elif preprocess_method == 'min_abs':
+        elif preprocess_method == 'max_abs':
             self.converter = preprocessing.MaxAbsScaler()
         else:
             raise ValueError(
@@ -245,44 +258,100 @@ class PreprocessConverter():
 
     def apply_data_with_rehspe_if_needed(
             self, data, function, return_applied=True):
-        shape = data.shape
-        if len(shape) == 2:
+        if isinstance(data, np.ndarray):
+            result = self.apply_numpy_data_with_reshape_if_needed(
+                data, function, return_applied=return_applied)
+        elif isinstance(data, sp.coo_matrix):
+            result = self.apply_sparse_data_with_reshape_if_needed(
+                data, function, return_applied=return_applied)
+        else:
+            raise ValueError(f"Unsupported data type: {data.__class__}")
+
+        return result
+
+    def is_standard_scaler_var_nan(self):
+        return np.any(np.isnan(self.converter.var_))
+
+    def apply_sparse_data_with_reshape_if_needed(
+            self, data, function, return_applied=True):
+        if self.componentwise:
             applied = function(data)
             if return_applied:
-                return applied
-            else:
-                return
-        elif len(shape) == 3:
-            # Time series
-            reshaped = np.reshape(data, (shape[0] * shape[1], shape[2]))
-            applied_rehsped = function(reshaped)
-            if return_applied:
-                applied = np.reshape(applied_rehsped, shape)
-                return applied
-            else:
-                return
-        elif len(shape) == 4:
-            # Batched time series
-            reshaped = np.reshape(
-                data, (shape[0] * shape[1] * shape[2], shape[3]))
-            applied_rehsped = function(reshaped)
-            if return_applied:
-                applied = np.reshape(applied_rehsped, shape)
-                return applied
+                return applied.tocoo()
             else:
                 return
         else:
-            raise ValueError(f"Data shape {data.shape} not understood")
+            shape = data.shape
+            reshaped = data.reshape((shape[0] * shape[1], 1))
+            applied_reshaped = function(reshaped)
+            if return_applied:
+                return applied_reshaped.reshape(shape).tocoo()
+            else:
+                return
 
-    def lazy_read_files(self, data_files, componentwise=True):
+    def apply_numpy_data_with_reshape_if_needed(
+            self, data, function, return_applied=True):
+        shape = data.shape
+
+        if self.componentwise:
+            if len(shape) == 2:
+                applied = function(data)
+                if return_applied:
+                    return applied
+                else:
+                    return
+            elif len(shape) == 3:
+                # Time series
+                reshaped = np.reshape(data, (shape[0] * shape[1], shape[2]))
+                applied_reshaped = function(reshaped)
+                if return_applied:
+                    applied = np.reshape(applied_reshaped, shape)
+                    return applied
+                else:
+                    return
+            elif len(shape) == 4:
+                # Batched time series
+                reshaped = np.reshape(
+                    data, (shape[0] * shape[1] * shape[2], shape[3]))
+                applied_reshaped = function(reshaped)
+                if return_applied:
+                    applied = np.reshape(applied_reshaped, shape)
+                    return applied
+                else:
+                    return
+            else:
+                raise ValueError(f"Data shape {data.shape} not understood")
+
+        else:
+            reshaped = np.reshape(data, (-1, 1))
+            applied_reshaped = function(reshaped)
+            if return_applied:
+                applied = np.reshape(applied_reshaped, shape)
+                return applied
+            else:
+                return
+
+    def lazy_read_files(self, data_files):
         for data_file in data_files:
             data = self.load_file(data_file)
-            if not componentwise:
-                data = np.reshape(data, (-1, 1))
-                self.converter.partial_fit(data)
-            else:
-                self.apply_data_with_rehspe_if_needed(
-                    data, self.converter.partial_fit, return_applied=False)
+            self.apply_data_with_rehspe_if_needed(
+                data, self.converter.partial_fit, return_applied=False)
+
+        if self.is_erroneous is not None:
+            # NOTE: Check varianve is not none for StandardScaler with sparse
+            # data. Related to
+            # https://github.com/scikit-learn/scikit-learn/issues/16448
+            if self.is_erroneous():
+                if self.retry_count < self.MAX_RETRY:
+                    print(
+                        f"Retry for {data_file.stem}: {self.retry_count + 1}")
+                    self.retry_count = self.retry_count + 1
+                    np.random.shuffle(data_files)
+                    self._init_converter()
+                    self.lazy_read_files(data_files)
+                else:
+                    raise ValueError('Retry exhausted. Check the data.')
+
         return
 
     def load_file(self, data_file):

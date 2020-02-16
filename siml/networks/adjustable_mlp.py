@@ -1,5 +1,4 @@
 
-import torch
 import torch.nn.functional as functional
 
 from . import header
@@ -23,20 +22,10 @@ class AdjustableMLP(header.AbstractMLP):
             y: numpy.ndarray of cupy.ndarray
                 Output of the NN.
         """
-        shape = x.shape
-        if len(shape) == 4:
-            h = x[:, :, :, self.input_selection]
-            einsum_string = 'tnmf,gf->tnmg'
-        elif len(shape) == 3:
-            h = x[:, :, self.input_selection]
-            einsum_string = 'nmf,gf->nmg'
-        elif len(shape) == 2:
-            h = x[:, self.input_selection]
-            einsum_string = 'nf,gf->ng'
-
+        h = x
         for linear, dropout_ratio, activation in zip(
                 self.linears, self.dropout_ratios, self.activations):
-            h = torch.einsum(einsum_string, h, linear.weight) + linear.bias
+            h = linear(h)
             h = functional.dropout(h, p=dropout_ratio, training=self.training)
             h = activation(h)
         return h

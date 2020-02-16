@@ -9,13 +9,14 @@ class GCN(header.AbstractGCN):
     https://arxiv.org/abs/1609.02907 .
     """
 
-    def __init__(self, block_setting):
+    def __init__(self, block_setting, residual=False):
         super().__init__(
-            block_setting, create_subchain=True, adjustable_subchain=True)
+            block_setting, create_subchain=True, residual=residual)
 
-    def _forward_single(self, x, support):
+    def _forward_single_core(self, x, subchain_index, support):
         h = x
-        for subchain, activation in zip(self.subchains, self.activations):
+        for subchain, activation in zip(
+                self.subchains[subchain_index], self.activations):
             h = subchain(h)
             h = activation(torch.sparse.mm(support, h))
         return h
@@ -26,19 +27,4 @@ class ResGCN(GCN):
     """
 
     def __init__(self, block_setting):
-        super().__init__(block_setting)
-        self.activations = self.activations[:-1] \
-            + [header.DICT_ACTIVATIONS['identity']] + [self.activations[-1]]
-        nodes = block_setting.nodes
-        if nodes[0] == nodes[-1]:
-            self.shortcut = header.identity
-        else:
-            self.shortcut = torch.nn.Linear(nodes[0], nodes[-1])
-
-    def _forward_single(self, x, support):
-        h = x
-
-        for subchain, activation in zip(self.subchains, self.activations):
-            h = subchain(h)
-            h = activation(torch.sparse.mm(support, h))
-        return self.activations[-1](h + self.shortcut(x))
+        super().__init__(block_setting, residual=True)

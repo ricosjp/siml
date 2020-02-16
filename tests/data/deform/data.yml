@@ -34,3 +34,12 @@ preprocess:
     method: identity
   global_modulus:
     method: standardize
+  x_grad:
+    method: std_scale
+    componentwise: false
+  y_grad:
+    method: max_abs
+    componentwise: false
+  z_grad:
+    method: std_scale
+    componentwise: false

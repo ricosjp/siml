@@ -1,7 +1,6 @@
 
 import torch
 
-from . import adjustable_mlp
 from .. import setting
 
 
@@ -53,7 +52,6 @@ class AbstractMLP(torch.nn.Module):
             self.activations[-1] = DICT_ACTIVATIONS['identity']
         self.dropout_ratios = [
             dropout_ratio for dropout_ratio in block_setting.dropouts]
-        self.input_selection = block_setting.input_selection
 
     def forward(self, x, support=None):
         raise NotImplementedError
@@ -63,7 +61,7 @@ class AbstractGCN(torch.nn.Module):
 
     def __init__(
             self, block_setting,
-            *, create_subchain=True, adjustable_subchain=False):
+            *, create_subchain=True, residual=False):
         """Initialize the NN.
 
         Parameters
@@ -72,37 +70,79 @@ class AbstractGCN(torch.nn.Module):
                 BlockSetting object.
             create_subchain: bool, optional [True]
                 If True, create subchain to be trained.
-            adjustable_subchain: bool, optional [False]
-                If True, create subchain as a stack of AdjustableMLP layers
-                instead of that of toch.nn.Linear layers.
+            residual: bool, optional [False]
+                If True, make the network residual.
         """
 
         super().__init__()
+        self.residual = residual
 
-        nodes = block_setting.nodes
-        if adjustable_subchain:
-            block_settings = [
-                setting.BlockSetting(
-                    nodes=[n1, n2], activations=['identity'],
-                    dropouts=[dropout])
-                for n1, n2, dropout
-                in zip(nodes[:-1], nodes[1:], block_setting.dropouts)]
-            self.subchains = torch.nn.ModuleList([
-                adjustable_mlp.AdjustableMLP(bs)
-                for bs in block_settings
-            ])
-        else:
-            self.subchains = torch.nn.ModuleList([
-                torch.nn.Linear(n1, n2)
-                for n1, n2 in zip(nodes[:-1], nodes[1:])])
+        self.multiple_networks = block_setting.optional.get(
+            'multiple_networks', True)
+        if create_subchain:
+            self.subchains, self.subchain_indices = self._create_subchains(
+                block_setting)
 
-        self.activations = [
-            DICT_ACTIVATIONS[activation]
-            for activation in block_setting.activations]
         self.dropout_ratios = [
             dropout_ratio for dropout_ratio in block_setting.dropouts]
-        self.support_input_index = block_setting.support_input_index
-        self.input_selection = block_setting.input_selection
+
+        if self.residual:
+            activations = [
+                DICT_ACTIVATIONS[activation]
+                for activation in block_setting.activations]
+            self.activations = activations[:-1] \
+                + [DICT_ACTIVATIONS['identity']] \
+                + [activations[-1]]
+            nodes = block_setting.nodes
+            if nodes[0] == nodes[-1]:
+                self.shortcut = identity
+            else:
+                self.shortcut = torch.nn.Linear(nodes[0], nodes[-1])
+        else:
+            self.activations = [
+                DICT_ACTIVATIONS[activation]
+                for activation in block_setting.activations]
+
+    def _create_subchains(
+            self, block_setting,
+            twice_input_nodes=False, square_weight=False, start_index=0):
+        if self.multiple_networks:
+            subchains = torch.nn.ModuleList([
+                self._create_subsubchain(
+                    block_setting,
+                    twice_input_nodes=twice_input_nodes,
+                    square_weight=square_weight, start_index=start_index)
+                for _ in block_setting.support_input_indices])
+            subchain_indices = range(
+                len(block_setting.support_input_indices))
+        else:
+            subchains = torch.nn.ModuleList([
+                self._create_subsubchain(
+                    block_setting,
+                    twice_input_nodes=twice_input_nodes,
+                    square_weight=square_weight, start_index=start_index)])
+            subchain_indices = [0] * len(
+                block_setting.support_input_indices)
+
+        return subchains, subchain_indices
+
+    def _create_subsubchain(
+            self, block_setting,
+            twice_input_nodes=False, square_weight=False, start_index=0):
+        nodes = block_setting.nodes[start_index:]
+        if twice_input_nodes:
+            factor = 2
+        else:
+            factor = 1
+
+        if square_weight:
+            node_tuples = [(n, n) for n in nodes]
+        else:
+            node_tuples = [
+                (n1 * factor, n2) for n1, n2 in zip(nodes[:-1], nodes[1:])]
+
+        return torch.nn.ModuleList([
+            torch.nn.Linear(*node_tuple) for node_tuple in node_tuples])
 
     def forward(self, x, supports):
         """Execute the NN's forward computation.
@@ -120,19 +160,26 @@ class AbstractGCN(torch.nn.Module):
         """
         if len(x.shape) == 3:
             hs = torch.stack([
-                self._forward_single(
-                    x_[:, self.input_selection],
-                    supports_[self.support_input_index])
+                self._forward_single(x_, supports_)
                 for x_, supports_ in zip(x, supports)])
         else:
             hs = torch.stack([
                 torch.stack([
-                    self._forward_single(
-                        x__[:, self.input_selection],
-                        supports_[self.support_input_index])
+                    self._forward_single(x__, supports_)
                     for x__, supports_ in zip(x_, supports)])
                 for x_ in x])
         return hs
 
-    def _forward_single(self, x, support):
+    def _forward_single(self, x, supports):
+        if self.residual:
+            h_res = torch.sum(torch.stack([
+                self._forward_single_core(x, self.subchain_indices[i], support)
+                for i, support in enumerate(supports)]), dim=0)
+            return self.activations[-1](h_res + self.shortcut(x))
+        else:
+            return torch.sum(torch.stack([
+                self._forward_single_core(x, self.subchain_indices[i], support)
+                for i, support in enumerate(supports)]), dim=0)
+
+    def _forward_single_core(self, x, subchain_index, support):
         raise NotImplementedError

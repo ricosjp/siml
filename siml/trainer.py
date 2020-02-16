@@ -84,12 +84,10 @@ class Trainer():
             + self._display_mergin('elapsed_time'))
         with open(self.log_file, 'w') as f:
             f.write('epoch, train_loss, validation_loss, elapsed_time\n')
-        self.pbar = tqdm(
-            initial=0, leave=False,
-            total=len(self.train_loader)
-            * self.setting.trainer.log_trigger_epoch,
-            desc=self.desc.format(0), ncols=80, ascii=True)
         self.start_time = time.time()
+
+        self.pbar = self.create_pbar(
+            len(self.train_loader) * self.setting.trainer.log_trigger_epoch)
 
         self.trainer.run(
             self.train_loader, max_epochs=self.setting.trainer.n_epoch)
@@ -367,12 +365,25 @@ class Trainer():
         self.evaluator = self._create_supervised_evaluator()
 
         self.desc = "loss: {:.5e}"
-        tick = max(len(self.train_loader) // 100, 1)
+        trainer_tick = max(len(self.train_loader) // 100, 1)
 
-        @self.trainer.on(ignite.engine.Events.ITERATION_COMPLETED(every=tick))
+        @self.trainer.on(
+            ignite.engine.Events.ITERATION_COMPLETED(every=trainer_tick))
         def log_training_loss(engine):
             self.pbar.desc = self.desc.format(engine.state.output)
-            self.pbar.update(tick)
+            self.pbar.update(trainer_tick)
+            return
+
+        self.evaluator_desc = "evaluating"
+        evaluator_tick = max(
+            (len(self.train_loader) + len(self.validation_loader)) // 100, 1)
+
+        @self.evaluator.on(
+            ignite.engine.Events.ITERATION_COMPLETED(every=evaluator_tick))
+        def log_evaluation(engine):
+            self.evaluation_pbar.desc = self.evaluator_desc
+            self.evaluation_pbar.update(evaluator_tick)
+            return
 
         self.log_file = self.setting.trainer.output_directory / 'log.csv'
         self.plot_file = self.setting.trainer.output_directory / 'plot.png'
@@ -381,13 +392,18 @@ class Trainer():
             ignite.engine.Events.EPOCH_COMPLETED(
                 every=self.setting.trainer.log_trigger_epoch))
         def log_training_results(engine):
-            self.pbar.refresh()
+            self.pbar.close()
 
+            self.evaluation_pbar = tqdm(
+                initial=0, leave=False,
+                total=len(self.train_loader) + len(self.validation_loader),
+                desc=self.evaluator_desc, ncols=80, ascii=True)
             self.evaluator.run(self.train_loader)
             train_loss = self.evaluator.state.metrics['loss']
 
             self.evaluator.run(self.validation_loader)
             validation_loss = self.evaluator.state.metrics['loss']
+            self.evaluation_pbar.close()
 
             elapsed_time = time.time() - self.start_time
 
@@ -398,6 +414,10 @@ class Trainer():
                 + self._display_mergin(
                     f"{validation_loss:.5e}", 'validation_loss')
                 + self._display_mergin(f"{elapsed_time:.2f}", 'elapsed_time'))
+
+            self.pbar = self.create_pbar(
+                len(self.train_loader)
+                * self.setting.trainer.log_trigger_epoch)
             self.pbar.n = self.pbar.last_print_n = 0
 
             # Save checkpoint
@@ -431,6 +451,8 @@ class Trainer():
             plt.savefig(self.plot_file)
             plt.close(fig)
 
+            return
+
         # Add early stopping
         class StopTriggerEvents(enum.Enum):
             EVALUATED = 'evaluated'
@@ -440,6 +462,7 @@ class Trainer():
                 every=self.setting.trainer.stop_trigger_epoch))
         def fire_stop_trigger(engine):
             self.evaluator.fire_event(StopTriggerEvents.EVALUATED)
+            return
 
         def score_function(engine):
             return -engine.state.metrics['loss']
@@ -460,6 +483,13 @@ class Trainer():
                 StopTriggerEvents.EVALUATED, pruning_handler)
 
         return
+
+    def create_pbar(self, total):
+        return tqdm(
+            initial=0, leave=False,
+            total=len(self.train_loader)
+            * self.setting.trainer.log_trigger_epoch,
+            desc=self.desc.format(0), ncols=80, ascii=True)
 
     def _create_supervised_trainer(self):
 
@@ -536,10 +566,10 @@ class Trainer():
 
         train_dataset = dataset_generator(
             x_variable_names, y_variable_names,
-            train_directories, supports=supports)
+            train_directories, supports=supports, num_workers=num_workers)
         validation_dataset = dataset_generator(
             x_variable_names, y_variable_names,
-            validation_directories, supports=supports)
+            validation_directories, supports=supports, num_workers=num_workers)
 
         print(f"num_workers for data_loader: {num_workers}")
         train_loader = torch.utils.data.DataLoader(
