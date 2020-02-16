@@ -25,9 +25,9 @@ class TestInferer(unittest.TestCase):
             converter_parameters_pkl=Path(
                 'tests/data/linear/preprocessed/preprocessors.pkl'))
         np.testing.assert_almost_equal(
-            res[0][1]['y'][0],
+            res[0]['dict_y']['y'][0],
             np.load('tests/data/linear/interim/validation/0/y.npy'), decimal=3)
-        np.testing.assert_array_less(res[0][2], 1e-7)
+        np.testing.assert_array_less(res[0]['loss'], 1e-7)
 
     def test_infer_with_raw_data(self):
         main_setting = setting.MainSetting.read_settings_yaml(
@@ -58,11 +58,12 @@ class TestInferer(unittest.TestCase):
                 'tests/data/deform/preprocessed/preprocessors.pkl'))
 
         np.testing.assert_almost_equal(
-            res_from_raw[0][1]['elemental_stress'][0],
-            res_from_preprocessed[0][1]['elemental_stress'][0], decimal=3)
+            res_from_raw[0]['dict_y']['elemental_stress'][0],
+            res_from_preprocessed[0]['dict_y']['elemental_stress'][0],
+            decimal=3)
         np.testing.assert_almost_equal(
-            res_from_raw[0][2], res_from_preprocessed[0][2])
-        np.testing.assert_array_less(res_from_raw[0][2], 1e-2)
+            res_from_raw[0]['loss'], res_from_preprocessed[0]['loss'])
+        np.testing.assert_array_less(res_from_raw[0]['loss'], 1e-2)
 
     def test_infer_with_raw_data_wo_answer(self):
         main_setting = setting.MainSetting.read_settings_yaml(
@@ -91,8 +92,8 @@ class TestInferer(unittest.TestCase):
             converter_parameters_pkl=Path(
                 'tests/data/deform/preprocessed/preprocessors.pkl'))
         np.testing.assert_almost_equal(
-            res_from_raw[0][1]['elemental_stress'][0],
-            res_from_preprocessed[0][1]['elemental_stress'][0], decimal=3)
+            res_from_raw[0]['dict_y']['elemental_stress'][0],
+            res_from_preprocessed[0]['dict_y']['elemental_stress'][0], decimal=3)
 
     def test_infer_with_raw_data_wo_answer_with_model_file(self):
         main_setting = setting.MainSetting.read_settings_yaml(
@@ -123,8 +124,8 @@ class TestInferer(unittest.TestCase):
             converter_parameters_pkl=Path(
                 'tests/data/deform/preprocessed/preprocessors.pkl'))
         np.testing.assert_almost_equal(
-            res_from_raw[0][1]['elemental_stress'][0],
-            res_from_preprocessed[0][1]['elemental_stress'][0], decimal=3)
+            res_from_raw[0]['dict_y']['elemental_stress'][0],
+            res_from_preprocessed[0]['dict_y']['elemental_stress'][0], decimal=3)
 
     def test_infer_to_write_simulation_file(self):
         main_setting = setting.MainSetting.read_settings_yaml(
@@ -150,7 +151,7 @@ class TestInferer(unittest.TestCase):
             'ucd', [output_directory / 'mesh.inp'])
         np.testing.assert_almost_equal(
             fem_data.access_attribute('elemental_stress'),
-            res_from_preprocessed[0][1]['elemental_stress'][0], decimal=7)
+            res_from_preprocessed[0]['dict_y']['elemental_stress'][0], decimal=7)
 
     def test_infer_simplified_model(self):
         setting_yaml = Path('tests/data/simplified/mlp.yml')
@@ -187,9 +188,9 @@ class TestInferer(unittest.TestCase):
             converter_parameters_pkl=Path(
                 'tests/data/deform_timeseries/preprocessed/preprocessors.pkl'))
         np.testing.assert_almost_equal(
-            res[0][1]['stress'][:, 0] * 1e-5,
+            res[0]['dict_y']['stress'][:, 0] * 1e-5,
             np.load(
                 'tests/data/deform_timeseries/interim/train'
                 '/tet2_3_modulusx1.0000/stress.npy') * 1e-5,
             decimal=3)
-        np.testing.assert_array_less(res[0][2], 1e-3)
+        np.testing.assert_array_less(res[0]['loss'], 1e-3)

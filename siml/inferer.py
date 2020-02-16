@@ -159,7 +159,7 @@ class Inferer(trainer.Trainer):
                 data_addition_function=data_addition_function,
                 accomodate_length=accomodate_length,
                 load_function=load_function,
-                required_file_names=required_file_names) + (directory,)
+                required_file_names=required_file_names)
             for directory, x in dict_dir_x.items()]
         return inference_results
 
@@ -419,4 +419,6 @@ class Inferer(trainer.Trainer):
                 f.write(f"loss: {loss}")
             print(f"Inferred data saved in: {output_directory}")
 
-        return inversed_dict_x, inversed_dict_y, loss
+        return {
+            'dict_x': inversed_dict_x, 'dict_y': inversed_dict_y, 'loss': loss,
+            'output_directory': output_directory, 'data_directory': directory}
