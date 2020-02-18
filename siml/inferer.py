@@ -23,7 +23,7 @@ class Inferer(trainer.Trainer):
             write_simulation_base=None, write_simulation_stem=None,
             read_simulation_type='fistr', write_simulation_type='fistr',
             converter_parameters_pkl=None, conversion_function=None,
-            load_function=None,
+            load_function=None, convert_to_order1=False,
             data_addition_function=None, accomodate_length=None,
             required_file_names=[]):
         """Perform inference.
@@ -149,7 +149,7 @@ class Inferer(trainer.Trainer):
         inference_results = [
             self._infer_single_directory(
                 self.prepost_converter, directory, x, dict_dir_y,
-                save=save,
+                save=save, convert_to_order1=convert_to_order1,
                 overwrite=overwrite, output_directory=output_directory,
                 write_simulation=write_simulation, write_npy=write_npy,
                 write_yaml=write_yaml,
@@ -307,7 +307,8 @@ class Inferer(trainer.Trainer):
             write_simulation_base=None, write_simulation_stem=None,
             write_simulation_type='fistr', read_simulation_type='fistr',
             data_addition_function=None, accomodate_length=None,
-            load_function=None, required_file_names=[]):
+            load_function=None, required_file_names=[],
+            convert_to_order1=False):
 
         if self.setting.trainer.time_series and len(x.shape) == 3:
             x = x[:, None, :, :]
@@ -352,7 +353,7 @@ class Inferer(trainer.Trainer):
             write_simulation_type=write_simulation_type,
             read_simulation_type=read_simulation_type,
             skip_femio=self.setting.conversion.skip_femio,
-            load_function=load_function,
+            load_function=load_function, convert_to_order1=convert_to_order1,
             required_file_names=required_file_names,
             data_addition_function=data_addition_function)
 
@@ -379,11 +380,11 @@ class Inferer(trainer.Trainer):
             self, postprocessor, directory, x, dict_dir_y, *, save=True,
             overwrite=False,
             output_directory=None, write_simulation=False, write_npy=True,
-            write_yaml=True,
+            write_yaml=True, convert_to_order1=False,
             write_simulation_base=None, write_simulation_stem=None,
             write_simulation_type='fistr', read_simulation_type='fistr',
             data_addition_function=None, accomodate_length=False,
-            load_function=None, required_file_names):
+            load_function=None, required_file_names=[]):
 
         if isinstance(x, list):
             x, supports = x
@@ -416,7 +417,8 @@ class Inferer(trainer.Trainer):
             read_simulation_type=read_simulation_type,
             data_addition_function=data_addition_function,
             accomodate_length=accomodate_length, load_function=load_function,
-            required_file_names=required_file_names)
+            required_file_names=required_file_names,
+            convert_to_order1=convert_to_order1)
 
         if loss is not None:
             print(f"data: {directory}")
