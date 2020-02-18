@@ -9,12 +9,12 @@ preprocess:
   x1: standardize
   y: standardize
 study:
-  root_directory: tests/data/large/study
+  root_directory: tests/data/large/study_long
   type: 'learning_curve'
   relative_train_size_linspace:
-    - .2
+    - .5
     - 1.
-    - 3
+    - 2
   n_fold: 2
 trainer:
   output_directory: tests/data/large/mlp

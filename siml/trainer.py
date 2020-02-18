@@ -80,7 +80,7 @@ class Trainer():
         print(f"Ouput directory: {self.setting.trainer.output_directory}")
         self.setting.trainer.output_directory.mkdir(parents=True)
 
-        self._prepare_training()
+        self.prepare_training()
 
         setting.write_yaml(
             self.setting,
@@ -108,13 +108,27 @@ class Trainer():
 
         return validation_loss
 
+    def evaluate(self, evaluate_test=False, load_best_model=False):
+        if load_best_model:
+            self.setting.trainer.pretrain_directory \
+                = self.setting.trainer.output_directory
+            self._load_pretrained_model_if_needed()
+        train_state = self.evaluator.run(self.train_loader)
+        validation_state = self.evaluator.run(self.validation_loader)
+
+        if evaluate_test:
+            test_state = self.evaluator.run(self.test_loader)
+            return train_state, validation_state, test_state
+        else:
+            return train_state, validation_state
+
     def _display_mergin(self, input_string, reference_string=None):
         if not reference_string:
             reference_string = input_string
         return input_string.ljust(
             len(reference_string) + self.setting.trainer.display_mergin, ' ')
 
-    def _prepare_training(self):
+    def prepare_training(self):
         self.set_seed()
 
         if len(self.setting.trainer.input_names) == 0:
@@ -352,17 +366,17 @@ class Trainer():
                 self.prepare_batch = datasets.prepare_batch_without_support
 
         if self.setting.trainer.lazy:
-            self.train_loader, self.validation_loader = \
+            self.train_loader, self.validation_loader, self.test_loader = \
                 self._get_data_loaders(
                     datasets.LazyDataset, batch_size, validation_batch_size)
         else:
             if self.element_wise:
-                self.train_loader, self.validation_loader = \
+                self.train_loader, self.validation_loader, self.test_loader = \
                     self._get_data_loaders(
                         datasets.ElementWiseDataset, batch_size,
                         validation_batch_size)
             else:
-                self.train_loader, self.validation_loader = \
+                self.train_loader, self.validation_loader, self.test_loader = \
                     self._get_data_loaders(
                         datasets.OnMemoryDataset, batch_size,
                         validation_batch_size)
@@ -565,11 +579,15 @@ class Trainer():
         return evaluator_engine
 
     def _get_data_loaders(
-            self, dataset_generator, batch_size, validation_batch_size):
+            self, dataset_generator, batch_size, validation_batch_size=None):
+        if validation_batch_size is None:
+            validation_batch_size = batch_size
+
         x_variable_names = self.setting.trainer.input_names
         y_variable_names = self.setting.trainer.output_names
         train_directories = self.setting.data.train
         validation_directories = self.setting.data.validation
+        test_directories = self.setting.data.test
         supports = self.setting.trainer.support_inputs
         num_workers = self.setting.trainer.num_workers
 
@@ -578,7 +596,12 @@ class Trainer():
             train_directories, supports=supports, num_workers=num_workers)
         validation_dataset = dataset_generator(
             x_variable_names, y_variable_names,
-            validation_directories, supports=supports, num_workers=num_workers)
+            validation_directories, supports=supports, num_workers=num_workers,
+            allow_no_data=True)
+        test_dataset = dataset_generator(
+            x_variable_names, y_variable_names,
+            test_directories, supports=supports, num_workers=num_workers,
+            allow_no_data=True)
 
         print(f"num_workers for data_loader: {num_workers}")
         train_loader = torch.utils.data.DataLoader(
@@ -588,8 +611,12 @@ class Trainer():
             validation_dataset, collate_fn=self.collate_fn,
             batch_size=validation_batch_size, shuffle=False,
             num_workers=num_workers)
+        test_loader = torch.utils.data.DataLoader(
+            test_dataset, collate_fn=self.collate_fn,
+            batch_size=validation_batch_size, shuffle=False,
+            num_workers=num_workers)
 
-        return train_loader, validation_loader
+        return train_loader, validation_loader, test_loader
 
     def _create_optimizer(self):
         optimizer_name = self.setting.trainer.optimizer.lower()

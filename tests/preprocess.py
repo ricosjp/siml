@@ -53,8 +53,14 @@ def generate_large():
         if root_dir.exists():
             shutil.rmtree(root_dir)
         for i in range(n_data):
-            x = np.random.rand(n_element, n_feat)
-            y = x * 2.
+            r1 = np.random.rand()
+            r2 = np.random.rand()
+            floor = min(r1, r2)
+            ceil = max(r1, r2)
+
+            x = np.random.rand(n_element, n_feat) * (ceil - floor) + floor
+            y = np.sin(x * 4. * np.pi)
+
             output_directory = root_dir / f"{i}"
             output_directory.mkdir(parents=True)
             np.save(output_directory / 'x.npy', x.astype(np.float32))
@@ -68,6 +74,10 @@ def generate_large():
     validation_root = output_root / 'validation'
     n_validation_data = 2
     generate_data(validation_root, n_validation_data)
+
+    test_root = output_root / 'test'
+    n_test_data = 10
+    generate_data(test_root, n_test_data)
     return
 
 

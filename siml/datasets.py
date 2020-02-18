@@ -12,7 +12,7 @@ class BaseDataset(torch.utils.data.Dataset):
 
     def __init__(
             self, x_variable_names, y_variable_names, directories, *,
-            supports=None, num_workers=0):
+            supports=None, num_workers=0, allow_no_data=False):
         self.x_variable_names = x_variable_names
         self.y_variable_names = y_variable_names
         self.supports = supports
@@ -24,7 +24,7 @@ class BaseDataset(torch.utils.data.Dataset):
                 directory, required_file_names=[f"{x_variable_names[0]}.npy"])
         self.data_directories = np.unique(data_directories)
 
-        if len(self.data_directories) == 0:
+        if not allow_no_data and len(self.data_directories) == 0:
             raise ValueError(f"No data found in {directories}")
 
         return

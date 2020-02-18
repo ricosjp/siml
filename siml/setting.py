@@ -93,9 +93,11 @@ class DataSetting(TypedDataClass):
     train: typing.List[Path] = dc.field(
         default_factory=lambda: [Path('data/preprocessed/train')])
     validation: typing.List[Path] = dc.field(
-        default_factory=lambda: [Path('data/preprocessed/validation')])
+        default_factory=lambda: [])
+    develop: typing.List[Path] = dc.field(
+        default_factory=lambda: [])
     test: typing.List[Path] = dc.field(
-        default_factory=lambda: [Path('data/preprocessed/test')])
+        default_factory=lambda: [])
     pad: bool = False
 
     def __post_init__(self):
@@ -128,6 +130,8 @@ class StudySetting(TypedDataClass):
     relative_train_size_linspace: typing.Tuple = dc.field(
         default_factory=lambda: (.2, 1., 5))
     n_fold: int = 10
+    unit_error: str = '-'
+    plot_validation: bool = False
 
 
 @dc.dataclass
@@ -616,13 +620,19 @@ class MainSetting:
                 or isinstance(new_setting, int):
             return new_setting
         elif isinstance(new_setting, list):
-            # NOTE: Assume that data is complete under the list
-            return new_setting
+            return [
+                self._update_with_dict(original_setting, s)
+                for s in new_setting]
         elif isinstance(new_setting, dict):
             for key, value in new_setting.items():
                 original_setting.update({
                     key: self._update_with_dict(original_setting[key], value)})
             return original_setting
+        elif isinstance(new_setting, Path):
+            return str(new_setting)
+        elif isinstance(new_setting, np.ndarray):
+            return self._update_with_dict(
+                original_setting, new_setting.tolist())
         else:
             raise ValueError(f"Unknown data type: {new_setting.__class__}")
 
