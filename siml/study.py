@@ -24,9 +24,11 @@ class Study():
                 f"Unknown type for settings: {settings.__class__}")
 
         if scale_conversion_function is None:
-            def scale_conversion_function(x):
+            def identity(x):
                 return x
-        self.scale_conversion_function = scale_conversion_function
+            self.scale_conversion_function = identity
+        else:
+            self.scale_conversion_function = scale_conversion_function
 
         if self.original_setting.study.root_directory is None:
             self.original_setting.study.root_directory = \

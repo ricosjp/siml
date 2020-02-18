@@ -24,7 +24,7 @@ class TestNetwork(unittest.TestCase):
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/linear/deepsets.yml'))
         tr = trainer.Trainer(main_setting)
-        tr._prepare_training()
+        tr.prepare_training()
         x = np.reshape(np.arange(5*3), (1, 5, 3)).astype(np.float32) * .1
 
         y_wo_permutation = tr.model({'x': torch.from_numpy(x)})
