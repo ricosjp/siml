@@ -21,7 +21,8 @@ class BaseDataset(torch.utils.data.Dataset):
         data_directories = []
         for directory in directories:
             data_directories += util.collect_data_directories(
-                directory, required_file_names=[f"{x_variable_names[0]}.npy"])
+                directory, required_file_names=[f"{x_variable_names[0]}.npy"],
+                allow_no_data=allow_no_data)
         self.data_directories = np.unique(data_directories)
 
         if not allow_no_data and len(self.data_directories) == 0:
@@ -94,15 +95,20 @@ class ElementWiseDataset(BaseDataset):
 
     def __init__(
             self, x_variable_names, y_variable_names, directories, *,
-            supports=None, num_workers=0):
+            supports=None, num_workers=0, allow_no_data=False):
         super().__init__(
             x_variable_names, y_variable_names, directories, supports=supports,
-            num_workers=num_workers)
+            num_workers=num_workers, allow_no_data=allow_no_data)
 
-        loaded_data = self._load_all_data(self.data_directories)
+        if len(self.data_directories) == 0:
+            self.x = []
+            self.t = []
+        else:
+            loaded_data = self._load_all_data(self.data_directories)
 
-        self.x = np.concatenate([ld['x'] for ld in loaded_data])
-        self.t = np.concatenate([ld['t'] for ld in loaded_data])
+            self.x = np.concatenate([ld['x'] for ld in loaded_data])
+            self.t = np.concatenate([ld['t'] for ld in loaded_data])
+
         return
 
     def __len__(self):
@@ -117,10 +123,10 @@ class OnMemoryDataset(BaseDataset):
 
     def __init__(
             self, x_variable_names, y_variable_names, directories, *,
-            supports=None, num_workers=0):
+            supports=None, num_workers=0, allow_no_data=False):
         super().__init__(
             x_variable_names, y_variable_names, directories, supports=supports,
-            num_workers=num_workers)
+            num_workers=num_workers, allow_no_data=allow_no_data)
 
         self.data = self._load_all_data(self.data_directories)
         return
