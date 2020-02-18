@@ -4,6 +4,7 @@ import femio
 import numpy as np
 import torch
 
+from . import datasets
 from . import networks
 from . import prepost
 from . import setting
@@ -22,7 +23,7 @@ class Inferer(trainer.Trainer):
             write_simulation_base=None, write_simulation_stem=None,
             read_simulation_type='fistr', write_simulation_type='fistr',
             converter_parameters_pkl=None, conversion_function=None,
-            load_function=None,
+            load_function=None, convert_to_order1=False,
             data_addition_function=None, accomodate_length=None,
             required_file_names=[]):
         """Perform inference.
@@ -106,7 +107,7 @@ class Inferer(trainer.Trainer):
 
             dict_dir_x = self._load_data(
                 self.setting.trainer.input_names, input_directories,
-                return_dict=True)
+                return_dict=True, supports=self.setting.trainer.support_inputs)
             dict_dir_y = self._load_data(
                 self.setting.trainer.output_names, input_directories,
                 return_dict=True)
@@ -148,7 +149,7 @@ class Inferer(trainer.Trainer):
         inference_results = [
             self._infer_single_directory(
                 self.prepost_converter, directory, x, dict_dir_y,
-                save=save,
+                save=save, convert_to_order1=convert_to_order1,
                 overwrite=overwrite, output_directory=output_directory,
                 write_simulation=write_simulation, write_npy=write_npy,
                 write_yaml=write_yaml,
@@ -301,15 +302,22 @@ class Inferer(trainer.Trainer):
 
     def _infer_single_data(
             self, postprocessor, x, *, answer_y=None,
-            overwrite=False,
+            overwrite=False, supports=None,
             output_directory=None, write_simulation=False, write_npy=True,
             write_simulation_base=None, write_simulation_stem=None,
             write_simulation_type='fistr', read_simulation_type='fistr',
             data_addition_function=None, accomodate_length=None,
-            load_function=None, required_file_names=[]):
+            load_function=None, required_file_names=[],
+            convert_to_order1=False):
 
         if self.setting.trainer.time_series and len(x.shape) == 3:
             x = x[:, None, :, :]
+
+        if supports is not None:
+            converted_supports = [[
+                datasets.pad_sparse(s) for s in supports[0]]]
+        else:
+            converted_supports = None
 
         if accomodate_length:
             x = np.concatenate([x[:accomodate_length], x])
@@ -318,7 +326,7 @@ class Inferer(trainer.Trainer):
         # Inference
         self.model.eval()
         with torch.no_grad():
-            inferred_y = self.model({'x': x})
+            inferred_y = self.model({'x': x, 'supports': converted_supports})
         if accomodate_length:
             inferred_y = inferred_y[accomodate_length:]
             x = x[accomodate_length:]
@@ -345,7 +353,7 @@ class Inferer(trainer.Trainer):
             write_simulation_type=write_simulation_type,
             read_simulation_type=read_simulation_type,
             skip_femio=self.setting.conversion.skip_femio,
-            load_function=load_function,
+            load_function=load_function, convert_to_order1=convert_to_order1,
             required_file_names=required_file_names,
             data_addition_function=data_addition_function)
 
@@ -372,11 +380,16 @@ class Inferer(trainer.Trainer):
             self, postprocessor, directory, x, dict_dir_y, *, save=True,
             overwrite=False,
             output_directory=None, write_simulation=False, write_npy=True,
-            write_yaml=True,
+            write_yaml=True, convert_to_order1=False,
             write_simulation_base=None, write_simulation_stem=None,
             write_simulation_type='fistr', read_simulation_type='fistr',
             data_addition_function=None, accomodate_length=False,
-            load_function=None, required_file_names):
+            load_function=None, required_file_names=[]):
+
+        if isinstance(x, list):
+            x, supports = x
+        else:
+            supports = None
 
         if directory in dict_dir_y:
             # Answer data exists
@@ -396,7 +409,7 @@ class Inferer(trainer.Trainer):
 
         inversed_dict_x, inversed_dict_y, loss = self._infer_single_data(
             postprocessor, x, answer_y=answer_y, overwrite=overwrite,
-            output_directory=output_directory,
+            output_directory=output_directory, supports=supports,
             write_simulation=write_simulation, write_npy=write_npy,
             write_simulation_base=write_simulation_base,
             write_simulation_stem=write_simulation_stem,
@@ -404,7 +417,8 @@ class Inferer(trainer.Trainer):
             read_simulation_type=read_simulation_type,
             data_addition_function=data_addition_function,
             accomodate_length=accomodate_length, load_function=load_function,
-            required_file_names=required_file_names)
+            required_file_names=required_file_names,
+            convert_to_order1=convert_to_order1)
 
         if loss is not None:
             print(f"data: {directory}")

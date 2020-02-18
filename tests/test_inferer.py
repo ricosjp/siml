@@ -25,7 +25,7 @@ class TestInferer(unittest.TestCase):
             converter_parameters_pkl=Path(
                 'tests/data/linear/preprocessed/preprocessors.pkl'))
         np.testing.assert_almost_equal(
-            res[0]['dict_y']['y'][0],
+            res[0]['dict_y']['y'],
             np.load('tests/data/linear/interim/validation/0/y.npy'), decimal=3)
         np.testing.assert_array_less(res[0]['loss'], 1e-7)
 
@@ -58,8 +58,8 @@ class TestInferer(unittest.TestCase):
                 'tests/data/deform/preprocessed/preprocessors.pkl'))
 
         np.testing.assert_almost_equal(
-            res_from_raw[0]['dict_y']['elemental_stress'][0],
-            res_from_preprocessed[0]['dict_y']['elemental_stress'][0],
+            res_from_raw[0]['dict_y']['elemental_stress'],
+            res_from_preprocessed[0]['dict_y']['elemental_stress'],
             decimal=3)
         np.testing.assert_almost_equal(
             res_from_raw[0]['loss'], res_from_preprocessed[0]['loss'])
@@ -92,8 +92,9 @@ class TestInferer(unittest.TestCase):
             converter_parameters_pkl=Path(
                 'tests/data/deform/preprocessed/preprocessors.pkl'))
         np.testing.assert_almost_equal(
-            res_from_raw[0]['dict_y']['elemental_stress'][0],
-            res_from_preprocessed[0]['dict_y']['elemental_stress'][0], decimal=3)
+            res_from_raw[0]['dict_y']['elemental_stress'],
+            res_from_preprocessed[0]['dict_y']['elemental_stress'],
+            decimal=3)
 
     def test_infer_with_raw_data_wo_answer_with_model_file(self):
         main_setting = setting.MainSetting.read_settings_yaml(
@@ -124,8 +125,9 @@ class TestInferer(unittest.TestCase):
             converter_parameters_pkl=Path(
                 'tests/data/deform/preprocessed/preprocessors.pkl'))
         np.testing.assert_almost_equal(
-            res_from_raw[0]['dict_y']['elemental_stress'][0],
-            res_from_preprocessed[0]['dict_y']['elemental_stress'][0], decimal=3)
+            res_from_raw[0]['dict_y']['elemental_stress'],
+            res_from_preprocessed[0]['dict_y']['elemental_stress'],
+            decimal=3)
 
     def test_infer_to_write_simulation_file(self):
         main_setting = setting.MainSetting.read_settings_yaml(
@@ -151,7 +153,8 @@ class TestInferer(unittest.TestCase):
             'ucd', [output_directory / 'mesh.inp'])
         np.testing.assert_almost_equal(
             fem_data.access_attribute('elemental_stress'),
-            res_from_preprocessed[0]['dict_y']['elemental_stress'][0], decimal=7)
+            res_from_preprocessed[0]['dict_y']['elemental_stress'],
+            decimal=7)
 
     def test_infer_simplified_model(self):
         setting_yaml = Path('tests/data/simplified/mlp.yml')
@@ -188,9 +191,30 @@ class TestInferer(unittest.TestCase):
             converter_parameters_pkl=Path(
                 'tests/data/deform_timeseries/preprocessed/preprocessors.pkl'))
         np.testing.assert_almost_equal(
-            res[0]['dict_y']['stress'][:, 0] * 1e-5,
+            res[0]['dict_y']['stress'] * 1e-5,
             np.load(
                 'tests/data/deform_timeseries/interim/train'
                 '/tet2_3_modulusx1.0000/stress.npy') * 1e-5,
+            decimal=3)
+        np.testing.assert_array_less(res[0]['loss'], 1e-3)
+
+    def test_infer_res_gcn(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/deform/pretrained_res_gcn/settings.yml'))
+        ir = inferer.Inferer(main_setting)
+        if ir.setting.trainer.output_directory.exists():
+            shutil.rmtree(ir.setting.trainer.output_directory)
+        preprocessed_data_directory = Path(
+            'tests/data/deform/preprocessed/train/tet2_3_modulusx1.0000')
+        res = ir.infer(
+            model_path=Path('tests/data/deform/pretrained_res_gcn'),
+            preprocessed_data_directory=preprocessed_data_directory,
+            converter_parameters_pkl=Path(
+                'tests/data/deform/preprocessed/preprocessors.pkl'))
+        np.testing.assert_almost_equal(
+            res[0]['dict_y']['elemental_stress'] * 1e-5,
+            np.load(
+                'tests/data/deform/interim/train'
+                '/tet2_3_modulusx1.0000/elemental_stress.npy') * 1e-5,
             decimal=3)
         np.testing.assert_array_less(res[0]['loss'], 1e-3)

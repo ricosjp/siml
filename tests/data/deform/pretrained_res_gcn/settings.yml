@@ -1,0 +1,128 @@
+conversion:
+  file_type: fistr
+  finished_file: converted
+  mandatory: []
+  mandatory_variables: []
+  optional: []
+  optional_variables: []
+  required_file_names:
+  - '*.msh'
+  - '*.cnt'
+  - '*.res.0.1'
+  skip_femio: false
+data:
+  inferred: data/inferred
+  interim: data/interim
+  pad: false
+  preprocessed: data/preprocessed
+  raw: data/raw
+  test:
+  - data/preprocessed/test
+  train:
+  - tests/data/deform/preprocessed/train
+  validation:
+  - tests/data/deform/preprocessed/train
+model:
+  blocks:
+  - activations:
+    - relu
+    - relu
+    - identity
+    destinations:
+    - Output
+    device: null
+    dropouts:
+    - 0.0
+    - 0.3
+    - 0.0
+    hidden_activation: relu
+    hidden_dropout: 0.5
+    hidden_layers: null
+    hidden_nodes: null
+    input_dropout: 0.0
+    input_indices: null
+    input_slice:
+    - 0
+    - null
+    - 1
+    name: ResGCN1
+    nodes:
+    - 7
+    - 100
+    - 100
+    - 6
+    optional: {}
+    output_activation: identity
+    output_dropout: 0.0
+    support_input_index: 0
+    support_input_indices:
+    - 0
+    type: res_gcn
+optuna:
+  hyperparameters: []
+  n_trial: 100
+  output_base_directory: models/optuna
+  setting: {}
+preprocess: {}
+trainer:
+  batch_size: 2
+  compute_accuracy: false
+  data_parallel: false
+  display_mergin: 5
+  element_batch_size: -1
+  element_wise: false
+  gpu_id: -1
+  input_dims:
+  - 6
+  - 1
+  input_names:
+  - elemental_strain
+  - modulus
+  inputs:
+  - dim: 6
+    name: elemental_strain
+  - dim: 1
+    name: modulus
+  iterator: serial
+  lazy: false
+  log_trigger_epoch: 100
+  loss_function: mse
+  model_parallel: false
+  n_epoch: 1000
+  name: res_gcn_long
+  non_blocking: true
+  num_workers: 0
+  optimizer: adam
+  optimizer_setting:
+    betas:
+    - 0.9
+    - 0.99
+    eps: 1.0e-08
+    lr: 0.001
+    weight_decay: 0
+  optuna_trial: null
+  output_dims:
+  - 6
+  output_directory: tests/data/deform/res_gcn_long
+  output_names:
+  - elemental_stress
+  outputs:
+  - dim: 6
+    name: elemental_stress
+  patience: 3
+  pretrain_directory: null
+  prune: false
+  restart_directory: null
+  seed: 0
+  simplified_model: false
+  snapshot_choise_method: best
+  stop_trigger_epoch: 100
+  support_input: null
+  support_inputs:
+  - nadj
+  - adj
+  time_series: false
+  use_siml_updater: true
+  validation_batch_size: 2
+  validation_directories: []
+  validation_element_batch_size: -1

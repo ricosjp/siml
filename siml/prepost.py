@@ -203,13 +203,16 @@ class RawConverter():
 def update_fem_data(fem_data, dict_data):
     for key, value in dict_data.items():
         if isinstance(value, np.ndarray):
+            fem_data.pop_attribute(key)  # To be sure that overwrite correctly
             len_data = len(value)
+
             if len_data == len(fem_data.nodes.ids):
                 # Nodal data
                 fem_data.nodal_data.update({
                     key: femio.FEMAttribute(
                         key, fem_data.nodes.ids, value)})
             elif len_data == len(fem_data.elements.ids):
+                # Elemental data
                 fem_data.elemental_data.update({
                     key: femio.FEMAttribute(
                         key, fem_data.elements.ids, value)})
@@ -474,13 +477,24 @@ class Converter:
             for variable_name, data in dict_data_x.items()}
         return converted_dict_data_x
 
+    def _extract_first_batch(self, data):
+        shape = data.shape
+        if len(shape) == 2:
+            return data
+        elif len(shape) == 3 and shape[0] == 1:
+            return data[0]
+        elif len(shape) == 4 and shape[1] == 1:
+            return data[:, 0]
+        else:
+            raise ValueError(f"Unsupported shape: {shape}")
+
     def postprocess(
             self, dict_data_x, dict_data_y, output_directory=None, *,
             overwrite=False, save_x=False, write_simulation=False,
             write_npy=True, write_simulation_stem=None,
             write_simulation_base=None, read_simulation_type='fistr',
             write_simulation_type='fistr', skip_femio=False,
-            load_function=None,
+            load_function=None, convert_to_order1=False,
             data_addition_function=None, required_file_names=[]):
         """Postprocess data with inversely converting them.
 
@@ -526,11 +540,13 @@ class Converter:
         """
         inversed_dict_data_x = {
             variable_name:
-            self.converters[variable_name].inverse(data)
+            self._extract_first_batch(
+                self.converters[variable_name].inverse(data))
             for variable_name, data in dict_data_x.items()}
         inversed_dict_data_y = {
             variable_name:
-            self.converters[variable_name].inverse(data)
+            self._extract_first_batch(
+                self.converters[variable_name].inverse(data))
             for variable_name, data in dict_data_y.items()}
 
         # Save data
@@ -551,6 +567,7 @@ class Converter:
                     write_simulation_type=write_simulation_type,
                     data_addition_function=data_addition_function,
                     skip_femio=skip_femio, load_function=load_function,
+                    convert_to_order1=convert_to_order1,
                     required_file_names=required_file_names)
 
         return inversed_dict_data_x, inversed_dict_data_y
@@ -561,7 +578,7 @@ class Converter:
             read_simulation_type='fistr', data_addition_function=None,
             write_simulation_type='fistr',
             overwrite=False, skip_femio=False, load_function=None,
-            required_file_names=[]):
+            required_file_names=[], convert_to_order1=False):
         if not skip_femio:
             fem_data = femio.FEMData.read_directory(
                 read_simulation_type, write_simulation_base,
@@ -580,8 +597,10 @@ class Converter:
             raise ValueError(
                 'When skip_femio is True, please feed load_function.')
 
-        for k, v in dict_data_y.items():
-            fem_data.overwrite_attribute(k, v[0])
+        if convert_to_order1:
+            fem_data = fem_data.to_first_order()
+
+        fem_data = update_fem_data(fem_data, dict_data_y)
         if data_addition_function is not None:
             fem_data = data_addition_function(fem_data)
 
