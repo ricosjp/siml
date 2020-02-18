@@ -71,6 +71,10 @@ test_optimize:
   extends: .test
   script: python3.7 -m pytest tests/test_optimize.py --capture=no
 
+test_study:
+  extends: .test
+  script: python3.7 -m pytest tests/test_study.py --capture=no
+
 test_trainer:
   extends: .test
   script: python3.7 -m pytest tests/test_trainer.py --capture=no
