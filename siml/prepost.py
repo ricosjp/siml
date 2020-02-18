@@ -486,7 +486,7 @@ class Converter:
         elif len(shape) == 4 and shape[1] == 1:
             return data[:, 0]
         else:
-            raise ValueError(f"Unsupported shape: shape")
+            raise ValueError(f"Unsupported shape: {shape}")
 
     def postprocess(
             self, dict_data_x, dict_data_y, output_directory=None, *,
