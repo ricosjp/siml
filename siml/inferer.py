@@ -436,3 +436,77 @@ class Inferer(trainer.Trainer):
         return {
             'dict_x': inversed_dict_x, 'dict_y': inversed_dict_y, 'loss': loss,
             'output_directory': output_directory, 'data_directory': directory}
+
+    def _load_data(
+            self, variable_names, directories, *,
+            return_dict=False, supports=None):
+
+        data_directories = []
+        for directory in directories:
+            data_directories += util.collect_data_directories(
+                directory, required_file_names=[f"{variable_names[0]}.npy"])
+        data_directories = np.unique(data_directories)
+
+        if len(data_directories) == 0:
+            raise ValueError(f"No data found in {directories}")
+
+        if supports is None:
+            supports = []
+
+        data = [
+            util.concatenate_variable([
+                util.load_variable(data_directory, variable_name)
+                for variable_name in variable_names])
+            for data_directory in data_directories]
+        support_data = [
+            [
+                util.load_variable(data_directory, support)
+                for support in supports]
+            for data_directory in data_directories]
+        if len(data) == 0:
+            raise ValueError(f"No data found for: {directories}")
+        if self.setting.trainer.element_wise \
+                or self.setting.trainer.simplified_model:
+            if len(support_data[0]) > 0:
+                raise ValueError(
+                    'Cannot use support_input if '
+                    'element_wise or simplified_model is True')
+            if return_dict:
+                if self.setting.trainer.time_series:
+                    return {
+                        data_directory: d[:, None]
+                        for data_directory, d
+                        in zip(data_directories, data)}
+                else:
+                    return {
+                        data_directory: d for data_directory, d
+                        in zip(data_directories, data)}
+            else:
+                return np.concatenate(data), None
+        if return_dict:
+            if len(supports) > 0:
+                if self.setting.trainer.time_series:
+                    return {
+                        data_directory: [d[:, None], [s]]
+
+                        for data_directory, d, s
+                        in zip(data_directories, data, support_data)}
+                else:
+                    return {
+                        data_directory: [d[None, :], [s]]
+
+                        for data_directory, d, s
+                        in zip(data_directories, data, support_data)}
+            else:
+                if self.setting.trainer.time_series:
+                    return {
+                        data_directory: d[:, None]
+                        for data_directory, d
+                        in zip(data_directories, data)}
+                else:
+                    return {
+                        data_directory: d[None, :]
+                        for data_directory, d
+                        in zip(data_directories, data)}
+        else:
+            return data, support_data

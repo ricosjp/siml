@@ -60,6 +60,9 @@ class TypedDataClass:
         elif field.type == typing.List[dict]:
             def type_function(x):
                 return [dict(_x) for _x in x]
+        elif field.type == typing.Tuple:
+            def type_function(x):
+                return tuple(_x for _x in x)
         elif field.type == slice:
             def type_function(x):
                 if isinstance(x, slice):
@@ -114,6 +117,17 @@ class Iter(Enum):
     SERIAL = 'serial'
     MULTIPROCESS = 'multiprocess'
     MULTITHREAD = 'multithread'
+
+
+@dc.dataclass
+class StudySetting(TypedDataClass):
+
+    root_directory: Path = dc.field(
+        default=None, metadata={'allow_none': True})
+    type: str = 'learning_curve'
+    relative_train_size_linspace: typing.Tuple = dc.field(
+        default_factory=lambda: (.2, 1., 5))
+    n_fold: int = 10
 
 
 @dc.dataclass
@@ -522,6 +536,7 @@ class MainSetting:
     trainer: TrainerSetting = TrainerSetting()
     model: ModelSetting = ModelSetting()
     optuna: OptunaSetting = OptunaSetting()
+    study: StudySetting = StudySetting()
 
     @classmethod
     def read_settings_yaml(cls, settings_yaml):
@@ -566,12 +581,16 @@ class MainSetting:
             optuna_setting = OptunaSetting(**dict_settings['optuna'])
         else:
             optuna_setting = OptunaSetting()
+        if 'study' in dict_settings:
+            study_setting = StudySetting(**dict_settings['study'])
+        else:
+            study_setting = StudySetting()
 
         return cls(
             data=data_setting, conversion=conversion_setting,
             preprocess=preprocess_setting,
             trainer=trainer_setting, model=model_setting,
-            optuna=optuna_setting)
+            optuna=optuna_setting, study=study_setting)
 
     def __post_init__(self):
 

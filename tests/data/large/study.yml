@@ -1,0 +1,45 @@
+data:
+  preprocessed: tests/data/large/preprocessed
+  train:
+    - tests/data/large/preprocessed/train
+  validation:
+    - tests/data/large/preprocessed/validation
+preprocess:
+  x1: standardize
+  y: standardize
+study:
+  root_directory: tests/data/large/study
+  type: 'learning_curve'
+  relative_train_size_linspace:
+    - .5
+    - 1.
+    - 3
+  n_fold: 10
+trainer:
+  output_directory: tests/data/large/mlp
+  lazy: true
+  inputs:
+    - name: x
+      dim: 100
+  outputs:
+    - name: y
+      dim: 100
+  prune: true
+  batch_size: 5
+  n_epoch: 5
+  log_trigger_epoch: 1
+  stop_trigger_epoch: 10
+  seed: 0
+model:
+  blocks:
+    - type: adjustable_mlp
+      nodes:
+        - -1
+        - 10
+        - -1
+      activations:
+        - relu
+        - identity
+      dropouts:
+        - 0.0
+        - 0.0
