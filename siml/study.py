@@ -107,7 +107,9 @@ class Study():
         for _ in range(total_trial_length):
             df = pd.read_csv(self.log_file_path, header=0)
             df = pd.read_csv(self.log_file_path, header=0)
-            conditions = df[df.status != Status('FINISHED').value]
+            conditions = df[
+                (df.status != Status('FINISHED').value)
+                * (df.status != Status('RUNNING').value)]
             if len(conditions) == 0:
                 break
             condition = conditions.iloc[0]
@@ -116,8 +118,13 @@ class Study():
         self.finalize_study()
 
     def run_single(self, condition):
+        condition.status = Status.RUNNING.value
+        df = pd.read_csv(self.log_file_path, header=0)
+        df.iloc[condition.id] = condition
+        df.to_csv(self.log_file_path, index=False, header=True)
         print('Training started with the following condition:')
         print(condition)
+
         main_setting = self._create_setting(condition)
         try:
             tr = trainer.Trainer(main_setting)
