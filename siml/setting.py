@@ -632,6 +632,8 @@ class MainSetting:
                 for s in new_setting]
         elif isinstance(new_setting, dict):
             for key, value in new_setting.items():
+                if isinstance(original_setting, list):
+                    return new_setting
                 original_setting.update({
                     key: self._update_with_dict(original_setting[key], value)})
             return original_setting
