@@ -175,7 +175,7 @@ class Study():
             train_loss_means + train_loss_stds, alpha=.15, color=cmap(0))
         if self.original_setting.study.plot_validation:
             plt.plot(
-                sizes, validation_loss_means, '+-',
+                sizes, validation_loss_means, '+--',
                 label='validation loss', color=cmap(1))
             plt.fill_between(
                 sizes, validation_loss_means - validation_loss_stds,
