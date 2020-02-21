@@ -68,7 +68,7 @@ def generate_large():
 
     output_root = pathlib.Path('tests/data/large/preprocessed')
     train_root = output_root / 'train'
-    n_train_data = 50
+    n_train_data = 20
     generate_data(train_root, n_train_data)
 
     validation_root = output_root / 'validation'
