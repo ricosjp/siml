@@ -60,6 +60,9 @@ class TypedDataClass:
         elif field.type == typing.List[dict]:
             def type_function(x):
                 return [dict(_x) for _x in x]
+        elif field.type == typing.Tuple:
+            def type_function(x):
+                return tuple(_x for _x in x)
         elif field.type == slice:
             def type_function(x):
                 if isinstance(x, slice):
@@ -90,9 +93,11 @@ class DataSetting(TypedDataClass):
     train: typing.List[Path] = dc.field(
         default_factory=lambda: [Path('data/preprocessed/train')])
     validation: typing.List[Path] = dc.field(
-        default_factory=lambda: [Path('data/preprocessed/validation')])
+        default_factory=lambda: [])
+    develop: typing.List[Path] = dc.field(
+        default_factory=lambda: [])
     test: typing.List[Path] = dc.field(
-        default_factory=lambda: [Path('data/preprocessed/test')])
+        default_factory=lambda: [])
     pad: bool = False
 
     def __post_init__(self):
@@ -114,6 +119,20 @@ class Iter(Enum):
     SERIAL = 'serial'
     MULTIPROCESS = 'multiprocess'
     MULTITHREAD = 'multithread'
+
+
+@dc.dataclass
+class StudySetting(TypedDataClass):
+
+    root_directory: Path = dc.field(
+        default=None, metadata={'allow_none': True})
+    type: str = 'learning_curve'
+    relative_train_size_linspace: typing.Tuple = dc.field(
+        default_factory=lambda: (.2, 1., 5))
+    n_fold: int = 10
+    unit_error: str = '-'
+    plot_validation: bool = False
+    scale_loss: bool = False
 
 
 @dc.dataclass
@@ -522,6 +541,7 @@ class MainSetting:
     trainer: TrainerSetting = TrainerSetting()
     model: ModelSetting = ModelSetting()
     optuna: OptunaSetting = OptunaSetting()
+    study: StudySetting = StudySetting()
 
     @classmethod
     def read_settings_yaml(cls, settings_yaml):
@@ -566,12 +586,16 @@ class MainSetting:
             optuna_setting = OptunaSetting(**dict_settings['optuna'])
         else:
             optuna_setting = OptunaSetting()
+        if 'study' in dict_settings:
+            study_setting = StudySetting(**dict_settings['study'])
+        else:
+            study_setting = StudySetting()
 
         return cls(
             data=data_setting, conversion=conversion_setting,
             preprocess=preprocess_setting,
             trainer=trainer_setting, model=model_setting,
-            optuna=optuna_setting)
+            optuna=optuna_setting, study=study_setting)
 
     def __post_init__(self):
 
@@ -587,6 +611,12 @@ class MainSetting:
             if self.model.blocks[-1].nodes[-1] < 0:
                 self.model.blocks[-1].nodes[-1] = int(output_length)
 
+        if self.data.preprocessed != self.data.train[0].parent:
+            print(
+                'self.data.preprocessed differs from self.data.train. '
+                'Replaced.')
+            self.data.preprocessed = self.data.train[0].parent
+
     def update_with_dict(self, new_dict):
         original_dict = dc.asdict(self)
         return MainSetting.read_dict_settings(
@@ -597,13 +627,21 @@ class MainSetting:
                 or isinstance(new_setting, int):
             return new_setting
         elif isinstance(new_setting, list):
-            # NOTE: Assume that data is complete under the list
-            return new_setting
+            return [
+                self._update_with_dict(original_setting, s)
+                for s in new_setting]
         elif isinstance(new_setting, dict):
             for key, value in new_setting.items():
+                if isinstance(original_setting, list):
+                    return new_setting
                 original_setting.update({
                     key: self._update_with_dict(original_setting[key], value)})
             return original_setting
+        elif isinstance(new_setting, Path):
+            return str(new_setting)
+        elif isinstance(new_setting, np.ndarray):
+            return self._update_with_dict(
+                original_setting, new_setting.tolist())
         else:
             raise ValueError(f"Unknown data type: {new_setting.__class__}")
 

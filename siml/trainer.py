@@ -1,5 +1,6 @@
 from collections import OrderedDict
 import enum
+import pathlib
 import random
 import time
 
@@ -36,12 +37,12 @@ class Trainer():
         main_setting = setting.MainSetting.read_settings_yaml(settings_yaml)
         return cls(main_setting)
 
-    def __init__(self, main_setting, *, optuna_trial=None):
+    def __init__(self, settings, *, optuna_trial=None):
         """Initialize Trainer object.
 
         Parameters
         ----------
-            main_setting: siml.setting.MainSetting object
+            settings: siml.setting.MainSetting object or pathlib.Path
                 Setting descriptions.
             model: siml.networks.Network object
                 Model to be trained.
@@ -51,7 +52,15 @@ class Trainer():
         --------
             None
         """
-        self.setting = main_setting
+        if isinstance(settings, pathlib.Path):
+            self.setting = setting.MainSetting.read_settings_yaml(
+                settings)
+        elif isinstance(settings, setting.MainSetting):
+            self.setting = settings
+        else:
+            raise ValueError(
+                f"Unknown type for settings: {settings.__class__}")
+
         self._update_setting_if_needed()
         self.optuna_trial = optuna_trial
 
@@ -71,7 +80,7 @@ class Trainer():
         print(f"Ouput directory: {self.setting.trainer.output_directory}")
         self.setting.trainer.output_directory.mkdir(parents=True)
 
-        self._prepare_training()
+        self.prepare_training()
 
         setting.write_yaml(
             self.setting,
@@ -99,13 +108,27 @@ class Trainer():
 
         return validation_loss
 
+    def evaluate(self, evaluate_test=False, load_best_model=False):
+        if load_best_model:
+            self.setting.trainer.pretrain_directory \
+                = self.setting.trainer.output_directory
+            self._load_pretrained_model_if_needed()
+        train_state = self.evaluator.run(self.train_loader)
+        validation_state = self.evaluator.run(self.validation_loader)
+
+        if evaluate_test:
+            test_state = self.evaluator.run(self.test_loader)
+            return train_state, validation_state, test_state
+        else:
+            return train_state, validation_state
+
     def _display_mergin(self, input_string, reference_string=None):
         if not reference_string:
             reference_string = input_string
         return input_string.ljust(
             len(reference_string) + self.setting.trainer.display_mergin, ' ')
 
-    def _prepare_training(self):
+    def prepare_training(self):
         self.set_seed()
 
         if len(self.setting.trainer.input_names) == 0:
@@ -302,7 +325,6 @@ class Trainer():
 
     def _generate_trainer(self):
 
-        self._check_data_dimension()
         if self.element_wise:
             if self.setting.trainer.element_batch_size > 0:
                 batch_size = self.setting.trainer.element_batch_size
@@ -344,20 +366,21 @@ class Trainer():
                 self.prepare_batch = datasets.prepare_batch_without_support
 
         if self.setting.trainer.lazy:
-            self.train_loader, self.validation_loader = \
+            self.train_loader, self.validation_loader, self.test_loader = \
                 self._get_data_loaders(
                     datasets.LazyDataset, batch_size, validation_batch_size)
         else:
             if self.element_wise:
-                self.train_loader, self.validation_loader = \
+                self.train_loader, self.validation_loader, self.test_loader = \
                     self._get_data_loaders(
                         datasets.ElementWiseDataset, batch_size,
                         validation_batch_size)
             else:
-                self.train_loader, self.validation_loader = \
+                self.train_loader, self.validation_loader, self.test_loader = \
                     self._get_data_loaders(
                         datasets.OnMemoryDataset, batch_size,
                         validation_batch_size)
+        self._check_data_dimension()
 
         self.optimizer = self._create_optimizer()
 
@@ -556,11 +579,15 @@ class Trainer():
         return evaluator_engine
 
     def _get_data_loaders(
-            self, dataset_generator, batch_size, validation_batch_size):
+            self, dataset_generator, batch_size, validation_batch_size=None):
+        if validation_batch_size is None:
+            validation_batch_size = batch_size
+
         x_variable_names = self.setting.trainer.input_names
         y_variable_names = self.setting.trainer.output_names
         train_directories = self.setting.data.train
         validation_directories = self.setting.data.validation
+        test_directories = self.setting.data.test
         supports = self.setting.trainer.support_inputs
         num_workers = self.setting.trainer.num_workers
 
@@ -569,7 +596,12 @@ class Trainer():
             train_directories, supports=supports, num_workers=num_workers)
         validation_dataset = dataset_generator(
             x_variable_names, y_variable_names,
-            validation_directories, supports=supports, num_workers=num_workers)
+            validation_directories, supports=supports, num_workers=num_workers,
+            allow_no_data=True)
+        test_dataset = dataset_generator(
+            x_variable_names, y_variable_names,
+            test_directories, supports=supports, num_workers=num_workers,
+            allow_no_data=True)
 
         print(f"num_workers for data_loader: {num_workers}")
         train_loader = torch.utils.data.DataLoader(
@@ -579,8 +611,12 @@ class Trainer():
             validation_dataset, collate_fn=self.collate_fn,
             batch_size=validation_batch_size, shuffle=False,
             num_workers=num_workers)
+        test_loader = torch.utils.data.DataLoader(
+            test_dataset, collate_fn=self.collate_fn,
+            batch_size=validation_batch_size, shuffle=False,
+            num_workers=num_workers)
 
-        return train_loader, validation_loader
+        return train_loader, validation_loader, test_loader
 
     def _create_optimizer(self):
         optimizer_name = self.setting.trainer.optimizer.lower()
@@ -634,95 +670,21 @@ class Trainer():
 
     def _check_data_dimension(self):
         variable_names = self.setting.trainer.input_names
-        directories = self.setting.data.train
+        data_directories = self.train_loader.dataset.data_directories
 
-        data_directories = []
-        for directory in directories:
-            data_directories += util.collect_data_directories(
-                directory, required_file_names=[f"{variable_names[0]}.npy"])
         # Check data dimension correctness
-        if len(data_directories) > 0:
-            data_wo_concatenation = {
-                variable_name:
-                util.load_variable(data_directories[0], variable_name)
-                for variable_name in variable_names}
-            for input_setting in self.setting.trainer.inputs:
-                if input_setting['name'] in data_wo_concatenation and \
-                        (data_wo_concatenation[input_setting['name']].shape[-1]
-                         != input_setting['dim']):
-                    setting_dim = input_setting['dim']
-                    actual_dim = data_wo_concatenation[
-                        input_setting['name']].shape[-1]
-                    raise ValueError(
-                        f"{input_setting['name']} dimension incorrect: "
-                        f"{setting_dim} vs {actual_dim}")
-        return
-
-    def _load_data(
-            self, variable_names, directories, *,
-            return_dict=False, supports=None):
-        data_directories = []
-        for directory in directories:
-            data_directories += util.collect_data_directories(
-                directory, required_file_names=[f"{variable_names[0]}.npy"])
-
-        if supports is None:
-            supports = []
-
-        data = [
-            util.concatenate_variable([
-                util.load_variable(data_directory, variable_name)
-                for variable_name in variable_names])
-            for data_directory in data_directories]
-        support_data = [
-            [
-                util.load_variable(data_directory, support)
-                for support in supports]
-            for data_directory in data_directories]
-        if len(data) == 0:
-            raise ValueError(f"No data found for: {directories}")
-        if self.setting.trainer.element_wise \
-                or self.setting.trainer.simplified_model:
-            if len(support_data[0]) > 0:
+        data_wo_concatenation = {
+            variable_name:
+            util.load_variable(data_directories[0], variable_name)
+            for variable_name in variable_names}
+        for input_setting in self.setting.trainer.inputs:
+            if input_setting['name'] in data_wo_concatenation and \
+                    (data_wo_concatenation[input_setting['name']].shape[-1]
+                     != input_setting['dim']):
+                setting_dim = input_setting['dim']
+                actual_dim = data_wo_concatenation[
+                    input_setting['name']].shape[-1]
                 raise ValueError(
-                    'Cannot use support_input if '
-                    'element_wise or simplified_model is True')
-            if return_dict:
-                if self.setting.trainer.time_series:
-                    return {
-                        data_directory: d[:, None]
-                        for data_directory, d
-                        in zip(data_directories, data)}
-                else:
-                    return {
-                        data_directory:
-                        d for data_directory, d in zip(data_directories, data)}
-            else:
-                return np.concatenate(data), None
-        if return_dict:
-            if len(supports) > 0:
-                if self.setting.trainer.time_series:
-                    return {
-                        data_directory: [d[:, None], [s]]
-
-                        for data_directory, d, s
-                        in zip(data_directories, data, support_data)}
-                else:
-                    return {
-                        data_directory: [d[None, :], [s]]
-
-                        for data_directory, d, s
-                        in zip(data_directories, data, support_data)}
-            else:
-                if self.setting.trainer.time_series:
-                    return {
-                        data_directory: d[:, None]
-                        for data_directory, d
-                        in zip(data_directories, data)}
-                else:
-                    return {
-                        data_directory: d[None, :]
-
-                        for data_directory, d in zip(data_directories, data)}
-        else:
-            return data, support_data
+                    f"{input_setting['name']} dimension incorrect: "
+                    f"{setting_dim} vs {actual_dim}")
+        return

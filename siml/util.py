@@ -117,7 +117,7 @@ def load_variable(data_directory, file_basename):
 
 
 def collect_data_directories(
-        base_directory, *, required_file_names=None):
+        base_directory, *, required_file_names=None, allow_no_data=False):
     """Collect data directories recursively from the base directory.
 
     Parameters
@@ -132,7 +132,10 @@ def collect_data_directories(
             All found directories.
     """
     if not base_directory.exists():
-        raise ValueError(f"{base_directory} not exist")
+        if allow_no_data:
+            return []
+        else:
+            raise ValueError(f"{base_directory} not exist")
 
     if required_file_names:
         found_directories = [

@@ -43,3 +43,23 @@ class TestSetting(unittest.TestCase):
         self.assertEqual(
             main_setting.data.interim,
             Path('data/interim'))
+
+    def test_update_with_dict(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/deform/optuna.yml'))
+        dict_replace = {
+            'trainer': {
+                'inputs': [
+                    {'name': 'elemental_strain', 'dim': 6},
+                    {'name': 'something', 'dim': 100}],
+            }
+        }
+        new_setting = main_setting.update_with_dict(dict_replace)
+        self.assertEqual(
+            new_setting.trainer.inputs[0]['name'], 'elemental_strain')
+        self.assertEqual(
+            new_setting.trainer.inputs[0]['dim'], 6)
+        self.assertEqual(
+            new_setting.trainer.inputs[1]['name'], 'something')
+        self.assertEqual(
+            new_setting.trainer.inputs[1]['dim'], 100)
