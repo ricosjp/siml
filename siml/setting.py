@@ -132,6 +132,7 @@ class StudySetting(TypedDataClass):
     n_fold: int = 10
     unit_error: str = '-'
     plot_validation: bool = False
+    scale_loss: bool = False
 
 
 @dc.dataclass
@@ -609,6 +610,12 @@ class MainSetting:
                 self.model.blocks[0].nodes[0] = int(input_length)
             if self.model.blocks[-1].nodes[-1] < 0:
                 self.model.blocks[-1].nodes[-1] = int(output_length)
+
+        if self.data.preprocessed != self.data.train[0].parent:
+            print(
+                'self.data.preprocessed differs from self.data.train. '
+                'Replaced.')
+            self.data.preprocessed = self.data.train[0].parent
 
     def update_with_dict(self, new_dict):
         original_dict = dc.asdict(self)

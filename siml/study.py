@@ -4,7 +4,9 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from sklearn import preprocessing
 
+from . import prepost
 from . import setting
 from . import trainer
 from . import util
@@ -12,8 +14,7 @@ from . import util
 
 class Study():
 
-    def __init__(
-            self, settings, *, scale_conversion_function=None):
+    def __init__(self, settings):
         if isinstance(settings, Path):
             self.original_setting = setting.MainSetting.read_settings_yaml(
                 settings)
@@ -22,13 +23,6 @@ class Study():
         else:
             raise ValueError(
                 f"Unknown type for settings: {settings.__class__}")
-
-        if scale_conversion_function is None:
-            def identity(x):
-                return x
-            self.scale_conversion_function = identity
-        else:
-            self.scale_conversion_function = scale_conversion_function
 
         if self.original_setting.study.root_directory is None:
             self.original_setting.study.root_directory = \
@@ -109,7 +103,7 @@ class Study():
             df = pd.read_csv(self.log_file_path, header=0)
             conditions = df[
                 (df.status != Status('FINISHED').value)
-                * (df.status != Status('RUNNING').value)]
+                & (df.status != Status('RUNNING').value)]
             if len(conditions) == 0:
                 break
             condition = conditions.iloc[0]
@@ -175,7 +169,7 @@ class Study():
             train_loss_means + train_loss_stds, alpha=.15, color=cmap(0))
         if self.original_setting.study.plot_validation:
             plt.plot(
-                sizes, validation_loss_means, '.-',
+                sizes, validation_loss_means, '+-',
                 label='validation loss', color=cmap(1))
             plt.fill_between(
                 sizes, validation_loss_means - validation_loss_stds,
@@ -189,20 +183,64 @@ class Study():
             test_loss_means + test_loss_stds, alpha=.15, color=cmap(2))
 
         plt.xlabel('Training sample size [-]')
-        plt.ylabel(f"Loss [{self.original_setting.study.unit_error}]")
+        if self.original_setting.study.scale_loss:
+            y_name = self.original_setting.trainer.output_names[0]
+            unit = self.original_setting.study.unit_error
+        else:
+            y_name = 'Loss'
+            unit = '-'
+        plt.ylabel(f"{y_name} [{unit}]")
         plt.legend()
         plt.savefig(
             self.original_setting.study.root_directory / 'learning_curve.png')
         return
 
     def _calculate_stats(self, df, key):
-        means = self.scale_conversion_function(np.array([
+        if self.original_setting.study.scale_loss:
+            scale_conversion_function = \
+                self._generate_scale_conversion_function()
+        else:
+            def identity(x):
+                return x
+            scale_conversion_function = identity
+
+        means = scale_conversion_function(np.array([
             np.mean(df[abs(df.relative_train_size - s) < 1e-5][key])
             for s in self.relative_train_sizes]))
-        stds = self.scale_conversion_function(np.array([
+        stds = scale_conversion_function(np.array([
             np.std(df[abs(df.relative_train_size - s) < 1e-5][key])
             for s in self.relative_train_sizes]))
         return means, stds
+
+    def _generate_scale_conversion_function(self):
+        preprocessors_pkl = self.original_setting.data.preprocessed \
+            / 'preprocessors.pkl'
+        converter = prepost.Converter(preprocessors_pkl)
+        output_names = self.original_setting.trainer.output_names
+        if len(output_names) != 1:
+            raise NotImplementedError(
+                f"Output names more than 1 cannot be converted automatically")
+        else:
+            output_name = output_names[0]
+
+        output_converter = converter.converters[output_name].converter
+        # NOTE: Assume loss is mean square error
+        if isinstance(output_converter, preprocessing.StandardScaler):
+            def scale_conversion_function(x):
+                return (x * output_converter.var_)**.5
+
+        elif isinstance(output_converter, preprocessing.MinMaxScaler):
+            def scale_conversion_function(x):
+                return (x * output_converter.scale_)**.5
+
+        elif isinstance(output_converter, preprocessing.MaxAbsScaler):
+            def scale_conversion_function(x):
+                return (x * output_converter.max_abs_)**.5
+
+        else:
+            raise ValueError(f"Unknown converter type: {output_converter}")
+
+        return scale_conversion_function
 
     def _create_setting(self, condition):
         fold_id = condition.fold_id
