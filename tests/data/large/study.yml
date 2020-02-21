@@ -18,7 +18,8 @@ study:
   n_fold: 2
 trainer:
   output_directory: tests/data/large/mlp
-  lazy: true
+  lazy: false
+  num_workers: 0
   inputs:
     - name: x
       dim: 100
