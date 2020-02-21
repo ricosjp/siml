@@ -109,7 +109,7 @@ class Study():
             condition = conditions.iloc[0]
             self.run_single(condition)
 
-        self.finalize_study()
+        self.plot_study(allow_nan=False)
 
     def run_single(self, condition):
         condition.status = Status.RUNNING.value
@@ -147,20 +147,26 @@ class Study():
         df.iloc[condition.id] = condition
         df.to_csv(self.log_file_path, index=False, header=True)
 
+        self.plot_study(allow_nan=True)
+
         return
 
-    def finalize_study(self):
-        df = pd.read_csv(self.log_file_path, header=0)
+    def plot_study(self, allow_nan=False):
+        original_df = pd.read_csv(self.log_file_path, header=0)
+        df_wo_nan = original_df.dropna()
+        if not allow_nan and len(original_df) != len(df_wo_nan):
+            raise ValueError(f"{self.log_file_path} contains NaN")
 
         train_loss_means, train_loss_stds = self._calculate_stats(
-            df, 'train_loss')
+            df_wo_nan, 'train_loss')
         validation_loss_means, validation_loss_stds = self._calculate_stats(
-            df, 'validation_loss')
+            df_wo_nan, 'validation_loss')
         test_loss_means, test_loss_stds = self._calculate_stats(
-            df, 'test_loss')
+            df_wo_nan, 'test_loss')
         sizes = self.relative_train_sizes * self.total_data_size
 
         cmap = plt.get_cmap('tab10')
+        plt.figure()
         plt.plot(
             sizes, train_loss_means, '.:',
             label='training loss', color=cmap(0))
@@ -193,6 +199,8 @@ class Study():
         plt.legend()
         plt.savefig(
             self.original_setting.study.root_directory / 'learning_curve.png')
+
+        plt.close()
         return
 
     def _calculate_stats(self, df, key):
