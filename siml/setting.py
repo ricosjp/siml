@@ -127,11 +127,15 @@ class StudySetting(TypedDataClass):
     root_directory: Path = dc.field(
         default=None, metadata={'allow_none': True})
     type: str = 'learning_curve'
-    relative_train_size_linspace: typing.Tuple = dc.field(
+    relative_develop_size_linspace: typing.Tuple = dc.field(
         default_factory=lambda: (.2, 1., 5))
     n_fold: int = 10
     unit_error: str = '-'
     plot_validation: bool = False
+    x_from_zero: bool = False
+    y_from_zero: bool = False
+    x_logscale: bool = False
+    y_logscale: bool = False
     scale_loss: bool = False
 
 

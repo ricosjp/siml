@@ -28,8 +28,8 @@ class Study():
             self.original_setting.study.root_directory = \
                 self.original_setting.trainer.name
 
-        self.relative_train_sizes = np.linspace(
-            *self.original_setting.study.relative_train_size_linspace)
+        self.relative_develop_sizes = np.linspace(
+            *self.original_setting.study.relative_develop_size_linspace)
         self.log_file_path = self.original_setting.study.root_directory \
             / 'study_log.csv'
         if self.log_file_path.exists():
@@ -52,21 +52,21 @@ class Study():
     def initialize_log_file(self):
         self.original_setting.study.root_directory.mkdir(parents=True)
 
-        all_relative_train_sizes = [
+        all_relative_develop_sizes = [
             size
-            for size in self.relative_train_sizes
+            for size in self.relative_develop_sizes
             for i_fold in range(self.original_setting.study.n_fold)]
         all_fold_ids = [
             i_fold
-            for size in self.relative_train_sizes
+            for size in self.relative_develop_sizes
             for i_fold in range(self.original_setting.study.n_fold)]
-        length = len(all_relative_train_sizes)
+        length = len(all_relative_develop_sizes)
         nones = [None] * length
         statuses = [Status.NOT_YET.value] * length
 
         data_frame = pd.DataFrame({
             'id': range(length),
-            'relative_train_size': all_relative_train_sizes,
+            'relative_develop_size': all_relative_develop_sizes,
             'fold_id': all_fold_ids,
             'train_loss': nones,
             'validation_loss': nones,
@@ -163,7 +163,9 @@ class Study():
             df_wo_nan, 'validation_loss')
         test_loss_means, test_loss_stds = self._calculate_stats(
             df_wo_nan, 'test_loss')
-        sizes = self.relative_train_sizes * self.total_data_size
+        sizes = self.relative_develop_sizes * self.total_data_size * (
+            self.original_setting.study.n_fold - 1
+        ) / self.original_setting.study.n_fold
 
         cmap = plt.get_cmap('tab10')
         plt.figure()
@@ -196,6 +198,14 @@ class Study():
             y_name = 'Loss'
             unit = '-'
         plt.ylabel(f"{y_name} [{unit}]")
+        if self.original_setting.study.x_from_zero:
+            plt.xlim(0., None)
+        if self.original_setting.study.y_from_zero:
+            plt.ylim(0., None)
+        if self.original_setting.study.x_logscale:
+            plt.xscale('log')
+        if self.original_setting.study.y_logscale:
+            plt.yscale('log')
         plt.legend()
         plt.savefig(
             self.original_setting.study.root_directory / 'learning_curve.png')
@@ -213,11 +223,11 @@ class Study():
             scale_conversion_function = identity
 
         means = scale_conversion_function(np.array([
-            np.mean(df[abs(df.relative_train_size - s) < 1e-5][key])
-            for s in self.relative_train_sizes]))
+            np.mean(df[abs(df.relative_develop_size - s) < 1e-5][key])
+            for s in self.relative_develop_sizes]))
         stds = scale_conversion_function(np.array([
-            np.std(df[abs(df.relative_train_size - s) < 1e-5][key])
-            for s in self.relative_train_sizes]))
+            np.std(df[abs(df.relative_develop_size - s) < 1e-5][key])
+            for s in self.relative_develop_sizes]))
         return means, stds
 
     def _generate_scale_conversion_function(self):
@@ -316,7 +326,7 @@ class Study():
 
     def _determine_develop_data_size(self, condition):
         return int(round(
-            self.total_data_size * condition.relative_train_size))
+            self.total_data_size * condition.relative_develop_size))
 
 
 class Status(enum.Enum):

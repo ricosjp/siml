@@ -11,11 +11,13 @@ preprocess:
 study:
   root_directory: tests/data/large/study_long
   type: 'learning_curve'
-  relative_train_size_linspace:
+  relative_develop_size_linspace:
     - .5
     - 1.
     - 2
   n_fold: 2
+  x_from_zero: true
+  y_logscale: true
 trainer:
   output_directory: tests/data/large/mlp
   lazy: false
