@@ -171,7 +171,7 @@ class Study():
         plt.figure()
         plt.plot(
             sizes, train_loss_means, '.:',
-            label='training loss', color=cmap(0))
+            label='train loss', color=cmap(0))
         plt.fill_between(
             sizes, train_loss_means - train_loss_stds,
             train_loss_means + train_loss_stds, alpha=.15, color=cmap(0))
