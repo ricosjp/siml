@@ -11,7 +11,7 @@ preprocess:
 study:
   root_directory: tests/data/large/study
   type: 'learning_curve'
-  relative_train_size_linspace:
+  relative_develop_size_linspace:
     - .2
     - 1.
     - 3
