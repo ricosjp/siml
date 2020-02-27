@@ -1,8 +1,6 @@
 
 import torch
 
-from .. import setting
-
 
 def identity(x):
     return x
