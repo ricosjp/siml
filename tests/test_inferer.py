@@ -19,7 +19,7 @@ class TestInferer(unittest.TestCase):
         if ir.setting.trainer.output_directory.exists():
             shutil.rmtree(ir.setting.trainer.output_directory)
         res = ir.infer(
-            model_path=Path('tests/data/linear/pretrained'),
+            model=Path('tests/data/linear/pretrained'),
             preprocessed_data_directory=Path(
                 'tests/data/linear/preprocessed/validation'),
             converter_parameters_pkl=Path(
@@ -42,7 +42,7 @@ class TestInferer(unittest.TestCase):
             return {'adj': adj, 'nadj': nadj}
 
         res_from_raw = ir.infer(
-            model_path=Path('tests/data/deform/pretrained'),
+            model=Path('tests/data/deform/pretrained'),
             raw_data_directory=Path(
                 'tests/data/deform/raw/test/tet2_4_modulusx0.9500'),
             converter_parameters_pkl=Path(
@@ -50,7 +50,7 @@ class TestInferer(unittest.TestCase):
             conversion_function=conversion_function, save=False)
 
         res_from_preprocessed = ir.infer(
-            model_path=Path('tests/data/deform/pretrained'),
+            model=Path('tests/data/deform/pretrained'),
             preprocessed_data_directory=Path(
                 'tests/data/deform/preprocessed/test/'
                 'tet2_4_modulusx0.9500'),
@@ -78,14 +78,14 @@ class TestInferer(unittest.TestCase):
             return {'adj': adj, 'nadj': nadj}
 
         res_from_raw = ir.infer(
-            model_path=Path('tests/data/deform/pretrained'),
+            model=Path('tests/data/deform/pretrained'),
             raw_data_directory=Path(
                 'tests/data/deform/external/tet2_4_modulusx0.9500'),
             converter_parameters_pkl=Path(
                 'tests/data/deform/preprocessed/preprocessors.pkl'),
             conversion_function=conversion_function, save=False)
         res_from_preprocessed = ir.infer(
-            model_path=Path('tests/data/deform/pretrained'),
+            model=Path('tests/data/deform/pretrained'),
             preprocessed_data_directory=Path(
                 'tests/data/deform/preprocessed/test/'
                 'tet2_4_modulusx0.9500'),
@@ -109,7 +109,7 @@ class TestInferer(unittest.TestCase):
             return {'adj': adj, 'nadj': nadj}
 
         res_from_raw = ir.infer(
-            model_path=Path(
+            model=Path(
                 'tests/data/deform/incomplete_pretrained/'
                 'snapshot_epoch_5000.pth'),
             raw_data_directory=Path(
@@ -118,7 +118,7 @@ class TestInferer(unittest.TestCase):
                 'tests/data/deform/preprocessed/preprocessors.pkl'),
             conversion_function=conversion_function, save=False)
         res_from_preprocessed = ir.infer(
-            model_path=Path('tests/data/deform/pretrained'),
+            model=Path('tests/data/deform/pretrained'),
             preprocessed_data_directory=Path(
                 'tests/data/deform/preprocessed/test/'
                 'tet2_4_modulusx0.9500'),
@@ -139,7 +139,7 @@ class TestInferer(unittest.TestCase):
             shutil.rmtree(output_directory)
 
         res_from_preprocessed = ir.infer(
-            model_path=Path('tests/data/deform/pretrained'),
+            model=Path('tests/data/deform/pretrained'),
             output_directory=output_directory,
             preprocessed_data_directory=Path(
                 'tests/data/deform/preprocessed/test/'
@@ -186,7 +186,7 @@ class TestInferer(unittest.TestCase):
             'tests/data/deform_timeseries/preprocessed/train'
             '/tet2_3_modulusx1.0000')
         res = ir.infer(
-            model_path=Path('tests/data/deform_timeseries/pretrained'),
+            model=Path('tests/data/deform_timeseries/pretrained'),
             preprocessed_data_directory=preprocessed_data_directory,
             converter_parameters_pkl=Path(
                 'tests/data/deform_timeseries/preprocessed/preprocessors.pkl'))
@@ -207,7 +207,7 @@ class TestInferer(unittest.TestCase):
         preprocessed_data_directory = Path(
             'tests/data/deform/preprocessed/train/tet2_3_modulusx1.0000')
         res = ir.infer(
-            model_path=Path('tests/data/deform/pretrained_res_gcn'),
+            model=Path('tests/data/deform/pretrained_res_gcn'),
             preprocessed_data_directory=preprocessed_data_directory,
             converter_parameters_pkl=Path(
                 'tests/data/deform/preprocessed/preprocessors.pkl'))
@@ -218,3 +218,30 @@ class TestInferer(unittest.TestCase):
                 '/tet2_3_modulusx1.0000/elemental_stress.npy') * 1e-5,
             decimal=3)
         np.testing.assert_array_less(res[0]['loss'], 1e-3)
+
+    def test_infer_bufferio(self):
+        yaml_path = ('tests/data/deform/pretrained/settings.yaml')
+        with open(yaml_path) as yaml_content:
+            ir = inferer.Inferer(yaml_content)
+
+        if ir.setting.trainer.output_directory.exists():
+            shutil.rmtree(ir.setting.trainer.output_directory)
+
+        def conversion_function(fem_data, raw_directory=None):
+            adj, _ = fem_data.calculate_adjacency_matrix_element()
+            nadj = prepost.normalize_adjacency_matrix(adj)
+            return {'adj': adj, 'nadj': nadj}
+        with open(
+            'tests/data/deform/pretrained/snapshot_epoch_5000.pth', 'rb'
+        ) as model_content:
+            with open(
+                'tests/data/deform/preprocessed/preprocessors.pkl', 'rb'
+            ) as pkl_content:
+                res_from_raw = ir.infer(
+                    model=model_content,
+                    raw_data_directory=Path(
+                        'tests/data/deform/raw/test/tet2_4_modulusx0.9500'),
+                    converter_parameters_pkl=pkl_content,
+                    conversion_function=conversion_function, save=False)
+
+        np.testing.assert_array_less(res_from_raw[0]['loss'], 1e-2)
