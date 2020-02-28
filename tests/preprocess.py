@@ -46,8 +46,8 @@ def preprocess_linear():
 
 
 def generate_large():
-    n_feat = 100
-    n_element = 20000
+    n_feat = 10
+    n_element = 2000
 
     def generate_data(root_dir, n_data):
         if root_dir.exists():
@@ -76,7 +76,7 @@ def generate_large():
     generate_data(validation_root, n_validation_data)
 
     test_root = output_root / 'test'
-    n_test_data = 10
+    n_test_data = 2
     generate_data(test_root, n_test_data)
     return
 
