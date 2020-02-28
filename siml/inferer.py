@@ -1,3 +1,4 @@
+import io
 import pathlib
 
 import femio
@@ -15,7 +16,7 @@ from . import util
 class Inferer(trainer.Trainer):
 
     def infer(
-            self, model_path=None, *,
+            self, model=None, *,
             save=True, overwrite=False, output_directory=None,
             preprocessed_data_directory=None, raw_data_directory=None,
             raw_data_basename=None, raw_data_file=None,
@@ -30,8 +31,8 @@ class Inferer(trainer.Trainer):
 
         Parameters
         ----------
-        model_path: pathlib.Path, optional [None]
-            Model directory or file path. If not fed,
+        model: pathlib.Path or io.BufferedIOBase, optional [None]
+            Model directory, file path, or buffer. If not fed,
             TrainerSetting.pretrain_directory will be used.
         save: bool, optional [False]
             If True, save inference results.
@@ -88,7 +89,7 @@ class Inferer(trainer.Trainer):
                 - loss
         """
         self._prepare_inference(
-            pathlib.Path(model_path),
+            model,
             converter_parameters_pkl=converter_parameters_pkl)
 
         # Load data
@@ -165,27 +166,31 @@ class Inferer(trainer.Trainer):
         return inference_results
 
     def _prepare_inference(
-            self, model_path,
+            self, model,
             *, model_directory=None, converter_parameters_pkl=None):
         self.device = 'cpu'
 
         # Define model
-        if model_path is None:
+        if model is None:
             if self.setting.trainer.pretrain_directory is None:
                 raise ValueError(
                     f'No pretrain directory is specified for inference.')
             else:
-                model_path = self.setting.trainer.pretrain_directory
+                model = self.setting.trainer.pretrain_directory
 
-        if model_path.is_dir():
-            self.setting.trainer.pretrain_directory = model_path
-            self._update_setting_if_needed()
-            model_file = None
-        elif model_path.is_file():
-            model_file = model_path
+        if isinstance(model, io.BufferedIOBase):
+            model_file = model
+        elif isinstance(model, str) or isinstance(model, pathlib.Path):
+            model = pathlib.Path(model)
+            if model.is_dir():
+                self.setting.trainer.pretrain_directory = model
+                self._update_setting_if_needed()
+                model_file = None
+            elif model.is_file():
+                model_file = model
         else:
             raise ValueError(
-                f"{model_path} is neither file nor directory.")
+                f"{model} is neither file, directory, nor buffer.")
 
         self.model = networks.Network(
             self.setting.model, self.setting.trainer)
