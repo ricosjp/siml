@@ -7,7 +7,7 @@ from . import header
 class LSTM(torch.nn.Module):
     """LSTM layer."""
 
-    def __init__(self, block_setting, residual=False):
+    def __init__(self, block_setting):
         """Initialize the NN.
 
         Parameters
@@ -20,7 +20,7 @@ class LSTM(torch.nn.Module):
 
         super().__init__()
         nodes = block_setting.nodes
-        self.residual = residual
+        self.residual = block_setting.residual
         self.lstm_layers = torch.nn.ModuleList([
             torch.nn.LSTM(n1, n2, dropout=do)
             for n1, n2, do
@@ -57,9 +57,3 @@ class LSTM(torch.nn.Module):
                 + self.linear(x)
         else:
             return h.view(shape[0], shape[1], shape[2], h.shape[-1])
-
-
-class ResLSTM(LSTM):
-
-    def __init__(self, block_setting):
-        super().__init__(block_setting, residual=True)

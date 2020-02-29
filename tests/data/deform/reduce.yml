@@ -27,7 +27,8 @@ trainer:
 model:
   blocks:
     - name: ResGCN1
-      type: res_gcn
+      type: gcn
+      residual: true
       destinations:
         - MLP
       support_input_index: 0  # assume one support input (e.g. adjacency matrix) for each block

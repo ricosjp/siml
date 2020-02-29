@@ -27,7 +27,8 @@ trainer:
 model:
   blocks:
     - name: ResGCN1
-      type: res_gcn
+      type: gcn
+      residual: true
       destinations:
         - ResGCN2
         - MLP
@@ -40,7 +41,8 @@ model:
       dropouts:
         - 0.3
     - name: ResGCN2
-      type: res_gcn
+      type: gcn
+      residual: true
       destinations:
         - Distributor
       support_input_index: 1
@@ -73,7 +75,8 @@ model:
       destinations:
         - ResGCN3
     - name: ResGCN3
-      type: res_gcn
+      type: gcn
+      residual: true
       support_input_index: 0
       nodes:
         - 6

@@ -155,14 +155,12 @@ class TestNetwork(unittest.TestCase):
         loss = tr.train()
         self.assertLess(loss, 1.)
 
-    def test_early_stopping(self):
+    def test_train_tcn(self):
         main_setting = setting.MainSetting.read_settings_yaml(
-            Path('tests/data/linear/use_pretrained.yml'))
+            Path('tests/data/deform_timeseries/tcn.yml'))
+
+        if main_setting.trainer.output_directory.exists():
+            shutil.rmtree(main_setting.trainer.output_directory)
         tr = trainer.Trainer(main_setting)
-        if tr.setting.trainer.output_directory.exists():
-            shutil.rmtree(tr.setting.trainer.output_directory)
-        tr.train()
-        self.assertLess(tr.trainer.state.epoch, main_setting.trainer.n_epoch)
-        self.assertEqual(
-            tr.trainer.state.epoch % main_setting.trainer.stop_trigger_epoch,
-            0)
+        loss = tr.train()
+        self.assertLess(loss, 1.)

@@ -5,7 +5,7 @@ data:
   validation:
     - tests/data/deform_timeseries/preprocessed/train
 trainer:
-  output_directory: tests/data/deform_timeseries/lstm
+  output_directory: tests/data/deform_timeseries/tcn
   simplified_model: false
   time_series: true
   lazy: false
@@ -31,7 +31,7 @@ model:
     - name: IN_MLP
       type: adjustable_mlp
       destinations:
-        - LSTM
+        - TCN
       nodes:
         - -1
         - 100
@@ -39,21 +39,37 @@ model:
         - relu
       dropouts:
         - 0.0
-    - name: LSTM
-      type: lstm
-      residual: true
+    - name: TCN
+      type: tcn
       destinations:
         - OUT_MLP
+      residual: true
       nodes:
         - 100
         - 100
         - 100
+        - 100
       activations:
-        - identity
-        - identity
+        - relu
+        - relu
+        - relu
       dropouts:
         - 0.0
         - 0.0
+        - 0.0
+      kernel_sizes:
+        - 3
+        - 3
+        - 3
+      optional:
+        dilations:
+          - 1
+          - 2
+          - 4
+        padding_modes:
+          - reflect
+          - replicate
+          - replicate
     - name: OUT_MLP
       type: adjustable_mlp
       nodes:

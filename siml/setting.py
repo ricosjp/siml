@@ -348,6 +348,7 @@ class BlockSetting(TypedDataClass):
     type: str = 'mlp'
     destinations: typing.List[str] = dc.field(
         default_factory=lambda: ['Output'])
+    residual: bool = False
     input_slice: slice = slice(0, None, 1)
     input_indices: typing.List[int] = dc.field(
         default=None, metadata={'allow_none': True})
@@ -357,6 +358,8 @@ class BlockSetting(TypedDataClass):
         default=None, metadata={'allow_none': True})
     nodes: typing.List[int] = dc.field(
         default_factory=lambda: [-1, -1])
+    kernel_sizes: typing.List[int] = dc.field(
+        default=None, metadata={'allow_none': True})
     activations: typing.List[str] = dc.field(
         default_factory=lambda: ['identity'])
     dropouts: typing.List[float] = dc.field(default_factory=lambda: [0.])
@@ -387,10 +390,20 @@ class BlockSetting(TypedDataClass):
             self.dropouts = [self.input_dropout] \
                 + [self.hidden_dropout] * (self.hidden_layers - 1) \
                 + [self.output_dropout]
-        if not(
-                len(self.nodes) - 1 == len(self.activations)
-                == len(self.dropouts)):
-            raise ValueError('Block definition invalid')
+        if len(self.activations) != len(self.nodes) - 1:
+            raise ValueError(
+                f"len(activations) should be {len(self.nodes)-1} but "
+                f"{len(self.activations)} for {self}")
+        if len(self.dropouts) != len(self.nodes) - 1:
+            raise ValueError(
+                f"len(dropouts) should be {len(self.nodes)-1} but "
+                f"{len(self.dropouts)} for {self}")
+        if self.kernel_sizes is not None:
+            if len(self.kernel_sizes) != len(self.nodes) - 1:
+                raise ValueError(
+                    f"len(kernel_sizes) should be {len(self.nodes)-1} but "
+                    f"{len(self.kernel_sizes)} for {self}")
+
         super().__post_init__()
 
         if self.input_indices is not None:

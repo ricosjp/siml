@@ -45,7 +45,8 @@ model:
         - 0.0
         - 0.0
     - name: RES_GCN
-      type: res_gcn
+      type: gcn
+      residual: true
       destinations:
         - MLP
       nodes:
@@ -59,7 +60,7 @@ model:
         - 0.0
         - 0.0
     - name: MLP
-      type: res_gcn
+      type: adjustable_mlp
       nodes:
         - 100
         - 10
