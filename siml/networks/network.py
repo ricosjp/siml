@@ -4,6 +4,7 @@ import numpy as np
 import torch
 
 from .. import datasets
+from . import activation
 from . import adjustable_mlp
 from . import deepsets
 from . import gcn
@@ -26,6 +27,7 @@ class Network(torch.nn.Module):
 
     DICT_BLOCKS = {
         'identity': BlockInformation(identity.Identity),
+        'activation': BlockInformation(activation.Activation),
         'mlp': BlockInformation(mlp.MLP),
         'adjustable_mlp': BlockInformation(adjustable_mlp.AdjustableMLP),
         'gcn': BlockInformation(gcn.GCN, use_support=True),

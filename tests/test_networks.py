@@ -3,10 +3,15 @@ import shutil
 import unittest
 
 import numpy as np
+import matplotlib.pyplot as plt
 import torch
 
+import siml.networks.header as header
 import siml.setting as setting
 import siml.trainer as trainer
+
+
+PLOT = False
 
 
 class TestNetwork(unittest.TestCase):
@@ -164,3 +169,27 @@ class TestNetwork(unittest.TestCase):
         tr = trainer.Trainer(main_setting)
         loss = tr.train()
         self.assertLess(loss, 1.)
+
+    def test_activations(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/deform/activations.yml'))
+
+        if main_setting.trainer.output_directory.exists():
+            shutil.rmtree(main_setting.trainer.output_directory)
+        tr = trainer.Trainer(main_setting)
+        loss = tr.train()
+        self.assertLess(loss, 1.)
+
+    def test_mish(self):
+        np.testing.assert_almost_equal(
+            header.mish(torch.Tensor([100.])), [100.])
+        np.testing.assert_almost_equal(
+            header.mish(torch.Tensor([-100.])), [0.])
+        np.testing.assert_almost_equal(
+            header.mish(torch.Tensor([1.])),
+            [1. * np.tanh(np.log(1 + np.exp(1.)))])
+        if PLOT:
+            x = np.linspace(-10., 10., 100)
+            mish = header.mish(torch.from_numpy(x))
+            plt.plot(x, mish.numpy())
+            plt.show()
