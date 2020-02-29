@@ -12,6 +12,7 @@ from . import lstm
 from . import mlp
 from . import nri
 from . import reducer
+from . import tcn
 
 
 class BlockInformation():
@@ -28,14 +29,13 @@ class Network(torch.nn.Module):
         'mlp': BlockInformation(mlp.MLP),
         'adjustable_mlp': BlockInformation(adjustable_mlp.AdjustableMLP),
         'gcn': BlockInformation(gcn.GCN, use_support=True),
-        'res_gcn': BlockInformation(gcn.ResGCN, use_support=True),
         'reducer': BlockInformation(reducer.Reducer),
         'distributor': BlockInformation(
             reducer.Reducer),  # For backward compatibility
         'deepsets': BlockInformation(deepsets.DeepSets),
         'nri': BlockInformation(nri.NRI, use_support=True),
         'lstm': BlockInformation(lstm.LSTM),
-        'res_lstm': BlockInformation(lstm.ResLSTM),
+        'tcn': BlockInformation(tcn.TCN),
     }
 
     def __init__(self, model_setting, trainer_setting):
