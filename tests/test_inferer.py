@@ -14,7 +14,7 @@ class TestInferer(unittest.TestCase):
 
     def test_infer_with_preprocessed_data(self):
         main_setting = setting.MainSetting.read_settings_yaml(
-            Path('tests/data/linear/pretrained/settings.yaml'))
+            Path('tests/data/linear/pretrained/settings.yml'))
         ir = inferer.Inferer(main_setting)
         if ir.setting.trainer.output_directory.exists():
             shutil.rmtree(ir.setting.trainer.output_directory)
@@ -31,7 +31,7 @@ class TestInferer(unittest.TestCase):
 
     def test_infer_with_raw_data(self):
         main_setting = setting.MainSetting.read_settings_yaml(
-            Path('tests/data/deform/pretrained/settings.yaml'))
+            Path('tests/data/deform/pretrained/settings.yml'))
         ir = inferer.Inferer(main_setting)
         if ir.setting.trainer.output_directory.exists():
             shutil.rmtree(ir.setting.trainer.output_directory)
@@ -67,7 +67,7 @@ class TestInferer(unittest.TestCase):
 
     def test_infer_with_raw_data_wo_answer(self):
         main_setting = setting.MainSetting.read_settings_yaml(
-            Path('tests/data/deform/pretrained/settings.yaml'))
+            Path('tests/data/deform/pretrained/settings.yml'))
         ir = inferer.Inferer(main_setting)
         if ir.setting.trainer.output_directory.exists():
             shutil.rmtree(ir.setting.trainer.output_directory)
@@ -98,7 +98,7 @@ class TestInferer(unittest.TestCase):
 
     def test_infer_with_raw_data_wo_answer_with_model_file(self):
         main_setting = setting.MainSetting.read_settings_yaml(
-            Path('tests/data/deform/incomplete_pretrained/settings.yaml'))
+            Path('tests/data/deform/incomplete_pretrained/settings.yml'))
         ir = inferer.Inferer(main_setting)
         if ir.setting.trainer.output_directory.exists():
             shutil.rmtree(ir.setting.trainer.output_directory)
@@ -131,7 +131,7 @@ class TestInferer(unittest.TestCase):
 
     def test_infer_to_write_simulation_file(self):
         main_setting = setting.MainSetting.read_settings_yaml(
-            Path('tests/data/deform/incomplete_pretrained/settings.yaml'))
+            Path('tests/data/deform/incomplete_pretrained/settings.yml'))
         output_directory = Path('tests/data/deform/write_simulation')
 
         ir = inferer.Inferer(main_setting)
@@ -178,7 +178,7 @@ class TestInferer(unittest.TestCase):
 
     def test_infer_timeseries(self):
         main_setting = setting.MainSetting.read_settings_yaml(
-            Path('tests/data/deform_timeseries/pretrained/settings.yaml'))
+            Path('tests/data/deform_timeseries/pretrained/settings.yml'))
         ir = inferer.Inferer(main_setting)
         if ir.setting.trainer.output_directory.exists():
             shutil.rmtree(ir.setting.trainer.output_directory)
@@ -220,7 +220,7 @@ class TestInferer(unittest.TestCase):
         np.testing.assert_array_less(res[0]['loss'], 1e-3)
 
     def test_infer_bufferio(self):
-        yaml_path = ('tests/data/deform/pretrained/settings.yaml')
+        yaml_path = ('tests/data/deform/pretrained/settings.yml')
         with open(yaml_path) as yaml_content:
             ir = inferer.Inferer(yaml_content)
 

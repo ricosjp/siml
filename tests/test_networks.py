@@ -114,3 +114,55 @@ class TestNetwork(unittest.TestCase):
             shutil.rmtree(tr.setting.trainer.output_directory)
         loss = tr.train()
         np.testing.assert_array_less(loss, 1.)
+
+    def test_train_time_series_simplified_data(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/simplified_timeseries/lstm.yml'))
+
+        if main_setting.trainer.output_directory.exists():
+            shutil.rmtree(main_setting.trainer.output_directory)
+        tr = trainer.Trainer(main_setting)
+        loss = tr.train()
+        self.assertLess(loss, .1)
+
+    def test_train_time_series_mesh_data_w_support(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/deform_timeseries/lstm_w_support.yml'))
+
+        if main_setting.trainer.output_directory.exists():
+            shutil.rmtree(main_setting.trainer.output_directory)
+        tr = trainer.Trainer(main_setting)
+        loss = tr.train()
+        self.assertLess(loss, 1.)
+
+    def test_train_time_series_mesh_data_wo_support(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/deform_timeseries/lstm_wo_support.yml'))
+
+        if main_setting.trainer.output_directory.exists():
+            shutil.rmtree(main_setting.trainer.output_directory)
+        tr = trainer.Trainer(main_setting)
+        loss = tr.train()
+        self.assertLess(loss, 1.)
+
+    def test_train_res_ltm(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/deform_timeseries/res_lstm.yml'))
+
+        if main_setting.trainer.output_directory.exists():
+            shutil.rmtree(main_setting.trainer.output_directory)
+        tr = trainer.Trainer(main_setting)
+        loss = tr.train()
+        self.assertLess(loss, 1.)
+
+    def test_early_stopping(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/linear/use_pretrained.yml'))
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        tr.train()
+        self.assertLess(tr.trainer.state.epoch, main_setting.trainer.n_epoch)
+        self.assertEqual(
+            tr.trainer.state.epoch % main_setting.trainer.stop_trigger_epoch,
+            0)

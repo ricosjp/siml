@@ -35,6 +35,7 @@ class Network(torch.nn.Module):
         'deepsets': BlockInformation(deepsets.DeepSets),
         'nri': BlockInformation(nri.NRI, use_support=True),
         'lstm': BlockInformation(lstm.LSTM),
+        'res_lstm': BlockInformation(lstm.ResLSTM),
     }
 
     def __init__(self, model_setting, trainer_setting):

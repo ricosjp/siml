@@ -11,13 +11,13 @@ conversion:
   - '*.res.0.1'
   skip_femio: false
 data:
+  develop: []
   inferred: data/inferred
   interim: data/interim
   pad: false
   preprocessed: tests/data/deform_timeseries/preprocessed
   raw: data/raw
-  test:
-  - data/preprocessed/test
+  test: []
   train:
   - tests/data/deform_timeseries/preprocessed/train
   validation:
@@ -29,10 +29,11 @@ model:
     - identity
     destinations:
     - MLP
+    device: null
     dropouts:
     - 0.0
     - 0.0
-    hidden_activation: rely
+    hidden_activation: relu
     hidden_dropout: 0.5
     hidden_layers: null
     hidden_nodes: null
@@ -50,17 +51,20 @@ model:
     optional: {}
     output_activation: identity
     output_dropout: 0.0
-    support_input_index: 0
+    support_input_index: null
+    support_input_indices:
+    - 0
     type: lstm
   - activations:
     - relu
     - identity
     destinations:
     - Output
+    device: null
     dropouts:
     - 0.0
     - 0.0
-    hidden_activation: rely
+    hidden_activation: relu
     hidden_dropout: 0.5
     hidden_layers: null
     hidden_nodes: null
@@ -78,7 +82,9 @@ model:
     optional: {}
     output_activation: identity
     output_dropout: 0.0
-    support_input_index: 0
+    support_input_index: null
+    support_input_indices:
+    - 0
     type: adjustable_mlp
 optuna:
   hyperparameters: []
@@ -86,9 +92,25 @@ optuna:
   output_base_directory: models/optuna
   setting: {}
 preprocess: {}
+study:
+  n_fold: 10
+  plot_validation: false
+  relative_develop_size_linspace:
+  - 0.2
+  - 1.0
+  - 5
+  root_directory: null
+  scale_loss: false
+  type: learning_curve
+  unit_error: '-'
+  x_from_zero: false
+  x_logscale: false
+  y_from_zero: false
+  y_logscale: false
 trainer:
-  batch_size: 6
+  batch_size: 2
   compute_accuracy: false
+  data_parallel: false
   display_mergin: 5
   element_batch_size: -1
   element_wise: false
@@ -112,7 +134,8 @@ trainer:
   lazy: false
   log_trigger_epoch: 50
   loss_function: mse
-  n_epoch: 1000
+  model_parallel: false
+  n_epoch: 200
   name: lstm_long
   non_blocking: true
   num_workers: 0
@@ -133,17 +156,18 @@ trainer:
   outputs:
   - dim: 6
     name: stress
+  patience: 3
   pretrain_directory: null
   prune: false
   restart_directory: null
   seed: 0
   simplified_model: false
   snapshot_choise_method: best
-  stop_trigger_epoch: 100
+  stop_trigger_epoch: 50
   support_input: null
   support_inputs: null
   time_series: true
   use_siml_updater: true
-  validation_batch_size: 6
+  validation_batch_size: 2
   validation_directories: []
   validation_element_batch_size: -1
