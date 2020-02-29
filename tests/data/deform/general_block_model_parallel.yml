@@ -28,7 +28,8 @@ trainer:
 model:
   blocks:
     - name: ResGCN1
-      type: res_gcn
+      type: gcn
+      residual: true
       destinations:
         - ResGCN2
         - MLP
@@ -42,7 +43,8 @@ model:
       dropouts:
         - 0.3
     - name: ResGCN2
-      type: res_gcn
+      type: gcn
+      residual: true
       device: 0
       destinations:
         - Distributor
@@ -79,7 +81,8 @@ model:
         - ResGCN3
     - name: ResGCN3
       device: 1
-      type: res_gcn
+      type: gcn
+      residual: true
       support_input_index: 0
       nodes:
         - 6

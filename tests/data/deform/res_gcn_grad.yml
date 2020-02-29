@@ -30,7 +30,8 @@ trainer:
 model:
   blocks:
     - name: GRAD_RES_GCN
-      type: res_gcn
+      type: gcn
+      residual: true
       destinations:
         - ADJ_RES_GCN
       support_input_indices:
@@ -51,7 +52,8 @@ model:
         - 0.0
         - 0.0
     - name: ADJ_RES_GCN
-      type: res_gcn
+      type: gcn
+      residual: true
       support_input_indices:
         - 3
       nodes:

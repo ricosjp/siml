@@ -32,7 +32,8 @@ model:
         - ResGCN1
         - MLP
     - name: ResGCN1
-      type: res_gcn
+      type: gcn
+      residual: true
       destinations:
         - ResGCN2
       input_slice:
@@ -48,7 +49,8 @@ model:
       dropouts:
         - 0.3
     - name: ResGCN2
-      type: res_gcn
+      type: gcn
+      residual: true
       destinations:
         - Distributor
       support_input_index: 1
@@ -83,7 +85,8 @@ model:
       destinations:
         - ResGCN3
     - name: ResGCN3
-      type: res_gcn
+      type: gcn
+      residual: true
       destinations:
         - ResGCN4
       support_input_index: 0
@@ -98,7 +101,8 @@ model:
         - 0.3
         - 0.3
     - name: ResGCN4
-      type: res_gcn
+      type: gcn
+      residual: true
       support_input_index: 0
       nodes:
         - 6

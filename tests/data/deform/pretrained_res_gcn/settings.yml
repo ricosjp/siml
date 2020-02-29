@@ -57,7 +57,8 @@ model:
     support_input_index: 0
     support_input_indices:
     - 0
-    type: res_gcn
+    type: gcn
+    residual: true
 optuna:
   hyperparameters: []
   n_trial: 100

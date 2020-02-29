@@ -40,7 +40,8 @@ model:
       dropouts:
         - 0.0
     - name: LSTM
-      type: res_lstm
+      type: lstm
+      residual: true
       destinations:
         - OUT_MLP
       nodes:
