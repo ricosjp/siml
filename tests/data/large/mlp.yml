@@ -12,10 +12,10 @@ trainer:
   lazy: true
   inputs:
     - name: x
-      dim: 100
+      dim: 10
   outputs:
     - name: y
-      dim: 100
+      dim: 10
   prune: true
   batch_size: 5
   n_epoch: 5

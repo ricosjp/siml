@@ -1,5 +1,6 @@
 from collections import OrderedDict
 import enum
+import io
 import pathlib
 import random
 import time
@@ -52,7 +53,8 @@ class Trainer():
         --------
             None
         """
-        if isinstance(settings, pathlib.Path):
+        if isinstance(settings, pathlib.Path) or isinstance(
+                settings, io.TextIOBase):
             self.setting = setting.MainSetting.read_settings_yaml(
                 settings)
         elif isinstance(settings, setting.MainSetting):
