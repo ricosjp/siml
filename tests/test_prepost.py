@@ -402,3 +402,16 @@ class TestPrepost(unittest.TestCase):
             np.load(main_setting.data.preprocessed / 'train/0/a.npy')[:, None])
         np.testing.assert_almost_equal(
             original_dict_x['a'][:, 0], postprocessed_dict_x['a'])
+
+    def test_preprocess_same_as(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/ode/data.yml'))
+
+        shutil.rmtree(main_setting.data.preprocessed, ignore_errors=True)
+        preprocessor = pre.Preprocessor(main_setting, force_renew=True)
+        preprocessor.preprocess_interim_data()
+        data_directory = main_setting.data.preprocessed / 'train/0'
+        y0 = np.load(data_directory / 'y0.npy')
+        y0_initial = np.load(data_directory / 'y0_initial.npy')
+        np.testing.assert_almost_equal(y0[0], y0_initial[0])
+        np.testing.assert_almost_equal(y0_initial - y0_initial[0], 0.)

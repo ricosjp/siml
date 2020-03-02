@@ -5,9 +5,24 @@ import unittest
 import numpy as np
 import torch
 
+import siml.inferer as inferer
 import siml.prepost as prepost
 import siml.setting as setting
 import siml.trainer as trainer
+
+
+def conversion_function(fem_data, raw_directory=None):
+    # To be used in test_preprocess_deform
+    adj, _ = fem_data.calculate_adjacency_matrix_element()
+    nadj = prepost.normalize_adjacency_matrix(adj)
+    x_grad, y_grad, z_grad = \
+        fem_data.calculate_spatial_gradient_adjacency_matrices(
+            'elemental')
+    global_modulus = np.mean(
+        fem_data.access_attribute('modulus'), keepdims=True)
+    return {
+        'adj': adj, 'nadj': nadj, 'global_modulus': global_modulus,
+        'x_grad': x_grad, 'y_grad': y_grad, 'z_grad': z_grad}
 
 
 class TestTrainer(unittest.TestCase):
@@ -196,3 +211,30 @@ class TestTrainer(unittest.TestCase):
         self.assertEqual(
             tr.trainer.state.epoch % main_setting.trainer.stop_trigger_epoch,
             0)
+
+    def test_whole_processs(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/deform/whole.yml'))
+        shutil.rmtree(main_setting.data.interim, ignore_errors=True)
+        shutil.rmtree(main_setting.data.preprocessed, ignore_errors=True)
+
+        raw_converter = prepost.RawConverter(
+            main_setting, conversion_function=conversion_function)
+        raw_converter.convert()
+        p = prepost.Preprocessor(main_setting)
+        p.preprocess_interim_data()
+
+        shutil.rmtree(
+            main_setting.trainer.output_directory, ignore_errors=True)
+        tr = trainer.Trainer(main_setting)
+        loss = tr.train()
+
+        ir = inferer.Inferer(main_setting)
+        results = ir.infer(
+            model=Path('tests/data/deform/pretrained'),
+            raw_data_directory=main_setting.data.raw
+            / 'train/tet2_3_modulusx0.9000',
+            converter_parameters_pkl=main_setting.data.preprocessed
+            / 'preprocessors.pkl',
+            conversion_function=conversion_function, save=False)
+        self.assertLess(results[0]['loss'], loss)

@@ -1,0 +1,29 @@
+data:
+  inferred: tests/data/ode/inferred
+  interim: tests/data/ode/interim
+  pad: false
+  preprocessed: tests/data/ode/preprocessed
+  raw: tests/data/ode/raw
+  test:
+  - tests/data/ode/preprocessed/test
+  train:
+  - tests/data/ode/preprocessed/train
+  validation:
+  - tests/data/ode/preprocessed/validation
+preprocess:
+  t:
+    method: identity
+  x:
+    method: standardize
+  y0:
+    method: standardize
+  y0_initial:
+    same_as: y0
+  y1:
+    method: standardize
+  y1_initial:
+    same_as: y1
+  y2:
+    method: standardize
+  y2_initial:
+    same_as: y2

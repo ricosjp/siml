@@ -2,11 +2,16 @@ from pathlib import Path
 import shutil
 import unittest
 
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
+import siml.inferer as inferer
 import siml.setting as setting
 import siml.trainer as trainer
+
+
+PLOT = False
 
 
 class TestTrainer(unittest.TestCase):
@@ -64,3 +69,79 @@ class TestTrainer(unittest.TestCase):
             inferred_y = tr.model({'x': torch.from_numpy(x)}).numpy()
         eval = np.mean((y - inferred_y[:, 0, :, :])**2)
         self.assertLess(eval, 1e-2)
+
+    def test_integration_simple(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/ode/integration_simple.yml'))
+
+        if main_setting.trainer.output_directory.exists():
+            shutil.rmtree(main_setting.trainer.output_directory)
+        tr = trainer.Trainer(main_setting)
+        loss = tr.train()
+        self.assertLess(loss, 1e-3)
+
+        ir = inferer.Inferer(main_setting)
+        results = ir.infer(
+            model=main_setting.trainer.output_directory,
+            preprocessed_data_directory=main_setting.data.preprocessed
+            / 'test/0',
+            converter_parameters_pkl=main_setting.data.preprocessed
+            / 'preprocessors.pkl')
+        self.assertLess(results[0]['loss'], loss)
+        if PLOT:
+            plt.plot(
+                results[0]['dict_x']['t'][:, 0, 0],
+                results[0]['dict_x']['y0'][:, 0, 0], label='answer')
+            plt.plot(
+                results[0]['dict_x']['t'][:, 0, 0],
+                results[0]['dict_y']['y0'][:, 0, 0], label='inferred')
+            plt.legend()
+            plt.show()
+
+    def test_integration(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/ode/integration.yml'))
+
+        if main_setting.trainer.output_directory.exists():
+            shutil.rmtree(main_setting.trainer.output_directory)
+        tr = trainer.Trainer(main_setting)
+        loss = tr.train()
+        self.assertLess(loss, 1.e-2)
+
+        ir = inferer.Inferer(main_setting)
+        results = ir.infer(
+            model=main_setting.trainer.output_directory,
+            preprocessed_data_directory=main_setting.data.preprocessed
+            / 'test/0',
+            converter_parameters_pkl=main_setting.data.preprocessed
+            / 'preprocessors.pkl')
+        self.assertLess(results[0]['loss'], loss)
+        if PLOT:
+            cmap = plt.get_cmap('tab10')
+            plt.plot(
+                results[0]['dict_x']['t'][:, 0, 0],
+                results[0]['dict_x']['y0'][:, 0, 0],
+                ':', color=cmap(0), label='y0 answer')
+            plt.plot(
+                results[0]['dict_x']['t'][:, 0, 0],
+                results[0]['dict_y']['y0'][:, 0, 0],
+                color=cmap(0), label='y0 inferred')
+            plt.plot(
+                results[0]['dict_x']['t'][:, 0, 0],
+                results[0]['dict_x']['y1'][:, 0, 0],
+                ':', lcolor=cmap(1), abel='y1 answer')
+            plt.plot(
+                results[0]['dict_x']['t'][:, 0, 0],
+                results[0]['dict_y']['y1'][:, 0, 0],
+                color=cmap(1), label='y1 inferred')
+            plt.plot(
+                results[0]['dict_x']['t'][:, 0, 0],
+                results[0]['dict_x']['y2'][:, 0, 0],
+                ':', lcolor=cmap(2), abel='y2 answer')
+            plt.plot(
+                results[0]['dict_x']['t'][:, 0, 0],
+                results[0]['dict_y']['y2'][:, 0, 0],
+                lcolor=cmap(2), abel='y2 inferred')
+            plt.legend()
+            plt.show()
+        raise ValueError
