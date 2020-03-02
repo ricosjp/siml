@@ -343,7 +343,7 @@ class Preprocessor:
         chunksize = max(len(preprocessor_inputs) // self.max_process // 16, 1)
         with multi.Pool(self.max_process) as pool:
             preprocess_converters = pool.starmap(
-                self.preprocess_single_variable, preprocessor_inputs,
+                self.prepare_preprocess_converter, preprocessor_inputs,
                 chunksize=chunksize)
 
         dict_preprocessor_settings = {
@@ -353,6 +353,32 @@ class Preprocessor:
                 'preprocess_converter': preprocess_converter}
             for i, preprocess_converter
             in zip(preprocessor_inputs, preprocess_converters)}
+
+        for i, item in enumerate(self.setting.preprocess.items()):
+            if preprocess_converters[i] is None:
+                reference_name = item[1]['same_as']
+                if reference_name is None:
+                    raise ValueError(
+                        f"Invalid setting for {item[0]}: {item[1]}")
+                reference_dict = dict_preprocessor_settings[reference_name]
+                reference = util.PreprocessConverter(
+                    reference_dict['preprocess_converter'])
+                if reference is None:
+                    raise ValueError(
+                        f"{item[0]} set to be same as {reference_name} "
+                        'but it was None.')
+                preprocess_converters[i] = reference
+                dict_preprocessor_settings[item[0]] = reference_dict
+
+        preprocess_converter_inputs = [
+            (variable_name, preprocess_converter)
+            for variable_name, preprocess_converter
+            in zip(self.setting.preprocess.keys(), preprocess_converters)]
+        with multi.Pool(self.max_process) as pool:
+            preprocess_converters = pool.starmap(
+                self.transform_single_variable, preprocess_converter_inputs,
+                chunksize=chunksize)
+
         with open(
                 self.setting.data.preprocessed / 'preprocessors.pkl',
                 'wb') as f:
@@ -378,8 +404,8 @@ class Preprocessor:
             max_n_element = max(max_n_element, data.shape[0])
         return max_n_element
 
-    def preprocess_single_variable(self, variable_name, preprocess_setting):
-        """Preprocess single variable.
+    def prepare_preprocess_converter(self, variable_name, preprocess_setting):
+        """Prepare preprocess converter for single variable.
 
         Parameters
         -----------
@@ -391,7 +417,7 @@ class Preprocessor:
 
         Returns
         --------
-        PreprocessConverter.converter object
+        PreprocessConverter object
         """
         print(variable_name, preprocess_setting)
 
@@ -416,16 +442,33 @@ class Preprocessor:
         else:
             raise ValueError(
                 f"Unknown extension or file not found for {variable_name}")
-        data_files = [
-            data_directory / (variable_name + ext)
-            for data_directory in self.interim_directories]
-        preprocessor = util.PreprocessConverter(
-            preprocess_setting['method'], data_files=data_files,
-            componentwise=preprocess_setting['componentwise'])
+        if preprocess_setting['same_as'] is None:
+            data_files = [
+                data_directory / (variable_name + ext)
+                for data_directory in self.interim_directories]
+            preprocess_converter = util.PreprocessConverter(
+                preprocess_setting['method'], data_files=data_files,
+                componentwise=preprocess_setting['componentwise'])
+            return preprocess_converter
+        else:
+            return None
 
-        # Transform and save data
+    def transform_single_variable(self, variable_name, preprocess_converter):
+        """Transform single variable with the created preprocess_converter.
+
+        Parameters
+        -----------
+        variable_name: str
+            The name of the variable.
+        preprocess_converter: siml.util.PreprocessConverter
+            The PreprocessConverter object to transform.
+
+        Returns
+        --------
+        None
+        """
         for data_directory in self.interim_directories:
-            transformed_data = preprocessor.transform(
+            transformed_data = preprocess_converter.transform(
                 util.load_variable(data_directory, variable_name))
             if self.setting.data.pad:
                 transformed_data = util.pad_array(
@@ -441,7 +484,7 @@ class Preprocessor:
                 self.save_func(
                     output_directory, variable_name, transformed_data)
 
-        return preprocessor.converter
+        return
 
 
 class Converter:

@@ -47,8 +47,12 @@ class AbstractMLP(torch.nn.Module):
         super().__init__()
 
         nodes = block_setting.nodes
-        self.linears = torch.nn.ModuleList([
-            torch.nn.Linear(n1, n2) for n1, n2 in zip(nodes[:-1], nodes[1:])])
+        try:
+            self.linears = torch.nn.ModuleList([
+                torch.nn.Linear(n1, n2)
+                for n1, n2 in zip(nodes[:-1], nodes[1:])])
+        except RuntimeError:
+            raise ValueError(f"Cannot cretate linear for {block_setting}")
         self.activations = [
             DICT_ACTIVATIONS[activation]
             for activation in block_setting.activations]

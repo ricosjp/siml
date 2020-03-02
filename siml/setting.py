@@ -345,7 +345,8 @@ class TrainerSetting(TypedDataClass):
 @dc.dataclass
 class BlockSetting(TypedDataClass):
     name: str = 'Block'
-    type: str = 'mlp'
+    type: str = dc.field(
+        default=None, metadata={'allow_none': True})
     destinations: typing.List[str] = dc.field(
         default_factory=lambda: ['Output'])
     residual: bool = False
@@ -479,7 +480,7 @@ class ConversionSetting(TypedDataClass):
     file_type: str, optional ['fistr']
         File type to be read.
     required_file_names: list of str,
-            optional [['*.msh', '*.cnt', '*.res.0.1']]
+            optional []
         Required file names.
     skip_femio: bool, optional [False]
         If True, skip femio.FEMData reading process. Useful for
@@ -496,8 +497,7 @@ class ConversionSetting(TypedDataClass):
         default_factory=list)
     finished_file: str = 'converted'
     file_type: str = 'fistr'
-    required_file_names: typing.List[str] = dc.field(
-        default_factory=lambda: ['*.msh', '*.cnt', '*.res.0.1'])
+    required_file_names: typing.List[str] = dc.field(default_factory=list)
     skip_femio: bool = False
 
     @classmethod
@@ -537,13 +537,15 @@ class PreprocessSetting:
     def __post_init__(self):
         for key, value in self.preprocess.items():
             if isinstance(value, str):
-                self.preprocess.update(
-                    {key: {'method': value, 'componentwise': True}})
+                self.preprocess.update({key: {
+                    'method': value, 'componentwise': True, 'same_as': None}})
             elif isinstance(value, dict):
                 if 'method' not in value:
                     value.update({'method': 'identity'})
                 if 'componentwise' not in value:
                     value.update({'componentwise': True})
+                if 'same_as' not in value:
+                    value.update({'same_as': None})
                 self.preprocess.update({key: value})
             else:
                 raise ValueError('Invalid format of preprocess setting')
