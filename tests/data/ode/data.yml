@@ -27,3 +27,7 @@ preprocess:
     method: standardize
   y2_initial:
     same_as: y2
+  y3:
+    method: standardize
+  y3_initial:
+    same_as: y3

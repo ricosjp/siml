@@ -3,9 +3,9 @@ data:
   train:
     - tests/data/ode/preprocessed/train
   validation:
-    - tests/data/ode/preprocessed/train
+    - tests/data/ode/preprocessed/validation
 trainer:
-  output_directory: tests/data/ode/integration
+  output_directory: tests/data/ode/integration_y1
   simplified_model: false
   time_series: true
   lazy: false
@@ -13,24 +13,16 @@ trainer:
   inputs:
     - name: t
       dim: 1
-    - name: y0_initial
-      dim: 1
     - name: y1_initial
-      dim: 1
-    - name: y2_initial
       dim: 1
     - name: x
       dim: 4
   outputs:
-    - name: y0
-      dim: 1
     - name: y1
-      dim: 1
-    - name: y2
       dim: 1
   prune: true
   batch_size: 10
-  n_epoch: 200
+  n_epoch: 100
   log_trigger_epoch: 10
   stop_trigger_epoch: 100
   seed: 0
@@ -40,89 +32,64 @@ model:
       type: identity
       destinations:
         - TIME
+        - INITIAL
         - F
     - name: TIME
       type: identity
       destinations:
-        - CONCATENATOR
+        - CONCATENATOR1
+        # - CONCATENATOR2
       input_indices:
         - 0
-    - name: F
-      type: identity
-      destinations:
-        - MLP
-        - INITIAL
-      input_slice:
-        - 1
-        - null
-        - 1
     - name: INITIAL
       type: identity
       destinations:
-        - REDUCER
+        - REDUCER1
+        # - REDUCER2
       input_indices:
-        - 0
         - 1
-        - 2
-    - name: MLP
+    - name: F
+      type: identity
+      destinations:
+        - IN_MLP1
+      input_slice:
+        - 1
+        - 3
+        - 1
+    - name: IN_MLP1
       type: adjustable_mlp
       destinations:
-        - TCN
+        - CONCATENATOR1
       nodes:
-        - 7
-        - 64
+        - 2
+        - 32
       activations:
-        - tanh
+        - relu
       dropouts:
         - 0.0
-    - name: TCN
-      type: tcn
-      destinations:
-        - CONCATENATOR
-      residual: true
-      nodes:
-        - 64
-        - 64
-        - 64
-      activations:
-        - tanh
-        - tanh
-      dropouts:
-        - 0.0
-        - 0.0
-      kernel_sizes:
-        - 3
-        - 3
-      optional:
-        dilations:
-          - 1
-          - 2
-        padding_modes:
-          - replicate
-          - replicate
-    - name: CONCATENATOR
+    - name: CONCATENATOR1
       type: concatenator
       destinations:
-        - INTEGRATION
-    - name: INTEGRATION
+        - INTEGRATION1
+    - name: INTEGRATION1
       type: integration
       destinations:
-        - OUT_MLP
+        - OUT_MLP1
       activations:
         - identity
-    - name: OUT_MLP
+    - name: OUT_MLP1
       type: adjustable_mlp
       destinations:
-        - REDUCER
+        - REDUCER1
       nodes:
-        - 64
+        - 32
         - 16
-        - 3
+        - 1
       activations:
-        - tanh
+        - relu
         - identity
       dropouts:
         - 0.0
         - 0.0
-    - name: REDUCER
+    - name: REDUCER1
       type: reducer

@@ -1,0 +1,126 @@
+data:
+  preprocessed: tests/data/ode/preprocessed
+  train:
+    - tests/data/ode/preprocessed/train
+  validation:
+    - tests/data/ode/preprocessed/validation
+trainer:
+  output_directory: tests/data/ode/integration_y3
+  simplified_model: false
+  time_series: true
+  lazy: false
+  num_workers: 0
+  inputs:
+    - name: t
+      dim: 1
+    - name: y3_initial
+      dim: 2
+  outputs:
+    - name: y3
+      dim: 2
+  prune: true
+  batch_size: 10
+  n_epoch: 500
+  log_trigger_epoch: 10
+  stop_trigger_epoch: 50
+  seed: 0
+model:
+  blocks:
+    - name: IDENTITY
+      type: identity
+      destinations:
+        - TIME
+        - INITIAL
+    - name: TIME
+      type: identity
+      destinations:
+        - CONCATENATOR1
+        - CONCATENATOR2
+      input_indices:
+        - 0
+    - name: INITIAL
+      type: identity
+      destinations:
+        - REDUCER1
+        - REDUCER2
+        - IN_MLP1
+      input_indices:
+        - 1
+        - 2
+    - name: IN_MLP1
+      type: adjustable_mlp
+      destinations:
+        - CONCATENATOR1
+      nodes:
+        - 2
+        - 16
+      activations:
+        - relu
+      dropouts:
+        - 0.0
+    - name: CONCATENATOR1
+      type: concatenator
+      destinations:
+        - INTEGRATION1
+    - name: INTEGRATION1
+      type: integration
+      destinations:
+        - OUT_MLP1
+      activations:
+        - identity
+    - name: OUT_MLP1
+      type: adjustable_mlp
+      destinations:
+        - REDUCER1
+      nodes:
+        - 16
+        - 8
+        - 2
+      activations:
+        - relu
+        - identity
+      dropouts:
+        - 0.0
+        - 0.0
+    - name: REDUCER1
+      type: reducer
+      destinations:
+        - IN_MLP2
+
+    - name: IN_MLP2
+      type: adjustable_mlp
+      destinations:
+        - CONCATENATOR2
+      nodes:
+        - 2
+        - 16
+      activations:
+        - relu
+      dropouts:
+        - 0.0
+    - name: CONCATENATOR2
+      type: concatenator
+      destinations:
+        - INTEGRATION2
+    - name: INTEGRATION2
+      type: integration
+      destinations:
+        - OUT_MLP2
+      activations:
+        - identity
+    - name: OUT_MLP2
+      type: adjustable_mlp
+      destinations:
+        - REDUCER2
+      nodes:
+        - 16
+        - 8
+        - 2
+      activations:
+        - relu
+        - identity
+      dropouts:
+        - 0.0
+        - 0.0
+    - name: REDUCER2
+      type: reducer

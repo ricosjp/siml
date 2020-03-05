@@ -3,7 +3,7 @@ data:
   train:
     - tests/data/ode/preprocessed/train
   validation:
-    - tests/data/ode/preprocessed/train
+    - tests/data/ode/preprocessed/validation
 preprocess:
   t:
     method: identity
@@ -12,7 +12,7 @@ preprocess:
   y0_initial:
     same_as: y0
 trainer:
-  output_directory: tests/data/ode/integration_simple
+  output_directory: tests/data/ode/integration_y0
   simplified_model: false
   time_series: true
   lazy: false
