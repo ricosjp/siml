@@ -29,23 +29,29 @@ class Integration(torch.nn.Module):
             self.dummy_index = 0
         return
 
-    def _diff(self, x):
+    def _pad(self, x):
         shape = x.shape
         x = einops.rearrange(
             x, 'time batch element feature -> (batch element) feature time')
         x = torch.nn.functional.pad(
-            x, (1, 0), mode='reflect')
+            x, (1, 0), mode='replicate')
         x = einops.rearrange(
             x, '(batch element) feature time -> time batch element feature',
             batch=shape[1], element=shape[2])
-        x[0] = -x[0]
+        return x
+
+    def _diff(self, x):
+        x = self._pad(x)
         return x[1:] - x[:-1]
 
+    def _integrate(self, t, f):
+        dt = self._diff(t)
+        f = self._pad(f)
+        return torch.cumsum((f[1:] + f[:-1]) * dt * .5, dim=0)
+
     def forward(self, x, supports=None):
+        t = x[..., [self.dummy_index]]
         f = torch.cat(
             [x[..., :self.dummy_index], x[..., self.dummy_index + 1:]], dim=-1)
-        t = x[..., [self.dummy_index]]
-        dt = self._diff(t)
-        f_dt = f * dt
-        integrated = torch.cumsum(f_dt, dim=0)
+        integrated = self._integrate(t, f)
         return self.activation(integrated)
