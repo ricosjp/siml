@@ -193,3 +193,13 @@ class TestNetwork(unittest.TestCase):
             mish = header.mish(torch.from_numpy(x))
             plt.plot(x, mish.numpy())
             plt.show()
+
+    def test_no_bias(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/linear/no_bias.yml'))
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, 1.)
+        self.assertIsNone(tr.model.chains[0].linears[0].bias)
