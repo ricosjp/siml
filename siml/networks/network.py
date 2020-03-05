@@ -6,9 +6,11 @@ import torch
 from .. import datasets
 from . import activation
 from . import adjustable_mlp
+from . import concatenator
 from . import deepsets
 from . import gcn
 from . import identity
+from . import integration
 from . import lstm
 from . import mlp
 from . import nri
@@ -32,12 +34,14 @@ class Network(torch.nn.Module):
         'adjustable_mlp': BlockInformation(adjustable_mlp.AdjustableMLP),
         'gcn': BlockInformation(gcn.GCN, use_support=True),
         'reducer': BlockInformation(reducer.Reducer),
+        'concatenator': BlockInformation(concatenator.Concatenator),
         'distributor': BlockInformation(
             reducer.Reducer),  # For backward compatibility
         'deepsets': BlockInformation(deepsets.DeepSets),
         'nri': BlockInformation(nri.NRI, use_support=True),
         'lstm': BlockInformation(lstm.LSTM),
         'tcn': BlockInformation(tcn.TCN),
+        'integration': BlockInformation(integration.Integration),
     }
 
     def __init__(self, model_setting, trainer_setting):

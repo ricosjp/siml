@@ -1,6 +1,8 @@
 
 import torch
 
+from . import header
+
 
 class Reducer(torch.nn.Module):
     """Broadcastive operation block."""
@@ -14,6 +16,13 @@ class Reducer(torch.nn.Module):
                 BlockSetting object.
         """
         super().__init__()
+        if len(block_setting.activations) != 1:
+            raise ValueError(
+                f"Invalid activation length: {len(block_setting.activations)} "
+                f"for {block_setting}")
+        self.activation = header.DICT_ACTIVATIONS[
+            block_setting.activations[0]]
+
         if 'operator' in block_setting.optional:
             str_op = block_setting.optional['operator']
             if str_op == 'add':
@@ -34,4 +43,4 @@ class Reducer(torch.nn.Module):
         x = xs[0]
         for other in xs[1:]:
             x = x + other
-        return x
+        return self.activation(x)

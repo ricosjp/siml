@@ -38,8 +38,7 @@ class TestSetting(unittest.TestCase):
     def test_main_setting(self):
         main_setting = setting.MainSetting()
         np.testing.assert_array_equal(
-            main_setting.conversion.required_file_names,
-            ['*.msh', '*.cnt', '*.res.0.1'])
+            main_setting.conversion.required_file_names, [])
         self.assertEqual(
             main_setting.data.interim,
             Path('data/interim'))

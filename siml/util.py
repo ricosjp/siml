@@ -229,6 +229,8 @@ class PreprocessConverter():
             self._init_with_str(self.setting_data)
         elif isinstance(self.setting_data, BaseEstimator):
             self._init_with_converter(self.setting_data)
+        elif isinstance(self.setting_data, PreprocessConverter):
+            self._init_with_converter(self.setting_data.converter)
         else:
             raise ValueError(f"Unsupported setting_data: {self.setting_data}")
 

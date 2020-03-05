@@ -11,6 +11,10 @@ data:
   validation:
   - tests/data/test_prepost_to_filter/preprocessed/validation
 conversion:
+  required_file_names:
+    - '*.msh'
+    - '*.cnt'
+    - '*.res.*'
   mandatory_variables:
     - elemental_strain
     - modulus
