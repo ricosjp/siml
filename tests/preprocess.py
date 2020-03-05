@@ -55,21 +55,21 @@ def generate_ode():
 
     def f0(ts, xs):
         ys = np.zeros(list(xs.shape[:2]) + [1])
-        ys[0] = np.random.rand(*ys.shape[1:])
+        ys[0] = np.random.rand(*list(ys.shape)[1:])
         for i in range(1, len(ts)):
             ys[i, :, 0] = ys[i - 1, :, 0] + delta_t * (- .1 * ys[i - 1, :, 0])
         return ys
 
     def f1(ts, xs):
         ys = np.zeros(list(xs.shape[:2]) + [1])
-        ys[0] = np.random.rand(*ys.shape[1:])
+        ys[0] = np.random.rand(*list(ys.shape)[1:])
         for i in range(1, len(ts)):
             ys[i, :, 0] = ys[i - 1, :, 0] + delta_t * xs[i, :, 0] * .1
         return ys
 
     def f2(ts, xs):
         ys = np.zeros(list(xs.shape[:2]) + [1])
-        ys[0] = np.random.rand(*ys.shape[1:])
+        ys[0] = np.random.rand(*list(ys.shape)[1:])
         for i in range(1, len(ts)):
             ys[i, :, 0] = ys[i - 1, :, 0] + delta_t * (
                 .01 * xs[i, :, 1] - .01 * xs[i, :, 0] * xs[i, :, 3]
@@ -78,7 +78,7 @@ def generate_ode():
 
     def f3(ts, xs):
         ys = np.zeros(list(xs.shape[:2]) + [2])
-        ys[0] = np.random.rand(*ys.shape[1:]) * 2 - 1
+        ys[0] = np.random.rand(*list(ys.shape)[1:]) * 2 - 1
         for i in range(1, len(ts)):
             ys[i, :, 0] = ys[i - 1, :, 0] + delta_t * (
                 - .05 * ys[i - 1, :, 1]
