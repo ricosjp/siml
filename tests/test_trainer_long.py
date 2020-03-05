@@ -2,11 +2,9 @@ from pathlib import Path
 import shutil
 import unittest
 
-import matplotlib.pyplot as plt
 import numpy as np
 # import torch
 
-import siml.inferer as inferer
 import siml.setting as setting
 import siml.trainer as trainer
 
@@ -69,35 +67,3 @@ class TestTrainer(unittest.TestCase):
     #         inferred_y = tr.model({'x': torch.from_numpy(x)}).numpy()
     #     eval = np.mean((y - inferred_y[:, 0, :, :])**2)
     #     self.assertLess(eval, 1e-2)
-
-    def test_integration_y0(self):
-        main_setting = setting.MainSetting.read_settings_yaml(
-            Path('tests/data/ode/integration_y0.yml'))
-
-        if main_setting.trainer.output_directory.exists():
-            shutil.rmtree(main_setting.trainer.output_directory)
-        tr = trainer.Trainer(main_setting)
-        loss = tr.train()
-        self.assertLess(loss, 1e-2)
-
-        ir = inferer.Inferer(main_setting)
-        results = ir.infer(
-            model=main_setting.trainer.output_directory,
-            preprocessed_data_directory=main_setting.data.preprocessed
-            / 'test',
-            converter_parameters_pkl=main_setting.data.preprocessed
-            / 'preprocessors.pkl')
-        self.assertLess(results[0]['loss'], loss * 2)
-        if PLOT:
-            cmap = plt.get_cmap('tab10')
-            for i, result in enumerate(results):
-                plt.plot(
-                    result['dict_x']['t'][:, 0, 0],
-                    result['dict_x']['y0'][:, 0, 0],
-                    ':', color=cmap(i), label=f"y0 answer of data {i}")
-                plt.plot(
-                    result['dict_x']['t'][:, 0, 0],
-                    result['dict_y']['y0'][:, 0, 0],
-                    color=cmap(i), label=f"y0 inferred of data {i}")
-            plt.legend()
-            plt.show()
