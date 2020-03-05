@@ -5,19 +5,16 @@ conversion:
   mandatory_variables: []
   optional: []
   optional_variables: []
-  required_file_names:
-  - '*.msh'
-  - '*.cnt'
-  - '*.res.0.1'
+  required_file_names: []
   skip_femio: false
 data:
+  develop: []
   inferred: data/inferred
   interim: data/interim
   pad: false
-  preprocessed: data/preprocessed
+  preprocessed: tests/data/deform/preprocessed
   raw: data/raw
-  test:
-  - data/preprocessed/test
+  test: []
   train:
   - tests/data/deform/preprocessed/train
   validation:
@@ -28,6 +25,7 @@ model:
     - relu
     - relu
     - identity
+    bias: true
     destinations:
     - Output
     device: null
@@ -45,6 +43,7 @@ model:
     - 0
     - null
     - 1
+    kernel_sizes: null
     name: ResGCN1
     nodes:
     - 7
@@ -54,17 +53,32 @@ model:
     optional: {}
     output_activation: identity
     output_dropout: 0.0
+    residual: true
     support_input_index: 0
     support_input_indices:
     - 0
     type: gcn
-    residual: true
 optuna:
   hyperparameters: []
   n_trial: 100
   output_base_directory: models/optuna
   setting: {}
 preprocess: {}
+study:
+  n_fold: 10
+  plot_validation: false
+  relative_develop_size_linspace:
+  - 0.2
+  - 1.0
+  - 5
+  root_directory: null
+  scale_loss: false
+  type: learning_curve
+  unit_error: '-'
+  x_from_zero: false
+  x_logscale: false
+  y_from_zero: false
+  y_logscale: false
 trainer:
   batch_size: 2
   compute_accuracy: false
