@@ -25,6 +25,7 @@ preprocess:
       - tests/data/deform_timeseries/preprocessed
       - tests/data/large/preprocessed
       - tests/data/ode/interim
+      - tests/data/ode/preprocessed
     expire_in: 60min
 
 autopep8:
