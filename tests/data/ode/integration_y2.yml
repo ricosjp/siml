@@ -61,12 +61,9 @@ model:
       nodes:
         - 5
         - 8
-        - 32
       activations:
         - relu
-        - relu
       dropouts:
-        - 0.0
         - 0.0
     - name: CONCATENATOR1
       type: concatenator
@@ -83,8 +80,8 @@ model:
       destinations:
         - REDUCER1
       nodes:
-        - 32
         - 8
+        - 4
         - 1
       activations:
         - relu

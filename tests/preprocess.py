@@ -64,9 +64,7 @@ def generate_ode():
         ys = np.zeros(list(xs.shape[:2]) + [1])
         ys[0] = np.random.rand(*ys.shape[1:])
         for i in range(1, len(ts)):
-            ys[i, :, 0] = ys[i - 1, :, 0] + delta_t * (
-                .3 * xs[i, :, 0] + .2 * xs[i, :, 1] * xs[i, :, 2]
-                - ys[i - 1, :, 0])
+            ys[i, :, 0] = ys[i - 1, :, 0] + delta_t * xs[i, :, 0] * .1
         return ys
 
     def f2(ts, xs):
@@ -74,8 +72,18 @@ def generate_ode():
         ys[0] = np.random.rand(*ys.shape[1:])
         for i in range(1, len(ts)):
             ys[i, :, 0] = ys[i - 1, :, 0] + delta_t * (
-                .1 * xs[i, :, 1] + .5 * xs[i, :, 0] * xs[i, :, 3]
-                + (1 - ys[i - 1, :, 0]**2) * ys[i - 1, :, 0])
+                .01 * xs[i, :, 1] - .01 * xs[i, :, 0] * xs[i, :, 3]
+                - .01 * ys[i - 1, :, 0])
+        return ys
+
+    def f3(ts, xs):
+        ys = np.zeros(list(xs.shape[:2]) + [2])
+        ys[0] = np.random.rand(*ys.shape[1:]) * 2 - 1
+        for i in range(1, len(ts)):
+            ys[i, :, 0] = ys[i - 1, :, 0] + delta_t * (
+                - .05 * ys[i - 1, :, 1]
+                + .01 * (1 - ys[i - 1, :, 1]**2) * ys[i - 1, :, 0])
+            ys[i, :, 1] = ys[i - 1, :, 1] + delta_t * ys[i - 1, :, 0]
         return ys
 
     def generate_ode(root_dir, n_data):
@@ -101,6 +109,7 @@ def generate_ode():
             y0 = f0(ts, xs)
             y1 = f1(ts, xs)
             y2 = f2(ts, xs)
+            y3 = f3(ts, xs)
 
             stacked_ts = np.concatenate(
                 [ts[:, None, None]] * n_element, axis=1)
@@ -112,15 +121,19 @@ def generate_ode():
             np.save(output_directory / 'y0.npy', y0.astype(np.float32))
             np.save(output_directory / 'y1.npy', y1.astype(np.float32))
             np.save(output_directory / 'y2.npy', y2.astype(np.float32))
+            np.save(output_directory / 'y3.npy', y3.astype(np.float32))
             np.save(
                 output_directory / 'y0_initial.npy',
                 (np.ones(y0.shape) * y0[0, :, :]).astype(np.float32))
             np.save(
                 output_directory / 'y1_initial.npy',
-                (np.ones(y0.shape) * y1[0, :, :]).astype(np.float32))
+                (np.ones(y1.shape) * y1[0, :, :]).astype(np.float32))
             np.save(
                 output_directory / 'y2_initial.npy',
-                (np.ones(y0.shape) * y2[0, :, :]).astype(np.float32))
+                (np.ones(y2.shape) * y2[0, :, :]).astype(np.float32))
+            np.save(
+                output_directory / 'y3_initial.npy',
+                (np.ones(y3.shape) * y3[0, :, :]).astype(np.float32))
             (output_directory / 'converted').touch()
 
             if PLOT:
@@ -131,14 +144,16 @@ def generate_ode():
                 plt.plot(ts, y0[:, 0, 0], label='y0')
                 plt.plot(ts, y1[:, 0, 0], label='y1')
                 plt.plot(ts, y2[:, 0, 0], label='y2')
+                plt.plot(ts, y3[:, 0, 0], label='y3-0')
+                plt.plot(ts, y3[:, 0, 1], label='y3-1')
                 plt.legend()
                 plt.savefig(output_directory / 'plot.png')
                 plt.show()
         return
 
     generate_ode(pathlib.Path('tests/data/ode/interim/train'), 100)
-    generate_ode(pathlib.Path('tests/data/ode/interim/validation'), 2)
-    generate_ode(pathlib.Path('tests/data/ode/interim/test'), 2)
+    generate_ode(pathlib.Path('tests/data/ode/interim/validation'), 10)
+    generate_ode(pathlib.Path('tests/data/ode/interim/test'), 10)
 
     main_setting = setting.MainSetting.read_settings_yaml(
         pathlib.Path('tests/data/ode/data.yml'))
