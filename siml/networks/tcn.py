@@ -6,7 +6,7 @@ import torch
 from . import header
 
 
-class TCN(torch.nn.Module):
+class TCN(header.SimlModule):
     """Temporal Convolutional Networks (TCN) https://arxiv.org/abs/1803.01271 .
     """
 
@@ -19,8 +19,7 @@ class TCN(torch.nn.Module):
                 BlockSetting object.
         """
 
-        super().__init__()
-        self.residual = block_setting.residual
+        super().__init__(block_setting, create_linears=False)
         nodes = block_setting.nodes
         kernel_sizes = block_setting.kernel_sizes
         if 'dilations' in block_setting.optional:
@@ -33,7 +32,6 @@ class TCN(torch.nn.Module):
             dilations = [1] * len(kernel_sizes)
         self.padding_lengths = (
             np.array(kernel_sizes) - 1) * np.array(dilations)
-        # self.padding_lengths = np.array(kernel_sizes) - 1
 
         if 'padding_modes' in block_setting.optional:
             self.padding_modes = block_setting.optional['padding_modes']
@@ -49,32 +47,13 @@ class TCN(torch.nn.Module):
             for n1, n2, k, dilation
             in zip(nodes[:-1], nodes[1:], kernel_sizes, dilations)])
 
-        if self.residual:
-            activations = [
-                header.DICT_ACTIVATIONS[activation]
-                for activation in block_setting.activations]
-            self.activations = activations[:-1] \
-                + [header.DICT_ACTIVATIONS['identity']] \
-                + [activations[-1]]
-            if nodes[0] == nodes[-1]:
-                self.shortcut = header.identity
-            else:
-                self.shortcut = torch.nn.Linear(nodes[0], nodes[-1])
-        else:
-            self.activations = [
-                header.DICT_ACTIVATIONS[activation]
-                for activation in block_setting.activations]
-
-        self.dropout_ratios = [
-            dropout_ratio for dropout_ratio in block_setting.dropouts]
-
         return
 
     def _pad_front(self, x, padding_mode, padding_length):
         return torch.nn.functional.pad(
             x, (padding_length, 0), mode=padding_mode)
 
-    def forward(self, x, supports=None):
+    def _forward_core(self, x, supports=None):
         """Execute the NN's forward computation.
 
         Parameters
@@ -106,9 +85,4 @@ class TCN(torch.nn.Module):
         h = einops.rearrange(
             h, '(batch element) feature time -> time batch element feature',
             batch=shape[1], element=shape[2])
-
-        if self.residual:
-            h = self.activations[-1](h + self.shortcut(x))
-            return h
-        else:
-            return h
+        return h

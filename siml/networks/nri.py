@@ -76,13 +76,7 @@ class NRI(header.AbstractGCN):
                 self.edge_parameters[subchain_index][i](merged))
 
             h_edge = torch.sparse.mm(reduce_matrix.transpose(0, 1), edge_emb)
-            try:
-                h_node = self.activations[i](
-                    self.node_parameters[subchain_index][i](h_edge))
-            except RuntimeError:
-                raise ValueError(
-                    self.node_parameters[subchain_index][i],
-                    self.edge_parameters[subchain_index][i],
-                    h_edge.shape)
+            h_node = self.activations[i](
+                self.node_parameters[subchain_index][i](h_edge))
 
         return h_node
