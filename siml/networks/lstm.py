@@ -4,7 +4,7 @@ import torch
 from . import header
 
 
-class LSTM(torch.nn.Module):
+class LSTM(header.SimlModule):
     """LSTM layer."""
 
     def __init__(self, block_setting):
@@ -18,20 +18,16 @@ class LSTM(torch.nn.Module):
                 If True, use residual network.
         """
 
-        super().__init__()
+        super().__init__(block_setting, create_linears=False)
         nodes = block_setting.nodes
         self.residual = block_setting.residual
         self.lstm_layers = torch.nn.ModuleList([
             torch.nn.LSTM(n1, n2, dropout=do)
             for n1, n2, do
             in zip(nodes[:-1], nodes[1:], block_setting.dropouts)])
-        if self.residual:
-            if nodes[0] == nodes[1]:
-                self.linear = header.identity
-            else:
-                self.linear = torch.nn.Linear(nodes[0], nodes[-1])
+        return
 
-    def forward(self, x, supports=None):
+    def _forward_core(self, x, supports=None):
         """Execute the NN's forward computation.
 
         Parameters
@@ -51,9 +47,4 @@ class LSTM(torch.nn.Module):
         hidden = None
         for lstm_layer in self.lstm_layers:
             h, hidden = lstm_layer(h, hidden)
-
-        if self.residual:
-            return h.view(shape[0], shape[1], shape[2], h.shape[-1]) \
-                + self.linear(x)
-        else:
-            return h.view(shape[0], shape[1], shape[2], h.shape[-1])
+        return h.view(shape[0], shape[1], shape[2], h.shape[-1])

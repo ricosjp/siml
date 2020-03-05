@@ -5,7 +5,7 @@ import torch
 from . import header
 
 
-class Integration(torch.nn.Module):
+class Integration(header.SimlModule):
     """Integration block."""
 
     def __init__(self, block_setting):
@@ -16,13 +16,7 @@ class Integration(torch.nn.Module):
             block_setting: siml.setting.BlockSetting
                 BlockSetting object.
         """
-        super().__init__()
-        if len(block_setting.activations) != 1:
-            raise ValueError(
-                f"Invalid activation length: {len(block_setting.activations)} "
-                f"for {block_setting}")
-        self.activation = header.DICT_ACTIVATIONS[
-            block_setting.activations[0]]
+        super().__init__(block_setting, no_parameter=True)
         if 'dummy_index' in block_setting.optional:
             self.dummy_index = block_setting.optional['dummy_index']
         else:

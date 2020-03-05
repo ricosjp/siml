@@ -31,41 +31,95 @@ DICT_ACTIVATIONS = {
 }
 
 
-class AbstractMLP(torch.nn.Module):
+class SimlModule(torch.nn.Module):
 
-    def __init__(self, block_setting, last_identity=False):
-        """Initialize the NN.
-
-        Parameters
-        -----------
-        block_setting: siml.setting.BlockSetting
-            BlockSetting object.
-        last_identity: bool
-            If True, set the last activation identity whatever the
-            block_setting (default: False).
-        """
+    def __init__(
+            self, block_setting, *,
+            create_linears=True, create_activations=True, create_dropouts=True,
+            no_parameter=False, **kwargs):
         super().__init__()
+        self.block_setting = block_setting
+        self.residual = self.block_setting.residual
 
-        nodes = block_setting.nodes
+        if no_parameter:
+            create_linears = False
+            create_activations = False
+            create_dropouts = False
+            self.activation = self.create_activation()
+
+        if create_linears:
+            self.linears = self.create_linears()
+
+        if create_activations:
+            self.activations = self.create_activations()
+
+        if create_dropouts:
+            self.dropout_ratios = self.create_dropout_ratios()
+
+        if self.residual:
+            nodes = block_setting.nodes
+            if nodes[0] == nodes[-1]:
+                self.shortcut = identity
+            else:
+                self.shortcut = torch.nn.Linear(nodes[0], nodes[-1])
+        return
+
+    def create_linears(self, nodes=None, bias=None):
+        if nodes is None:
+            nodes = self.block_setting.nodes
+        if bias is None:
+            bias = self.block_setting.bias
+
         try:
-            self.linears = torch.nn.ModuleList([
-                torch.nn.Linear(n1, n2)
+            linears = torch.nn.ModuleList([
+                torch.nn.Linear(n1, n2, bias=bias)
                 for n1, n2 in zip(nodes[:-1], nodes[1:])])
         except RuntimeError:
-            raise ValueError(f"Cannot cretate linear for {block_setting}")
-        self.activations = [
+            raise ValueError(f"Cannot cretate linear for {self.block_setting}")
+        return linears
+
+    def create_activation(self, activation_settings=None):
+        if activation_settings is None:
+            activation_settings = self.block_setting.activations
+        if len(activation_settings) != 1:
+            raise ValueError(
+                f"Invalid activation length: {len(activation_settings)} "
+                f"for {self.block_setting}")
+        return DICT_ACTIVATIONS[activation_settings[0]]
+
+    def create_activations(self, activation_settings=None, residual=None):
+        if activation_settings is None:
+            activation_settings = self.block_setting.activations
+        if residual is None:
+            residual = self.block_setting.residual
+
+        list_activations = [
             DICT_ACTIVATIONS[activation]
-            for activation in block_setting.activations]
-        if last_identity:
-            self.activations[-1] = DICT_ACTIVATIONS['identity']
-        self.dropout_ratios = [
-            dropout_ratio for dropout_ratio in block_setting.dropouts]
+            for activation in self.block_setting.activations]
+        if self.residual:
+            activations = list_activations[:-1] \
+                + [DICT_ACTIVATIONS['identity']] \
+                + [list_activations[-1]]
+        else:
+            activations = list_activations
+        return activations
 
-    def forward(self, x, support=None):
-        raise NotImplementedError
+    def create_dropout_ratios(self, dropouts=None):
+        if dropouts is None:
+            dropouts = self.block_setting.dropouts
+        dropout_ratios = [
+            dropout_ratio for dropout_ratio in dropouts]
+        return dropout_ratios
+
+    def forward(self, x, supports=None):
+        h = self._forward_core(x, supports)
+        if self.residual:
+            return self.activations[-1](h + self.shortcut(x))
+        else:
+            return h
 
 
-class AbstractGCN(torch.nn.Module):
+class AbstractGCN(SimlModule):
 
     def __init__(
             self, block_setting,
@@ -82,34 +136,14 @@ class AbstractGCN(torch.nn.Module):
                 If True, make the network residual.
         """
 
-        super().__init__()
-        self.residual = residual
+        super().__init__(block_setting, create_linears=False)
 
         self.multiple_networks = block_setting.optional.get(
             'multiple_networks', True)
         if create_subchain:
             self.subchains, self.subchain_indices = self._create_subchains(
                 block_setting)
-
-        self.dropout_ratios = [
-            dropout_ratio for dropout_ratio in block_setting.dropouts]
-
-        if self.residual:
-            activations = [
-                DICT_ACTIVATIONS[activation]
-                for activation in block_setting.activations]
-            self.activations = activations[:-1] \
-                + [DICT_ACTIVATIONS['identity']] \
-                + [activations[-1]]
-            nodes = block_setting.nodes
-            if nodes[0] == nodes[-1]:
-                self.shortcut = identity
-            else:
-                self.shortcut = torch.nn.Linear(nodes[0], nodes[-1])
-        else:
-            self.activations = [
-                DICT_ACTIVATIONS[activation]
-                for activation in block_setting.activations]
+        return
 
     def _create_subchains(
             self, block_setting,

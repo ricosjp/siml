@@ -350,6 +350,7 @@ class BlockSetting(TypedDataClass):
     destinations: typing.List[str] = dc.field(
         default_factory=lambda: ['Output'])
     residual: bool = False
+    bias: bool = True
     input_slice: slice = slice(0, None, 1)
     input_indices: typing.List[int] = dc.field(
         default=None, metadata={'allow_none': True})

@@ -4,13 +4,13 @@ import torch.nn.functional as functional
 from . import header
 
 
-class AdjustableMLP(header.AbstractMLP):
+class AdjustableMLP(header.SimlModule):
     """Multi Layer Perceptron which accepts arbitray number of dimension. It
     maps (n, m, f) shaped data to (n, m, g) shaped data, where n, m, f, and g
     are sample size, dimension, feature, and converted feature,
     respectively."""
 
-    def forward(self, x, supports=None):
+    def _forward_core(self, x, supports=None):
         """Execute the NN's forward computation.
 
         Parameters

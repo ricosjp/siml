@@ -4,10 +4,10 @@ import torch.nn.functional as functional
 from . import header
 
 
-class MLP(header.AbstractMLP):
+class MLP(header.SimlModule):
     """Multi Layer Perceptron."""
 
-    def forward(self, x, supports=None):
+    def _forward_core(self, x, supports=None):
         """Execute the NN's forward computation.
 
         Parameters

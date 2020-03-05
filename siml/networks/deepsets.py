@@ -1,11 +1,9 @@
 
-import torch
-
 from . import AdjustableMLP
 from . import header
 
 
-class DeepSets(torch.nn.Module):
+class DeepSets(header.SimlModule):
     """Permutation equivalent layer published in
     https://arxiv.org/abs/1703.06114 .
     """
@@ -19,14 +17,11 @@ class DeepSets(torch.nn.Module):
                 BlockSetting object.
         """
 
-        super().__init__()
+        super().__init__(block_setting, create_linears=False)
         self.lambda_ = AdjustableMLP(block_setting, last_identity=True)
         self.gamma = AdjustableMLP(block_setting, last_identity=True)
-        self.activations = [
-            header.DICT_ACTIVATIONS[activation]
-            for activation in block_setting.activations]
 
-    def forward(self, x, supports=None):
+    def _forward_core(self, x, supports=None):
         """Execute the NN's forward computation.
 
         Parameters
