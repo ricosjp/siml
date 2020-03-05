@@ -11,7 +11,7 @@ endif
 
 build:
 	docker build -t $(CI_REGISTRY_IMAGE) \
-		-f Dockerfile ..
+		-f Dockerfile --build-arg ricos_pypi_key=$(key) ..
 
 run:
 	docker run -it --runtime=nvidia --rm $(CI_REGISTRY_IMAGE) /bin/bash
