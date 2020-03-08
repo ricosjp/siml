@@ -16,6 +16,7 @@ from . import mlp
 from . import nri
 from . import reducer
 from . import tcn
+from . import time_norm
 
 
 class BlockInformation():
@@ -42,6 +43,7 @@ class Network(torch.nn.Module):
         'lstm': BlockInformation(lstm.LSTM),
         'tcn': BlockInformation(tcn.TCN),
         'integration': BlockInformation(integration.Integration),
+        'time_norm': BlockInformation(time_norm.TimeNorm),
     }
 
     def __init__(self, model_setting, trainer_setting):

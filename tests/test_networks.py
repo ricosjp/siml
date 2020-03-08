@@ -203,3 +203,17 @@ class TestNetwork(unittest.TestCase):
         loss = tr.train()
         np.testing.assert_array_less(loss, 1.)
         self.assertIsNone(tr.model.chains[0].linears[0].bias)
+
+    def test_time_norm(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/deform_timeseries/time_norm.yml'))
+
+        if main_setting.trainer.output_directory.exists():
+            shutil.rmtree(main_setting.trainer.output_directory)
+        tr = trainer.Trainer(main_setting)
+        loss = tr.train()
+        self.assertLess(loss, 1.)
+        input_data = tr.train_loader.dataset[0]
+        input_data = {'x': input_data['x'][:, None, :, :]}
+        out = tr.model(input_data)
+        np.testing.assert_almost_equal(out.detach().numpy()[0], 0.)

@@ -118,7 +118,7 @@ class TestNetworksGPU(unittest.TestCase):
             shutil.rmtree(main_setting.trainer.output_directory)
         tr = trainer.Trainer(main_setting)
         loss = tr.train()
-        self.assertLess(loss, 1.e-2)
+        self.assertLess(loss, 5e-2)
 
         ir = inferer.Inferer(main_setting)
         results = ir.infer(
@@ -152,7 +152,7 @@ class TestNetworksGPU(unittest.TestCase):
             shutil.rmtree(main_setting.trainer.output_directory)
         tr = trainer.Trainer(main_setting)
         loss = tr.train()
-        self.assertLess(loss, 1.e-1)
+        self.assertLess(loss, 2e-1)
 
         ir = inferer.Inferer(main_setting)
         results = ir.infer(
@@ -161,7 +161,7 @@ class TestNetworksGPU(unittest.TestCase):
             / 'test',
             converter_parameters_pkl=main_setting.data.preprocessed
             / 'preprocessors.pkl')
-        self.assertLess(results[0]['loss'], 2e-1)
+        self.assertLess(results[0]['loss'], 5e-1)
         if PLOT:
             cmap = plt.get_cmap('tab10')
             for i, result in enumerate(results):
