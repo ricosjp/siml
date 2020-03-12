@@ -60,11 +60,25 @@ class Objective():
                     low=dict_hyperparameter['low'],
                     high=dict_hyperparameter['high'],
                     q=dict_hyperparameter['step']))
+
+        elif parameter_type == 'uniform':
+            parameter = trial.suggest_uniform(
+                dict_hyperparameter['name'],
+                low=dict_hyperparameter['low'],
+                high=dict_hyperparameter['high'])
+
+        elif parameter_type == 'loguniform':
+            parameter = trial.suggest_loguniform(
+                dict_hyperparameter['name'],
+                low=dict_hyperparameter['low'],
+                high=dict_hyperparameter['high'])
+
         elif parameter_type == 'int':
             parameter = trial.suggest_int(
                 dict_hyperparameter['name'],
                 low=dict_hyperparameter['low'],
                 high=dict_hyperparameter['high'])
+
         else:
             raise ValueError(f"Unsupported parameter type: {parameter_type}")
 
