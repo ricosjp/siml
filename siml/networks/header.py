@@ -61,7 +61,8 @@ class SimlModule(torch.nn.Module):
             if nodes[0] == nodes[-1]:
                 self.shortcut = identity
             else:
-                self.shortcut = torch.nn.Linear(nodes[0], nodes[-1])
+                bias = self.block_setting.bias
+                self.shortcut = torch.nn.Linear(nodes[0], nodes[-1], bias=bias)
         return
 
     def create_linears(self, nodes=None, bias=None):
