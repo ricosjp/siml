@@ -1,5 +1,8 @@
+from io import BytesIO
 import warnings
 
+import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
 import networkx as nx
 import numpy as np
 import torch
@@ -130,53 +133,65 @@ class Network(torch.nn.Module):
 
         for graph_node in self.sorted_graph_nodes:
             predecessors = tuple(self.call_graph.predecessors(graph_node))
-            block_type = self.dict_block_setting[graph_node].type
+            block_setting = self.dict_block_setting[graph_node]
+            block_type = block_setting.type
 
             if graph_node == self.INPUT_LAYER_NAME:
                 first_node = self.trainer_setting.input_length
                 last_node = self.trainer_setting.input_length
+
             elif graph_node == self.OUTPUT_LAYER_NAME:
                 first_node = self.trainer_setting.output_length
                 last_node = self.trainer_setting.output_length
+
+            elif block_type == 'concatenator':
+                max_first_node = np.sum([
+                    self.dict_block_setting[predecessor].nodes[-1]
+                    for predecessor in predecessors])
+                first_node = len(np.arange(max_first_node)[
+                    block_setting.input_selection])
+                last_node = first_node
+
+            elif block_type == 'reducer':
+                max_first_node = np.sum([
+                    self.dict_block_setting[predecessor].nodes[-1]
+                    for predecessor in predecessors])
+                first_node = len(np.arange(max_first_node)[
+                    block_setting.input_selection])
+                last_node = np.max([
+                    self.dict_block_setting[predecessor].nodes[-1]
+                    for predecessor in predecessors])
+
+            elif block_type == 'integration':
+                max_first_node = self.dict_block_setting[
+                    predecessors[0]].nodes[-1]
+                first_node = len(np.arange(max_first_node)[
+                    block_setting.input_selection])
+                last_node = first_node - 1
+
+            elif self.DICT_BLOCKS[block_type].trainable:
+                # Trainable layers
+                if len(predecessors) != 1:
+                    raise ValueError(
+                        f"{graph_node} has {len(predecessors)} "
+                        f"predecessors: {predecessors}")
+                max_first_node = self.dict_block_setting[
+                    tuple(predecessors)[0]].nodes[-1]
+                first_node = len(np.arange(max_first_node)[
+                    block_setting.input_selection])
+                last_node = self.trainer_setting.output_length
+
             else:
-                if block_type == 'concatenator':
-                    first_node = np.sum([
-                        self.dict_block_setting[predecessor].nodes[-1]
-                        for predecessor in predecessors])
-                    last_node = first_node
-
-                elif block_type == 'reducer':
-                    first_node = np.sum([
-                        self.dict_block_setting[predecessor].nodes[-1]
-                        for predecessor in predecessors])
-                    last_node = np.max([
-                        self.dict_block_setting[predecessor].nodes[-1]
-                        for predecessor in predecessors])
-
-                elif block_type == 'integration':
-                    first_node = self.dict_block_setting[
-                        predecessors[0]].nodes[-1]
-                    last_node = first_node - 1
-
-                elif self.DICT_BLOCKS[block_type].trainable:
-                    # Trainable layers
-                    if len(predecessors) != 1:
-                        raise ValueError(
-                            f"{graph_node} has {len(predecessors)} "
-                            f"predecessors: {predecessors}")
-                    first_node = self.dict_block_setting[
-                        tuple(predecessors)[0]].nodes[-1]
-                    last_node = self.trainer_setting.output_length
-
-                else:
-                    # Non trainable other layers
-                    if len(predecessors) != 1:
-                        raise ValueError(
-                            f"{graph_node} has {len(predecessors)} "
-                            f"predecessors: {predecessors}")
-                    first_node = self.dict_block_setting[
-                        predecessors[0]].nodes[-1]
-                    last_node = first_node
+                # Non trainable other layers
+                if len(predecessors) != 1:
+                    raise ValueError(
+                        f"{graph_node} has {len(predecessors)} "
+                        f"predecessors: {predecessors}")
+                max_first_node = self.dict_block_setting[
+                    predecessors[0]].nodes[-1]
+                first_node = len(np.arange(max_first_node)[
+                    block_setting.input_selection])
+                last_node = first_node
 
             if self.dict_block_setting[graph_node].nodes[0] == -1:
                 self.dict_block_setting[graph_node].nodes[0] = int(first_node)
@@ -238,3 +253,23 @@ class Network(torch.nn.Module):
                         *inputs)
 
         return dict_hidden[self.OUTPUT_LAYER_NAME]
+
+    def draw(self, output_file_name):
+        figure = plt.figure(dpi=1000)
+        mapping = {
+            graph_node:
+            f"{graph_node}\n"
+            f"{self.dict_block_setting[graph_node].type}\n"
+            f"{self.dict_block_setting[graph_node].nodes}"
+            for graph_node in self.sorted_graph_nodes}
+        d = nx.drawing.nx_pydot.to_pydot(nx.relabel.relabel_nodes(
+            self.call_graph, mapping=mapping, copy=True))
+        png_str = d.create_png()
+        sio = BytesIO()
+        sio.write(png_str)
+        sio.seek(0)
+        img = mpimg.imread(sio)
+        plt.axis('off')
+        plt.imshow(img)
+        plt.savefig(output_file_name)
+        plt.close(figure)

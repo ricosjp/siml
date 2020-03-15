@@ -6,8 +6,8 @@ import random
 import time
 
 import ignite
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 import optuna
 import pandas as pd
 import torch
@@ -140,6 +140,8 @@ class Trainer():
 
         # Define model
         self.model = networks.Network(self.setting.model, self.setting.trainer)
+        self.model.draw(self.setting.trainer.output_directory / 'network.png')
+
         self.element_wise = self._determine_element_wise()
         self.loss = self._create_loss_function()
 
