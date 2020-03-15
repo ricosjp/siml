@@ -198,10 +198,6 @@ class Network(torch.nn.Module):
 
             if self.DICT_BLOCKS[block_type].trainable:
                 if self.dict_block_setting[graph_node].nodes[-1] == -1:
-                    if not self.dict_block_setting[graph_node].is_last:
-                        raise ValueError(
-                            'Please specify last node number for: '
-                            f"{self.dict_block_setting[graph_node]}")
                     self.dict_block_setting[graph_node].nodes[-1] = int(
                         last_node)
             else:
