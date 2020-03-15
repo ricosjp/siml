@@ -44,7 +44,7 @@ model:
     - name: MLP2
       type: adjustable_mlp
       destinations:
-        - MLP4
+        - REDUCER
       nodes:
         - 10
         - 10
@@ -61,7 +61,7 @@ model:
     - name: MLP3
       type: adjustable_mlp
       destinations:
-        - MLP4
+        - REDUCER
       nodes:
         - 10
         - 10
@@ -75,6 +75,10 @@ model:
         - 0.3
         - 0.3
         - 0.0
+    - name: REDUCER
+      type: reducer
+      destinations:
+        - MLP4
     - name: MLP4
       type: adjustable_mlp
       nodes:

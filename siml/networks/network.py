@@ -179,7 +179,7 @@ class Network(torch.nn.Module):
                     last_node = first_node
 
             if self.dict_block_setting[graph_node].nodes[0] == -1:
-                self.dict_block_setting[graph_node].nodes[0] = first_node
+                self.dict_block_setting[graph_node].nodes[0] = int(first_node)
 
             if self.DICT_BLOCKS[block_type].trainable:
                 if self.dict_block_setting[graph_node].nodes[-1] == -1:
@@ -187,10 +187,12 @@ class Network(torch.nn.Module):
                         raise ValueError(
                             'Please specify last node number for: '
                             f"{self.dict_block_setting[graph_node]}")
-                    self.dict_block_setting[graph_node].nodes[-1] = last_node
+                    self.dict_block_setting[graph_node].nodes[-1] = int(
+                        last_node)
             else:
                 if self.dict_block_setting[graph_node].nodes[-1] == -1:
-                    self.dict_block_setting[graph_node].nodes[-1] = last_node
+                    self.dict_block_setting[graph_node].nodes[-1] = int(
+                        last_node)
 
         return
 
@@ -201,14 +203,6 @@ class Network(torch.nn.Module):
                 block_setting.device)
             for block_name, block_setting in self.dict_block_setting.items()})
         return dict_block
-
-    def _find_destination_indices(self, destinations, names):
-        locations = [
-            np.where(destination == names)[0] for destination in destinations]
-        if not np.all(
-                np.array([len(location) for location in locations]) == 1):
-            raise ValueError('Destination name is not unique')
-        return np.ravel(locations)
 
     def forward(self, x_):
         x = x_['x']

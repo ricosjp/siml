@@ -26,13 +26,9 @@ trainer:
   seed: 0
 model:
   blocks:
-    - name: Input
-      type: identity
-      destinations:
-        - ResGCN1
-        - MLP
     - name: ResGCN1
       type: gcn
+      is_first: true
       residual: true
       destinations:
         - ResGCN2
@@ -52,7 +48,7 @@ model:
       type: gcn
       residual: true
       destinations:
-        - Distributor
+        - Reducer
       support_input_index: 1
       nodes:
         - 10
@@ -66,8 +62,9 @@ model:
         - 0.3
     - name: MLP
       type: adjustable_mlp
+      is_first: ture
       destinations:
-        - Distributor
+        - Reducer
       input_indices:
         - 6
       nodes:
@@ -80,8 +77,8 @@ model:
       dropouts:
         - 0.3
         - 0.0
-    - name: Distributor
-      type: distributor
+    - name: Reducer
+      type: reducer
       destinations:
         - ResGCN3
     - name: ResGCN3

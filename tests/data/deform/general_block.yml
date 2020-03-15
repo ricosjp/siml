@@ -44,7 +44,7 @@ model:
       type: gcn
       residual: true
       destinations:
-        - Distributor
+        - Reducer
       support_input_index: 1
       nodes:
         - 10
@@ -59,7 +59,7 @@ model:
     - name: MLP
       type: adjustable_mlp
       destinations:
-        - Distributor
+        - Reducer
       nodes:
         - 10
         - 10
@@ -70,8 +70,8 @@ model:
       dropouts:
         - 0.0
         - 0.0
-    - name: Distributor
-      type: distributor
+    - name: Reducer
+      type: reducer
       destinations:
         - ResGCN3
     - name: ResGCN3

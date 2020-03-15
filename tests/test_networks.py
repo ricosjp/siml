@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import torch
 
+import siml.inferer as inferer
 import siml.networks.header as header
 import siml.setting as setting
 import siml.trainer as trainer
@@ -270,3 +271,22 @@ class TestNetwork(unittest.TestCase):
         tr = trainer.Trainer(main_setting)
         loss = tr.train()
         self.assertLess(loss, 1e-1)
+
+    def test_integration_y1(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/ode/integration_y1.yml'))
+
+        if main_setting.trainer.output_directory.exists():
+            shutil.rmtree(main_setting.trainer.output_directory)
+        tr = trainer.Trainer(main_setting)
+        loss = tr.train()
+        self.assertLess(loss, 1e-2)
+
+        ir = inferer.Inferer(main_setting)
+        results = ir.infer(
+            model=main_setting.trainer.output_directory,
+            preprocessed_data_directory=main_setting.data.preprocessed
+            / 'test',
+            converter_parameters_pkl=main_setting.data.preprocessed
+            / 'preprocessors.pkl')
+        self.assertLess(results[0]['loss'], 1e-1)
