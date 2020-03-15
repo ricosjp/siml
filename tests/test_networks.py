@@ -274,13 +274,13 @@ class TestNetwork(unittest.TestCase):
 
     def test_integration_y1(self):
         main_setting = setting.MainSetting.read_settings_yaml(
-            Path('tests/data/ode/integration_y1.yml'))
+            Path('tests/data/ode/integration_y1_short.yml'))
 
         if main_setting.trainer.output_directory.exists():
             shutil.rmtree(main_setting.trainer.output_directory)
         tr = trainer.Trainer(main_setting)
         loss = tr.train()
-        self.assertLess(loss, 1e-2)
+        self.assertLess(loss, 1e-1)
 
         ir = inferer.Inferer(main_setting)
         results = ir.infer(
