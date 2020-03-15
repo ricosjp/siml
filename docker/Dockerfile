@@ -8,7 +8,8 @@ RUN apt-get update -y && \
   python3.7 \
   python3.7-dev \
   python3.7-distutils \
-  python3-pip
+  python3-pip \
+  python-pydot python-pydot-ng graphviz
 
 COPY ./pyproject.toml /src/pyproject.toml
 COPY ./poetry.lock /src/poetry.lock
