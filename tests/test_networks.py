@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import torch
 
+import siml.inferer as inferer
 import siml.networks.header as header
 import siml.setting as setting
 import siml.trainer as trainer
@@ -202,7 +203,7 @@ class TestNetwork(unittest.TestCase):
             shutil.rmtree(tr.setting.trainer.output_directory)
         loss = tr.train()
         np.testing.assert_array_less(loss, 1.)
-        self.assertIsNone(tr.model.chains[0].linears[0].bias)
+        self.assertIsNone(tr.model.dict_block['Block'].linears[0].bias)
 
     def test_time_norm(self):
         main_setting = setting.MainSetting.read_settings_yaml(
@@ -217,3 +218,75 @@ class TestNetwork(unittest.TestCase):
         input_data = {'x': input_data['x'][:, None, :, :]}
         out = tr.model(input_data)
         np.testing.assert_almost_equal(out.detach().numpy()[0], 0.)
+
+    def test_raise_valueerror_when_network_is_not_dag(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/deform/not_dag.yml'))
+
+        if main_setting.trainer.output_directory.exists():
+            shutil.rmtree(main_setting.trainer.output_directory)
+        tr = trainer.Trainer(main_setting)
+        with self.assertRaisesRegex(ValueError, 'Cycle found in the network'):
+            tr.train()
+
+    def test_raise_valueerror_when_block_has_no_predecessors(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/deform/no_predecessors.yml'))
+
+        if main_setting.trainer.output_directory.exists():
+            shutil.rmtree(main_setting.trainer.output_directory)
+        tr = trainer.Trainer(main_setting)
+        with self.assertRaisesRegex(
+                ValueError, 'NO_PREDECESSORS has no predecessors'):
+            tr.train()
+
+    def test_raise_valueerror_when_block_has_no_successors(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/deform/no_successors.yml'))
+
+        if main_setting.trainer.output_directory.exists():
+            shutil.rmtree(main_setting.trainer.output_directory)
+        tr = trainer.Trainer(main_setting)
+        with self.assertRaisesRegex(
+                ValueError, 'NO_SUCCESSORS has no successors'):
+            tr.train()
+
+    def test_raise_valueerror_when_block_has_missing_destinations(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/deform/missing_destinations.yml'))
+
+        if main_setting.trainer.output_directory.exists():
+            shutil.rmtree(main_setting.trainer.output_directory)
+        tr = trainer.Trainer(main_setting)
+        with self.assertRaisesRegex(
+                ValueError, 'NOT_EXISTING_BLOCK does not exist'):
+            tr.train()
+
+    def test_node_number_inference(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/deform/node_number_inference.yml'))
+
+        if main_setting.trainer.output_directory.exists():
+            shutil.rmtree(main_setting.trainer.output_directory)
+        tr = trainer.Trainer(main_setting)
+        loss = tr.train()
+        self.assertLess(loss, 1e-1)
+
+    def test_integration_y1(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/ode/integration_y1_short.yml'))
+
+        if main_setting.trainer.output_directory.exists():
+            shutil.rmtree(main_setting.trainer.output_directory)
+        tr = trainer.Trainer(main_setting)
+        loss = tr.train()
+        self.assertLess(loss, 1e-1)
+
+        ir = inferer.Inferer(main_setting)
+        results = ir.infer(
+            model=main_setting.trainer.output_directory,
+            preprocessed_data_directory=main_setting.data.preprocessed
+            / 'test',
+            converter_parameters_pkl=main_setting.data.preprocessed
+            / 'preprocessors.pkl')
+        self.assertLess(results[0]['loss'], 1e-1)

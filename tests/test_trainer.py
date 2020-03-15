@@ -144,8 +144,8 @@ class TestTrainer(unittest.TestCase):
         loss_wo_padding = tr.loss(
             pred_y_wo_padding, y, original_shapes=[[5]])
         loss_wo_padding.backward(retain_graph=True)
-        w_grad_wo_padding = tr.model.chains[0].linears[0].weight.grad
-        b_grad_wo_padding = tr.model.chains[0].linears[0].bias.grad
+        w_grad_wo_padding = tr.model.dict_block['Block'].linears[0].weight.grad
+        b_grad_wo_padding = tr.model.dict_block['Block'].linears[0].bias.grad
 
         tr.optimizer.zero_grad()
         padded_x = np.concatenate([x, np.zeros((1, 2, 3))], axis=1).astype(
@@ -154,8 +154,8 @@ class TestTrainer(unittest.TestCase):
         loss_w_padding = tr.loss(
             pred_y_w_padding, y, original_shapes=[[5]])
         loss_wo_padding.backward()
-        w_grad_w_padding = tr.model.chains[0].linears[0].weight.grad
-        b_grad_w_padding = tr.model.chains[0].linears[0].bias.grad
+        w_grad_w_padding = tr.model.dict_block['Block'].linears[0].weight.grad
+        b_grad_w_padding = tr.model.dict_block['Block'].linears[0].bias.grad
 
         np.testing.assert_almost_equal(
             loss_wo_padding.detach().numpy(), loss_w_padding.detach().numpy())

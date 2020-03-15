@@ -217,6 +217,8 @@ class TrainerSetting(TypedDataClass):
         If True, perform data parallel on GPUs.
     model_parallel: bool [False]
         If True, perform model parallel on GPUs.
+    draw_network: bool [True]
+        If True, draw network (requireing graphviz).
     """
 
     inputs: typing.List[dict] = dc.field(default_factory=list)
@@ -277,6 +279,7 @@ class TrainerSetting(TypedDataClass):
 
     data_parallel: bool = False
     model_parallel: bool = False
+    draw_network: bool = True
 
     def __post_init__(self):
         if self.element_wise and self.lazy:
@@ -297,6 +300,8 @@ class TrainerSetting(TypedDataClass):
         self.input_dims = [i['dim'] for i in self.inputs]
         self.output_names = [o['name'] for o in self.outputs]
         self.output_dims = [o['dim'] for o in self.outputs]
+        self.input_length = np.sum(self.input_dims)
+        self.output_length = np.sum(self.output_dims)
 
         if self.output_directory is None:
             self.update_output_directory()
@@ -345,10 +350,12 @@ class TrainerSetting(TypedDataClass):
 @dc.dataclass
 class BlockSetting(TypedDataClass):
     name: str = 'Block'
+    is_first: bool = False
+    is_last: bool = False
     type: str = dc.field(
         default=None, metadata={'allow_none': True})
     destinations: typing.List[str] = dc.field(
-        default_factory=lambda: ['Output'])
+        default_factory=list)
     residual: bool = False
     bias: bool = True
     input_slice: slice = slice(0, None, 1)
@@ -432,6 +439,10 @@ class ModelSetting(TypedDataClass):
         else:
             self.blocks = [
                 BlockSetting(**block) for block in setting['blocks']]
+        if np.all(b.is_first is False for b in self.blocks):
+            self.blocks[0].is_first = True
+        if np.all(b.is_last is False for b in self.blocks):
+            self.blocks[-1].is_last = True
 
 
 @dc.dataclass
@@ -618,18 +629,6 @@ class MainSetting:
             optuna=optuna_setting, study=study_setting)
 
     def __post_init__(self):
-
-        input_length = np.sum(self.trainer.input_dims)
-        output_length = np.sum(self.trainer.output_dims)
-
-        # Infer input and output dimension if they are not specified.
-        # NOTE: Basically Chainer can infer input dimension, but not the case
-        # when chainer.functions.einsum is used.
-        if input_length is not None:
-            if self.model.blocks[0].nodes[0] < 0:
-                self.model.blocks[0].nodes[0] = int(input_length)
-            if self.model.blocks[-1].nodes[-1] < 0:
-                self.model.blocks[-1].nodes[-1] = int(output_length)
 
         if self.data.preprocessed != self.data.train[0].parent:
             print(

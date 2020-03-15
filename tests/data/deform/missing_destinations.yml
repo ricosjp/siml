@@ -3,10 +3,17 @@ data:
     - tests/data/deform/preprocessed/train
   validation:
     - tests/data/deform/preprocessed/train
+conversion:
+  mandatory:
+    - elemental_strain
+    - modulus
+    - poisson_ratio
+  optional:
+    - elemental_stress
 trainer:
   lazy: false
   num_workers: 0
-  output_directory: tests/data/deform/tmp
+  output_directory: tests/data/deform/mlp
   inputs:
     - name: elemental_strain
       dim: 6
@@ -27,70 +34,54 @@ model:
       type: adjustable_mlp
       destinations:
         - MLP2
-        - MLP3
       nodes:
         - -1
         - 10
         - 10
-        - 10
       activations:
         - relu
-        - relu
-        - relu
+        - identity
       dropouts:
-        - 0.3
-        - 0.3
+        - 0.0
         - 0.0
     - name: MLP2
       type: adjustable_mlp
       destinations:
-        - REDUCER
-      nodes:
-        - 10
-        - 10
-        - 10
-        - 10
-      activations:
-        - relu
-        - relu
-        - relu
-      dropouts:
-        - 0.3
-        - 0.3
-        - 0.0
-    - name: MLP3
-      type: adjustable_mlp
-      destinations:
-        - REDUCER
-      nodes:
-        - 10
-        - 10
-        - 10
-        - 10
-      activations:
-        - relu
-        - relu
-        - relu
-      dropouts:
-        - 0.3
-        - 0.3
-        - 0.0
-    - name: REDUCER
-      type: reducer
-      destinations:
+        - MISSING_DESTINATIONS
         - MLP4
-    - name: MLP4
-      type: adjustable_mlp
       nodes:
+        - -1
         - 10
         - 10
-        - 10
-        - 6
       activations:
-        - relu
         - relu
         - identity
       dropouts:
-        - 0.3
-        - 0.3
+        - 0.0
+        - 0.0
+    - name: MISSING_DESTINATIONS
+      type: adjustable_mlp
+      destinations:
+        - NOT_EXISTING_BLOCK
+      nodes:
+        - -1
+        - 10
+        - 10
+      activations:
+        - relu
+        - identity
+      dropouts:
+        - 0.0
+        - 0.0
+    - name: MLP4
+      type: adjustable_mlp
+      nodes:
+        - -1
+        - 10
+        - -1
+      activations:
+        - relu
+        - identity
+      dropouts:
+        - 0.0
         - 0.0

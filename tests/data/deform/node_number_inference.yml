@@ -19,95 +19,114 @@ trainer:
     - name: elemental_stress
       dim: 6
   prune: true
-  batch_size: 3
-  n_epoch: 10
-  log_trigger_epoch: 1
+  batch_size: 2
+  n_epoch: 100
+  log_trigger_epoch: 10
   stop_trigger_epoch: 10
   seed: 0
 model:
   blocks:
-    - name: ResGCN1
+    - name: RES_GCN1_1
       type: gcn
       is_first: true
       residual: true
       destinations:
-        - ResGCN2
-      input_slice:
-        - null
-        - 6
-        - null
-      support_input_index: 0  # assume one support input (e.g. adjacency matrix) for each block
+        - RES_GCN1_2
+      support_input_index: 0
       nodes:
-        - 6
+        - -1
         - 10
       activations:
         - relu
       dropouts:
-        - 0.3
-    - name: ResGCN2
+        - 0.0
+    - name: RES_GCN1_2
       type: gcn
       residual: true
       destinations:
-        - Reducer
+        - CONCATENATOR
       support_input_index: 1
       nodes:
+        - -1
         - 10
         - 10
-        - 6
       activations:
         - relu
         - relu
       dropouts:
-        - 0.3
-        - 0.3
+        - 0.0
+        - 0.0
+    - name: RES_GCN2_1
+      type: gcn
+      is_first: true
+      residual: true
+      destinations:
+        - RES_GCN2_2
+        - MLP
+      support_input_index: 0
+      nodes:
+        - -1
+        - 15
+      activations:
+        - relu
+      dropouts:
+        - 0.0
+    - name: RES_GCN2_2
+      type: gcn
+      residual: true
+      destinations:
+        - CONCATENATOR
+      support_input_index: 1
+      nodes:
+        - -1
+        - 20
+        - 20
+      activations:
+        - relu
+        - relu
+      dropouts:
+        - 0.0
+        - 0.0
     - name: MLP
       type: adjustable_mlp
-      is_first: ture
       destinations:
-        - Reducer
-      input_indices:
-        - 6
+        - CONCATENATOR
+        - REDUCER
+        - OUT_REDUCER
       nodes:
-        - 1
+        - -1
         - 10
-        - 6
-      activations:
-        - relu
-        - max_pool
-      dropouts:
-        - 0.3
-        - 0.0
-    - name: Reducer
-      type: reducer
-      destinations:
-        - ResGCN3
-    - name: ResGCN3
-      type: gcn
-      residual: true
-      destinations:
-        - ResGCN4
-      support_input_index: 0
-      nodes:
-        - 6
-        - 6
-        - 6
-      activations:
-        - relu
-        - relu
-      dropouts:
-        - 0.3
-        - 0.3
-    - name: ResGCN4
-      type: gcn
-      residual: true
-      support_input_index: 0
-      nodes:
-        - 6
-        - 6
-        - 6
+        - 1
       activations:
         - relu
         - identity
       dropouts:
-        - 0.3
         - 0.0
+        - 0.0
+    - name: CONCATENATOR
+      type: concatenator
+      destinations:
+        - REDUCER
+    - name: REDUCER
+      type: reducer
+      destinations:
+        - OUT_RES_GCN
+    - name: OUT_RES_GCN
+      type: gcn
+      destinations:
+        - OUT_REDUCER
+      residual: true
+      support_input_index: 0
+      is_last: true
+      nodes:
+        - -1
+        - 6
+        - -1
+      activations:
+        - relu
+        - identity
+      dropouts:
+        - 0.0
+        - 0.0
+    - name: OUT_REDUCER
+      type: reducer

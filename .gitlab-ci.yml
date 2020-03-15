@@ -52,14 +52,14 @@ pages:
 .test:
   stage: test
 
-test_gpu:
+test_gpu_networks:
   extends: .test
   script:
     - python3.7 -m pytest tests/gpu/test_networks_gpu.py --capture=no
   tags:
     - gpu
 
-test_gpu_optimize:
+test_gpu:
   extends: .test
   script:
     - python3.7 -m pytest tests/gpu/test_optimize_gpu.py --capture=no
