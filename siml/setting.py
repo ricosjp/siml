@@ -217,6 +217,8 @@ class TrainerSetting(TypedDataClass):
         If True, perform data parallel on GPUs.
     model_parallel: bool [False]
         If True, perform model parallel on GPUs.
+    draw_network: bool [True]
+        If True, draw network (requireing graphviz).
     """
 
     inputs: typing.List[dict] = dc.field(default_factory=list)
@@ -277,6 +279,7 @@ class TrainerSetting(TypedDataClass):
 
     data_parallel: bool = False
     model_parallel: bool = False
+    draw_network: bool = True
 
     def __post_init__(self):
         if self.element_wise and self.lazy:

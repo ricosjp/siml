@@ -130,7 +130,7 @@ class Trainer():
         return input_string.ljust(
             len(reference_string) + self.setting.trainer.display_mergin, ' ')
 
-    def prepare_training(self):
+    def prepare_training(self, draw=True):
         self.set_seed()
 
         if len(self.setting.trainer.input_names) == 0:
@@ -140,7 +140,9 @@ class Trainer():
 
         # Define model
         self.model = networks.Network(self.setting.model, self.setting.trainer)
-        self.model.draw(self.setting.trainer.output_directory / 'network.png')
+        if self.setting.trainer.draw_network and draw:
+            self.model.draw(
+                self.setting.trainer.output_directory / 'network.png')
 
         self.element_wise = self._determine_element_wise()
         self.loss = self._create_loss_function()
