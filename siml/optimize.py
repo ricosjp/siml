@@ -68,10 +68,13 @@ class Objective():
                 high=dict_hyperparameter['high'])
 
         elif parameter_type == 'loguniform':
-            parameter = trial.suggest_loguniform(
-                dict_hyperparameter['name'],
-                low=dict_hyperparameter['low'],
-                high=dict_hyperparameter['high'])
+            if 'dtype' not in dict_hyperparameter:
+                dict_hyperparameter['dtype'] = 'float'
+            parameter = self.DICT_DTYPE[dict_hyperparameter['dtype']](
+                trial.suggest_loguniform(
+                    dict_hyperparameter['name'],
+                    low=dict_hyperparameter['low'],
+                    high=dict_hyperparameter['high']))
 
         elif parameter_type == 'int':
             parameter = trial.suggest_int(
