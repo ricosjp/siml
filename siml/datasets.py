@@ -69,6 +69,15 @@ class BaseDataset(torch.utils.data.Dataset):
         y_data = util.concatenate_variable([
             util.load_variable(data_directory, y_variable_name)
             for y_variable_name in self.y_variable_names])
+        has_nan = False
+        if np.any(np.isnan(x_data)):
+            has_nan = True
+            print(f"NaN found in x: {data_directory}")
+        if np.any(np.isnan(y_data)):
+            has_nan = True
+            print(f"NaN found in y: {data_directory}")
+        if has_nan:
+            raise ValueError('Nan found')
         if pbar:
             pbar.update()
         if self.supports is None:
