@@ -12,7 +12,7 @@ RUN apt-get update -y && \
   python-pydot python-pydot-ng graphviz
 
 COPY ./pyproject.toml /src/pyproject.toml
-COPY ./poetry.lock /src/poetry.lock
+# COPY ./poetry.lock /src/poetry.lock
 WORKDIR /src
 
 ARG ricos_pypi_key

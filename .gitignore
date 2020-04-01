@@ -7,6 +7,7 @@ data/*
 tests/data/*
 models
 *_models/*
+docker/pyproject.toml
 
 # Figures
 figs/*
