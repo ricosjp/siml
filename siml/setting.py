@@ -573,18 +573,22 @@ class MainSetting:
     model: ModelSetting = ModelSetting()
     optuna: OptunaSetting = OptunaSetting()
     study: StudySetting = StudySetting()
+    replace_preprocessed: bool = True
 
     @classmethod
-    def read_settings_yaml(cls, settings_yaml):
+    def read_settings_yaml(cls, settings_yaml, replace_preprocessed=True):
         dict_settings = util.load_yaml(settings_yaml)
         if isinstance(settings_yaml, Path):
             name = settings_yaml.stem
         else:
             name = None
-        return cls.read_dict_settings(dict_settings, name=name)
+        return cls.read_dict_settings(
+            dict_settings, name=name,
+            replace_preprocessed=replace_preprocessed)
 
     @classmethod
-    def read_dict_settings(cls, dict_settings, *, name=None):
+    def read_dict_settings(
+            cls, dict_settings, *, name=None, replace_preprocessed=True):
         if 'trainer' in dict_settings \
                 and 'name' not in dict_settings['trainer']:
             if name is None:
@@ -626,15 +630,18 @@ class MainSetting:
             data=data_setting, conversion=conversion_setting,
             preprocess=preprocess_setting,
             trainer=trainer_setting, model=model_setting,
-            optuna=optuna_setting, study=study_setting)
+            optuna=optuna_setting, study=study_setting,
+            replace_preprocessed=replace_preprocessed)
 
     def __post_init__(self):
 
-        if self.data.preprocessed != self.data.train[0].parent:
-            print(
-                'self.data.preprocessed differs from self.data.train. '
-                'Replaced.')
-            self.data.preprocessed = self.data.train[0].parent
+        if self.replace_preprocessed:
+            if str(self.data.preprocessed) != str(self.data.train[0].parent) \
+                    and str(self.data.preprocessed) != str(self.data.train[0]):
+                print(
+                    'self.data.preprocessed differs from self.data.train. '
+                    'Replaced.')
+                self.data.preprocessed = self.data.train[0].parent
 
     def update_with_dict(self, new_dict):
         original_dict = dc.asdict(self)

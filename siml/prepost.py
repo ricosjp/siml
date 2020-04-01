@@ -25,7 +25,7 @@ class RawConverter():
     @classmethod
     def read_settings(cls, settings_yaml, **args):
         main_setting = setting.MainSetting.read_settings_yaml(
-            settings_yaml)
+            settings_yaml, replace_preprocessed=False)
         return cls(main_setting, **args)
 
     def __init__(
@@ -295,7 +295,7 @@ class Preprocessor:
     @classmethod
     def read_settings(cls, settings_yaml, **args):
         main_setting = setting.MainSetting.read_settings_yaml(
-            settings_yaml)
+            settings_yaml, replace_preprocessed=False)
         return cls(main_setting, **args)
 
     def __init__(
