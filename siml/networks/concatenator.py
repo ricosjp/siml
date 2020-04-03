@@ -12,4 +12,4 @@ class Concatenator(header.SimlModule):
         return
 
     def forward(self, *xs, op=None, supports=None):
-        return torch.cat(xs, dim=-1)
+        return self.activation(torch.cat(xs, dim=-1))
