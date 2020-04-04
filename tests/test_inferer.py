@@ -152,7 +152,7 @@ class TestInferer(unittest.TestCase):
         fem_data = femio.FEMData.read_files(
             'ucd', [output_directory / 'mesh.inp'])
         np.testing.assert_almost_equal(
-            fem_data.access_attribute('elemental_stress'),
+            fem_data.access_attribute('inferred_elemental_stress'),
             res_from_preprocessed[0]['dict_y']['elemental_stress'],
             decimal=7)
 

@@ -205,27 +205,28 @@ class RawConverter():
         return
 
 
-def update_fem_data(fem_data, dict_data):
+def update_fem_data(fem_data, dict_data, prefix=''):
     for key, value in dict_data.items():
         if isinstance(value, np.ndarray):
             fem_data.pop_attribute(key)  # To be sure that overwrite correctly
             len_data = len(value)
 
+            variable_name = prefix + key
             if len_data == len(fem_data.nodes.ids):
                 # Nodal data
                 fem_data.nodal_data.update({
-                    key: femio.FEMAttribute(
-                        key, fem_data.nodes.ids, value)})
+                    variable_name: femio.FEMAttribute(
+                        variable_name, fem_data.nodes.ids, value)})
             elif len_data == len(fem_data.elements.ids):
                 # Elemental data
                 fem_data.elemental_data.update({
-                    key: femio.FEMAttribute(
-                        key, fem_data.elements.ids, value)})
+                    variable_name: femio.FEMAttribute(
+                        variable_name, fem_data.elements.ids, value)})
             else:
-                print(f"{key} is skipped to include in fem_data")
+                print(f"{variable_name} is skipped to include in fem_data")
                 continue
         else:
-            print(f"{key} is skipped to include in fem_data")
+            print(f"{variable_name} is skipped to include in fem_data")
 
     return fem_data
 
@@ -607,7 +608,8 @@ class Converter:
                 if write_simulation_base is None:
                     raise ValueError('No write_simulation_base fed.')
                 self.write_simulation(
-                    inversed_dict_data_y, output_directory,
+                    inversed_dict_data_x, inversed_dict_data_y,
+                    output_directory,
                     overwrite=overwrite,
                     write_simulation_base=write_simulation_base,
                     write_simulation_stem=write_simulation_stem,
@@ -621,7 +623,8 @@ class Converter:
         return inversed_dict_data_x, inversed_dict_data_y
 
     def write_simulation(
-            self, dict_data_y, output_directory, write_simulation_base, *,
+            self, dict_data_x, dict_data_y, output_directory,
+            write_simulation_base, *,
             write_simulation_stem=None,
             read_simulation_type='fistr', data_addition_function=None,
             write_simulation_type='fistr',
@@ -648,7 +651,8 @@ class Converter:
         if convert_to_order1:
             fem_data = fem_data.to_first_order()
 
-        fem_data = update_fem_data(fem_data, dict_data_y)
+        fem_data = update_fem_data(fem_data, dict_data_x, prefix='answer_')
+        fem_data = update_fem_data(fem_data, dict_data_y, prefix='inferred_')
         if data_addition_function is not None:
             fem_data = data_addition_function(fem_data)
 
