@@ -33,7 +33,7 @@ class RawConverter():
             recursive=True,
             conversion_function=None, filter_function=None, load_function=None,
             force_renew=False, read_npy=False, write_ucd=True, read_res=True,
-            max_process=None):
+            max_process=None, to_first_order=False):
         """Initialize converter of raw data and save them in interim directory.
 
         Parameters
@@ -74,6 +74,7 @@ class RawConverter():
         self.force_renew = force_renew
         self.read_npy = read_npy
         self.write_ucd = write_ucd
+        self.to_first_order = to_first_order
         self.read_res = read_res
         self.max_process = util.determine_max_process(max_process)
         self.setting.conversion.output_base_directory \
@@ -187,10 +188,14 @@ class RawConverter():
         # Save data
         output_directory.mkdir(parents=True, exist_ok=True)
         if fem_data is not None:
-            fem_data = update_fem_data(fem_data, dict_data)
-            fem_data.save(output_directory)
+            if self.to_first_order:
+                fem_data_to_save = fem_data.to_first_order()
+            else:
+                fem_data_to_save = fem_data
+            fem_data_to_save = update_fem_data(fem_data_to_save, dict_data)
+            fem_data_to_save.save(output_directory)
             if self.write_ucd:
-                fem_data.write(
+                fem_data_to_save.to_first_order().write(
                     'ucd', output_directory / 'mesh.inp',
                     overwrite=self.force_renew)
 
