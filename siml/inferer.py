@@ -471,10 +471,17 @@ class Inferer(trainer.Trainer):
 
         if save:
             if output_directory is None:
-                output_directory = prepost.determine_output_directory(
-                    directory, self.setting.data.inferred,
-                    self.setting.data.preprocessed.stem) \
-                    / f"{self.setting.trainer.name}_{util.date_string()}"
+                try:
+                    output_directory = prepost.determine_output_directory(
+                        directory, self.setting.data.inferred,
+                        self.setting.data.preprocessed.stem) \
+                        / f"{self.setting.trainer.name}_{util.date_string()}"
+                except ValueError:
+                    output_directory = prepost.determine_output_directory(
+                        directory, self.setting.data.inferred,
+                        self.setting.data.raw.stem) \
+                        / f"{self.setting.trainer.name}_{util.date_string()}"
+
             output_directory.mkdir(parents=True, exist_ok=overwrite)
         else:
             output_directory = None
