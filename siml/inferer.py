@@ -140,11 +140,11 @@ class Inferer(trainer.Trainer):
                 prepost_converter=self.prepost_converter,
                 conversion_function=conversion_function,
                 load_function=load_function)
-            dict_dir_x = {preprocessed_data_directory: x}
+            dict_dir_x = {raw_data_directory: x}
             if y is None:
                 dict_dir_y = {}
             else:
-                dict_dir_y = {preprocessed_data_directory: y}
+                dict_dir_y = {raw_data_directory: y}
 
         # Perform inference
         inference_results = [
@@ -231,9 +231,16 @@ class Inferer(trainer.Trainer):
 
         converted_dict_data = prepost_converter.preprocess(dict_data)
         input_data = np.concatenate([
-            converted_dict_data[input_info['name']]
+            converted_dict_data[input_info['name']].astype(np.float32)
             for input_info in self.setting.trainer.inputs], axis=1).astype(
             np.float32)
+        if self.setting.trainer.support_inputs:
+            support_input_data = [[
+                converted_dict_data[support_input_name].astype(np.float32)
+                for support_input_name in self.setting.trainer.support_inputs]]
+        else:
+            support_input_data = None
+
         if np.all([
                 output_info['name'] in dict_data
                 for output_info in self.setting.trainer.outputs]):
@@ -247,13 +254,14 @@ class Inferer(trainer.Trainer):
 
         if self.setting.trainer.element_wise \
                 or self.setting.trainer.simplified_model:
-            return input_data, output_data
+            return [input_data, support_input_data], output_data
         else:
             if output_data is None:
                 extended_output_data = None
             else:
                 extended_output_data = output_data[None, :, :]
-            return input_data[None, :, :], extended_output_data
+            return [input_data[None, :, :], support_input_data], \
+                extended_output_data
 
     def infer_simplified_model(
             self, model_path, raw_dict_x, *,
