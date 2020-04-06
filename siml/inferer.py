@@ -234,9 +234,13 @@ class Inferer(trainer.Trainer):
             converted_dict_data[input_info['name']].astype(np.float32)
             for input_info in self.setting.trainer.inputs], axis=1).astype(
             np.float32)
-        support_input_data = [[
-            converted_dict_data[support_input_name].astype(np.float32)
-            for support_input_name in self.setting.trainer.support_inputs]]
+        if self.setting.trainer.support_inputs:
+            support_input_data = [[
+                converted_dict_data[support_input_name].astype(np.float32)
+                for support_input_name in self.setting.trainer.support_inputs]]
+        else:
+            support_input_data = None
+
         if np.all([
                 output_info['name'] in dict_data
                 for output_info in self.setting.trainer.outputs]):
