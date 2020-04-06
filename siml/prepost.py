@@ -523,7 +523,8 @@ class Converter:
         converted_dict_data_x = {
             variable_name:
             self.converters[variable_name].transform(data)
-            for variable_name, data in dict_data_x.items()}
+            for variable_name, data in dict_data_x.items()
+            if variable_name in self.converters.keys()}
         return converted_dict_data_x
 
     def _extract_first_batch(self, data):
