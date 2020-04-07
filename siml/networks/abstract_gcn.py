@@ -8,23 +8,32 @@ class AbstractGCN(siml_module.SimlModule):
 
     def __init__(
             self, block_setting,
-            *, create_subchain=True, residual=False):
+            *, create_subchain=True, residual=False, multiple_networks=None):
         """Initialize the NN.
 
         Parameters
         -----------
-            block_setting: siml.setting.BlockSetting
-                BlockSetting object.
-            create_subchain: bool, optional [True]
-                If True, create subchain to be trained.
-            residual: bool, optional [False]
-                If True, make the network residual.
+        block_setting: siml.setting.BlockSetting
+            BlockSetting object.
+        create_subchain: bool, optional [True]
+            If True, create subchain to be trained.
+        residual: bool, optional [False]
+            If True, make the network residual.
+        multiple_networks: bool, optional [None]
+            If False, create only one subchain and share weights. If not set,
+            use block_setting.optional['multiple_networks'] setting. If both
+            not set, set True.
         """
+        self.multiple_networks = block_setting.optional.get(
+            'multiple_networks', True)
+        self.gather_function = block_setting.optional.get(
+            'gather_function', 'sum')
+        if self.gather_function == 'cat':
+            block_setting.nodes[-1] = block_setting.nodes[-1] // len(
+                block_setting.support_input_indices)
 
         super().__init__(block_setting, create_linears=False)
 
-        self.multiple_networks = block_setting.optional.get(
-            'multiple_networks', True)
         if create_subchain:
             self.subchains, self.subchain_indices = self._create_subchains(
                 block_setting)
@@ -99,14 +108,42 @@ class AbstractGCN(siml_module.SimlModule):
 
     def _forward_single(self, x, supports):
         if self.residual:
-            h_res = torch.sum(torch.stack([
-                self._forward_single_core(x, self.subchain_indices[i], support)
-                for i, support in enumerate(supports)]), dim=0)
-            return self.activations[-1](h_res + self.shortcut(x))
+            if self.gather_function == 'sum':
+                h_res = torch.sum(torch.stack([
+                    self._forward_single_core(
+                        x, self.subchain_indices[i], support)
+                    for i, support in enumerate(supports)]), dim=0) \
+                    + self.shortcut(x)
+
+            elif self.gather_function == 'cat':
+                h_res = torch.cat([
+                    self._forward_single_core(
+                        x, self.subchain_indices[i], support)
+                    + self.shortcut(x)
+                    for i, support in enumerate(supports)], dim=-1)
+
+            else:
+                raise ValueError(
+                    f"Unknown gather_function: {self.gather_function}")
+
+            return self.activations[-1](h_res)
+
         else:
-            return torch.sum(torch.stack([
-                self._forward_single_core(x, self.subchain_indices[i], support)
-                for i, support in enumerate(supports)]), dim=0)
+            if self.gather_function == 'sum':
+                return torch.sum(torch.stack([
+                    self._forward_single_core(
+                        x, self.subchain_indices[i], support)
+                    for i, support in enumerate(supports)]), dim=0)
+
+            elif self.gather_function == 'cat':
+                return torch.cat([
+                    self._forward_single_core(
+                        x, self.subchain_indices[i], support)
+                    for i, support in enumerate(supports)], dim=-1)
+
+            else:
+                raise ValueError(
+                    f"Unknown gather_function: {self.gather_function}")
 
     def _forward_single_core(self, x, subchain_index, support):
         raise NotImplementedError

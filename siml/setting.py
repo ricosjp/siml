@@ -371,7 +371,8 @@ class BlockSetting(TypedDataClass):
         default=None, metadata={'allow_none': True})
     activations: typing.List[str] = dc.field(
         default_factory=lambda: ['identity'])
-    dropouts: typing.List[float] = dc.field(default_factory=lambda: [0.])
+    dropouts: typing.List[float] = dc.field(
+        default=None, metadata={'allow_none': True})
     device: int = dc.field(
         default=None, metadata={'allow_none': True})
 
@@ -389,6 +390,8 @@ class BlockSetting(TypedDataClass):
     output_dropout: float = 0.0
 
     def __post_init__(self):
+        if self.dropouts is None:
+            self.dropouts = [0] * (len(self.nodes) - 1)
 
         # Dynamic definition of layers
         if self.hidden_nodes is not None and self.hidden_layers is not None:
