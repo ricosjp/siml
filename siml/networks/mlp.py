@@ -1,10 +1,10 @@
 
 import torch.nn.functional as functional
 
-from . import header
+from . import siml_module
 
 
-class MLP(header.SimlModule):
+class MLP(siml_module.SimlModule):
     """Multi Layer Perceptron."""
 
     def _forward_core(self, x, supports=None):

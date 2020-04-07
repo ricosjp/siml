@@ -1,7 +1,7 @@
-from . import header
+from . import siml_module
 
 
-class Identity(header.SimlModule):
+class Identity(siml_module.SimlModule):
     """Identity block."""
 
     def __init__(self, block_setting):

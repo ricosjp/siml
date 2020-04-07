@@ -1,8 +1,8 @@
 
-from . import header
+from . import siml_module
 
 
-class Activation(header.SimlModule):
+class Activation(siml_module.SimlModule):
     """Activation block."""
 
     def __init__(self, block_setting):

@@ -42,7 +42,6 @@ preprocess:
     method: std_scale
     componentwise: false
   y_grad:
-    method: max_abs
-    componentwise: false
+    same_as: x_grad
   z_grad:
     same_as: x_grad

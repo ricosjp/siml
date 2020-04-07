@@ -2,10 +2,10 @@
 import einops
 import torch
 
-from . import header
+from . import siml_module
 
 
-class Integration(header.SimlModule):
+class Integration(siml_module.SimlModule):
     """Integration block."""
 
     def __init__(self, block_setting):

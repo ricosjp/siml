@@ -1,9 +1,10 @@
 
-from . import AdjustableMLP
-from . import header
+from . import activations
+from . import mlp
+from . import siml_module
 
 
-class DeepSets(header.SimlModule):
+class DeepSets(siml_module.SimlModule):
     """Permutation equivalent layer published in
     https://arxiv.org/abs/1703.06114 .
     """
@@ -18,8 +19,8 @@ class DeepSets(header.SimlModule):
         """
 
         super().__init__(block_setting, create_linears=False)
-        self.lambda_ = AdjustableMLP(block_setting, last_identity=True)
-        self.gamma = AdjustableMLP(block_setting, last_identity=True)
+        self.lambda_ = mlp.MLP(block_setting, last_identity=True)
+        self.gamma = mlp.MLP(block_setting, last_identity=True)
 
     def _forward_core(self, x, supports=None):
         """Execute the NN's forward computation.
@@ -37,5 +38,5 @@ class DeepSets(header.SimlModule):
         """
         h = x
         h = self.activations[-1](
-            self.lambda_(h) + header.max_pool(self.gamma(h)))
+            self.lambda_(h) + activations.max_pool(self.gamma(h)))
         return h

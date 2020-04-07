@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import torch
 
 import siml.inferer as inferer
-import siml.networks.header as header
+import siml.networks.activations as activations
 import siml.setting as setting
 import siml.trainer as trainer
 
@@ -183,15 +183,15 @@ class TestNetwork(unittest.TestCase):
 
     def test_mish(self):
         np.testing.assert_almost_equal(
-            header.mish(torch.Tensor([100.])), [100.])
+            activations.mish(torch.Tensor([100.])), [100.])
         np.testing.assert_almost_equal(
-            header.mish(torch.Tensor([-100.])), [0.])
+            activations.mish(torch.Tensor([-100.])), [0.])
         np.testing.assert_almost_equal(
-            header.mish(torch.Tensor([1.])),
+            activations.mish(torch.Tensor([1.])),
             [1. * np.tanh(np.log(1 + np.exp(1.)))])
         if PLOT:
             x = np.linspace(-10., 10., 100)
-            mish = header.mish(torch.from_numpy(x))
+            mish = activations.mish(torch.from_numpy(x))
             plt.plot(x, mish.numpy())
             plt.show()
 
@@ -290,3 +290,25 @@ class TestNetwork(unittest.TestCase):
             converter_parameters_pkl=main_setting.data.preprocessed
             / 'preprocessors.pkl')
         self.assertLess(results[0]['loss'], 1e-1)
+
+    def test_grad_gcn(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/deform/grad_gcn.yml'))
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, 1.)
+        self.assertEqual(len(tr.model.dict_block['GRAD_GCN1'].subchains), 1)
+        self.assertEqual(len(tr.model.dict_block['GRAD_GCN2'].subchains), 1)
+
+    def test_grad_res_gcn(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/deform/grad_res_gcn.yml'))
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, 1.)
+        self.assertEqual(len(tr.model.dict_block['GRAD_GCN1'].subchains), 1)
+        self.assertEqual(len(tr.model.dict_block['GRAD_GCN2'].subchains), 1)
