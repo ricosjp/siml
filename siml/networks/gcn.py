@@ -1,10 +1,10 @@
 
 import torch
 
-from . import header
+from . import abstract_gcn
 
 
-class GCN(header.AbstractGCN):
+class GCN(abstract_gcn.AbstractGCN):
     """Graph Convolutional network according to
     https://arxiv.org/abs/1609.02907 .
     """

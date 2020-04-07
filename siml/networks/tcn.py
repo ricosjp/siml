@@ -3,10 +3,10 @@ import einops
 import numpy as np
 import torch
 
-from . import header
+from . import siml_module
 
 
-class TCN(header.SimlModule):
+class TCN(siml_module.SimlModule):
     """Temporal Convolutional Networks (TCN) https://arxiv.org/abs/1803.01271 .
     """
 

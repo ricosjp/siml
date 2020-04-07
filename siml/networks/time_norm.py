@@ -1,8 +1,8 @@
 
-from . import header
+from . import siml_module
 
 
-class TimeNorm(header.SimlModule):
+class TimeNorm(siml_module.SimlModule):
     """Normalization for time series data which makes x[t=0, ...] = 0."""
 
     def __init__(self, block_setting):

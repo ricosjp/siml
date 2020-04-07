@@ -1,10 +1,10 @@
 
 import torch
 
-from . import header
+from . import siml_module
 
 
-class LSTM(header.SimlModule):
+class LSTM(siml_module.SimlModule):
     """LSTM layer."""
 
     def __init__(self, block_setting):

@@ -3,10 +3,10 @@ import numpy as np
 import scipy.sparse as sp
 import torch
 
-from . import header
+from . import abstract_gcn
 
 
-class NRI(header.AbstractGCN):
+class NRI(abstract_gcn.AbstractGCN):
     """Neural Relational Inference layer based on
     https://arxiv.org/pdf/1802.04687.pdf .
     """

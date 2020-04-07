@@ -1,10 +1,10 @@
 
 import torch
 
-from . import header
+from . import siml_module
 
 
-class Concatenator(header.SimlModule):
+class Concatenator(siml_module.SimlModule):
     """Concatenation operation block."""
 
     def __init__(self, block_setting):

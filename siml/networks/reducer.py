@@ -1,10 +1,10 @@
 
 import torch
 
-from . import header
+from . import siml_module
 
 
-class Reducer(header.SimlModule):
+class Reducer(siml_module.SimlModule):
     """Broadcastive operation block."""
 
     def __init__(self, block_setting):
