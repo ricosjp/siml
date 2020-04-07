@@ -299,6 +299,8 @@ class TestNetwork(unittest.TestCase):
             shutil.rmtree(tr.setting.trainer.output_directory)
         loss = tr.train()
         np.testing.assert_array_less(loss, 1.)
+        self.assertEqual(len(tr.model.dict_block['GRAD_GCN1'].subchains), 1)
+        self.assertEqual(len(tr.model.dict_block['GRAD_GCN2'].subchains), 1)
 
     def test_grad_res_gcn(self):
         main_setting = setting.MainSetting.read_settings_yaml(
@@ -308,3 +310,5 @@ class TestNetwork(unittest.TestCase):
             shutil.rmtree(tr.setting.trainer.output_directory)
         loss = tr.train()
         np.testing.assert_array_less(loss, 1.)
+        self.assertEqual(len(tr.model.dict_block['GRAD_GCN1'].subchains), 1)
+        self.assertEqual(len(tr.model.dict_block['GRAD_GCN2'].subchains), 1)

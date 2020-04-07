@@ -24,8 +24,11 @@ class AbstractGCN(siml_module.SimlModule):
             use block_setting.optional['multiple_networks'] setting. If both
             not set, set True.
         """
-        self.multiple_networks = block_setting.optional.get(
-            'multiple_networks', True)
+        if multiple_networks is None:
+            self.multiple_networks = block_setting.optional.get(
+                'multiple_networks', True)
+        else:
+            self.multiple_networks = multiple_networks
         self.gather_function = block_setting.optional.get(
             'gather_function', 'sum')
         if self.gather_function == 'cat':
