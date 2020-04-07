@@ -14,6 +14,7 @@ from . import adjustable_mlp
 from . import concatenator
 from . import deepsets
 from . import gcn
+from . import grad_gcn
 from . import identity
 from . import integration
 from . import lstm
@@ -35,20 +36,23 @@ class BlockInformation():
 class Network(torch.nn.Module):
 
     DICT_BLOCKS = {
+        # Layers without weights
         'activation': BlockInformation(activation.Activation, trainable=False),
         'concatenator': BlockInformation(
             concatenator.Concatenator, trainable=False),
+        'distributor': BlockInformation(
+            reducer.Reducer, trainable=False),  # For backward compatibility
         'identity': BlockInformation(identity.Identity, trainable=False),
         'integration': BlockInformation(
             integration.Integration, trainable=False),
         'reducer': BlockInformation(reducer.Reducer, trainable=False),
         'time_norm': BlockInformation(time_norm.TimeNorm, trainable=False),
 
+        # Layers with weights
         'adjustable_mlp': BlockInformation(adjustable_mlp.AdjustableMLP),
         'deepsets': BlockInformation(deepsets.DeepSets),
-        'distributor': BlockInformation(
-            reducer.Reducer, trainable=False),  # For backward compatibility
         'gcn': BlockInformation(gcn.GCN, use_support=True),
+        'grad_gcn': BlockInformation(grad_gcn.GradGCN, use_support=True),
         'lstm': BlockInformation(lstm.LSTM),
         'mlp': BlockInformation(mlp.MLP),
         'nri': BlockInformation(nri.NRI, use_support=True),
