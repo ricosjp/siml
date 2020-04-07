@@ -1,10 +1,10 @@
 
 import torch
 
-from . import header
+from . import abstract_gcn
 
 
-class GradGCN(header.AbstractGCN):
+class GradGCN(abstract_gcn.AbstractGCN):
     """Graph Convolutional network with taking into account spatial gradient.
     """
 

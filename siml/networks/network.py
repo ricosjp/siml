@@ -10,7 +10,6 @@ import torch
 from .. import datasets
 from .. import setting
 from . import activation
-from . import adjustable_mlp
 from . import concatenator
 from . import deepsets
 from . import gcn
@@ -49,7 +48,7 @@ class Network(torch.nn.Module):
         'time_norm': BlockInformation(time_norm.TimeNorm, trainable=False),
 
         # Layers with weights
-        'adjustable_mlp': BlockInformation(adjustable_mlp.AdjustableMLP),
+        'adjustable_mlp': BlockInformation(mlp.MLP),
         'deepsets': BlockInformation(deepsets.DeepSets),
         'gcn': BlockInformation(gcn.GCN, use_support=True),
         'grad_gcn': BlockInformation(grad_gcn.GradGCN, use_support=True),

@@ -1,10 +1,10 @@
 
 import torch.nn.functional as functional
 
-from . import header
+from . import siml_module
 
 
-class AdjustableMLP(header.SimlModule):
+class AdjustableMLP(siml_module.SimlModule):
     """Multi Layer Perceptron which accepts arbitray number of dimension. It
     maps (n, m, f) shaped data to (n, m, g) shaped data, where n, m, f, and g
     are sample size, dimension, feature, and converted feature,
