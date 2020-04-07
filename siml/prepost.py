@@ -368,7 +368,8 @@ class Preprocessor:
                         f"Invalid setting for {item[0]}: {item[1]}")
                 reference_dict = dict_preprocessor_settings[reference_name]
                 reference = util.PreprocessConverter(
-                    reference_dict['preprocess_converter'])
+                    reference_dict['preprocess_converter'],
+                    componentwise=reference_dict['componentwise'])
                 if reference is None:
                     raise ValueError(
                         f"{item[0]} set to be same as {reference_name} "
