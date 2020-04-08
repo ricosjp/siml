@@ -312,3 +312,21 @@ class TestNetwork(unittest.TestCase):
         np.testing.assert_array_less(loss, 1.)
         self.assertEqual(len(tr.model.dict_block['GRAD_GCN1'].subchains), 1)
         self.assertEqual(len(tr.model.dict_block['GRAD_GCN2'].subchains), 1)
+
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/deform/grad_res_gcn/settings.yml'))
+        ir = inferer.Inferer(main_setting)
+        inference_outpout_directory = \
+            main_setting.trainer.output_directory / 'inferred'
+        if inference_outpout_directory.exists():
+            shutil.rmtree(inference_outpout_directory)
+
+        res = ir.infer(
+            model=Path('tests/data/deform/grad_res_gcn'),
+            preprocessed_data_directory=Path(
+                'tests/data/deform/preprocessed/validation/'
+                'tet2_3_modulusx0.9500'),
+            converter_parameters_pkl=Path(
+                'tests/data/deform/preprocessed/preprocessors.pkl'),
+            output_directory=inference_outpout_directory)
+        np.testing.assert_array_less(res[0]['loss'], 1e-2)

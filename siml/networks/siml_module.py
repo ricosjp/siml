@@ -9,7 +9,7 @@ class SimlModule(torch.nn.Module):
     def __init__(
             self, block_setting, *,
             create_linears=True, create_activations=True, create_dropouts=True,
-            no_parameter=False, **kwargs):
+            no_parameter=False, residual_dimension=None, **kwargs):
         super().__init__()
         self.block_setting = block_setting
         self.residual = self.block_setting.residual
@@ -31,11 +31,19 @@ class SimlModule(torch.nn.Module):
 
         if self.residual:
             nodes = block_setting.nodes
-            if nodes[0] == nodes[-1]:
+            if residual_dimension is None:
+                residual_dimension = nodes[-1]
+            if nodes[0] == residual_dimension:
                 self.shortcut = acts.identity
             else:
-                bias = self.block_setting.bias
-                self.shortcut = torch.nn.Linear(nodes[0], nodes[-1], bias=bias)
+                if self.block_setting.allow_linear_residual:
+                    bias = self.block_setting.bias
+                    self.shortcut = torch.nn.Linear(
+                        nodes[0], residual_dimension, bias=bias)
+                else:
+                    raise ValueError(
+                        'Residual input and output sizes differs for: '
+                        f"{self.block_setting}")
         return
 
     def create_linears(self, nodes=None, bias=None):

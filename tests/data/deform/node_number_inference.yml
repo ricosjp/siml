@@ -40,6 +40,7 @@ model:
         - relu
       dropouts:
         - 0.0
+      allow_linear_residual: true
     - name: RES_GCN1_2
       type: gcn
       residual: true
@@ -66,11 +67,12 @@ model:
       support_input_index: 0
       nodes:
         - -1
-        - 15
+        - 20
       activations:
         - relu
       dropouts:
         - 0.0
+      allow_linear_residual: true
     - name: RES_GCN2_2
       type: gcn
       residual: true
@@ -128,5 +130,6 @@ model:
       dropouts:
         - 0.0
         - 0.0
+      allow_linear_residual: true
     - name: OUT_REDUCER
       type: reducer

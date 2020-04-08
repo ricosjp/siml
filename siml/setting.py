@@ -357,6 +357,7 @@ class BlockSetting(TypedDataClass):
     destinations: typing.List[str] = dc.field(
         default_factory=list)
     residual: bool = False
+    allow_linear_residual: bool = False
     bias: bool = True
     input_slice: slice = slice(0, None, 1)
     input_indices: typing.List[int] = dc.field(
