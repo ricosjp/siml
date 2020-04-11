@@ -32,6 +32,7 @@ model:
     - name: GRAD_RES_GCN
       type: gcn
       residual: true
+      allow_linear_residual: true
       destinations:
         - ADJ_RES_GCN
       support_input_indices:
@@ -54,6 +55,7 @@ model:
     - name: ADJ_RES_GCN
       type: gcn
       residual: true
+      allow_linear_residual: true
       support_input_indices:
         - 3
       nodes:

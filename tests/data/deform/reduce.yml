@@ -42,6 +42,7 @@ model:
       dropouts:
         - 0.0
         - 0.0
+      allow_linear_residual: true
     - name: MLP
       type: adjustable_mlp
       nodes:

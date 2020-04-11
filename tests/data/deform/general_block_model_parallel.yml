@@ -30,6 +30,7 @@ model:
     - name: ResGCN1
       type: gcn
       residual: true
+      allow_linear_residual: true
       destinations:
         - ResGCN2
         - MLP
@@ -45,6 +46,7 @@ model:
     - name: ResGCN2
       type: gcn
       residual: true
+      allow_linear_residual: true
       device: 0
       destinations:
         - Reducer
@@ -83,6 +85,7 @@ model:
       device: 1
       type: gcn
       residual: true
+      allow_linear_residual: true
       support_input_index: 0
       nodes:
         - 6

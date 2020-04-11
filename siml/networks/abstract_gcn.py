@@ -31,24 +31,34 @@ class AbstractGCN(siml_module.SimlModule):
             self.multiple_networks = multiple_networks
         self.gather_function = block_setting.optional.get(
             'gather_function', 'sum')
-        if self.gather_function == 'cat':
-            block_setting.nodes[-1] = block_setting.nodes[-1] // len(
-                block_setting.support_input_indices)
 
-        super().__init__(block_setting, create_linears=False)
+        if self.gather_function == 'cat':
+            len_support = len(block_setting.support_input_indices)
+            if block_setting.nodes[-1] % len_support != 0:
+                raise ValueError(
+                    f"Set last node size multiple of {len_support} for: "
+                    f"{block_setting}")
+            overwritten_nodes = block_setting.nodes[:-1] + [
+                block_setting.nodes[-1] // len_support]
+        else:
+            overwritten_nodes = block_setting.nodes
+
+        super().__init__(
+            block_setting, create_linears=False,
+            residual_dimension=overwritten_nodes[-1])
 
         if create_subchain:
             self.subchains, self.subchain_indices = self._create_subchains(
-                block_setting)
+                block_setting, nodes=overwritten_nodes)
         return
 
     def _create_subchains(
-            self, block_setting,
+            self, block_setting, nodes, *,
             twice_input_nodes=False, square_weight=False, start_index=0):
         if self.multiple_networks:
             subchains = torch.nn.ModuleList([
                 self._create_subsubchain(
-                    block_setting,
+                    nodes,
                     twice_input_nodes=twice_input_nodes,
                     square_weight=square_weight, start_index=start_index)
                 for _ in block_setting.support_input_indices])
@@ -57,7 +67,7 @@ class AbstractGCN(siml_module.SimlModule):
         else:
             subchains = torch.nn.ModuleList([
                 self._create_subsubchain(
-                    block_setting,
+                    nodes,
                     twice_input_nodes=twice_input_nodes,
                     square_weight=square_weight, start_index=start_index)])
             subchain_indices = [0] * len(
@@ -66,9 +76,9 @@ class AbstractGCN(siml_module.SimlModule):
         return subchains, subchain_indices
 
     def _create_subsubchain(
-            self, block_setting,
+            self, nodes, *,
             twice_input_nodes=False, square_weight=False, start_index=0):
-        nodes = block_setting.nodes[start_index:]
+        nodes = nodes[start_index:]
         if twice_input_nodes:
             factor = 2
         else:

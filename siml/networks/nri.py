@@ -23,9 +23,10 @@ class NRI(abstract_gcn.AbstractGCN):
         self.concat = block_setting.optional.get(
             'concat', True)
         self.edge_parameters, self.subchain_indices = self._create_subchains(
-            block_setting, twice_input_nodes=self.concat)
+            block_setting, block_setting.nodes, twice_input_nodes=self.concat)
         self.node_parameters, _ = self._create_subchains(
-            block_setting, square_weight=True, start_index=1)
+            block_setting, block_setting.nodes, square_weight=True,
+            start_index=1)
 
     def make_reduce_matrix(self, nadj, *, mean=False):
         col = nadj._indices()[1].cpu().numpy()

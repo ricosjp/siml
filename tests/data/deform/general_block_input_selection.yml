@@ -30,6 +30,7 @@ model:
       type: gcn
       is_first: true
       residual: true
+      allow_linear_residual: true
       destinations:
         - ResGCN2
       input_slice:
@@ -47,6 +48,7 @@ model:
     - name: ResGCN2
       type: gcn
       residual: true
+      allow_linear_residual: true
       destinations:
         - Reducer
       support_input_index: 1
@@ -84,6 +86,7 @@ model:
     - name: ResGCN3
       type: gcn
       residual: true
+      allow_linear_residual: true
       destinations:
         - ResGCN4
       support_input_index: 0
@@ -100,6 +103,7 @@ model:
     - name: ResGCN4
       type: gcn
       residual: true
+      allow_linear_residual: true
       support_input_index: 0
       nodes:
         - 6

@@ -54,6 +54,7 @@ model:
     output_activation: identity
     output_dropout: 0.0
     residual: true
+    allow_linear_residual: true
     support_input_index: 0
     support_input_indices:
     - 0
