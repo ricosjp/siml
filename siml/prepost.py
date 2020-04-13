@@ -340,17 +340,37 @@ class Preprocessor:
         if len(self.interim_directories) == 0:
             raise ValueError(
                 'No converted data found. Perform conversion first.')
+        return
 
-    def prepare_preprocess_converters(self, *, group_id=0):
+    def preprocess_interim_data(self):
+        """Preprocess interim data.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        dict_preprocessor_setting: dict
+            dict describing settings and parameters for preprocessors.
+        """
+        self.prepare_preprocess_converters()
+        dict_preprocessor_settings = \
+            self.merge_dict_preprocessor_setting_pkls()
+        self.convert_interim_data()
+        return dict_preprocessor_settings
+
+    def prepare_preprocess_converters(self, *, group_id=None):
         """Prepare preprocess converters by reading data files lazily to
         determine preprocessing parameters (like std and mean for
         StandardScaler, min and max for MinMaxScaler.
 
         Parameters
         ----------
-        group_id: int, optional [0]
+        group_id: int, optional [None]
             group_id to specify chunk of preprocessing group. Useful when
             MemoryError occurs with all variables preprocessed in one node.
+            If not specified, process all variables.
 
         Returns
         -------
@@ -361,7 +381,7 @@ class Preprocessor:
             (variable_name, preprocess_setting)
             for variable_name, preprocess_setting
             in self.setting.preprocess.items()
-            if preprocess_setting['group_id'] == group_id]
+            if group_id is None or preprocess_setting['group_id'] == group_id]
 
         with multi.Pool(self.max_process) as pool:
             list_dict_preprocessor_setting = pool.starmap(
@@ -395,7 +415,7 @@ class Preprocessor:
 
         if self.force_renew or not preprocessors_pkl_path.is_file():
             pkl_files = glob.glob(
-                    str(data_directory / f"*_{self.PREPROCESSORS_PKL_NAME}"))
+                str(data_directory / f"*_{self.PREPROCESSORS_PKL_NAME}"))
 
             dict_preprocessor_settings = {}
             for pkl_file in pkl_files:
@@ -413,7 +433,7 @@ class Preprocessor:
         return dict_preprocessor_settings
 
     def convert_interim_data(
-            self, dict_preprocessor_settings=None, *, group_id=0):
+            self, dict_preprocessor_settings=None, *, group_id=None):
         """Convert interim data with the determined preprocessor_settings.
 
         Parameters
@@ -421,9 +441,10 @@ class Preprocessor:
         dict_preprocessor_settings: dict, optional [None]
             dict describing settings and parameters for preprocessors. If not
             fed, data will be loaded from self.setting.data.preprocessed .
-        group_id: int, optional [0]
+        group_id: int, optional [None]
             group_id to specify chunk of preprocessing group. Useful when
             MemoryError occurs with all variables preprocessed in one node.
+            If not specified, process all variables.
 
         Returns
         -------
@@ -468,7 +489,7 @@ class Preprocessor:
                 self._collect_preprocess_converter_input(
                     variable_name, dict_preprocessor_settings))
             for variable_name, setting in self.setting.preprocess.items()
-            if setting['group_id'] == group_id]
+            if group_id is None or setting['group_id'] == group_id]
         return preprocess_converter_inputs
 
     def _collect_preprocess_converter_input(
