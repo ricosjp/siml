@@ -392,7 +392,7 @@ class MaxAbsScaler(TransformerMixin, BaseEstimator):
         return
 
     def partial_fit(self, data):
-        self.max_ = np.max([np.max(np.abs(data)), self.max_])
+        self.max_ = np.max([np.max(np.abs(data)), self.max_], axis=0)
         return self
 
     def transform(self, data):
