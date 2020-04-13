@@ -288,7 +288,11 @@ class PreprocessConverter():
                 return
         else:
             shape = data.shape
+            print('Start reshape')
+            print(dt.datetime.now())
             reshaped = data.reshape((shape[0] * shape[1], 1))
+            print('Start apply')
+            print(dt.datetime.now())
             applied_reshaped = function(reshaped)
             if return_applied:
                 return applied_reshaped.reshape(shape).tocoo()
@@ -339,12 +343,21 @@ class PreprocessConverter():
 
     def lazy_read_files(self, data_files):
         for data_file in data_files:
-            print(f"Processing: {data_file}")
+            print(f"Start load data: {data_file}")
+            print(dt.datetime.now())
             data = self.load_file(data_file)
+            print(f"Start partial_fit: {data_file}")
+            print(dt.datetime.now())
             self.apply_data_with_rehspe_if_needed(
                 data, self.converter.partial_fit, return_applied=False)
+            print(f"Start del: {data_file}")
+            print(dt.datetime.now())
             del data
+            print(f"Start GC: {data_file}")
+            print(dt.datetime.now())
             gc.collect()
+            print(f"Finish one iter: {data_file}")
+            print(dt.datetime.now())
 
         if self.is_erroneous is not None:
             # NOTE: Check varianve is not none for StandardScaler with sparse
