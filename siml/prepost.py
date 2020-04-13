@@ -423,7 +423,7 @@ class Preprocessor:
                     dict_before_replacement.update(pickle.load(f))
 
             dict_preprocessor_settings = {
-                variable_name: self._replace_setting(
+                variable_name: self._collect_reference_dict_setting(
                     variable_name, dict_before_replacement)
                 for variable_name in dict_before_replacement.keys()}
 
@@ -436,14 +436,6 @@ class Preprocessor:
                 dict_preprocessor_settings = pickle.load(f)
 
         return dict_preprocessor_settings
-
-    def _replace_setting(
-            self, variable_name, dict_preprocessor_settings):
-        preprocess_converter = self._collect_preprocess_converter_input(
-            variable_name, dict_preprocessor_settings)
-        value = dict_preprocessor_settings[variable_name]
-        value['preprocess_converter'] = preprocess_converter
-        return value
 
     def convert_interim_data(
             self, dict_preprocessor_settings=None, *, group_id=None):
@@ -508,6 +500,19 @@ class Preprocessor:
     def _collect_preprocess_converter_input(
             self, variable_name, dict_preprocessor_settings):
 
+        reference_dict = self._collect_reference_dict_setting(
+            variable_name, dict_preprocessor_settings)
+
+        preprocess_converter = util.PreprocessConverter(
+            reference_dict['preprocess_converter'],
+            componentwise=reference_dict['componentwise'])
+        if preprocess_converter is None:
+            raise ValueError(f"Reference of {variable_name} is None")
+
+        return preprocess_converter
+
+    def _collect_reference_dict_setting(
+            self, variable_name, dict_preprocessor_settings):
         if dict_preprocessor_settings[variable_name]['preprocess_converter'] \
                 is None:
             value = dict_preprocessor_settings[variable_name]
@@ -516,20 +521,12 @@ class Preprocessor:
                 raise ValueError(
                     f"Invalid setting for {variable_name}: {value}")
             reference_dict = dict_preprocessor_settings[reference_name]
-            reference = util.PreprocessConverter(
-                reference_dict['preprocess_converter'],
-                componentwise=reference_dict['componentwise'])
-            if reference is None:
-                raise ValueError(
-                    f"{variable_name} set to be same as {reference_name} "
-                    'but it was None.')
-            preprocess_converter = reference
 
         else:
-            preprocess_converter = dict_preprocessor_settings[
-                variable_name]['preprocess_converter']
+            reference_dict = dict_preprocessor_settings[
+                variable_name]
 
-        return preprocess_converter
+        return reference_dict
 
     def _determine_max_n_element(self, data_directories, variable_name):
         max_n_element = 0

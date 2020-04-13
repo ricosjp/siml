@@ -39,7 +39,7 @@ preprocess:
   global_modulus:
     method: standardize
   x_grad:
-    method: std_scale
+    method: max_abs
     componentwise: false
   y_grad:
     same_as: x_grad
