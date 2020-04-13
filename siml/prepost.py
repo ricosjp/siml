@@ -554,7 +554,6 @@ class Preprocessor:
         print(variable_name, preprocess_setting)
 
         # Check if data already exists
-
         pkl_file = self.setting.data.preprocessed \
             / self.PREPROCESSORS_PKL_NAME
         variable_pkl_file = self.setting.data.preprocessed \
@@ -591,7 +590,8 @@ class Preprocessor:
                 'method': preprocess_setting['method'],
                 'componentwise': preprocess_setting['componentwise'],
                 'preprocess_converter': preprocess_converter}}
-        self.setting.data.preprocessed.mkdir(parents=True, exist_ok=True)
+        if not self.setting.data.preprocessed.exists():
+            self.setting.data.preprocessed.mkdir(parents=True, exist_ok=True)
         with open(
                 self.setting.data.preprocessed
                 / f"{variable_name}_{self.PREPROCESSORS_PKL_NAME}",
