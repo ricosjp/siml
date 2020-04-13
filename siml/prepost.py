@@ -560,6 +560,7 @@ class Preprocessor:
                 'method': preprocess_setting['method'],
                 'componentwise': preprocess_setting['componentwise'],
                 'preprocess_converter': preprocess_converter}}
+        self.setting.data.preprocessed.mkdir(parents=True, exist_ok=True)
         with open(
                 self.setting.data.preprocessed
                 / f"{variable_name}_{self.PREPROCESSORS_PKL_NAME}",
