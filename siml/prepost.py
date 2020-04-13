@@ -417,10 +417,15 @@ class Preprocessor:
             pkl_files = glob.glob(
                 str(data_directory / f"*_{self.PREPROCESSORS_PKL_NAME}"))
 
-            dict_preprocessor_settings = {}
+            dict_before_replacement = {}
             for pkl_file in pkl_files:
                 with open(pkl_file, 'rb') as f:
-                    dict_preprocessor_settings.update(pickle.load(f))
+                    dict_before_replacement.update(pickle.load(f))
+
+            dict_preprocessor_settings = {
+                variable_name: self._replace_setting(
+                    variable_name, dict_before_replacement)
+                for variable_name in dict_before_replacement.keys()}
 
             with open(preprocessors_pkl_path, 'wb') as f:
                 pickle.dump(dict_preprocessor_settings, f)
@@ -431,6 +436,14 @@ class Preprocessor:
                 dict_preprocessor_settings = pickle.load(f)
 
         return dict_preprocessor_settings
+
+    def _replace_setting(
+            self, variable_name, dict_preprocessor_settings):
+        preprocess_converter = self._collect_preprocess_converter_input(
+            variable_name, dict_preprocessor_settings)
+        value = dict_preprocessor_settings[variable_name]
+        value['preprocess_converter'] = preprocess_converter
+        return value
 
     def convert_interim_data(
             self, dict_preprocessor_settings=None, *, group_id=None):
