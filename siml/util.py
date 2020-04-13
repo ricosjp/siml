@@ -1,4 +1,5 @@
 import datetime as dt
+import gc
 from glob import glob
 import io
 import itertools as it
@@ -338,9 +339,12 @@ class PreprocessConverter():
 
     def lazy_read_files(self, data_files):
         for data_file in data_files:
+            print(f"Processing: {data_file}")
             data = self.load_file(data_file)
             self.apply_data_with_rehspe_if_needed(
                 data, self.converter.partial_fit, return_applied=False)
+            del data
+            gc.collect()
 
         if self.is_erroneous is not None:
             # NOTE: Check varianve is not none for StandardScaler with sparse
