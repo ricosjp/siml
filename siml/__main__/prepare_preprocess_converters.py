@@ -20,8 +20,8 @@ def main():
     parser.add_argument(
         '-g', '--group-id',
         type=int,
-        default=0,
-        help='Group ID to preprocess variables partially [0]')
+        default=None,
+        help='Group ID to preprocess variables partially [None]')
     args = parser.parse_args()
 
     preprocessor = siml.prepost.Preprocessor.read_settings(
