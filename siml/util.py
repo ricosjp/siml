@@ -252,7 +252,7 @@ class PreprocessConverter():
         elif preprocess_method == 'min_max':
             self.converter = preprocessing.MinMaxScaler()
         elif preprocess_method == 'max_abs':
-            self.converter = preprocessing.MaxAbsScaler()
+            self.converter = MaxAbsScaler()
         else:
             raise ValueError(
                 f"Unknown preprocessing method: {preprocess_method}")
@@ -381,6 +381,25 @@ class PreprocessConverter():
     def inverse(self, data):
         return self.apply_data_with_rehspe_if_needed(
             data, self.converter.inverse_transform)
+
+
+class MaxAbsScaler(TransformerMixin, BaseEstimator):
+
+    EPSILON = 1e-8
+
+    def __init__(self):
+        self.max_ = 0.
+        return
+
+    def partial_fit(self, data):
+        self.max_ = np.max([np.max(np.abs(data)), self.max_])
+        return self
+
+    def transform(self, data):
+        return data / (self.max_ + self.EPSILON)
+
+    def inverse_transform(self, data):
+        return data * (self.max_ + self.EPSILON)
 
 
 class Identity(TransformerMixin, BaseEstimator):
