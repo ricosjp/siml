@@ -405,14 +405,29 @@ class MaxAbsScaler(TransformerMixin, BaseEstimator):
         return
 
     def partial_fit(self, data):
-        self.max_ = np.max([np.max(np.abs(data)), self.max_], axis=0)
+        if sp.issparse(data):
+            self.max_ = np.maximum(
+                np.ravel(np.max(np.abs(data), axis=0).toarray()), self.max_)
+        else:
+            self.max_ = np.maximum(
+                np.max(np.abs(data), axis=0), self.max_)
         return self
 
     def transform(self, data):
-        return data / (self.max_ + self.EPSILON)
+        scale = 1 / (self.max_ + self.EPSILON)
+        if sp.issparse(data):
+            if len(scale) != 1:
+                raise ValueError(f"Should be componentwise: false")
+            scale = scale[0]
+        return data * scale
 
     def inverse_transform(self, data):
-        return data * (self.max_ + self.EPSILON)
+        inverse_scale = (self.max_ + self.EPSILON)
+        if sp.issparse(data):
+            if len(inverse_scale) != 1:
+                raise ValueError(f"Should be componentwise: false")
+            inverse_scale = inverse_scale[0]
+        return data * inverse_scale
 
 
 class Identity(TransformerMixin, BaseEstimator):

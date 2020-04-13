@@ -305,11 +305,16 @@ class TestPrepost(unittest.TestCase):
         preprocessed_y_grad = sp.load_npz(
             'tests/data/deform/test_prepost/preprocessed/train/'
             'tet2_3_modulusx1.0000/y_grad.npz')
+        preprocessed_x_grad = sp.load_npz(
+            'tests/data/deform/test_prepost/preprocessed/train/'
+            'tet2_3_modulusx1.0000/x_grad.npz')
 
         ratio_y_grad = interim_y_grad.toarray() \
             / preprocessed_y_grad.toarray()
         np.testing.assert_almost_equal(
             ratio_y_grad - np.mean(ratio_y_grad), 0.)
+        np.testing.assert_array_less(
+            np.max(np.abs(preprocessed_x_grad)), 1.)
 
     def test_convert_raw_data_with_filter_function(self):
         main_setting = setting.MainSetting.read_settings_yaml(
