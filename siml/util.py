@@ -1,4 +1,5 @@
 import datetime as dt
+import gc
 from glob import glob
 import io
 import itertools as it
@@ -251,7 +252,7 @@ class PreprocessConverter():
         elif preprocess_method == 'min_max':
             self.converter = preprocessing.MinMaxScaler()
         elif preprocess_method == 'max_abs':
-            self.converter = preprocessing.MaxAbsScaler()
+            self.converter = MaxAbsScaler()
         else:
             raise ValueError(
                 f"Unknown preprocessing method: {preprocess_method}")
@@ -287,7 +288,11 @@ class PreprocessConverter():
                 return
         else:
             shape = data.shape
+            print('Start reshape')
+            print(dt.datetime.now())
             reshaped = data.reshape((shape[0] * shape[1], 1))
+            print('Start apply')
+            print(dt.datetime.now())
             applied_reshaped = function(reshaped)
             if return_applied:
                 return applied_reshaped.reshape(shape).tocoo()
@@ -338,9 +343,21 @@ class PreprocessConverter():
 
     def lazy_read_files(self, data_files):
         for data_file in data_files:
+            print(f"Start load data: {data_file}")
+            print(dt.datetime.now())
             data = self.load_file(data_file)
+            print(f"Start partial_fit: {data_file}")
+            print(dt.datetime.now())
             self.apply_data_with_rehspe_if_needed(
                 data, self.converter.partial_fit, return_applied=False)
+            print(f"Start del: {data_file}")
+            print(dt.datetime.now())
+            del data
+            print(f"Start GC: {data_file}")
+            print(dt.datetime.now())
+            gc.collect()
+            print(f"Finish one iter: {data_file}")
+            print(dt.datetime.now())
 
         if self.is_erroneous is not None:
             # NOTE: Check varianve is not none for StandardScaler with sparse
@@ -377,6 +394,40 @@ class PreprocessConverter():
     def inverse(self, data):
         return self.apply_data_with_rehspe_if_needed(
             data, self.converter.inverse_transform)
+
+
+class MaxAbsScaler(TransformerMixin, BaseEstimator):
+
+    EPSILON = 1e-8
+
+    def __init__(self):
+        self.max_ = 0.
+        return
+
+    def partial_fit(self, data):
+        if sp.issparse(data):
+            self.max_ = np.maximum(
+                np.ravel(np.max(np.abs(data), axis=0).toarray()), self.max_)
+        else:
+            self.max_ = np.maximum(
+                np.max(np.abs(data), axis=0), self.max_)
+        return self
+
+    def transform(self, data):
+        scale = 1 / (self.max_ + self.EPSILON)
+        if sp.issparse(data):
+            if len(scale) != 1:
+                raise ValueError(f"Should be componentwise: false")
+            scale = scale[0]
+        return data * scale
+
+    def inverse_transform(self, data):
+        inverse_scale = (self.max_ + self.EPSILON)
+        if sp.issparse(data):
+            if len(inverse_scale) != 1:
+                raise ValueError(f"Should be componentwise: false")
+            inverse_scale = inverse_scale[0]
+        return data * inverse_scale
 
 
 class Identity(TransformerMixin, BaseEstimator):
