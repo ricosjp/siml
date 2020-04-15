@@ -61,7 +61,7 @@ def load_nodes(data_directory):
     return nodes
 
 
-def plot_network_3d(graph, positions, name, range_=None):
+def plot_network_3d(graph, positions, name, *, range_=None):
 
     with plt.style.context(('ggplot')):
         fig = plt.figure(figsize=(10, 7))
@@ -80,7 +80,8 @@ def plot_network_3d(graph, positions, name, range_=None):
             range_ = np.max(np.abs(weights))
             print(f"abs_max: {range_}")
         cmap = mpl.cm.get_cmap('jet')
-        norm = mpl.colors.Normalize(vmin=-range_, vmax=range_)
+        norm = mpl.colors.Normalize(
+            vmin=-range_, vmax=range_)  # pylint: disable=E1130
         mappable = mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
         colorbar = plt.colorbar(mappable, shrink=.3)
         colorbar.set_label('weight')
