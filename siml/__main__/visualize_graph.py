@@ -18,6 +18,11 @@ def main():
         'data_directory',
         type=pathlib.Path,
         help='Data directory of interim or preprocessed data')
+    parser.add_argument(
+        '-r', '--range',
+        type=float,
+        default=None,
+        help='Range of color of edge weights')
     args = parser.parse_args()
 
     npz_files = glob.glob(str(args.data_directory / '*.npz'))
@@ -29,10 +34,12 @@ def main():
             print(f"{npz_file} is not sparse matrix data.")
             continue
 
-        graph = nx.from_scipy_sparse_matrix(sparse_matrix)
+        graph = nx.from_scipy_sparse_matrix(
+            sparse_matrix, parallel_edges=False, create_using=nx.DiGraph)
         for i, node in enumerate(nodes):
             graph.add_node(i, pos=node)
-        plot_network_3d(graph, nodes, name=pathlib.Path(npz_file).stem)
+        plot_network_3d(
+            graph, nodes, name=pathlib.Path(npz_file).stem, range_=args.range)
 
     plt.show()
 
@@ -54,7 +61,7 @@ def load_nodes(data_directory):
     return nodes
 
 
-def plot_network_3d(graph, positions, name):
+def plot_network_3d(graph, positions, name, range_=None):
 
     with plt.style.context(('ggplot')):
         fig = plt.figure(figsize=(10, 7))
@@ -67,20 +74,22 @@ def plot_network_3d(graph, positions, name):
 
             ax.scatter(xi, yi, zi, color='k', alpha=0.7)
 
-        weights = np.array(list(
-            nx.get_edge_attributes(graph, 'weight').values()))
-        abs_max = np.max(np.abs(weights)) * .7
+        if range_ is None:
+            weights = np.array(list(
+                nx.get_edge_attributes(graph, 'weight').values()))
+            range_ = np.max(np.abs(weights))
+            print(f"abs_max: {range_}")
         cmap = mpl.cm.get_cmap('jet')
-        norm = mpl.colors.Normalize(vmin=-abs_max, vmax=abs_max)
+        norm = mpl.colors.Normalize(vmin=-range_, vmax=range_)
         mappable = mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
         colorbar = plt.colorbar(mappable, shrink=.3)
         colorbar.set_label('weight')
-        print(f"abs_max: {abs_max}")
         colors = [
             cmap(norm(graph[start][end]['weight']))
             for start, end in graph.edges()]
         segs = np.array([
-            np.stack([positions[start], positions[end]])
+            np.stack([
+                positions[start], (positions[start] + positions[end]) / 2])
             for start, end in graph.edges()])
         line_segments = mplot3d.art3d.Line3DCollection(
             segs, colors=colors, alpha=.5)
