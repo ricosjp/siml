@@ -208,11 +208,11 @@ class RawConverter():
 
 def update_fem_data(fem_data, dict_data, prefix=''):
     for key, value in dict_data.items():
+        variable_name = prefix + key
         if isinstance(value, np.ndarray):
             fem_data.pop_attribute(key)  # To be sure that overwrite correctly
             len_data = len(value)
 
-            variable_name = prefix + key
             if len_data == len(fem_data.nodes.ids):
                 # Nodal data
                 fem_data.nodal_data.update({
