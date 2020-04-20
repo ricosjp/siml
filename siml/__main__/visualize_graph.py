@@ -96,19 +96,6 @@ def plot_network_3d(graph, positions, name, *, range_=None):
             segs, colors=colors, alpha=.5)
         ax.add_collection(line_segments)
 
-        # for start, end in graph.edges():
-        #     # pos_start = positions[start]
-        #     # pos_end = positions[end]
-        #     # line_segments = mplot3d.art3d.Line3DCollection(
-        #     #     np.stack([pos_start, pos_end])[None, :],
-        #     #     colors=(colors(norm(graph[start][end]['weight'])),))
-        #     # ax.add_collection(line_segments)
-        #     x = np.array((positions[start][0], positions[end][0]))
-        #     y = np.array((positions[start][1], positions[end][1]))
-        #     z = np.array((positions[start][2], positions[end][2]))
-        #     ax.plot(
-        #         x, y, z,
-        #         c=colors(norm(graph[start][end]['weight'])), alpha=1.)
         ax.set_xlabel('X')
         ax.set_ylabel('Y')
         ax.set_zlabel('Z')
