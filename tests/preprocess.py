@@ -1,6 +1,7 @@
 import pathlib
 import shutil
 
+import femio
 import matplotlib.pyplot as plt
 import numpy as np
 import siml.prepost as prepost
@@ -33,6 +34,7 @@ def preprocess_deform():
 
     preprocessor = prepost.Preprocessor(main_setting, force_renew=True)
     preprocessor.preprocess_interim_data()
+    return
 
 
 def preprocess_deform_timeseries():
@@ -41,12 +43,56 @@ def preprocess_deform_timeseries():
 
     preprocessor = prepost.Preprocessor(main_setting, force_renew=True)
     preprocessor.preprocess_interim_data()
+    return
+
+
+def rotation_conversion_function(fem_data, raw_directory):
+    nodal_mean_volume = fem_data.convert_elemental2nodal(
+        fem_data.calculate_element_volumes(), mode='mean')
+    nodal_concentrated_volume = fem_data.convert_elemental2nodal(
+        fem_data.calculate_element_volumes(), mode='central')
+
+    nodal_grad_x, nodal_grad_y, nodal_grad_z = \
+        fem_data.calculate_spatial_gradient_adjacency_matrices(
+            'nodal', n_hop=2)
+    nodal_laplacian = (
+        nodal_grad_x.dot(nodal_grad_x)
+        + nodal_grad_y.dot(nodal_grad_y)
+        + nodal_grad_z.dot(nodal_grad_z)).tocoo() / 6
+    node = fem_data.nodes.data
+    t_init = fem_data.access_attribute('t_init')
+    ucd_data = femio.FEMData.read_files(
+        'ucd', [raw_directory / 'mesh_vis_psf.0100.inp'])
+    t_100 = ucd_data.access_attribute('TEMPERATURE')
+    return {
+        'nodal_mean_volume': nodal_mean_volume,
+        'nodal_concentrated_volume': nodal_concentrated_volume,
+        'nodal_grad_x': nodal_grad_x,
+        'nodal_grad_y': nodal_grad_y,
+        'nodal_grad_z': nodal_grad_z,
+        'nodal_laplacian': nodal_laplacian,
+        'node': node, 't_init': t_init, 't_100': t_100}
+
+
+def preprocess_rotation():
+    main_setting = setting.MainSetting.read_settings_yaml(
+        pathlib.Path('tests/data/rotation/data.yml'))
+
+    raw_converter = prepost.RawConverter(
+        main_setting, recursive=True, force_renew=True,
+        conversion_function=rotation_conversion_function)
+    raw_converter.convert()
+
+    preprocessor = prepost.Preprocessor(main_setting, force_renew=True)
+    preprocessor.preprocess_interim_data()
+    return
 
 
 def preprocess_linear():
     p = prepost.Preprocessor.read_settings(
         pathlib.Path('tests/data/linear/linear.yml'), force_renew=True)
     p.preprocess_interim_data()
+    return
 
 
 def generate_ode():
@@ -202,5 +248,6 @@ if __name__ == '__main__':
     generate_ode()
     preprocess_deform()
     preprocess_deform_timeseries()
+    preprocess_rotation()
     preprocess_linear()
     generate_large()

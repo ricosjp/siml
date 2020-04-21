@@ -23,8 +23,10 @@ preprocess:
       - tests/data/deform/interim
       - tests/data/deform/preprocessed
       - tests/data/deform_timeseries/preprocessed
+      - tests/data/rotation/preprocessed
       - tests/data/large/preprocessed
       - tests/data/ode/interim
+      - tests/data/ode/preprocessed
       - tests/data/ode/preprocessed
     expire_in: 60min
 

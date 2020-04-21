@@ -1,0 +1,37 @@
+data:
+  raw: tests/data/rotation/raw
+  interim: tests/data/rotation/interim
+  preprocessed: tests/data/rotation/preprocessed
+  inferred: tests/data/rotation/inferred
+  train:
+    - tests/data/rotation/preprocessed
+  validation:
+    - tests/data/rotation/preprocessed
+conversion:
+  mandatory:
+    - thermal_conductivity
+  required_file_names:
+    - '*.msh'
+    - '*.cnt'
+    - '*.inp'
+preprocess:
+  nodal_mean_volume:
+    method: max_abs
+  nodal_concentrated_volume:
+    method: max_abs
+  nodal_grad_x:
+    method: max_abs
+    componentwise: false
+  nodal_grad_y:
+    same_as: nodal_grad_x
+  nodal_grad_z:
+    same_as: nodal_grad_x
+  nodal_laplacian:
+    same_as: nodal_grad_x
+  node:
+    method: standardize
+    componentwise: false
+  t_init:
+    method: identity
+  t_100:
+    same_as: t_init
