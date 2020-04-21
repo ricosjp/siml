@@ -4,6 +4,7 @@ import unittest
 
 import numpy as np
 import matplotlib.pyplot as plt
+import scipy.sparse as sp
 import torch
 
 import siml.inferer as inferer
@@ -330,3 +331,83 @@ class TestNetwork(unittest.TestCase):
                 'tests/data/deform/preprocessed/preprocessors.pkl'),
             output_directory=inference_outpout_directory)
         np.testing.assert_array_less(res[0]['loss'], 1e-2)
+
+    def test_laplace_net(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/rotation/laplace_net.yml'))
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, 1.)
+        self.assertEqual(len(tr.model.dict_block['LAPLACE_NET1'].subchains), 1)
+        self.assertEqual(len(tr.model.dict_block['LAPLACE_NET2'].subchains), 1)
+
+    def test_res_laplace_net(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/rotation/res_laplace_net.yml'))
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, 1.)
+        self.assertEqual(len(tr.model.dict_block['LAPLACE_NET1'].subchains), 1)
+        self.assertEqual(len(tr.model.dict_block['LAPLACE_NET2'].subchains), 1)
+
+        # Confirm results does not change under rigid body transformation
+        grad_grad_ir = inferer.Inferer(main_setting)
+        inference_outpout_directory = \
+            main_setting.trainer.output_directory / 'inferred'
+        if inference_outpout_directory.exists():
+            shutil.rmtree(inference_outpout_directory)
+        results = grad_grad_ir.infer(
+            model=main_setting.trainer.output_directory,
+            preprocessed_data_directory=[
+                Path(
+                    'tests/data/rotation/preprocessed/cube/clscale1.0/'
+                    'original'),
+                Path(
+                    'tests/data/rotation/preprocessed/cube/clscale1.0/'
+                    'rotated')],
+            converter_parameters_pkl=Path(
+                'tests/data/rotation/preprocessed/preprocessors.pkl'),
+            output_directory=inference_outpout_directory,
+            overwrite=True)
+        np.testing.assert_almost_equal(
+            results[0]['dict_y']['t_100'],
+            results[1]['dict_y']['t_100'], decimal=5)
+
+    def test_grad_grad_ridid_transformation_invariant(self):
+        data_directory = Path(
+            'tests/data/rotation/preprocessed/cube/clscale1.0/original')
+        grad_x = sp.load_npz(data_directory / 'nodal_grad_x.npz')
+        grad_y = sp.load_npz(data_directory / 'nodal_grad_y.npz')
+        grad_z = sp.load_npz(data_directory / 'nodal_grad_z.npz')
+        input_feature = np.random.rand(grad_x.shape[0], 3)
+        grad_output_feature = \
+            + grad_x.dot(grad_x.dot(input_feature)) \
+            + grad_y.dot(grad_y.dot(input_feature)) \
+            + grad_z.dot(grad_z.dot(input_feature))
+        laplace = sp.load_npz(data_directory / 'nodal_laplacian.npz')
+        laplace_output_feature = \
+            laplace.dot(input_feature)
+        # Due to numerical error, laplace_output_feature tends to have larger
+        # error
+        np.testing.assert_almost_equal(
+            grad_output_feature, laplace_output_feature, decimal=1)
+
+        rotated_directory = Path(
+            'tests/data/rotation/preprocessed/cube/clscale1.0/rotated')
+        rotated_grad_x = sp.load_npz(rotated_directory / 'nodal_grad_x.npz')
+        rotated_grad_y = sp.load_npz(rotated_directory / 'nodal_grad_y.npz')
+        rotated_grad_z = sp.load_npz(rotated_directory / 'nodal_grad_z.npz')
+        rotated_laplace = sp.load_npz(
+            rotated_directory / 'nodal_laplacian.npz')
+        rotated_grad_output_feature = \
+            + rotated_grad_x.dot(rotated_grad_x.dot(input_feature)) \
+            + rotated_grad_y.dot(rotated_grad_y.dot(input_feature)) \
+            + rotated_grad_z.dot(rotated_grad_z.dot(input_feature))
+        np.testing.assert_almost_equal(
+            grad_output_feature, rotated_grad_output_feature, decimal=5)
+        np.testing.assert_almost_equal(
+            laplace.toarray(), rotated_laplace.toarray())
