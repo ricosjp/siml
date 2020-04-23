@@ -47,9 +47,9 @@ def main():
     csv_files = siml.util.collect_files(
         args.data_directories, pattern=args.filter,
         required_file_names=['log.csv'])
-    n_files = len(csv_files)
+    valid_csv_files, data_frames = load_logs(csv_files)
+    n_files = len(valid_csv_files)
 
-    data_frames = load_logs(csv_files)
     minimum_values = calculate_operated_values(
         data_frames, args.sort_key, op=np.min)
     maximum_values = calculate_operated_values(
@@ -82,15 +82,19 @@ def main():
     # Dummpy plot for legends
     for i, sorted_index in enumerate(sorted_indices):
         df = data_frames[sorted_index]
-        name = csv_files[sorted_index]
+        name = valid_csv_files[sorted_index]
+        alpha = .5 + 0.5 * (n_seleced_files - 1 - i) / (n_seleced_files - 1)
         plt.plot(
             [], [], styles[(n_seleced_files - 1 - i) % len(styles)],
-            color=cmap(norm(n_seleced_files - 1 - i)), label=name)
+            color=cmap(norm(n_seleced_files - 1 - i)), label=name, alpha=alpha)
 
     plt.yscale('log')
     plt.xlabel('epoch')
     plt.ylabel('loss')
     plt.xlim(0, None)
+    # min_power = np.floor(np.log10(np.min(minimum_values)))
+    # max_power = np.ceil(np.log10(np.max(maximum_values)))
+    # plt.yticks(10**np.arange(min_power, max_power + 1e-3, .5))
     plt.ylim(None, 10**np.ceil(np.log10(np.max(maximum_values))))
     plt.legend()
 
@@ -105,9 +109,14 @@ def main():
 
 
 def load_logs(csv_files):
-    return [
+    data_frames = [
         pd.read_csv(f, header=0, index_col=None, skipinitialspace=True)
         for f in csv_files]
+    valid_csv_files = [
+        csv_files[i] for i, d in enumerate(data_frames) if len(d) > 0]
+    valid_data_frames = [d for d in data_frames if len(d) > 0]
+
+    return valid_csv_files, valid_data_frames
 
 
 def calculate_operated_values(data_frames, sort_key, op=np.min):
