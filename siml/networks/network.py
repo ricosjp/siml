@@ -1,8 +1,8 @@
-from io import BytesIO
+# from io import BytesIO
 import warnings
 
 import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
+# import matplotlib.image as mpimg
 import networkx as nx
 import numpy as np
 import torch
@@ -266,12 +266,13 @@ class Network(torch.nn.Module):
             for graph_node in self.sorted_graph_nodes}
         d = nx.drawing.nx_pydot.to_pydot(nx.relabel.relabel_nodes(
             self.call_graph, mapping=mapping, copy=True))
-        pdf_str = d.create_pdf()
-        sio = BytesIO()
-        sio.write(pdf_str)
-        sio.seek(0)
-        img = mpimg.imread(sio)
-        plt.axis('off')
-        plt.imshow(img)
-        plt.savefig(output_file_name)
+        d.write_pdf(output_file_name)
+        # pdf_str = d.create_pdf()
+        # sio = BytesIO()
+        # sio.write(pdf_str)
+        # sio.seek(0)
+        # img = mpimg.imread(sio)
+        # plt.axis('off')
+        # plt.imshow(img)
+        # plt.savefig(output_file_name)
         plt.close(figure)

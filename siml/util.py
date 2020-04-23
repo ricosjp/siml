@@ -118,7 +118,8 @@ def load_variable(data_directory, file_basename):
 
 
 def collect_data_directories(
-        base_directory, *, required_file_names=None, allow_no_data=False):
+        base_directory, *, required_file_names=None, allow_no_data=False,
+        pattern=None):
     """Collect data directories recursively from the base directory.
 
     Parameters
