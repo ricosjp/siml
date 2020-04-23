@@ -53,9 +53,10 @@ def main():
         plot_network_3d(
             graph, nodes, name=name, range_=args.range)
 
-        file_name = output_directory / f"graph_{name}.pdf"
-        plt.savefig(file_name)
-        print(f"Figure saved in: {file_name}")
+        if args.out_dir is not None:
+            file_name = output_directory / f"graph_{name}.pdf"
+            plt.savefig(file_name)
+            print(f"Figure saved in: {file_name}")
 
     if args.out_dir is None:
         plt.show()

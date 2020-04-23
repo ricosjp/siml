@@ -1,4 +1,3 @@
-import collections.abc as abc
 import datetime as dt
 import gc
 from glob import glob
@@ -129,20 +128,20 @@ def collect_data_directories(
         base_directory: pathlib.Path
             Base directory to search directory from.
         required_file_names: list of str
-            If given, only return directories which have required files.
+            If given, return only directories which have required files.
         pattern: str
-            If given, only returen directories which match the pattern.
+            If given, return only directories which match the pattern.
     Returns
     --------
         found_directories: list of pathlib.Path
             All found directories.
     """
-    if isinstance(base_directory, abc.Iterable):
-        return np.unique(np.concatenate([
+    if isinstance(base_directory, list):
+        return list(np.unique(np.concatenate([
             collect_data_directories(
                 bd, required_file_names=required_file_names,
                 allow_no_data=allow_no_data, pattern=pattern)
-            for bd in base_directory]))
+            for bd in base_directory])))
 
     if not base_directory.exists():
         if allow_no_data:
@@ -163,25 +162,56 @@ def collect_data_directories(
 
     if pattern is not None:
         found_directories = [
-            re.search(pattern, str(d)) for d in found_directories]
+            d for d in found_directories if re.search(pattern, str(d))]
 
     return found_directories
 
 
-def collect_files(directory, required_file_names):
-    """Collect data directories recursively from the base directory.
+def collect_files(
+        directories, required_file_names, *, pattern=None,
+        allow_no_data=False):
+    """Collect data files recursively from the base directory.
 
     Parameters
     ----------
-        base_directory: pathlib.Path
-            Base directory to search directory from.
-        required_file_names: list of str
+    base_directory: pathlib.Path or List[pathlib.Path]
+        Base directory to search directory from.
+    required_file_names: list of str
+        File names.
+    pattern: str, optional
+        If given, return only files which match the pattern.
+
+    Returns
+    -------
+    collected_files: List[pathlib.Path]
     """
-    return [
-        found_file
-        for required_file_name in required_file_names
-        for found_file in glob(str(directory / required_file_name))
-    ]
+    if isinstance(required_file_names, list):
+        found_files = []
+        for required_file_name in required_file_names:
+            found_files = found_files + collect_files(
+                directories, required_file_name, pattern=pattern)
+        return found_files
+
+    if isinstance(directories, list):
+        return list(np.unique(np.concatenate([
+            collect_files(d, required_file_names, pattern=pattern)
+            for d in directories])))
+
+    required_file_name = required_file_names
+    found_files = glob(
+        str(directories / f"**/{required_file_name}"), recursive=True)
+
+    if pattern is not None:
+        found_files = [
+            f for f in found_files if re.search(pattern, str(f))]
+
+    if not allow_no_data and len(found_files) == 0:
+        message = f"No files found for {required_file_names} in {directories}"
+        if pattern is not None:
+            message = message + f"with pattern {pattern}"
+        raise ValueError(message)
+
+    return found_files
 
 
 def files_match(file_names, required_file_names):
