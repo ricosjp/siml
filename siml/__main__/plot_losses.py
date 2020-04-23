@@ -42,6 +42,18 @@ def main():
         type=int,
         default=None,
         help='Maximum number of files')
+    parser.add_argument(
+        '-x', '--x-limit',
+        type=float,
+        nargs='+',
+        default=None,
+        help='X limit of the plot')
+    parser.add_argument(
+        '-y', '--y-limit',
+        type=float,
+        nargs='+',
+        default=None,
+        help='Y limit of the plot')
     args = parser.parse_args()
 
     csv_files = siml.util.collect_files(
@@ -95,7 +107,17 @@ def main():
     # min_power = np.floor(np.log10(np.min(minimum_values)))
     # max_power = np.ceil(np.log10(np.max(maximum_values)))
     # plt.yticks(10**np.arange(min_power, max_power + 1e-3, .5))
-    plt.ylim(None, 10**np.ceil(np.log10(np.max(maximum_values))))
+    # plt.ylim(None, np.max(maximum_values) * 1.2)
+    if args.x_limit is not None:
+        if len(args.x_limit) != 2:
+            raise ValueError(
+                f"Length of x_limit should be 2 ({len(args.x_limit)} given)")
+        plt.xlim(args.x_limit)
+    if args.y_limit is not None:
+        if len(args.y_limit) != 2:
+            raise ValueError(
+                f"Length of y_limit should be 2 ({len(args.y_limit)} given)")
+        plt.ylim(args.y_limit)
     plt.legend()
 
     if args.out_dir is None:
