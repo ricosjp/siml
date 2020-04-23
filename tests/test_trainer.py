@@ -256,7 +256,7 @@ class TestTrainer(unittest.TestCase):
         loss = tr.train()
 
         # Loss should not change depending on output_stats
-        np.testing.assert_almost_equal(loss, original_loss)
+        np.testing.assert_almost_equal(loss, original_loss, decimal=3)
 
         stats_file = tr.setting.trainer.output_directory \
             / 'stats_epoch37_iteration110.yml'
@@ -264,5 +264,5 @@ class TestTrainer(unittest.TestCase):
             dict_data = yaml.load(f, Loader=yaml.SafeLoader)
         np.testing.assert_almost_equal(
             dict_data['dict_block.ResGCN2.subchains.0.1.bias']['grad_absmax'],
-            0.8443880081176758)
+            0.8443880081176758, decimal=3)
         self.assertEqual(dict_data['iteration'], 110)
