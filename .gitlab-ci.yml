@@ -38,7 +38,7 @@ autopep8:
 pylint:
   stage: preprocess
   script:
-    - python3.7 -m pylint --ignore-patterns=setting.py -E $(find siml tests -name "*.py") --init-hook="import sys; sys.setrecursionlimit(2000)"
+    - python3.7 -m pylint --ignore-patterns=setting.py __main__ -E $(find siml tests -name "*.py" | grep -v __main__) --init-hook="import sys; sys.setrecursionlimit(2000)"
 
 pages:
   stage: deploy

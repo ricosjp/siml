@@ -1,3 +1,4 @@
+import collections.abc as abc
 import datetime as dt
 import gc
 from glob import glob
@@ -5,6 +6,7 @@ import io
 import itertools as it
 import os
 from pathlib import Path
+import re
 import subprocess
 
 from femio import FEMData, FEMAttribute
@@ -128,11 +130,20 @@ def collect_data_directories(
             Base directory to search directory from.
         required_file_names: list of str
             If given, only return directories which have required files.
+        pattern: str
+            If given, only returen directories which match the pattern.
     Returns
     --------
         found_directories: list of pathlib.Path
             All found directories.
     """
+    if isinstance(base_directory, abc.Iterable):
+        return np.unique(np.concatenate([
+            collect_data_directories(
+                bd, required_file_names=required_file_names,
+                allow_no_data=allow_no_data, pattern=pattern)
+            for bd in base_directory]))
+
     if not base_directory.exists():
         if allow_no_data:
             return []
@@ -149,6 +160,11 @@ def collect_data_directories(
         found_directories = [
             Path(directory) for directory, _, sub_files
             in os.walk(base_directory, followlinks=True)]
+
+    if pattern is not None:
+        found_directories = [
+            re.search(pattern, str(d)) for d in found_directories]
+
     return found_directories
 
 
