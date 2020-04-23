@@ -9,6 +9,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import mpl_toolkits.mplot3d as mplot3d
 import scipy.sparse as sp
+import siml
 
 
 def main():
@@ -19,6 +20,11 @@ def main():
         type=pathlib.Path,
         help='Data directory of interim or preprocessed data')
     parser.add_argument(
+        '-o', '--out-dir',
+        type=pathlib.Path,
+        default=None,
+        help='Output base directory name [None]')
+    parser.add_argument(
         '-r', '--range',
         type=float,
         default=None,
@@ -27,6 +33,11 @@ def main():
 
     npz_files = glob.glob(str(args.data_directory / '*.npz'))
     nodes = load_nodes(args.data_directory)
+
+    if args.out_dir is not None:
+        output_directory = args.out_dir / args.data_directory.name \
+            / siml.util.date_string()
+        output_directory.mkdir(parents=True, exist_ok=True)
     for npz_file in npz_files:
         try:
             sparse_matrix = sp.load_npz(npz_file)
@@ -38,11 +49,16 @@ def main():
             sparse_matrix, parallel_edges=False, create_using=nx.DiGraph)
         for i, node in enumerate(nodes):
             graph.add_node(i, pos=node)
+        name = pathlib.Path(npz_file).stem
         plot_network_3d(
-            graph, nodes, name=pathlib.Path(npz_file).stem, range_=args.range)
+            graph, nodes, name=name, range_=args.range)
 
-    plt.show()
+        file_name = output_directory / f"graph_{name}.pdf"
+        plt.savefig(file_name)
+        print(f"Figure saved in: {file_name}")
 
+    if args.out_dir is None:
+        plt.show()
     return
 
 
@@ -101,8 +117,7 @@ def plot_network_3d(graph, positions, name, *, range_=None):
         ax.set_zlabel('Z')
         ax.set_title(name)
 
-    plt.show()
-    return
+    return fig
 
 
 def scale_color(value, abs_max, min_=0, max_=255):

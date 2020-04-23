@@ -266,9 +266,9 @@ class Network(torch.nn.Module):
             for graph_node in self.sorted_graph_nodes}
         d = nx.drawing.nx_pydot.to_pydot(nx.relabel.relabel_nodes(
             self.call_graph, mapping=mapping, copy=True))
-        png_str = d.create_png()
+        pdf_str = d.create_pdf()
         sio = BytesIO()
-        sio.write(png_str)
+        sio.write(pdf_str)
         sio.seek(0)
         img = mpimg.imread(sio)
         plt.axis('off')

@@ -193,7 +193,7 @@ def generate_ode():
                 plt.plot(ts, y3[:, 0, 0], label='y3-0')
                 plt.plot(ts, y3[:, 0, 1], label='y3-1')
                 plt.legend()
-                plt.savefig(output_directory / 'plot.png')
+                plt.savefig(output_directory / 'plot.pdf')
                 plt.show()
         return
 
