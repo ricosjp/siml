@@ -1102,7 +1102,7 @@ def _plot_histogram(
         for i_dim in range(f_dim):
             plt.figure(i_dim)
             plt.legend()
-            plt.savefig(str(out_file_base) + f"_{i_dim}.png")
+            plt.savefig(str(out_file_base) + f"_{i_dim}.pdf")
     else:
         for i_dim in range(f_dim):
             plt.figure(i_dim)

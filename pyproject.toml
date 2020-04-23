@@ -27,8 +27,11 @@ torch = "^1.3.1"
 
 [tool.poetry.scripts]
 convert_interim_data = "siml.__main__.convert_interim_data:main"
+optimize = "siml.__main__.optimize:main"
+plot_losses = "siml.__main__.plot_losses:main"
 prepare_preprocess_converters = "siml.__main__.prepare_preprocess_converters:main"
 preprocess_interim_data = "siml.__main__.preprocess_interim_data:main"
+train = "siml.__main__.train:main"
 visualize_graph = "siml.__main__.visualize_graph:main"
 
 [tool.poetry.dev-dependencies]

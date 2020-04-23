@@ -208,7 +208,7 @@ class Study():
             plt.yscale('log')
         plt.legend()
         plt.savefig(
-            self.original_setting.study.root_directory / 'learning_curve.png')
+            self.original_setting.study.root_directory / 'learning_curve.pdf')
 
         plt.close()
         return

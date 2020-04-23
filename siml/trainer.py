@@ -142,7 +142,7 @@ class Trainer():
         self.model = networks.Network(self.setting.model, self.setting.trainer)
         if self.setting.trainer.draw_network and draw:
             self.model.draw(
-                self.setting.trainer.output_directory / 'network.png')
+                self.setting.trainer.output_directory / 'network.pdf')
 
         self.element_wise = self._determine_element_wise()
         self.loss = self._create_loss_function()
@@ -415,7 +415,7 @@ class Trainer():
             return
 
         self.log_file = self.setting.trainer.output_directory / 'log.csv'
-        self.plot_file = self.setting.trainer.output_directory / 'plot.png'
+        self.plot_file = self.setting.trainer.output_directory / 'plot.pdf'
 
         @self.trainer.on(
             ignite.engine.Events.EPOCH_COMPLETED(
