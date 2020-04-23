@@ -13,6 +13,7 @@ import pandas as pd
 import torch
 import torch.nn.functional as functional
 from tqdm import tqdm
+import yaml
 
 from . import datasets
 from . import networks
@@ -220,6 +221,43 @@ class Trainer():
                 np.swapaxes(data[index:index+description['dim']], 0, axis)})
             index += description['dim']
         return data_dict
+
+    def output_stats(self):
+        dict_stats = {
+            name: self._calculate_stats(parameter)
+            for name, parameter in self.model.named_parameters()}
+        iteration = self.trainer.state.iteration
+        epoch = self.trainer.state.epoch
+        dict_stats.update({
+            'iteration': self.trainer.state.iteration,
+            'epoch': self.trainer.state.epoch,
+            'epoch_length': self.trainer.state.epoch_length})
+
+        file_name = self.setting.trainer.output_directory \
+            / f"stats_epoch{epoch}_iteration{iteration}.yml"
+        with open(file_name, 'w') as f:
+            yaml.dump(dict_stats, f)
+        return dict_stats
+
+    def _calculate_stats(self, parameter):
+        dict_stats = {}
+        if parameter.grad is not None:
+            dict_stats.update(
+                self._calculate_tensor_stats(parameter.grad, 'grad_'))
+        dict_stats.update(self._calculate_tensor_stats(parameter, ''))
+        return dict_stats
+
+    def _calculate_tensor_stats(self, tensor, prefix):
+        numpy_tensor = tensor.detach().numpy()
+        abs_numpy_tensor = np.abs(numpy_tensor)
+        return {
+            f"{prefix}mean": float(np.mean(numpy_tensor)),
+            f"{prefix}std": float(np.std(numpy_tensor)),
+            f"{prefix}max": float(np.max(numpy_tensor)),
+            f"{prefix}min": float(np.min(numpy_tensor)),
+            f"{prefix}absmax": float(np.max(abs_numpy_tensor)),
+            f"{prefix}absmin": float(np.min(abs_numpy_tensor)),
+        }
 
     def _update_setting(self, path, *, only_model=False):
         if path.is_file():
@@ -560,6 +598,8 @@ class Trainer():
                 batch, device=self.device, output_device=self.output_device,
                 non_blocking=self.setting.trainer.non_blocking)
             loss = update_function(x, y, self.model, self.optimizer)
+            if self.setting.trainer.output_stats:
+                self.output_stats()
             return loss.item()
 
         return ignite.engine.Engine(update_model)
