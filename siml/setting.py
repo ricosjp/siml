@@ -379,6 +379,7 @@ class BlockSetting(TypedDataClass):
         default=None, metadata={'allow_none': True})
     device: int = dc.field(
         default=None, metadata={'allow_none': True})
+    coeff: float = 1.
 
     optional: dict = dc.field(default_factory=dict)
 

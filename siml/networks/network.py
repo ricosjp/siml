@@ -249,10 +249,11 @@ class Network(torch.nn.Module):
                         [s.to(device) for s in sp] for sp
                         in supports[:, block_setting.support_input_indices]]
                     dict_hidden[graph_node] = self.dict_block[graph_node](
-                        *inputs, supports=selected_supports)
+                        *inputs, supports=selected_supports) \
+                        * self.dict_block[graph_node].coeff
                 else:
                     dict_hidden[graph_node] = self.dict_block[graph_node](
-                        *inputs)
+                        *inputs) * self.dict_block[graph_node].coeff
 
         return dict_hidden[self.OUTPUT_LAYER_NAME]
 

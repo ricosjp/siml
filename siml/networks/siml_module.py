@@ -13,6 +13,7 @@ class SimlModule(torch.nn.Module):
         super().__init__()
         self.block_setting = block_setting
         self.residual = self.block_setting.residual
+        self.coeff = self.block_setting.coeff
 
         if no_parameter:
             create_linears = False
