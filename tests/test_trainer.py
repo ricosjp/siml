@@ -4,6 +4,7 @@ import unittest
 
 import numpy as np
 import torch
+import yaml
 
 import siml.inferer as inferer
 import siml.prepost as prepost
@@ -238,3 +239,30 @@ class TestTrainer(unittest.TestCase):
             / 'preprocessors.pkl',
             conversion_function=conversion_function, save=False)
         self.assertLess(results[0]['loss'], loss)
+
+    def test_output_stats(self):
+        original_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/deform/general_block.yml'))
+        original_tr = trainer.Trainer(original_setting)
+        if original_tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(original_tr.setting.trainer.output_directory)
+        original_loss = original_tr.train()
+
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/deform/output_stats.yml'))
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+
+        # Loss should not change depending on output_stats
+        np.testing.assert_almost_equal(loss, original_loss, decimal=3)
+
+        stats_file = tr.setting.trainer.output_directory \
+            / 'stats_epoch37_iteration110.yml'
+        with open(stats_file, 'r') as f:
+            dict_data = yaml.load(f, Loader=yaml.SafeLoader)
+        np.testing.assert_almost_equal(
+            dict_data['dict_block.ResGCN2.subchains.0.1.bias']['grad_absmax'],
+            0.8443880081176758, decimal=3)
+        self.assertEqual(dict_data['iteration'], 110)

@@ -219,6 +219,8 @@ class TrainerSetting(TypedDataClass):
         If True, perform model parallel on GPUs.
     draw_network: bool [True]
         If True, draw network (requireing graphviz).
+    output_stats: bool [False]
+        If True, output stats of training (like mean of weight, grads, ...)
     """
 
     inputs: typing.List[dict] = dc.field(default_factory=list)
@@ -280,6 +282,7 @@ class TrainerSetting(TypedDataClass):
     data_parallel: bool = False
     model_parallel: bool = False
     draw_network: bool = True
+    output_stats: bool = False
 
     def __post_init__(self):
         if self.element_wise and self.lazy:
@@ -376,6 +379,7 @@ class BlockSetting(TypedDataClass):
         default=None, metadata={'allow_none': True})
     device: int = dc.field(
         default=None, metadata={'allow_none': True})
+    coeff: float = 1.
 
     optional: dict = dc.field(default_factory=dict)
 

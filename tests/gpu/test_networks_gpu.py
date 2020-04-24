@@ -127,7 +127,7 @@ class TestNetworksGPU(unittest.TestCase):
             / 'test',
             converter_parameters_pkl=main_setting.data.preprocessed
             / 'preprocessors.pkl')
-        self.assertLess(results[0]['loss'], .1)
+        self.assertLess(results[0]['loss'], .2)
         if PLOT:
             cmap = plt.get_cmap('tab10')
             for i, result in enumerate(results):
