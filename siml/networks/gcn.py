@@ -17,12 +17,12 @@ class GCN(abstract_gcn.AbstractGCN):
         self.factor = block_setting.optional.get(
             'factor', 1.)
         print(f"Factor: {self.factor}")
-        self.gh_w = block_setting.optional.get(
-            'gh_w', False)
-        if self.gh_w:
-            print(f"Matrix multiplication mode: (GH) W")
+        self.ah_w = block_setting.optional.get(
+            'ah_w', False)
+        if self.ah_w:
+            print(f"Matrix multiplication mode: (AH) W")
         else:
-            print(f"Matrix multiplication mode: G (HW)")
+            print(f"Matrix multiplication mode: A (HW)")
 
         return
 
@@ -32,12 +32,12 @@ class GCN(abstract_gcn.AbstractGCN):
                 self.subchains[subchain_index],
                 self.dropout_ratios, self.activations):
 
-            if self.gh_w:
-                # Pattern A: (G H) W
+            if self.ah_w:
+                # Pattern A: (A H) W
                 h = subchain(self.factor * torch.sparse.mm(support, h))
 
             else:
-                # Pattern B: G (H W)
+                # Pattern B: A (H W)
                 h = torch.sparse.mm(support, subchain(self.factor * h))
 
             h = torch.nn.functional.dropout(
