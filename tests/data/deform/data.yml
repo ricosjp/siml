@@ -39,9 +39,16 @@ preprocess:
   global_modulus:
     method: standardize
   x_grad:
-    method: max_abs
+    method: sparse_std
     componentwise: false
   y_grad:
     same_as: x_grad
   z_grad:
+    same_as: x_grad
+  x_grad_2:
+    method: max_abs
+    componentwise: false
+  y_grad_2:
+    same_as: x_grad
+  z_grad_2:
     same_as: x_grad

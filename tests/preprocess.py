@@ -16,11 +16,16 @@ def conversion_function(fem_data, data_directory):
     nadj = prepost.normalize_adjacency_matrix(adj)
     x_grad, y_grad, z_grad = \
         fem_data.calculate_spatial_gradient_adjacency_matrices('elemental')
+    x_grad_2, y_grad_2, z_grad_2 = \
+        fem_data.calculate_spatial_gradient_adjacency_matrices(
+            'elemental', n_hop=2)
     global_modulus = np.mean(
         fem_data.access_attribute('modulus'), keepdims=True)
     return {
         'adj': adj, 'nadj': nadj, 'global_modulus': global_modulus,
-        'x_grad': x_grad, 'y_grad': y_grad, 'z_grad': z_grad}
+        'x_grad': x_grad, 'y_grad': y_grad, 'z_grad': z_grad,
+        'x_grad_2': x_grad_2, 'y_grad_2': y_grad_2, 'z_grad_2': z_grad_2,
+    }
 
 
 def preprocess_deform():

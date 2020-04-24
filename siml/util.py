@@ -296,6 +296,9 @@ class PreprocessConverter():
         elif preprocess_method == 'std_scale':
             self.converter = preprocessing.StandardScaler(with_mean=False)
             self.is_erroneous = self.is_standard_scaler_var_nan
+        elif preprocess_method == 'sparse_std':
+            self.converter = SparseStandardScaler()
+            self.is_erroneous = self.is_standard_scaler_var_nan
         elif preprocess_method == 'min_max':
             self.converter = preprocessing.MinMaxScaler()
         elif preprocess_method == 'max_abs':
@@ -445,8 +448,6 @@ class PreprocessConverter():
 
 class MaxAbsScaler(TransformerMixin, BaseEstimator):
 
-    EPSILON = 1e-8
-
     def __init__(self):
         self.max_ = 0.
         return
@@ -461,7 +462,11 @@ class MaxAbsScaler(TransformerMixin, BaseEstimator):
         return self
 
     def transform(self, data):
-        scale = 1 / (self.max_ + self.EPSILON)
+        if np.max(self.max_) == 0.:
+            scale = 0.
+        else:
+            scale = 1 / self.max_
+
         if sp.issparse(data):
             if len(scale) != 1:
                 raise ValueError(f"Should be componentwise: false")
@@ -469,12 +474,87 @@ class MaxAbsScaler(TransformerMixin, BaseEstimator):
         return data * scale
 
     def inverse_transform(self, data):
-        inverse_scale = (self.max_ + self.EPSILON)
+        inverse_scale = self.max_
         if sp.issparse(data):
             if len(inverse_scale) != 1:
                 raise ValueError(f"Should be componentwise: false")
             inverse_scale = inverse_scale[0]
         return data * inverse_scale
+
+
+class SparseStandardScaler(TransformerMixin, BaseEstimator):
+    """Class to perform standardization for sparse data."""
+
+    def __init__(self):
+        self.var_ = 0.
+        self.std_ = 0.
+        self.mean_ = 0.
+        self.mean_square_ = 0.
+        self.n_ = 0
+        return
+
+    def partial_fit(self, data):
+        self._raise_if_sparse(data)
+        self._update(data)
+        return self
+
+    def _update(self, sparse_dats):
+        m = np.prod(sparse_dats.shape)
+        mean = (
+            self.mean_ * self.n_ + np.sum(sparse_dats.data)) / (self.n_ + m)
+        mean_square = (
+            self.mean_square_ * self.n_ + np.sum(sparse_dats.data**2)) / (
+                self.n_ + m)
+
+        self.mean_ = mean
+        self.mean_square_ = mean_square
+        self.n_ += m
+
+        self.var_ = self.mean_square_ - self.mean_**2
+        self.std_ = np.sqrt(self.var_)
+        return
+
+    def _raise_if_sparse(self, data):
+        if not sp.issparse(data):
+            raise ValueError('Data is not sparse')
+        return
+
+    def transform(self, data):
+        self._raise_if_sparse(data)
+        if self.std_ == 0.:
+            scale = 0.
+        else:
+            scale = 1 / self.std_
+        return data * scale
+
+    def inverse_transform(self, data):
+        self._raise_if_sparse(data)
+        inverse_scale = self.std_
+        return data * inverse_scale
+
+
+# class StandardScaler(Standardizer):
+#     """Class to perform scaling with standard deviation."""
+#
+#     def __init__(
+#             self, std, *,
+#             mean_square=None, n=None, mean=None, componentwise=True):
+#         super().__init__(
+#             mean=0.0, std=std, mean_square=mean_square, n=n,
+#             componentwise=componentwise)
+#
+#     @property
+#     def parameters(self):
+#         return {'std': self.std}
+#
+#     def transform(self, data):
+#         return data / (self.std + self.EPSILON)
+#
+#     def inverse(self, data):
+#         return data * (self.std + self.EPSILON)
+#
+#     def save(self, file_name):
+#         np.save(file_name, {'std': self.std})
 
 
 class Identity(TransformerMixin, BaseEstimator):

@@ -164,3 +164,42 @@ class TestUtil(unittest.TestCase):
         np.testing.assert_array_almost_equal(
             max_abs_scaler.inverse_transform(
                 max_abs_scaler.transform(x)).toarray(), x.toarray())
+
+    def test_sparse_standard_scaler(self):
+        x1 = sp.coo_matrix(np.array([
+            [1.],
+            [0.],
+            [3.],
+            [-4.],
+            [0.],
+            [1.],
+            [0.],
+            [3.],
+            [-4.],
+            [0.],
+        ]))
+        x2 = sp.coo_matrix(np.array([
+            [0.],
+            [1.],
+            [.3],
+            [0.],
+            [0.],
+            [1.],
+            [.3],
+            [0.],
+        ]))
+        answer_var = np.var(np.concatenate([x1.toarray(), x2.toarray()]))
+        sp_std_scaler = util.SparseStandardScaler()
+        sp_std_scaler.partial_fit(x1)
+        sp_std_scaler.partial_fit(x2)
+
+        np.testing.assert_array_almost_equal(
+            sp_std_scaler.var_, answer_var)
+
+        self.assertIsInstance(sp_std_scaler.transform(x1), sp.coo_matrix)
+        np.testing.assert_array_almost_equal(
+            sp_std_scaler.transform(x1).toarray(),
+            x1.toarray() / answer_var**.5)
+        np.testing.assert_array_almost_equal(
+            sp_std_scaler.inverse_transform(
+                sp_std_scaler.transform(x1)).toarray(), x1.toarray())
