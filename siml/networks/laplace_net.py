@@ -23,7 +23,8 @@ class LaplaceNet(abstract_gcn.AbstractGCN):
         self.factor = block_setting.optional.get(
             'factor', 1.)
         print(f"Factor: {self.factor}")
-        self.gh_w = False
+        self.gh_w = block_setting.optional.get(
+            'gh_w', False)
         if self.gh_w:
             print(f"Matrix multiplication mode: (GH) W")
         else:
@@ -43,6 +44,7 @@ class LaplaceNet(abstract_gcn.AbstractGCN):
         for subchain, dropout_ratio, activation in zip(
                 self.subchains[0],
                 self.dropout_ratios, self.activations):
+
             if self.gh_w:
                 # Pattern A: (GX (GX H) + GY (GY H) + GZ (GZ H)) W
                 h = subchain(self.factor * torch.sum(torch.stack([
@@ -51,8 +53,8 @@ class LaplaceNet(abstract_gcn.AbstractGCN):
 
             else:
                 # Pattern B: GX (GX (H W)) + GY (GY (H W)) + GZ (GZ (H W))
-                h = subchain(h)
-                h = self.factor * torch.sum(torch.stack([
+                h = subchain(self.factor * h)
+                h = torch.sum(torch.stack([
                     torch.sparse.mm(support, torch.sparse.mm(support, h))
                     for support in supports]), dim=0)
 
