@@ -20,6 +20,16 @@ class LaplaceNet(abstract_gcn.AbstractGCN):
         super().__init__(
             block_setting, create_subchain=True, multiple_networks=False,
             residual=block_setting.residual)
+        self.factor = block_setting.optional.get(
+            'factor', 1.)
+        print(f"Factor: {self.factor}")
+        self.ah_w = block_setting.optional.get(
+            'ah_w', False)
+        if self.ah_w:
+            print(f"Matrix multiplication mode: (AH) W")
+        else:
+            print(f"Matrix multiplication mode: A (HW)")
+
         return
 
     def _forward_single(self, x, supports):
@@ -34,11 +44,21 @@ class LaplaceNet(abstract_gcn.AbstractGCN):
         for subchain, dropout_ratio, activation in zip(
                 self.subchains[0],
                 self.dropout_ratios, self.activations):
-            h = subchain(h)
+
+            if self.ah_w:
+                # Pattern A: (GX (GX H) + GY (GY H) + GZ (GZ H)) W
+                h = subchain(self.factor * torch.sum(torch.stack([
+                    torch.sparse.mm(support, torch.sparse.mm(support, h))
+                    for support in supports]), dim=0))
+
+            else:
+                # Pattern B: GX (GX (H W)) + GY (GY (H W)) + GZ (GZ (H W))
+                h = subchain(self.factor * h)
+                h = torch.sum(torch.stack([
+                    torch.sparse.mm(support, torch.sparse.mm(support, h))
+                    for support in supports]), dim=0)
+
             h = torch.nn.functional.dropout(
                 h, p=dropout_ratio, training=self.training)
-            h = torch.sum(torch.stack([
-                torch.sparse.mm(support, torch.sparse.mm(support, h))
-                for support in supports]), dim=0)
             h = activation(h)
         return h
