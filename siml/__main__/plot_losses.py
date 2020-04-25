@@ -43,6 +43,11 @@ def main():
         default=1,
         help='If True, plot train loss in addition to validation loss [True]')
     parser.add_argument(
+        '-m', '--plot-minimum-loss',
+        type=strtobool,
+        default=1,
+        help='If True, plot minimum loss point [True]')
+    parser.add_argument(
         '-n', '--max-n-files',
         type=int,
         default=None,
@@ -94,6 +99,19 @@ def main():
             df['epoch'], df['validation_loss'], styles[i % len(styles)],
             color=cmap(norm(n_seleced_files - 1 - i)),
             alpha=alpha, lw=lw, label=name)
+        validation_min_index = np.argmin(df['validation_loss'].values)
+        if args.plot_minimum_loss:
+            plt.plot(
+                df['epoch'][validation_min_index],
+                df['validation_loss'][validation_min_index],
+                '*', ms=lw*5, color=cmap(norm(n_seleced_files - 1 - i)),
+                alpha=alpha)
+        print(f"--\nFile name: {name}")
+        print(
+            f"\t     Best epoch: {df['epoch'][validation_min_index]}\n"
+            '\tValidation loss: '
+            f"{df['validation_loss'][validation_min_index]}\n"
+            f"\t     Train loss: {df['train_loss'][validation_min_index]}")
         if args.plot_train_loss:
             plt.plot(
                 df['epoch'], df['train_loss'], ':',
