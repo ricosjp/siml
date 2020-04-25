@@ -170,7 +170,7 @@ def collect_data_directories(
     if inverse_pattern is not None:
         found_directories = [
             d for d in found_directories
-            if not re.search(inverse_pattern, str(f))]
+            if not re.search(inverse_pattern, str(d))]
 
     return found_directories
 
