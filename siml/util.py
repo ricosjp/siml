@@ -120,17 +120,19 @@ def load_variable(data_directory, file_basename):
 
 def collect_data_directories(
         base_directory, *, required_file_names=None, allow_no_data=False,
-        pattern=None):
+        pattern=None, inverse_pattern=None):
     """Collect data directories recursively from the base directory.
 
     Parameters
     ----------
-        base_directory: pathlib.Path
-            Base directory to search directory from.
-        required_file_names: list of str
-            If given, return only directories which have required files.
-        pattern: str
-            If given, return only directories which match the pattern.
+    base_directory: pathlib.Path
+        Base directory to search directory from.
+    required_file_names: list of str
+        If given, return only directories which have required files.
+    pattern: str
+        If given, return only directories which match the pattern.
+    inverse_pattern: str, optional
+        If given, return only files which DO NOT match the pattern.
     Returns
     --------
         found_directories: list of pathlib.Path
@@ -140,7 +142,8 @@ def collect_data_directories(
         return list(np.unique(np.concatenate([
             collect_data_directories(
                 bd, required_file_names=required_file_names,
-                allow_no_data=allow_no_data, pattern=pattern)
+                allow_no_data=allow_no_data, pattern=pattern,
+                inverse_pattern=inverse_pattern)
             for bd in base_directory])))
 
     if not base_directory.exists():
@@ -164,12 +167,17 @@ def collect_data_directories(
         found_directories = [
             d for d in found_directories if re.search(pattern, str(d))]
 
+    if inverse_pattern is not None:
+        found_directories = [
+            d for d in found_directories
+            if not re.search(inverse_pattern, str(d))]
+
     return found_directories
 
 
 def collect_files(
         directories, required_file_names, *, pattern=None,
-        allow_no_data=False):
+        allow_no_data=False, inverse_pattern=None):
     """Collect data files recursively from the base directory.
 
     Parameters
@@ -180,6 +188,8 @@ def collect_files(
         File names.
     pattern: str, optional
         If given, return only files which match the pattern.
+    inverse_pattern: str, optional
+        If given, return only files which DO NOT match the pattern.
 
     Returns
     -------
@@ -189,12 +199,15 @@ def collect_files(
         found_files = []
         for required_file_name in required_file_names:
             found_files = found_files + collect_files(
-                directories, required_file_name, pattern=pattern)
+                directories, required_file_name, pattern=pattern,
+                inverse_pattern=inverse_pattern)
         return found_files
 
     if isinstance(directories, list):
         return list(np.unique(np.concatenate([
-            collect_files(d, required_file_names, pattern=pattern)
+            collect_files(
+                d, required_file_names, pattern=pattern,
+                inverse_pattern=inverse_pattern)
             for d in directories])))
 
     required_file_name = required_file_names
@@ -204,6 +217,11 @@ def collect_files(
     if pattern is not None:
         found_files = [
             f for f in found_files if re.search(pattern, str(f))]
+
+    if inverse_pattern is not None:
+        found_files = [
+            f for f in found_files
+            if not re.search(inverse_pattern, str(f))]
 
     if not allow_no_data and len(found_files) == 0:
         message = f"No files found for {required_file_names} in {directories}"
