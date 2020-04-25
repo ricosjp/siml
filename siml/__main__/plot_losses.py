@@ -28,6 +28,11 @@ def main():
         default=None,
         help='Filter string to extract directories')
     parser.add_argument(
+        '-v', '--inverse-filter',
+        type=str,
+        default=None,
+        help='Filter string to exclude directories')
+    parser.add_argument(
         '-k', '--sort-key',
         type=str,
         default='validation_loss',
@@ -58,7 +63,7 @@ def main():
 
     csv_files = siml.util.collect_files(
         args.data_directories, pattern=args.filter,
-        required_file_names=['log.csv'])
+        inverse_pattern=args.inverse_filter, required_file_names=['log.csv'])
     valid_csv_files, data_frames = load_logs(csv_files)
     n_files = len(valid_csv_files)
 
