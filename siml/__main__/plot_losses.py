@@ -79,35 +79,26 @@ def main():
         vmin=0, vmax=n_seleced_files+3)  # Not to use too bright color
     plt.figure(figsize=(16, 9))
     styles = ['-', '--', '-.']
-    for i, sorted_index in enumerate(sorted_indices[::-1]):
-        df = data_frames[sorted_index]
-        alpha = .5 + 0.5 * i / (n_seleced_files - 1)
-        lw = 1. + 2. * i / (n_seleced_files - 1)
-        plt.plot(
-            df['epoch'], df['validation_loss'], styles[i % len(styles)],
-            color=cmap(norm(i)), alpha=alpha, lw=lw)
-        if args.plot_train_loss:
-            plt.plot(
-                df['epoch'], df['train_loss'], ':',
-                color=cmap(norm(i)), alpha=alpha, lw=lw)
 
-    # Dummpy plot for legends
     for i, sorted_index in enumerate(sorted_indices):
         df = data_frames[sorted_index]
         name = valid_csv_files[sorted_index]
         alpha = .5 + 0.5 * (n_seleced_files - 1 - i) / (n_seleced_files - 1)
+        lw = 1. + 2. * (n_seleced_files - 1 - i) / (n_seleced_files - 1)
         plt.plot(
-            [], [], styles[(n_seleced_files - 1 - i) % len(styles)],
-            color=cmap(norm(n_seleced_files - 1 - i)), label=name, alpha=alpha)
+            df['epoch'], df['validation_loss'], styles[i % len(styles)],
+            color=cmap(norm(n_seleced_files - 1 - i)),
+            alpha=alpha, lw=lw, label=name)
+        if args.plot_train_loss:
+            plt.plot(
+                df['epoch'], df['train_loss'], ':',
+                color=cmap(norm(n_seleced_files - 1 - i)),
+                alpha=alpha, lw=lw)
 
     plt.yscale('log')
     plt.xlabel('epoch')
     plt.ylabel('loss')
     plt.xlim(0, None)
-    # min_power = np.floor(np.log10(np.min(minimum_values)))
-    # max_power = np.ceil(np.log10(np.max(maximum_values)))
-    # plt.yticks(10**np.arange(min_power, max_power + 1e-3, .5))
-    # plt.ylim(None, np.max(maximum_values) * 1.2)
     if args.x_limit is not None:
         if len(args.x_limit) != 2:
             raise ValueError(
