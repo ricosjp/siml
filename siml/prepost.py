@@ -438,14 +438,15 @@ class Preprocessor:
         return dict_preprocessor_settings
 
     def convert_interim_data(
-            self, dict_preprocessor_settings=None, *, group_id=None):
+            self, preprocessor_pkl=None, *, group_id=None):
         """Convert interim data with the determined preprocessor_settings.
 
         Parameters
         ----------
-        dict_preprocessor_settings: dict, optional [None]
-            dict describing settings and parameters for preprocessors. If not
-            fed, data will be loaded from self.setting.data.preprocessed .
+        preprocessor_pkl: dict or pathlib.Path, optional [None]
+            dict or pickle file path describing settings and parameters for
+            preprocessors. If not fed, data will be loaded from
+            self.setting.data.preprocessed.
         group_id: int, optional [None]
             group_id to specify chunk of preprocessing group. Useful when
             MemoryError occurs with all variables preprocessed in one node.
@@ -456,13 +457,17 @@ class Preprocessor:
         None
         """
 
-        if dict_preprocessor_settings is None:
-            pkl_file = self.setting.data.preprocessed \
+        if preprocessor_pkl is None:
+            preprocessor_pkl = self.setting.data.preprocessed \
                 / self.PREPROCESSORS_PKL_NAME
-            if not pkl_file.is_file():
-                raise ValueError(f"{pkl_file} not found.")
-            with open(pkl_file, 'rb') as f:
+            if not preprocessor_pkl.is_file():
+                raise ValueError(f"{preprocessor_pkl} not found.")
+
+        if isinstance(preprocessor_pkl, Path):
+            with open(preprocessor_pkl, 'rb') as f:
                 dict_preprocessor_settings = pickle.load(f)
+        else:
+            dict_preprocessor_settings = preprocessor_pkl
 
         preprocess_converter_inputs = \
             self._generate_preprocess_converter_inputs(
