@@ -308,7 +308,7 @@ class Preprocessor:
 
     def __init__(
             self, main_setting, force_renew=False, save_func=None,
-            str_replace='interim', max_process=None):
+            str_replace='interim', max_process=None, allow_missing=False):
         """Initialize preprocessor of interim data with preprocessing
         e.g. standardization and then save them.
 
@@ -324,6 +324,8 @@ class Preprocessor:
             data to preprocessed data.
         max_process: int, optional [None]
             The maximum number of processes.
+        allow_missing: bool, optional [False]
+            If True, continue even if some of variables are missing.
         """
         self.setting = main_setting
         self.force_renew = force_renew
@@ -333,6 +335,7 @@ class Preprocessor:
             required_file_names=self.REQUIRED_FILE_NAMES)
         self.str_replace = str_replace
         self.max_process = util.determine_max_process(max_process)
+        self.allow_missing = allow_missing
         if self.setting.data.pad:
             self.max_n_element = self._determine_max_n_element(
                 self.interim_directories,
@@ -620,8 +623,14 @@ class Preprocessor:
         None
         """
         for data_directory in self.interim_directories:
-            transformed_data = preprocess_converter.transform(
-                util.load_variable(data_directory, variable_name))
+            loaded_data = util.load_variable(
+                data_directory, variable_name,
+                allow_missing=self.allow_missing)
+            if loaded_data is None:
+                continue
+            else:
+                transformed_data = preprocess_converter.transform(loaded_data)
+
             if self.setting.data.pad:
                 transformed_data = util.pad_array(
                     transformed_data, self.max_n_element)

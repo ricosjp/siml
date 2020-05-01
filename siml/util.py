@@ -97,7 +97,7 @@ def save_variable(
     return
 
 
-def load_variable(data_directory, file_basename):
+def load_variable(data_directory, file_basename, *, allow_missing=False):
     """Load variable data.
 
     Parameters
@@ -106,6 +106,9 @@ def load_variable(data_directory, file_basename):
             Directory path.
         file_basename: str
             File base name without extenstion.
+        allow_missing: bool, optional [False]
+            If True, return None when the corresponding file is missing.
+            Otherwise, raise ValueError.
     Returns
     --------
         data: numpy.ndarray or scipy.sparse.coo_matrix
@@ -115,7 +118,10 @@ def load_variable(data_directory, file_basename):
     elif (data_directory / (file_basename + '.npz')).exists():
         return sp.load_npz(data_directory / (file_basename + '.npz'))
     else:
-        raise ValueError(f"File type not understuud for: {file_basename}")
+        if allow_missing:
+            return None
+        else:
+            raise ValueError(f"File type not understood for: {file_basename}")
 
 
 def collect_data_directories(
