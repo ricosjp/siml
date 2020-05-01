@@ -490,7 +490,7 @@ class Inferer(trainer.Trainer):
         else:
             output_directory = None
 
-        inversed_dict_x, inversed_dict_y, loss, elapsed_time = \
+        inversed_dict_x, inversed_dict_y, loss, inference_time = \
             self._infer_single_data(
                 postprocessor, x, answer_y=answer_y, overwrite=overwrite,
                 output_directory=output_directory, supports=supports,
@@ -515,13 +515,14 @@ class Inferer(trainer.Trainer):
                     self.setting, output_directory / 'settings.yml',
                     overwrite=overwrite)
             with open(output_directory / 'loss.dat', 'w') as f:
-                f.write(f"loss: {loss}")
+                f.write(f"loss: {loss}\n")
+                f.write(f"inference time: {inference_time}\n")
             print(f"Inferred data saved in: {output_directory}")
 
         return {
             'dict_x': inversed_dict_x, 'dict_y': inversed_dict_y, 'loss': loss,
             'output_directory': output_directory, 'data_directory': directory,
-            'inference_time': time}
+            'inference_time': inference_time}
 
     def _load_data(
             self, variable_names, directories, *,
