@@ -521,7 +521,7 @@ class Inferer(trainer.Trainer):
         return {
             'dict_x': inversed_dict_x, 'dict_y': inversed_dict_y, 'loss': loss,
             'output_directory': output_directory, 'data_directory': directory,
-            'elapsed_time': time}
+            'inference_time': time}
 
     def _load_data(
             self, variable_names, directories, *,
