@@ -111,7 +111,9 @@ class Inferer(trainer.Trainer):
                 return_dict=True, supports=self.setting.trainer.support_inputs)
             dict_dir_y = self._load_data(
                 self.setting.trainer.output_names, input_directories,
-                return_dict=True)
+                return_dict=True, allow_missing=True)
+            if dict_dir_y is None:
+                dict_dir_y = {}
 
         else:
             # Inference based on raw data
@@ -518,7 +520,7 @@ class Inferer(trainer.Trainer):
 
     def _load_data(
             self, variable_names, directories, *,
-            return_dict=False, supports=None):
+            return_dict=False, supports=None, allow_missing=False):
 
         data_directories = []
         for directory in directories:
@@ -527,7 +529,10 @@ class Inferer(trainer.Trainer):
         data_directories = np.unique(data_directories)
 
         if len(data_directories) == 0:
-            raise ValueError(f"No data found in {directories}")
+            if allow_missing:
+                return None
+            else:
+                raise ValueError(f"No data found in {directories}")
 
         if supports is None:
             supports = []
