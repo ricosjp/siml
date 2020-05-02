@@ -507,8 +507,9 @@ class Inferer(trainer.Trainer):
                 required_file_names=required_file_names,
                 convert_to_order1=convert_to_order1)
 
+        print(f"data: {directory}")
+        print(f"Inference time: {inference_time}")
         if loss is not None:
-            print(f"data: {directory}")
             print(f"loss: {loss}")
 
         if save:
@@ -516,9 +517,10 @@ class Inferer(trainer.Trainer):
                 setting.write_yaml(
                     self.setting, output_directory / 'settings.yml',
                     overwrite=overwrite)
-            with open(output_directory / 'loss.dat', 'w') as f:
-                f.write(f"loss: {loss}\n")
+            with open(output_directory / 'log.dat', 'w') as f:
                 f.write(f"inference time: {inference_time}\n")
+                if loss is not None:
+                    f.write(f"loss: {loss}\n")
             print(f"Inferred data saved in: {output_directory}")
 
         return {
