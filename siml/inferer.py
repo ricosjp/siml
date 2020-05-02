@@ -1,5 +1,6 @@
 import io
 import pathlib
+import time
 
 import femio
 import numpy as np
@@ -310,7 +311,7 @@ class Inferer(trainer.Trainer):
         else:
             answer_y = None
 
-        _, inversed_dict_y, loss = self._infer_single_data(
+        _, inversed_dict_y, loss, _ = self._infer_single_data(
             self.prepost_converter, x, answer_y=answer_y,
             accomodate_length=accomodate_length)
         return inversed_dict_y, loss
@@ -400,7 +401,10 @@ class Inferer(trainer.Trainer):
         # Inference
         self.model.eval()
         with torch.no_grad():
+            start_time = time.time()
             inferred_y = self.model({'x': x, 'supports': converted_supports})
+            end_time = time.time()
+            elapsed_time = end_time - start_time
         if accomodate_length:
             inferred_y = inferred_y[accomodate_length:]
             x = x[accomodate_length:]
@@ -448,7 +452,7 @@ class Inferer(trainer.Trainer):
             # Answer data does not exist
             loss = None
 
-        return inversed_dict_x, inversed_dict_y, loss
+        return inversed_dict_x, inversed_dict_y, loss, elapsed_time
 
     def _infer_single_directory(
             self, postprocessor, directory, x, dict_dir_y, *, save=True,
@@ -488,18 +492,20 @@ class Inferer(trainer.Trainer):
         else:
             output_directory = None
 
-        inversed_dict_x, inversed_dict_y, loss = self._infer_single_data(
-            postprocessor, x, answer_y=answer_y, overwrite=overwrite,
-            output_directory=output_directory, supports=supports,
-            write_simulation=write_simulation, write_npy=write_npy,
-            write_simulation_base=write_simulation_base,
-            write_simulation_stem=write_simulation_stem,
-            write_simulation_type=write_simulation_type,
-            read_simulation_type=read_simulation_type,
-            data_addition_function=data_addition_function,
-            accomodate_length=accomodate_length, load_function=load_function,
-            required_file_names=required_file_names,
-            convert_to_order1=convert_to_order1)
+        inversed_dict_x, inversed_dict_y, loss, inference_time = \
+            self._infer_single_data(
+                postprocessor, x, answer_y=answer_y, overwrite=overwrite,
+                output_directory=output_directory, supports=supports,
+                write_simulation=write_simulation, write_npy=write_npy,
+                write_simulation_base=write_simulation_base,
+                write_simulation_stem=write_simulation_stem,
+                write_simulation_type=write_simulation_type,
+                read_simulation_type=read_simulation_type,
+                data_addition_function=data_addition_function,
+                accomodate_length=accomodate_length,
+                load_function=load_function,
+                required_file_names=required_file_names,
+                convert_to_order1=convert_to_order1)
 
         if loss is not None:
             print(f"data: {directory}")
@@ -511,12 +517,14 @@ class Inferer(trainer.Trainer):
                     self.setting, output_directory / 'settings.yml',
                     overwrite=overwrite)
             with open(output_directory / 'loss.dat', 'w') as f:
-                f.write(f"loss: {loss}")
+                f.write(f"loss: {loss}\n")
+                f.write(f"inference time: {inference_time}\n")
             print(f"Inferred data saved in: {output_directory}")
 
         return {
             'dict_x': inversed_dict_x, 'dict_y': inversed_dict_y, 'loss': loss,
-            'output_directory': output_directory, 'data_directory': directory}
+            'output_directory': output_directory, 'data_directory': directory,
+            'inference_time': inference_time}
 
     def _load_data(
             self, variable_names, directories, *,
