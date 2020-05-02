@@ -112,7 +112,9 @@ class Inferer(trainer.Trainer):
                 return_dict=True, supports=self.setting.trainer.support_inputs)
             dict_dir_y = self._load_data(
                 self.setting.trainer.output_names, input_directories,
-                return_dict=True)
+                return_dict=True, allow_missing=True)
+            if dict_dir_y is None:
+                dict_dir_y = {}
 
         else:
             # Inference based on raw data
@@ -505,8 +507,9 @@ class Inferer(trainer.Trainer):
                 required_file_names=required_file_names,
                 convert_to_order1=convert_to_order1)
 
+        print(f"data: {directory}")
+        print(f"Inference time: {inference_time}")
         if loss is not None:
-            print(f"data: {directory}")
             print(f"loss: {loss}")
 
         if save:
@@ -514,9 +517,10 @@ class Inferer(trainer.Trainer):
                 setting.write_yaml(
                     self.setting, output_directory / 'settings.yml',
                     overwrite=overwrite)
-            with open(output_directory / 'loss.dat', 'w') as f:
-                f.write(f"loss: {loss}\n")
+            with open(output_directory / 'log.dat', 'w') as f:
                 f.write(f"inference time: {inference_time}\n")
+                if loss is not None:
+                    f.write(f"loss: {loss}\n")
             print(f"Inferred data saved in: {output_directory}")
 
         return {
@@ -526,7 +530,7 @@ class Inferer(trainer.Trainer):
 
     def _load_data(
             self, variable_names, directories, *,
-            return_dict=False, supports=None):
+            return_dict=False, supports=None, allow_missing=False):
 
         data_directories = []
         for directory in directories:
@@ -535,7 +539,10 @@ class Inferer(trainer.Trainer):
         data_directories = np.unique(data_directories)
 
         if len(data_directories) == 0:
-            raise ValueError(f"No data found in {directories}")
+            if allow_missing:
+                return None
+            else:
+                raise ValueError(f"No data found in {directories}")
 
         if supports is None:
             supports = []
