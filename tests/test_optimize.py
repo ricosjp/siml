@@ -68,15 +68,15 @@ class TestOptimize(unittest.TestCase):
         if main_setting.optuna.output_base_directory.exists():
             shutil.rmtree(main_setting.optuna.output_base_directory)
 
-        subprocess.run(
-            f"poetry run optimize {main_setting_yml} -s true -l true",
-            shell=True, check=True)
-        subprocess.run(
-            f"poetry run optimize {main_setting_yml} -s true -l true",
-            shell=True, check=True)
-        subprocess.run(
-            f"poetry run optimize {main_setting_yml} -s true -l true",
-            shell=True, check=True)
+        if Path('.venv').exists():
+            poetry = 'poetry'
+        else:
+            poetry = 'python3.7 -m poetry'
+        for _ in range(3):
+            subprocess.run(
+                f"{poetry} run optimize {main_setting_yml} "
+                '-s true -l true',
+                shell=True, check=True)
 
         db_setting = setting.DBSetting(use_sqlite=True)
         study = optimize.Study(main_setting, db_setting)
