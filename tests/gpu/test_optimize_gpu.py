@@ -20,6 +20,9 @@ class TestOptimizeGPU(unittest.TestCase):
         main_setting.optuna.n_trial = 2
         if main_setting.optuna.output_base_directory.exists():
             shutil.rmtree(main_setting.optuna.output_base_directory)
-        study = optimize.perform_study(main_setting)
+
+        study = optimize.Study(main_setting)
+        study.perform_study()
         self.assertLess(
-            study.best_trial.value, np.max([t.value for t in study.trials]))
+            study.study.best_trial.value,
+            np.max([t.value for t in study.study.trials]))

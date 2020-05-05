@@ -141,6 +141,24 @@ stevedore = ">=1.20.0"
 
 [[package]]
 category = "main"
+description = "Lightweight Covariance Matrix Adaptation Evolution Strategy (CMA-ES) implementation for Python 3."
+name = "cmaes"
+optional = false
+python-versions = "*"
+version = "0.5.0"
+
+[package.dependencies]
+numpy = "*"
+
+[package.extras]
+benchmark = ["kurobako", "cma", "optuna"]
+lint = ["mypy", "flake8", "black", "optuna"]
+release = ["wheel", "twine"]
+test = ["optuna"]
+visualization = ["matplotlib", "scipy"]
+
+[[package]]
+category = "main"
 description = "cmd2 - a tool for building interactive command line applications in Python"
 name = "cmd2"
 optional = false
@@ -447,25 +465,26 @@ description = "A hyperparameter optimization framework"
 name = "optuna"
 optional = false
 python-versions = "*"
-version = "0.19.0"
+version = "1.3.0"
 
 [package.dependencies]
 alembic = "*"
 cliff = "*"
+cmaes = "*"
 colorlog = "*"
+joblib = "*"
 numpy = "*"
-scipy = "*"
-six = "*"
+scipy = "!=1.4.0"
 sqlalchemy = ">=1.1.0"
 tqdm = "*"
-typing = "*"
 
 [package.extras]
-checking = ["autopep8", "hacking", "mypy"]
-codecov = ["pytest-cov", "codecov"]
+checking = ["black", "hacking", "mypy"]
+codecov = ["codecov", "pytest-cov"]
+doctest = ["cma", "pandas", "plotly (>=4.0.0)", "scikit-learn (>=0.19.0)", "scikit-optimize"]
 document = ["sphinx", "sphinx-rtd-theme"]
-example = ["chainer", "keras", "catboost", "lightgbm", "scikit-learn", "mxnet", "xgboost", "torch", "torchvision", "pytorch-ignite", "dask-ml", "dask", "pytorch-lightning", "tensorflow (<2.0.0)"]
-testing = ["bokeh", "chainer (>=5.0.0)", "cma", "keras", "lightgbm", "mock", "mpi4py", "mxnet", "pandas", "plotly (>=4.0.0)", "pytest", "scikit-optimize", "tensorflow", "tensorflow-datasets", "xgboost", "scikit-learn (>=0.19.0)", "torch", "torchvision", "pytorch-ignite", "pytorch-lightning"]
+example = ["catboost", "chainer", "lightgbm", "mlflow", "mpi4py", "mxnet", "pytorch-ignite", "scikit-image", "scikit-learn", "torch", "torchvision (>=0.5.0)", "xgboost"]
+testing = ["bokeh (<2.0.0)", "chainer (>=5.0.0)", "cma", "fanova", "lightgbm", "mock", "mpi4py", "mxnet", "pandas", "plotly (>=4.0.0)", "pytest", "pytorch-ignite", "scikit-learn (>=0.19.0)", "scikit-optimize", "torch", "torchvision (>=0.5.0)", "xgboost"]
 
 [[package]]
 category = "dev"
@@ -950,14 +969,6 @@ python-versions = "*"
 version = "1.4.1"
 
 [[package]]
-category = "main"
-description = "Type Hints for Python"
-name = "typing"
-optional = false
-python-versions = "*"
-version = "3.7.4.1"
-
-[[package]]
 category = "dev"
 description = "Backported and Experimental Type Hints for Python 3.5+"
 name = "typing-extensions"
@@ -1012,7 +1023,7 @@ PyQt5 = ["PyQt5"]
 cupy = []
 
 [metadata]
-content-hash = "ff90b4748efc4c7667d9bd2d599930fff4778f626c8b70d6cbd261c7483a6fff"
+content-hash = "0eb05c6cefc8987555d193842b4f4cdfc225e8ba6ba41e0a2606b09564fdc878"
 python-versions = "^3.7"
 
 [metadata.files]
@@ -1056,6 +1067,10 @@ chardet = [
 cliff = [
     {file = "cliff-3.1.0-py3-none-any.whl", hash = "sha256:7c73056715f3ce6622cd40f8c29032f052b9965fdf0bfc5b0b293a20f7be123b"},
     {file = "cliff-3.1.0.tar.gz", hash = "sha256:529b0ee0d2d38c7cbbababbbe3472b43b667a5c36025ef1b6cd00851c4313849"},
+]
+cmaes = [
+    {file = "cmaes-0.5.0-py3-none-any.whl", hash = "sha256:1bf0dd9d25900a6e376b3cdcb2e58a0c2789d753789cbb5e333003818d78c499"},
+    {file = "cmaes-0.5.0.tar.gz", hash = "sha256:213d91a41f1d75b8cebca56477b8460da0fc757f9bbd1e5767023ad12711dfb4"},
 ]
 cmd2 = [
     {file = "cmd2-0.8.9-py2.py3-none-any.whl", hash = "sha256:ce779b8bcb6aab05569d6c728eaa093c442bb7478a4998f23f1339e845a33090"},
@@ -1250,7 +1265,7 @@ numpy-stl = [
     {file = "numpy-stl-2.11.2.tar.gz", hash = "sha256:192556df794b9ef0c1333fd5f034e4a3905d63f52345a0cc1e359045670e34b6"},
 ]
 optuna = [
-    {file = "optuna-0.19.0.tar.gz", hash = "sha256:cbcdc826915dd07f7df723bec0dd3edd5e61e54c40e7a8b023e19d4434eef602"},
+    {file = "optuna-1.3.0.tar.gz", hash = "sha256:a9fef67314833b694a9779ff63e9f0531d44a780a1ea0d8a9a097f2e8a33ab70"},
 ]
 packaging = [
     {file = "packaging-20.3-py2.py3-none-any.whl", hash = "sha256:82f77b9bee21c1bafbf35a84905d604d5d1223801d639cf3ed140bd651c08752"},
@@ -1540,11 +1555,6 @@ typed-ast = [
     {file = "typed_ast-1.4.1-cp38-cp38-win_amd64.whl", hash = "sha256:fc0fea399acb12edbf8a628ba8d2312f583bdbdb3335635db062fa98cf71fca4"},
     {file = "typed_ast-1.4.1-cp39-cp39-macosx_10_15_x86_64.whl", hash = "sha256:d43943ef777f9a1c42bf4e552ba23ac77a6351de620aa9acf64ad54933ad4d34"},
     {file = "typed_ast-1.4.1.tar.gz", hash = "sha256:8c8aaad94455178e3187ab22c8b01a3837f8ee50e09cf31f1ba129eb293ec30b"},
-]
-typing = [
-    {file = "typing-3.7.4.1-py2-none-any.whl", hash = "sha256:c8cabb5ab8945cd2f54917be357d134db9cc1eb039e59d1606dc1e60cb1d9d36"},
-    {file = "typing-3.7.4.1-py3-none-any.whl", hash = "sha256:f38d83c5a7a7086543a0f649564d661859c5146a85775ab90c0d2f93ffaa9714"},
-    {file = "typing-3.7.4.1.tar.gz", hash = "sha256:91dfe6f3f706ee8cc32d38edbbf304e9b7583fb37108fef38229617f8b3eba23"},
 ]
 typing-extensions = [
     {file = "typing_extensions-3.7.4.2-py2-none-any.whl", hash = "sha256:f8d2bd89d25bc39dabe7d23df520442fa1d8969b82544370e03d88b5a591c392"},

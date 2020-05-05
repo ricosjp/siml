@@ -1,3 +1,5 @@
+import sys
+
 import optuna
 
 from . import trainer
@@ -14,6 +16,7 @@ class Objective():
     def __init__(self, main_setting, output_base):
         self.main_setting = main_setting
         self.output_base = output_base
+        return
 
     def __call__(self, trial):
         """Objective function to make optimization for Optuna.
@@ -122,56 +125,74 @@ class Objective():
                 f"Unknown data type: {default_settings.__class__}")
 
 
-def study_callback(study, frozen_trial):
-    if frozen_trial.state == optuna.structs.TrialState.PRUNED:
-        study._log_completed_trial(frozen_trial.number, frozen_trial.value)
-    print(f"Current best trial number: {study.best_trial.number}")
-    return
+class Study:
 
+    def __init__(self, main_setting, db_setting=None, step_by_step=False):
+        self.main_setting = main_setting
+        self.step_by_step = step_by_step
 
-def perform_study(main_setting, db_setting=None):
-    """Perform hyperparameter search study.
+        # Prepare study
+        top_name = util.get_top_directory().stem
+        study_name = f"{top_name}_{main_setting.trainer.name}"
+        self.output_directory = main_setting.optuna.output_base_directory \
+            / study_name
+        self.output_directory.mkdir(parents=True, exist_ok=True)
 
-    Parameters
-    -----------
-        main_setting: siml.setting.MainSetting
-            Main setting object.
-        db_setting: siml.setting.DBSetting
-            Database setting object.
-
-    Returns
-    --------
-        None
-    """
-    # Prepare study
-    if db_setting is None:
-        print(f"No DB setting found. No optuna data will be saved.")
-        storage = None
-    else:
-        if db_setting.use_sqlite:
-            storage = f"sqlite:///{main_setting.trainer.name}.db"
+        if db_setting is None:
+            print(f"No DB setting found. No optuna data will be saved.")
+            self.storage = None
         else:
-            storage = f"mysql://{db_setting.username}:" \
-                + f"{db_setting.password}@{db_setting.servername}" \
-                + f"/{db_setting.username}"
+            if db_setting.use_sqlite:
+                sqlite_file_name = self.output_directory \
+                    / (main_setting.trainer.name + '.db')
+                print(f"Save SQLite in: {sqlite_file_name}")
+                self.storage = f"sqlite:///{sqlite_file_name}"
+            else:
+                self.storage = f"mysql://{db_setting.username}:" \
+                    + f"{db_setting.password}@{db_setting.servername}" \
+                    + f"/{db_setting.username}"
 
-    top_name = util.get_top_directory().stem
-    study_name = f"{top_name}_{main_setting.trainer.name}"
-    output_directory = main_setting.optuna.output_base_directory / study_name
-    study = optuna.create_study(
-        study_name=study_name,
-        storage=storage,
-        sampler=optuna.samplers.TPESampler(),
-        load_if_exists=True, pruner=optuna.pruners.MedianPruner())
-    objective = Objective(main_setting, output_directory)
+        self.study = optuna.create_study(
+            study_name=study_name,
+            storage=self.storage,
+            sampler=optuna.samplers.TPESampler(),
+            load_if_exists=True, pruner=optuna.pruners.MedianPruner())
+        return
 
-    # Optimize
-    study.optimize(
-        objective, n_trials=main_setting.optuna.n_trial, catch=(),
-        callbacks=(study_callback,))
+    def callback_print(self, study, frozen_trial):
+        print(f"Current best trial number: {study.best_trial.number}")
+        print(f"Current best value: {study.best_trial.value}")
+        return
 
-    # Visualize the best result
-    print('=== Best Trial ===')
-    print(study.best_trial)
+    def callback_exit(self, study, frozen_trial):
+        sys.exit()
+        return
 
-    return study
+    def perform_study(self):
+        """Perform hyperparameter search study.
+
+        Parameters
+        -----------
+        None
+
+        Returns
+        --------
+        None
+        """
+        objective = Objective(self.main_setting, self.output_directory)
+
+        # Optimize
+        if self.step_by_step:
+            callbacks = (self.callback_print, self.callback_exit)
+        else:
+            callbacks = (self.callback_print,)
+
+        self.study.optimize(
+            objective, n_trials=self.main_setting.optuna.n_trial, catch=(),
+            callbacks=callbacks)
+
+        # Visualize the best result
+        print('=== Best Trial ===')
+        print(self.study.best_trial)
+
+        return self.study
