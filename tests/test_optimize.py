@@ -1,6 +1,5 @@
 from pathlib import Path
 import shutil
-import subprocess
 import unittest
 
 import numpy as np
@@ -68,20 +67,12 @@ class TestOptimize(unittest.TestCase):
         if main_setting.optuna.output_base_directory.exists():
             shutil.rmtree(main_setting.optuna.output_base_directory)
 
-        if Path('.venv').exists():
-            poetry = 'poetry'
-        else:
-            poetry = 'python3.7 -m poetry'
+        db_setting = setting.DBSetting(use_sqlite=True)
+        study = optimize.Study(main_setting, db_setting, step_by_step=True)
         for _ in range(3):
             try:
-                subprocess.run(
-                    f"{poetry} run optimize {main_setting_yml} "
-                    '-s true -l true',
-                    shell=True, check=True, capture_output=True)
-            except subprocess.CalledProcessError as e:
-                print(e.stdout)
-                raise ValueError(e.stderr)
+                study.perform_study()
+            except SystemExit:
+                continue
 
-        db_setting = setting.DBSetting(use_sqlite=True)
-        study = optimize.Study(main_setting, db_setting)
         self.assertEqual(len(study.study.get_trials()), 3)
