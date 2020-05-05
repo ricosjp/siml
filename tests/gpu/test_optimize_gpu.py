@@ -22,7 +22,7 @@ class TestOptimizeGPU(unittest.TestCase):
             shutil.rmtree(main_setting.optuna.output_base_directory)
 
         study = optimize.Study(main_setting)
-        study.perform_study(main_setting)
+        study.perform_study()
         self.assertLess(
             study.study.best_trial.value,
             np.max([t.value for t in study.study.trials]))
