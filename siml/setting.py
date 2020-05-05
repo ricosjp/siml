@@ -109,9 +109,9 @@ class DataSetting(TypedDataClass):
 
 @dc.dataclass
 class DBSetting(TypedDataClass):
-    servername: str
-    username: str
-    password: str
+    servername: str = ''
+    username: str = ''
+    password: str = ''
     use_sqlite: bool = False
 
 
