@@ -75,11 +75,12 @@ class TestOptimize(unittest.TestCase):
         for _ in range(3):
             try:
                 subprocess.run(
-                    f"{poetry} run optimize {main_setting_yml} "
+                    f"{poetry} run optimiz {main_setting_yml} "
                     '-s true -l true',
                     shell=True, check=True, capture_output=True)
             except subprocess.CalledProcessError as e:
-                raise ValueError(e.output)
+                print(e.stdout)
+                raise ValueError(e.stderr)
 
         db_setting = setting.DBSetting(use_sqlite=True)
         study = optimize.Study(main_setting, db_setting)
