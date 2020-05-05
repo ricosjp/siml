@@ -73,10 +73,13 @@ class TestOptimize(unittest.TestCase):
         else:
             poetry = 'python3.7 -m poetry'
         for _ in range(3):
-            subprocess.run(
-                f"{poetry} run optimize {main_setting_yml} "
-                '-s true -l true',
-                shell=True, check=True)
+            try:
+                subprocess.run(
+                    f"{poetry} run optimize {main_setting_yml} "
+                    '-s true -l true',
+                    shell=True, check=True, capture_output=True)
+            except subprocess.CalledProcessError as e:
+                raise ValueError(e.output)
 
         db_setting = setting.DBSetting(use_sqlite=True)
         study = optimize.Study(main_setting, db_setting)
