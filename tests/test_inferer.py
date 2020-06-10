@@ -37,7 +37,7 @@ class TestInferer(unittest.TestCase):
             shutil.rmtree(ir.setting.trainer.output_directory)
 
         def conversion_function(fem_data, raw_directory=None):
-            adj, _ = fem_data.calculate_adjacency_matrix_element()
+            adj = fem_data.calculate_adjacency_matrix_element()
             nadj = prepost.normalize_adjacency_matrix(adj)
             return {'adj': adj, 'nadj': nadj}
 
@@ -73,7 +73,7 @@ class TestInferer(unittest.TestCase):
             shutil.rmtree(ir.setting.trainer.output_directory)
 
         def conversion_function(fem_data, raw_directory=None):
-            adj, _ = fem_data.calculate_adjacency_matrix_element()
+            adj = fem_data.calculate_adjacency_matrix_element()
             nadj = prepost.normalize_adjacency_matrix(adj)
             return {'adj': adj, 'nadj': nadj}
 
@@ -104,7 +104,7 @@ class TestInferer(unittest.TestCase):
             shutil.rmtree(ir.setting.trainer.output_directory)
 
         def conversion_function(fem_data, raw_directory=None):
-            adj, _ = fem_data.calculate_adjacency_matrix_element()
+            adj = fem_data.calculate_adjacency_matrix_element()
             nadj = prepost.normalize_adjacency_matrix(adj)
             return {'adj': adj, 'nadj': nadj}
 
@@ -152,7 +152,8 @@ class TestInferer(unittest.TestCase):
         fem_data = femio.FEMData.read_files(
             'ucd', [output_directory / 'mesh.inp'])
         np.testing.assert_almost_equal(
-            fem_data.access_attribute('inferred_elemental_stress'),
+            fem_data.elemental_data.get_attribute_data(
+                'inferred_elemental_stress'),
             res_from_preprocessed[0]['dict_y']['elemental_stress'],
             decimal=7)
 
@@ -228,7 +229,7 @@ class TestInferer(unittest.TestCase):
             shutil.rmtree(ir.setting.trainer.output_directory)
 
         def conversion_function(fem_data, raw_directory=None):
-            adj, _ = fem_data.calculate_adjacency_matrix_element()
+            adj = fem_data.calculate_adjacency_matrix_element()
             nadj = prepost.normalize_adjacency_matrix(adj)
             return {'adj': adj, 'nadj': nadj}
         with open(

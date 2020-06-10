@@ -210,7 +210,6 @@ def update_fem_data(fem_data, dict_data, prefix=''):
     for key, value in dict_data.items():
         variable_name = prefix + key
         if isinstance(value, np.ndarray):
-            fem_data.pop_attribute(key)  # To be sure that overwrite correctly
             len_data = len(value)
 
             if len_data == len(fem_data.nodes.ids):
@@ -847,18 +846,33 @@ def extract_variables(
             Data dictionary.
     """
     dict_data = {
-        mandatory_variable: fem_data.convert_nodal2elemental(
-            mandatory_variable, ravel=True)
+        mandatory_variable: _extract_single_variable(
+            fem_data, mandatory_variable, mandatory=True, ravel=True)
         for mandatory_variable in mandatory_variables}
+
     if optional_variables is not None and len(optional_variables) > 0:
         for optional_variable in optional_variables:
-            try:
-                optional_variable_data = fem_data.convert_nodal2elemental(
-                    optional_variable, ravel=True)
+            optional_variable_data = _extract_single_variable(
+                fem_data, optional_variable, mandatory=False, ravel=True)
+            if optional_variable_data is not None:
                 dict_data.update({optional_variable: optional_variable_data})
-            except ValueError:
-                continue
     return dict_data
+
+
+def _extract_single_variable(
+        fem_data, variable_name, *, mandatory=True, ravel=True):
+    if variable_name in fem_data.nodal_data:
+        return fem_data.convert_nodal2elemental(
+            variable_name, ravel=ravel)
+    elif variable_name in fem_data.elemental_data:
+        return fem_data.elemental_data.get_attribute_data(variable_name)
+    else:
+        if mandatory:
+            raise ValueError(
+                f"{variable_name} not found in {fem_data.nodal_data.keys()}, "
+                f"{fem_data.elemental_data.keys()}")
+        else:
+            return None
 
 
 def save_dict_data(output_directory, dict_data, *, dtype=np.float32):

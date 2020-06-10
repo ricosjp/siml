@@ -12,7 +12,7 @@ PLOT = False
 
 
 def conversion_function(fem_data, data_directory):
-    adj, _ = fem_data.calculate_adjacency_matrix_element()
+    adj = fem_data.calculate_adjacency_matrix_element()
     nadj = prepost.normalize_adjacency_matrix(adj)
     x_grad, y_grad, z_grad = \
         fem_data.calculate_spatial_gradient_adjacency_matrices('elemental')
@@ -20,7 +20,7 @@ def conversion_function(fem_data, data_directory):
         fem_data.calculate_spatial_gradient_adjacency_matrices(
             'elemental', n_hop=2)
     global_modulus = np.mean(
-        fem_data.access_attribute('modulus'), keepdims=True)
+        fem_data.elemental_data.get_attribute_data('modulus'), keepdims=True)
     return {
         'adj': adj, 'nadj': nadj, 'global_modulus': global_modulus,
         'x_grad': x_grad, 'y_grad': y_grad, 'z_grad': z_grad,
@@ -55,7 +55,7 @@ def rotation_conversion_function(fem_data, raw_directory):
     nodal_mean_volume = fem_data.convert_elemental2nodal(
         fem_data.calculate_element_volumes(), mode='mean')
     nodal_concentrated_volume = fem_data.convert_elemental2nodal(
-        fem_data.calculate_element_volumes(), mode='central')
+        fem_data.calculate_element_volumes(), mode='effective')
 
     nodal_grad_x, nodal_grad_y, nodal_grad_z = \
         fem_data.calculate_spatial_gradient_adjacency_matrices(
@@ -65,10 +65,10 @@ def rotation_conversion_function(fem_data, raw_directory):
         + nodal_grad_y.dot(nodal_grad_y)
         + nodal_grad_z.dot(nodal_grad_z)).tocoo() / 6
     node = fem_data.nodes.data
-    t_init = fem_data.access_attribute('t_init')
+    t_init = fem_data.nodal_data.get_attribute_data('t_init')
     ucd_data = femio.FEMData.read_files(
         'ucd', [raw_directory / 'mesh_vis_psf.0100.inp'])
-    t_100 = ucd_data.access_attribute('TEMPERATURE')
+    t_100 = ucd_data.nodal_data.get_attribute_data('TEMPERATURE')
     return {
         'nodal_mean_volume': nodal_mean_volume,
         'nodal_concentrated_volume': nodal_concentrated_volume,

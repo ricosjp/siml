@@ -383,7 +383,8 @@ class TestNetwork(unittest.TestCase):
         grad_x = sp.load_npz(data_directory / 'nodal_grad_x.npz')
         grad_y = sp.load_npz(data_directory / 'nodal_grad_y.npz')
         grad_z = sp.load_npz(data_directory / 'nodal_grad_z.npz')
-        input_feature = np.random.rand(grad_x.shape[0], 3)
+        input_feature = np.reshape(
+            np.arange(grad_x.shape[0] * 3), (grad_x.shape[0], 3)) * 5e-4
         grad_output_feature = \
             + grad_x.dot(grad_x.dot(input_feature)) \
             + grad_y.dot(grad_y.dot(input_feature)) \
@@ -394,7 +395,7 @@ class TestNetwork(unittest.TestCase):
         # Due to numerical error, laplace_output_feature tends to have larger
         # error
         np.testing.assert_almost_equal(
-            grad_output_feature, laplace_output_feature, decimal=1)
+            grad_output_feature - laplace_output_feature, 0., decimal=1)
 
         rotated_directory = Path(
             'tests/data/rotation/preprocessed/cube/clscale1.0/rotated')
