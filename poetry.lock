@@ -251,7 +251,6 @@ PyQt5 = ["PyQt5 (>=5.14.0,<6.0.0)"]
 
 [package.source]
 reference = "ricos"
-type = "legacy"
 url = "https://pypi.ritc.jp/simple"
 
 [[package]]

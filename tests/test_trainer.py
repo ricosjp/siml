@@ -14,13 +14,13 @@ import siml.trainer as trainer
 
 def conversion_function(fem_data, raw_directory=None):
     # To be used in test_preprocess_deform
-    adj, _ = fem_data.calculate_adjacency_matrix_element()
+    adj = fem_data.calculate_adjacency_matrix_element()
     nadj = prepost.normalize_adjacency_matrix(adj)
     x_grad, y_grad, z_grad = \
         fem_data.calculate_spatial_gradient_adjacency_matrices(
             'elemental')
     global_modulus = np.mean(
-        fem_data.access_attribute('modulus'), keepdims=True)
+        fem_data.elemental_data.get_attribute_data('modulus'), keepdims=True)
     return {
         'adj': adj, 'nadj': nadj, 'global_modulus': global_modulus,
         'x_grad': x_grad, 'y_grad': y_grad, 'z_grad': z_grad}

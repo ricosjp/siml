@@ -87,7 +87,7 @@ def save_variable(
         save_file_path = output_directory / (file_basename + '.npy')
         np.save(
             output_directory / (file_basename + '.npy'), data.astype(dtype))
-    elif isinstance(data, sp.coo_matrix):
+    elif isinstance(data, (sp.coo_matrix, sp.csr_matrix)):
         save_file_path = output_directory / (file_basename + '.npz')
         sp.save_npz(save_file_path, data.astype(dtype))
     else:
@@ -341,7 +341,7 @@ class PreprocessConverter():
         if isinstance(data, np.ndarray):
             result = self.apply_numpy_data_with_reshape_if_needed(
                 data, function, return_applied=return_applied)
-        elif isinstance(data, sp.coo_matrix):
+        elif isinstance(data, (sp.coo_matrix, sp.csr_matrix)):
             result = self.apply_sparse_data_with_reshape_if_needed(
                 data, function, return_applied=return_applied)
         else:

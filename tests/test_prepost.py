@@ -23,7 +23,7 @@ def load_function(data_files, data_directory):
 
 def conversion_function(fem_data, raw_directory=None):
     # To be used in test_preprocess_deform
-    adj, _ = fem_data.calculate_adjacency_matrix_element()
+    adj = fem_data.calculate_adjacency_matrix_element()
     nadj = pre.normalize_adjacency_matrix(adj)
     x_grad, y_grad, z_grad = \
         fem_data.calculate_spatial_gradient_adjacency_matrices('elemental')
@@ -31,7 +31,7 @@ def conversion_function(fem_data, raw_directory=None):
         fem_data.calculate_spatial_gradient_adjacency_matrices(
             'elemental', n_hop=2)
     global_modulus = np.mean(
-        fem_data.access_attribute('modulus'), keepdims=True)
+        fem_data.elemental_data.get_attribute_data('modulus'), keepdims=True)
     return {
         'adj': adj, 'nadj': nadj, 'global_modulus': global_modulus,
         'x_grad': x_grad, 'y_grad': y_grad, 'z_grad': z_grad,
@@ -41,7 +41,7 @@ def conversion_function(fem_data, raw_directory=None):
 
 def filter_function(fem_data, raw_directory=None, data_dict=None):
     # To be used in test_convert_raw_data_with_filter_function
-    strain = fem_data.access_attribute('ElementalSTRAIN')
+    strain = fem_data.elemental_data.get_attribute_data('ElementalSTRAIN')
     return np.max(np.abs(strain)) < 1e2
 
 
