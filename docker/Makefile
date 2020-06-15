@@ -15,7 +15,7 @@ build:
 		-f Dockerfile --build-arg ricos_pypi_key=$(key) .
 
 run:
-	docker run -it --runtime=nvidia --rm $(CI_REGISTRY_IMAGE) /bin/bash
+	docker run -it --gpus all --rm $(CI_REGISTRY_IMAGE) /bin/bash
 
 push: login build
 	docker push $(CI_REGISTRY_IMAGE)
