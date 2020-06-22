@@ -97,6 +97,9 @@ class SimlModule(torch.nn.Module):
     def forward(self, x, supports=None):
         h = self._forward_core(x, supports)
         if self.residual:
-            return self.activations[-1](h + self.shortcut(x))
+            if self.block_setting.activation_after_residual:
+                return self.activations[-1](h + self.shortcut(x))
+            else:
+                return self.activations[-1](h) + self.shortcut(x)
         else:
             return h

@@ -360,6 +360,7 @@ class BlockSetting(TypedDataClass):
     destinations: typing.List[str] = dc.field(
         default_factory=list)
     residual: bool = False
+    activation_after_residual: bool = True
     allow_linear_residual: bool = False
     bias: bool = True
     input_slice: slice = slice(0, None, 1)

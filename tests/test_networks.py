@@ -412,3 +412,40 @@ class TestNetwork(unittest.TestCase):
             grad_output_feature, rotated_grad_output_feature, decimal=5)
         np.testing.assert_almost_equal(
             laplace.toarray(), rotated_laplace.toarray())
+
+    def test_mlp_activation_after_residual(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/deform/mlp_activation_after_residual.yml'))
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, 1.)
+        x = torch.from_numpy(np.random.rand(1, 4, 6).astype(np.float32))
+        y = tr.model.dict_block['RES_MLP'](x)
+        abs_residual = np.abs((y - x).detach().numpy())
+        zero_fraction = np.sum(abs_residual < 1e-5) / abs_residual.size
+        self.assertLess(.3, zero_fraction)
+
+    def test_gcn_activation_after_residual(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/deform/gcn_activation_after_residual.yml'))
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, 1.)
+        x = torch.from_numpy(np.random.rand(1, 4, 6).astype(np.float32))
+        _s = sp.coo_matrix([
+            [1., 1., 0., 0.],
+            [1., 1., 1., 1.],
+            [0., 1., 1., 1.],
+            [0., 1., 1., 1.],
+        ], dtype=np.float32)
+        s = [[torch.sparse_coo_tensor(
+            torch.stack([torch.from_numpy(_s.row), torch.from_numpy(_s.col)]),
+            torch.from_numpy(_s.data), _s.shape)]]
+        y = tr.model.dict_block['RES_GCN'](x, s)
+        abs_residual = np.abs((y - x).detach().numpy())
+        zero_fraction = np.sum(abs_residual < 1e-5) / abs_residual.size
+        self.assertLess(.3, zero_fraction)

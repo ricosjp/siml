@@ -125,21 +125,22 @@ class AbstractGCN(siml_module.SimlModule):
                 h_res = torch.sum(torch.stack([
                     self._forward_single_core(
                         x, self.subchain_indices[i], support)
-                    for i, support in enumerate(supports)]), dim=0) \
-                    + self.shortcut(x)
+                    for i, support in enumerate(supports)]), dim=0)
 
             elif self.gather_function == 'cat':
                 h_res = torch.cat([
                     self._forward_single_core(
                         x, self.subchain_indices[i], support)
-                    + self.shortcut(x)
                     for i, support in enumerate(supports)], dim=-1)
 
             else:
                 raise ValueError(
                     f"Unknown gather_function: {self.gather_function}")
 
-            return self.activations[-1](h_res)
+            if self.block_setting.activation_after_residual:
+                return self.activations[-1](h_res + self.shortcut(x))
+            else:
+                return self.activations[-1](h_res) + self.shortcut(x)
 
         else:
             if self.gather_function == 'sum':
