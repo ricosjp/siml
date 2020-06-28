@@ -97,6 +97,15 @@ test_other:
     - python3.7 -m pytest tests/test_util.py --capture=no
     - python3.7 -m pytest tests/test_inferer.py --capture=no
 
+docker:
+  image: docker:latest
+  stage: deploy
+  services:
+    - docker:dind
+  script:
+    - apk add make
+    - cd docker && make push key=${RICOS_PYPI_KEY}
+
 .deploy:wheel:
   stage: deploy
   script:
