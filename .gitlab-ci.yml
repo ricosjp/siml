@@ -8,9 +8,21 @@ default:
     - python3.7 -m poetry install
 
 stages:
+  - docker
   - preprocess
   - test
   - deploy
+
+docker:
+  image: docker:latest
+  stage: docker
+  inherit:
+    default: false
+  services:
+    - docker:dind
+  script:
+    - apk add make
+    - cd docker && make push key=${RICOS_PYPI_KEY}
 
 preprocess:
   stage: preprocess
@@ -94,17 +106,6 @@ test_other:
     - python3.7 -m pytest tests/test_setting.py --capture=no
     - python3.7 -m pytest tests/test_util.py --capture=no
     - python3.7 -m pytest tests/test_inferer.py --capture=no
-
-docker:
-  image: docker:latest
-  stage: deploy
-  inherit:
-    default: false
-  services:
-    - docker:dind
-  script:
-    - apk add make
-    - cd docker && make push key=${RICOS_PYPI_KEY}
 
 .deploy:wheel:
   stage: deploy
