@@ -9,12 +9,12 @@ else
 	docker login -u gitlab-ci-token -p $(CI_BUILD_TOKEN) $(CI_REGISTRY_IMAGE)
 endif
 
-build:
+build: Dockerfile
 	cp ../pyproject.toml .
 	docker build -t $(CI_REGISTRY_IMAGE) \
 		-f Dockerfile --build-arg ricos_pypi_key=$(key) .
 
-run:
+in: build
 	docker run -it --gpus all --rm $(CI_REGISTRY_IMAGE) /bin/bash
 
 push: login build
