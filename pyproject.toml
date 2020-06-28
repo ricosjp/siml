@@ -45,6 +45,7 @@ sphinx_rtd_theme = "^0.4.3"
 [[tool.poetry.source]]
 name = "ricos"
 url = "https://pypi.ritc.jp/simple"
+default = true
 
 [tool.poetry.extras]
 cupy = ["cupy"]
