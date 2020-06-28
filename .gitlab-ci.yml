@@ -1,13 +1,11 @@
 image: registry.ritc.jp/ricos/machine_learning/siml
 
-variables:
-  GIT_SUBMODULE_STRATEGY: recursive
-
-before_script:
-  - python3.7 -m poetry config virtualenvs.create false
-  - python3.7 -m poetry config repositories.ricos https://pypi.ritc.jp
-  - python3.7 -m poetry config http-basic.ricos ricos ${RICOS_PYPI_KEY}
-  - python3.7 -m poetry install
+default:
+  before_script:
+    - python3.7 -m poetry config virtualenvs.create false
+    - python3.7 -m poetry config repositories.ricos https://pypi.ritc.jp
+    - python3.7 -m poetry config http-basic.ricos ricos ${RICOS_PYPI_KEY}
+    - python3.7 -m poetry install
 
 stages:
   - preprocess
@@ -100,6 +98,8 @@ test_other:
 docker:
   image: docker:latest
   stage: deploy
+  inherit:
+    default: false
   services:
     - docker:dind
   script:
