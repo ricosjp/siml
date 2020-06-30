@@ -22,7 +22,7 @@ class Reducer(siml_module.SimlModule):
             if str_op == 'add':
                 self.op = torch.add
             elif str_op == 'mul':
-                self.op == torch.mul
+                self.op = torch.mul
             else:
                 raise ValueError(f"Unknown operator for reducer: {str_op}")
         else:
