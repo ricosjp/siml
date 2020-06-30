@@ -512,7 +512,7 @@ class MaxAbsScaler(TransformerMixin, BaseEstimator):
         if sp.issparse(data):
             if len(inverse_scale) != 1:
                 raise ValueError(f"Should be componentwise: false")
-            inverse_scale = inverse_scale[0]**(-self.power)
+            inverse_scale = inverse_scale[0]**(self.power)
         return data * inverse_scale
 
 
@@ -564,7 +564,7 @@ class SparseStandardScaler(TransformerMixin, BaseEstimator):
 
     def inverse_transform(self, data):
         self._raise_if_sparse(data)
-        inverse_scale = self.std_**(-self.power)
+        inverse_scale = self.std_**(self.power)
         return data * inverse_scale
 
 
