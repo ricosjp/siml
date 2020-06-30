@@ -281,14 +281,23 @@ class PreprocessConverter():
 
     MAX_RETRY = 3
 
-    def __init__(self, setting_data, *, data_files=None, componentwise=True):
+    def __init__(
+            self, setting_data, *,
+            data_files=None, componentwise=True, power=1.):
         self.is_erroneous = None
         self.setting_data = setting_data
+        self.power = power
 
         self._init_converter()
 
         self.componentwise = componentwise
         self.retry_count = 0
+
+        if not isinstance(
+                self.converter, (SparseStandardScaler, MaxAbsScaler)):
+            if abs(self.power - 1) > 1e-5:
+                raise ValueError(
+                    f"power option is not supported for {self.converter}")
 
         if data_files is not None:
             self.lazy_read_files(data_files)
@@ -321,12 +330,12 @@ class PreprocessConverter():
             self.converter = preprocessing.StandardScaler(with_mean=False)
             self.is_erroneous = self.is_standard_scaler_var_nan
         elif preprocess_method == 'sparse_std':
-            self.converter = SparseStandardScaler()
+            self.converter = SparseStandardScaler(power=self.power)
             self.is_erroneous = self.is_standard_scaler_var_nan
         elif preprocess_method == 'min_max':
             self.converter = preprocessing.MinMaxScaler()
         elif preprocess_method == 'max_abs':
-            self.converter = MaxAbsScaler()
+            self.converter = MaxAbsScaler(power=self.power)
         else:
             raise ValueError(
                 f"Unknown preprocessing method: {preprocess_method}")
@@ -472,8 +481,9 @@ class PreprocessConverter():
 
 class MaxAbsScaler(TransformerMixin, BaseEstimator):
 
-    def __init__(self):
+    def __init__(self, power=1.):
         self.max_ = 0.
+        self.power = power
         return
 
     def partial_fit(self, data):
@@ -489,7 +499,7 @@ class MaxAbsScaler(TransformerMixin, BaseEstimator):
         if np.max(self.max_) == 0.:
             scale = 0.
         else:
-            scale = 1 / self.max_
+            scale = (1 / self.max_)**self.power
 
         if sp.issparse(data):
             if len(scale) != 1:
@@ -502,19 +512,20 @@ class MaxAbsScaler(TransformerMixin, BaseEstimator):
         if sp.issparse(data):
             if len(inverse_scale) != 1:
                 raise ValueError(f"Should be componentwise: false")
-            inverse_scale = inverse_scale[0]
+            inverse_scale = inverse_scale[0]**(self.power)
         return data * inverse_scale
 
 
 class SparseStandardScaler(TransformerMixin, BaseEstimator):
     """Class to perform standardization for sparse data."""
 
-    def __init__(self):
+    def __init__(self, power=1.):
         self.var_ = 0.
         self.std_ = 0.
         self.mean_ = 0.
         self.mean_square_ = 0.
         self.n_ = 0
+        self.power = power
         return
 
     def partial_fit(self, data):
@@ -548,37 +559,13 @@ class SparseStandardScaler(TransformerMixin, BaseEstimator):
         if self.std_ == 0.:
             scale = 0.
         else:
-            scale = 1 / self.std_
+            scale = (1 / self.std_)**self.power
         return data * scale
 
     def inverse_transform(self, data):
         self._raise_if_sparse(data)
-        inverse_scale = self.std_
+        inverse_scale = self.std_**(self.power)
         return data * inverse_scale
-
-
-# class StandardScaler(Standardizer):
-#     """Class to perform scaling with standard deviation."""
-#
-#     def __init__(
-#             self, std, *,
-#             mean_square=None, n=None, mean=None, componentwise=True):
-#         super().__init__(
-#             mean=0.0, std=std, mean_square=mean_square, n=n,
-#             componentwise=componentwise)
-#
-#     @property
-#     def parameters(self):
-#         return {'std': self.std}
-#
-#     def transform(self, data):
-#         return data / (self.std + self.EPSILON)
-#
-#     def inverse(self, data):
-#         return data * (self.std + self.EPSILON)
-#
-#     def save(self, file_name):
-#         np.save(file_name, {'std': self.std})
 
 
 class Identity(TransformerMixin, BaseEstimator):

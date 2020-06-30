@@ -175,7 +175,7 @@ class TestInferer(unittest.TestCase):
             converter_parameters_pkl=converter_parameters_pkl)
         rmse = np.mean((inversed_dict_y['c'] - answer_raw_dict_y['c'])**2)**.5
         self.assertLess(rmse, 5.)
-        self.assertLess(loss, 2e-3)
+        self.assertLess(loss, 3e-3)
 
     def test_infer_timeseries(self):
         main_setting = setting.MainSetting.read_settings_yaml(

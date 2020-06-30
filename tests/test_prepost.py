@@ -1,4 +1,5 @@
 from pathlib import Path
+import pickle
 import shutil
 import unittest
 
@@ -310,9 +311,6 @@ class TestPrepost(unittest.TestCase):
         preprocessed_y_grad = sp.load_npz(
             'tests/data/deform/test_prepost/preprocessed/train/'
             'tet2_3_modulusx1.0000/y_grad.npz')
-        preprocessed_x_grad = sp.load_npz(
-            'tests/data/deform/test_prepost/preprocessed/train/'
-            'tet2_3_modulusx1.0000/x_grad.npz')
 
         ratio_y_grad = interim_y_grad.toarray() \
             / preprocessed_y_grad.toarray()
@@ -423,3 +421,29 @@ class TestPrepost(unittest.TestCase):
         y0_initial = np.load(data_directory / 'y0_initial.npy')
         np.testing.assert_almost_equal(y0[0], y0_initial[0])
         np.testing.assert_almost_equal(y0_initial - y0_initial[0], 0.)
+
+    def test_preprocess_power(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/deform/power.yml'))
+
+        shutil.rmtree(main_setting.data.preprocessed, ignore_errors=True)
+        preprocessor = pre.Preprocessor(main_setting, force_renew=True)
+        preprocessor.preprocess_interim_data()
+        data_directory = main_setting.data.preprocessed \
+            / 'train/tet2_3_modulusx0.9000'
+        preprocessed_x_grad = sp.load_npz(
+            data_directory / 'x_grad.npz')
+        reference_x_grad = sp.load_npz(
+            'tests/data/deform/interim/train/tet2_3_modulusx0.9000'
+            '/x_grad.npz').toarray()
+        with open(
+                main_setting.data.preprocessed / 'preprocessors.pkl',
+                'rb') as f:
+            preprocess_converter = pickle.load(f)['x_grad'][
+                'preprocess_converter']
+        std = preprocess_converter.converter.std_
+        np.testing.assert_almost_equal(
+            preprocessed_x_grad.toarray() * std**.5, reference_x_grad)
+        np.testing.assert_almost_equal(
+            preprocess_converter.converter.inverse_transform(
+                preprocessed_x_grad).toarray(), reference_x_grad)
