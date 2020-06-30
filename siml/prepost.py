@@ -512,7 +512,8 @@ class Preprocessor:
 
         preprocess_converter = util.PreprocessConverter(
             reference_dict['preprocess_converter'],
-            componentwise=reference_dict['componentwise'])
+            componentwise=reference_dict['componentwise'],
+            power=reference_dict['power'])
         if preprocess_converter is None:
             raise ValueError(f"Reference of {variable_name} is None")
 
@@ -587,7 +588,8 @@ class Preprocessor:
                 for data_directory in self.interim_directories]
             preprocess_converter = util.PreprocessConverter(
                 preprocess_setting['method'], data_files=data_files,
-                componentwise=preprocess_setting['componentwise'])
+                componentwise=preprocess_setting['componentwise'],
+                power=preprocess_setting['power'])
 
         else:
             preprocess_converter = None
@@ -596,7 +598,9 @@ class Preprocessor:
             variable_name: {
                 'method': preprocess_setting['method'],
                 'componentwise': preprocess_setting['componentwise'],
-                'preprocess_converter': preprocess_converter}}
+                'preprocess_converter': preprocess_converter,
+                'power': preprocess_setting['power'],
+            }}
         if not self.setting.data.preprocessed.exists():
             self.setting.data.preprocessed.mkdir(parents=True, exist_ok=True)
         with open(

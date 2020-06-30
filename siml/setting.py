@@ -560,7 +560,7 @@ class PreprocessSetting:
             if isinstance(value, str):
                 self.preprocess.update({key: {
                     'method': value, 'componentwise': True, 'same_as': None,
-                    'group_id': 0}})
+                    'group_id': 0, 'power': 1.}})
             elif isinstance(value, dict):
                 if 'method' not in value:
                     value.update({'method': 'identity'})
@@ -570,6 +570,8 @@ class PreprocessSetting:
                     value.update({'same_as': None})
                 if 'group_id' not in value:
                     value.update({'group_id': 0})
+                if 'power' not in value:
+                    value.update({'power': 1.})
                 self.preprocess.update({key: value})
             else:
                 raise ValueError('Invalid format of preprocess setting')
