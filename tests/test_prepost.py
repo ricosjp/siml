@@ -431,12 +431,19 @@ class TestPrepost(unittest.TestCase):
         preprocessor.preprocess_interim_data()
         data_directory = main_setting.data.preprocessed \
             / 'train/tet2_3_modulusx0.9000'
-        x_grad = sp.load_npz(data_directory / 'x_grad.npz').toarray()
+        preprocessed_x_grad = sp.load_npz(
+            data_directory / 'x_grad.npz')
         reference_x_grad = sp.load_npz(
             'tests/data/deform/interim/train/tet2_3_modulusx0.9000'
             '/x_grad.npz').toarray()
         with open(
-                'tests/data/deform/preprocessed/preprocessors.pkl', 'rb') as f:
-            std = pickle.load(f)['x_grad'][
-                'preprocess_converter'].converter.std_
-        np.testing.assert_almost_equal(x_grad * std**.5, reference_x_grad)
+                main_setting.data.preprocessed / 'preprocessors.pkl',
+                'rb') as f:
+            preprocess_converter = pickle.load(f)['x_grad'][
+                'preprocess_converter']
+        std = preprocess_converter.converter.std_
+        np.testing.assert_almost_equal(
+            preprocessed_x_grad.toarray() * std**.5, reference_x_grad)
+        np.testing.assert_almost_equal(
+            preprocess_converter.converter.inverse_transform(
+                preprocessed_x_grad).toarray(), reference_x_grad)
