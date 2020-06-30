@@ -5,6 +5,7 @@ RUN apt-get update -y && \
   git \
   make \
   gcc \
+  curl \
   python3.7 \
   python3.7-dev \
   python3.7-distutils \
@@ -16,11 +17,13 @@ COPY ./pyproject.toml /src/pyproject.toml
 WORKDIR /src
 
 ARG ricos_pypi_key
+ENV PATH $PATH:/root/.poetry/bin
 
-RUN python3.7 -m pip install -U setuptools \
+RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python3.7 \
+  && sed -i.bak s/python/python3.7/g ~/.poetry/bin/poetry \
+  && python3.7 -m pip install -U setuptools \
   && python3.7 -m pip install wheel \
-  && python3.7 -m pip install -U pip poetry \
-  && python3.7 -m poetry config virtualenvs.create false \
-  && python3.7 -m poetry config repositories.ricos https://pypi.ritc.jp \
-  && python3.7 -m poetry config http-basic.ricos ricos $ricos_pypi_key \
-  && python3.7 -m poetry install
+  && poetry config virtualenvs.create false \
+  && poetry config repositories.ricos https://pypi.ritc.jp \
+  && poetry config http-basic.ricos ricos $ricos_pypi_key \
+  && poetry install

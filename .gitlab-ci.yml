@@ -1,18 +1,33 @@
 image: registry.ritc.jp/ricos/machine_learning/siml
 
-variables:
-  GIT_SUBMODULE_STRATEGY: recursive
-
-before_script:
-  - python3.7 -m poetry config virtualenvs.create false
-  - python3.7 -m poetry config repositories.ricos https://pypi.ritc.jp
-  - python3.7 -m poetry config http-basic.ricos ricos ${RICOS_PYPI_KEY}
-  - python3.7 -m poetry install
+default:
+  before_script:
+    - poetry config virtualenvs.create false
+    - poetry config repositories.ricos https://pypi.ritc.jp
+    - poetry config http-basic.ricos ricos ${RICOS_PYPI_KEY}
+    - poetry install
 
 stages:
+  - docker
   - preprocess
   - test
   - deploy
+
+docker:
+  image: docker:latest
+  stage: docker
+  inherit:
+    default: false
+  services:
+    - docker:dind
+  script:
+    - apk add make
+    - cd docker && make push key=${RICOS_PYPI_KEY}
+  tags:
+    - docker
+    - gpu
+  only:
+    - master
 
 preprocess:
   stage: preprocess
@@ -100,17 +115,17 @@ test_other:
 .deploy:wheel:
   stage: deploy
   script:
-    - python3.7 -m pip install --upgrade pip poetry
-    - python3.7 -m poetry version $VERSION
-    - python3.7 -m poetry config repositories.ricos https://pypi.ritc.jp
-    - python3.7 -m poetry build -f wheel
-    - python3.7 -m poetry publish --username ricos --password ${RICOS_PYPI_KEY} -r ricos --no-ansi -n -v
+    - python3.7 -m pip install --upgrade pip
+    - poetry version $VERSION
+    - poetry config repositories.ricos https://pypi.ritc.jp
+    - poetry build -f wheel
+    - poetry publish --username ricos --password ${RICOS_PYPI_KEY} -r ricos --no-ansi -n -v
   retry: 2
 
 deploy:wheel:master:
   extends: .deploy:wheel
   before_script:
-    - export VERSION=0.2.dev$(date +"%Y%m%d%H%M")
+    - export VERSION=0.2.2.dev$(date +"%Y%m%d%H%M")
   only:
     - master
 

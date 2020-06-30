@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "siml"
-version = "0.2.0"
+version = "0.2.2"
 description = "SiML - a Simulation ML library"
 authors = []
 
@@ -45,6 +45,7 @@ sphinx_rtd_theme = "^0.4.3"
 [[tool.poetry.source]]
 name = "ricos"
 url = "https://pypi.ritc.jp/simple"
+default = true
 
 [tool.poetry.extras]
 cupy = ["cupy"]
