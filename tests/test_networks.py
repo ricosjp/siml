@@ -449,3 +449,19 @@ class TestNetwork(unittest.TestCase):
         abs_residual = np.abs((y - x).detach().numpy())
         zero_fraction = np.sum(abs_residual < 1e-5) / abs_residual.size
         self.assertLess(.3, zero_fraction)
+
+    def test_reduce_multiply(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/deform/reduce_mul.yml'))
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, 1.)
+
+        e = np.random.rand(1, 4, 1).astype(np.float32)
+        epsilon = np.random.rand(1, 4, 6).astype(np.float32)
+        sigma = tr.model.dict_block['MUL'](
+            torch.from_numpy(e), torch.from_numpy(epsilon))
+        np.testing.assert_almost_equal(
+            sigma.detach().numpy(), e * epsilon)
