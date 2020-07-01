@@ -498,4 +498,4 @@ class TestNetwork(unittest.TestCase):
             overwrite=True)
         np.testing.assert_almost_equal(
             results[0]['dict_y']['t_100'],
-            results[1]['dict_y']['t_100'])
+            results[1]['dict_y']['t_100'], decimal=5)
