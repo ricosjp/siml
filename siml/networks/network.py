@@ -16,6 +16,7 @@ from . import gcn
 from . import grad_gcn
 from . import identity
 from . import integration
+from . import iso_gcn
 from . import laplace_net
 from . import lstm
 from . import mlp
@@ -53,6 +54,7 @@ class Network(torch.nn.Module):
         'deepsets': BlockInformation(deepsets.DeepSets),
         'gcn': BlockInformation(gcn.GCN, use_support=True),
         'grad_gcn': BlockInformation(grad_gcn.GradGCN, use_support=True),
+        'iso_gcn': BlockInformation(iso_gcn.IsoGCN, use_support=True),
         'laplace_net': BlockInformation(
             laplace_net.LaplaceNet, use_support=True),
         'lstm': BlockInformation(lstm.LSTM),
