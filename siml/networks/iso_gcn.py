@@ -57,12 +57,16 @@ class IsoGCN(abstract_gcn.AbstractGCN):
                 f"Unexpected propagation method: {str_propagation}")
 
     def _convolution(self, x, supports):
-        return [torch.sparse.mm(support, x) for support in supports]
+        dim = len(supports)
+        n_vertex = len(x)
+        sp = torch.cat(supports, dim=0)
+        return torch.reshape(sp.mm(x), (dim, n_vertex, -1))
 
     def _contraction(self, x, supports):
-        return torch.sum(torch.stack([
-            torch.sparse.mm(support, x_)
-            for x_, support in zip(x, supports)]), dim=0)
+        dim = len(supports)
+        n_vertex = x.shape[1]
+        sp = torch.cat(supports, dim=1)
+        return sp.mm(torch.reshape(x, (dim * n_vertex, -1)))
 
     def _tensor_product(self, x, supports):
         raise NotImplementedError
