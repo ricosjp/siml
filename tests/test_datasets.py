@@ -1,10 +1,6 @@
-from pathlib import Path
-import shutil
 import unittest
 
 import numpy as np
-import matplotlib.pyplot as plt
-import scipy.sparse as sp
 import torch
 
 import siml.datasets as datasets
