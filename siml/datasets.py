@@ -290,15 +290,68 @@ def convert_sparse_info(sparse_info, device=None, non_blocking=False):
         } for s in si] for si in sparse_info]
 
 
-def convert_sparse_tensor(sparse_info, device=None, non_blocking=False):
-    return np.array([
-        [
-            torch.sparse_coo_tensor(
-                torch.stack([s['row'], s['col']]),
-                s['values'], s['size']
-            ).to(device)
-            for s in si]
-        for si in sparse_info])
+def convert_sparse_tensor(
+        sparse_info, device=None, non_blocking=False, merge=False):
+    """Convert sparse info to torch.Tensor which is sparse.
+
+    Parameters
+    ----------
+    sparse_info: List[List[Dict[str: torch.Tensor]]]
+        Sparse data which has: row, col, values, size in COO format.
+    non_blocking: bool, optional
+        Dummy parameter to have unified interface with
+        ignite.utils.convert_tensor.
+    merge: bool, optional
+        If True, create large sparse tensor merged in the diag direction.
+
+    Returns
+    -------
+    sparse_tensors: numpy.ndarray[torch.Tensor]
+    """
+    if merge:
+        converted_sparses = np.array([
+            merge_sparse_tensors(si).to(device)
+            for si in sparse_info])
+    else:
+        converted_sparses = np.array([
+            [
+                torch.sparse_coo_tensor(
+                    torch.stack([s['row'], s['col']]),
+                    s['values'], s['size']
+                ).to(device)
+                for s in si]
+            for si in sparse_info])
+
+    return converted_sparses
+
+
+def merge_sparse_tensors(stripped_sparse_info):
+    """Merge sparse tensors.
+
+    Parameters
+    ----------
+    stripped_sparse_info: List[Dict[str: torch.Tensor]]
+        Sparse data which has: row, col, values, size in COO format.
+
+    Returns
+    -------
+        merged_sparse_tensor: torch.Tensor
+    """
+    row_shifts = np.cumsum([s['size'][0] for s in stripped_sparse_info])
+    col_shifts = np.cumsum([s['size'][1] for s in stripped_sparse_info])
+    rows = [s['row'] for s in stripped_sparse_info]
+    cols = [s['col'] for s in stripped_sparse_info]
+    values = torch.cat([s['values'] for s in stripped_sparse_info])
+
+    merged_rows = rows[0]
+    merged_cols = cols[0]
+    for i in range(1, len(rows)):
+        merged_rows = torch.cat([merged_rows, rows[i] + row_shifts[i-1]])
+        merged_cols = torch.cat([merged_cols, cols[i] + col_shifts[i-1]])
+
+    return torch.sparse_coo_tensor(
+        torch.stack([merged_rows, merged_cols]), values,
+        [row_shifts[-1], col_shifts[-1]])
 
 
 def prepare_batch_without_support(
