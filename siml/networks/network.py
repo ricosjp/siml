@@ -92,6 +92,10 @@ class Network(torch.nn.Module):
         self.use_support = np.any([
             block_information.use_support
             for block_information in self.dict_block_information.values()])
+        self.merge_sparses = np.any([
+            isinstance(v, iso_gcn.IsoGCN) for v in self.dict_block.values()])
+        if self.merge_sparses:
+            print('Sparse matrices are merged for IsoGCN')
 
         return
 
@@ -230,7 +234,7 @@ class Network(torch.nn.Module):
         # and coo_matrix, convert sparse in the forward
         if self.use_support:
             supports = datasets.convert_sparse_tensor(
-                x_['supports'], device=x.device)
+                x_['supports'], device=x.device, merge=self.merge_sparses)
         dict_hidden = {
             block_name: None for block_name in self.call_graph.nodes}
 
@@ -247,9 +251,15 @@ class Network(torch.nn.Module):
                     in self.call_graph.predecessors(graph_node)]
 
                 if self.dict_block_information[graph_node].use_support:
-                    selected_supports = [
-                        [s.to(device) for s in sp] for sp
-                        in supports[:, block_setting.support_input_indices]]
+                    if self.merge_sparses:
+                        # NOTE: support_input_indices are ignored
+                        selected_supports = supports
+                    else:
+                        selected_supports = [
+                            [s.to(device) for s in sp] for sp
+                            in supports[
+                                :, block_setting.support_input_indices]]
+
                     dict_hidden[graph_node] = self.dict_block[graph_node](
                         *inputs, supports=selected_supports) \
                         * self.dict_block[graph_node].coeff
