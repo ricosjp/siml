@@ -1,0 +1,23 @@
+data:
+  inferred: tests/data/heat_time_series/inferred
+  interim: tests/data/heat_time_series/interim
+  pad: false
+  preprocessed: tests/data/heat_time_series/preprocessed
+  raw: tests/data/heat_time_series/raw
+  test:
+  - tests/data/heat_time_series/preprocessed/test
+  train:
+  - tests/data/heat_time_series/preprocessed/train
+  validation:
+  - tests/data/heat_time_series/preprocessed/validation
+conversion:
+  required_file_names:
+    - '*.msh'
+    - '*.cnt'
+    - '*.res.*'
+  time_series: true
+preprocess:
+  temperature:
+    method: standardize
+  thermal_conductivity:
+    method: standardize
