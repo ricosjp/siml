@@ -336,7 +336,7 @@ description = "FEM I/O Tool"
 name = "femio"
 optional = false
 python-versions = ">=3.6.1,<4.0.0"
-version = "0.2.1.dev202007241939"
+version = "0.2.1.dev202007271716"
 
 [package.dependencies]
 matplotlib = ">=3.1,<4.0"
@@ -1569,7 +1569,7 @@ einops = [
     {file = "einops-0.2.0.tar.gz", hash = "sha256:165ee28bcb60e5c2cbb801b5c78e181548ff8daa7c8fcabae5b251e55f7fe614"},
 ]
 femio = [
-    {file = "femio-0.2.1.dev202007241939-py3-none-any.whl", hash = "md5:90b6bdc0d755f3f6cfd8ca37aea6f15a"},
+    {file = "femio-0.2.1.dev202007271716-py3-none-any.whl", hash = "md5:2d5c2dffd55455dba5e8913cc92de819"},
 ]
 filelock = [
     {file = "filelock-3.0.12-py3-none-any.whl", hash = "sha256:929b7d63ec5b7d6b71b0fa5ac14e030b3f70b75747cef1b10da9b879fef15836"},

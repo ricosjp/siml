@@ -40,6 +40,12 @@ def conversion_function(fem_data, raw_directory=None):
     }
 
 
+def conversion_function_heat_time_series(fem_data, raw_directory=None):
+    # To be used in test_convert_heat_time_series
+    temperature = fem_data.nodal_data.get_attribute_data('TEMPERATURE')
+    return {'temperature': temperature}
+
+
 def filter_function(fem_data, raw_directory=None, data_dict=None):
     # To be used in test_convert_raw_data_with_filter_function
     strain = fem_data.elemental_data.get_attribute_data('ElementalSTRAIN')
@@ -447,3 +453,14 @@ class TestPrepost(unittest.TestCase):
         np.testing.assert_almost_equal(
             preprocess_converter.converter.inverse_transform(
                 preprocessed_x_grad).toarray(), reference_x_grad)
+
+    def test_convert_heat_time_series(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/heat_time_series/data.yml'))
+
+        shutil.rmtree(main_setting.data.interim, ignore_errors=True)
+
+        rc = pre.RawConverter(
+            main_setting, recursive=True, write_ucd=False,
+            conversion_function=conversion_function_heat_time_series)
+        rc.convert()
