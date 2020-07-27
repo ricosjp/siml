@@ -8,8 +8,6 @@ data:
   validation:
     - tests/data/rotation/preprocessed
 conversion:
-  mandatory:
-    - thermal_conductivity
   required_file_names:
     - '*.msh'
     - '*.cnt'
