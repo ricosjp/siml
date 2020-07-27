@@ -160,7 +160,8 @@ class RawConverter():
                 fem_data = femio.FEMData.read_directory(
                     conversion_setting.file_type, raw_directory,
                     read_npy=self.read_npy, save=False,
-                    read_res=self.read_res)
+                    read_res=self.read_res,
+                    time_series=conversion_setting.time_series)
 
             if conversion_setting.mandatory_variables is not None \
                     and len(conversion_setting.mandatory_variables) > 0:

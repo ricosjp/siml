@@ -506,6 +506,8 @@ class ConversionSetting(TypedDataClass):
     skip_femio: bool, optional [False]
         If True, skip femio.FEMData reading process. Useful for
         user-defined data format such as csv, h5, etc.
+    time_series: bool, optional [False]
+        If True, make femio parse time series data.
     """
 
     mandatory_variables: typing.List[str] = dc.field(
@@ -520,6 +522,7 @@ class ConversionSetting(TypedDataClass):
     file_type: str = 'fistr'
     required_file_names: typing.List[str] = dc.field(default_factory=list)
     skip_femio: bool = False
+    time_series: bool = False
 
     @classmethod
     def read_settings_yaml(cls, settings_yaml):
@@ -543,6 +546,7 @@ class ConversionSetting(TypedDataClass):
             pass
 
         super().__post_init__()
+        return
 
 
 @dc.dataclass
