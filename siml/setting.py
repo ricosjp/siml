@@ -1,7 +1,8 @@
 import dataclasses as dc
+from enum import Enum
+import os
 from pathlib import Path
 import typing
-from enum import Enum
 
 import numpy as np
 import optuna
@@ -668,12 +669,20 @@ class MainSetting:
     def __post_init__(self):
 
         if self.replace_preprocessed:
-            if str(self.data.preprocessed) != str(self.data.train[0].parent) \
-                    and str(self.data.preprocessed) != str(self.data.train[0]):
+            if str(self.data.preprocessed[0]) \
+                    != str(self.data.train[0].parent) \
+                    and str(self.data.preprocessed[0]) \
+                    != str(self.data.train[0]):
                 print(
                     'self.data.preprocessed differs from self.data.train. '
                     'Replaced.')
-                self.data.preprocessed = self.data.train[0].parent
+                self.data.preprocessed = [self.data.train[0].parent]
+
+        self.data.raw_root = Path(os.path.commonprefix(self.data.raw))
+        self.data.interim_root = Path(os.path.commonprefix(self.data.interim))
+        self.data.preprocessed_root = Path(os.path.commonprefix(
+            self.data.preprocessed))
+        return
 
     def update_with_dict(self, new_dict):
         original_dict = dc.asdict(self)

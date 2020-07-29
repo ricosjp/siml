@@ -1,10 +1,12 @@
 """Module for preprocessing."""
 
 import datetime as dt
+from functools import reduce
 import glob
 import io
 import itertools as it
 import multiprocessing as multi
+from operator import or_
 from pathlib import Path
 import pickle
 
@@ -79,7 +81,7 @@ class RawConverter():
         self.read_res = read_res
         self.max_process = util.determine_max_process(max_process)
         self.setting.conversion.output_base_directory \
-            = self.setting.data.interim
+            = self.setting.data.interim_root
 
     def convert(self, raw_directory=None):
         """Perform conversion.
@@ -93,18 +95,19 @@ class RawConverter():
         if raw_directory is None:
             raw_directory = self.setting.data.raw
 
+        print(raw_directory)
+
         # Process all subdirectories when recursice is True
         if self.recursive:
-            if isinstance(raw_directory, list) or isinstance(
-                    raw_directory, set):
-                raw_directories = {util.collect_data_directories(
-                    Path(d)) for d in (raw_directory)}
+            if isinstance(raw_directory, (list, tuple, set)):
+                raw_directories = reduce(or_, [
+                    set(util.collect_data_directories(Path(d)))
+                    for d in raw_directory])
             else:
                 raw_directories = util.collect_data_directories(
                     Path(raw_directory))
         else:
-            if isinstance(raw_directory, list) or isinstance(
-                    raw_directory, set):
+            if isinstance(raw_directory, (list, tuple, set)):
                 raw_directories = raw_directory
             else:
                 raw_directories = [raw_directory]
@@ -135,8 +138,11 @@ class RawConverter():
         # Determine output directory
         raw_directory = Path(raw_directory)
         print(f"Processing: {raw_directory}")
-        output_directory = determine_output_directory(
-            raw_directory, conversion_setting.output_base_directory, 'raw')
+        try:
+            output_directory = determine_output_directory(
+                raw_directory, conversion_setting.output_base_directory, 'raw')
+        except:
+            raise ValueError(raw_directory, conversion_setting.output_base_directory)
 
         # Guard
         if not util.files_exist(
@@ -404,7 +410,7 @@ class Preprocessor:
         ----------
         data_directory: pathlib.Path, optional [None]
             Directory path contains variable-wise preprocessor settings pkl
-            files. If not fed, looking at self.setting.data.preprocessed .
+            files. If not fed, looking at self.setting.data.preprocessed_root .
 
         Returns
         -------
@@ -413,7 +419,7 @@ class Preprocessor:
             merger.
         """
         if data_directory is None:
-            data_directory = self.setting.data.preprocessed
+            data_directory = self.setting.data.preprocessed_root
         preprocessors_pkl_path = data_directory / self.PREPROCESSORS_PKL_NAME
 
         if self.force_renew or not preprocessors_pkl_path.is_file():
@@ -449,7 +455,7 @@ class Preprocessor:
         preprocessor_pkl: dict or pathlib.Path, optional [None]
             dict or pickle file path describing settings and parameters for
             preprocessors. If not fed, data will be loaded from
-            self.setting.data.preprocessed.
+            self.setting.data.preprocessed_root.
         group_id: int, optional [None]
             group_id to specify chunk of preprocessing group. Useful when
             MemoryError occurs with all variables preprocessed in one node.
@@ -461,7 +467,7 @@ class Preprocessor:
         """
 
         if preprocessor_pkl is None:
-            preprocessor_pkl = self.setting.data.preprocessed \
+            preprocessor_pkl = self.setting.data.preprocessed_root \
                 / self.PREPROCESSORS_PKL_NAME
             if not preprocessor_pkl.is_file():
                 raise ValueError(f"{preprocessor_pkl} not found.")
@@ -483,11 +489,11 @@ class Preprocessor:
         # Touch finished files
         for data_directory in self.interim_directories:
             output_directory = determine_output_directory(
-                data_directory, self.setting.data.preprocessed,
+                data_directory, self.setting.data.preprocessed_root,
                 self.str_replace)
             (output_directory / self.FINISHED_FILE).touch()
 
-        yaml_file = self.setting.data.preprocessed / 'settings.yml'
+        yaml_file = self.setting.data.preprocessed_root / 'settings.yml'
         if not yaml_file.exists():
             setting.write_yaml(self.setting, yaml_file)
 
@@ -563,15 +569,15 @@ class Preprocessor:
         print(variable_name, preprocess_setting)
 
         # Check if data already exists
-        pkl_file = self.setting.data.preprocessed \
+        pkl_file = self.setting.data.preprocessed_root \
             / self.PREPROCESSORS_PKL_NAME
-        variable_pkl_file = self.setting.data.preprocessed \
+        variable_pkl_file = self.setting.data.preprocessed_root \
             / f"{variable_name}_{self.PREPROCESSORS_PKL_NAME}"
         if not self.force_renew and (
                 pkl_file.exists() or variable_pkl_file.exists()):
             print(
                 'Data already exists in '
-                f"{self.setting.data.preprocessed} for {variable_name}. "
+                f"{self.setting.data.preprocessed_root} for {variable_name}. "
                 'Skipped.')
             return
 
@@ -602,10 +608,11 @@ class Preprocessor:
                 'preprocess_converter': preprocess_converter,
                 'power': preprocess_setting['power'],
             }}
-        if not self.setting.data.preprocessed.exists():
-            self.setting.data.preprocessed.mkdir(parents=True, exist_ok=True)
+        if not self.setting.data.preprocessed_root.exists():
+            self.setting.data.preprocessed_root.mkdir(
+                parents=True, exist_ok=True)
         with open(
-                self.setting.data.preprocessed
+                self.setting.data.preprocessed_root
                 / f"{variable_name}_{self.PREPROCESSORS_PKL_NAME}",
                 'wb') as f:
             pickle.dump(dict_preprocessor_setting, f)
@@ -640,7 +647,7 @@ class Preprocessor:
                     transformed_data, self.max_n_element)
 
             output_directory = determine_output_directory(
-                data_directory, self.setting.data.preprocessed,
+                data_directory, self.setting.data.preprocessed_root,
                 self.str_replace)
             if self.save_func is None:
                 util.save_variable(
