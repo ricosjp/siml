@@ -138,11 +138,8 @@ class RawConverter():
         # Determine output directory
         raw_directory = Path(raw_directory)
         print(f"Processing: {raw_directory}")
-        try:
-            output_directory = determine_output_directory(
-                raw_directory, conversion_setting.output_base_directory, 'raw')
-        except:
-            raise ValueError(raw_directory, conversion_setting.output_base_directory)
+        output_directory = determine_output_directory(
+            raw_directory, conversion_setting.output_base_directory, 'raw')
 
         # Guard
         if not util.files_exist(
