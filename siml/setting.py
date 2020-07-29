@@ -47,18 +47,28 @@ class TypedDataClass:
 
         if field.type == typing.List[Path]:
             def type_function(x):
+                if not isinstance(x, (list, tuple)):
+                    x = [x]
                 return [Path(_x) for _x in x]
         elif field.type == typing.List[str]:
             def type_function(x):
+                if not isinstance(x, (list, tuple)):
+                    x = [x]
                 return [str(_x) for _x in x]
         elif field.type == typing.List[int]:
             def type_function(x):
+                if not isinstance(x, (list, tuple)):
+                    x = [x]
                 return [int(_x) for _x in x]
         elif field.type == typing.List[float]:
             def type_function(x):
+                if not isinstance(x, (list, tuple)):
+                    x = [x]
                 return [float(_x) for _x in x]
         elif field.type == typing.List[dict]:
             def type_function(x):
+                if not isinstance(x, (list, tuple)):
+                    x = [x]
                 return [dict(_x) for _x in x]
         elif field.type == typing.Tuple:
             def type_function(x):
@@ -86,10 +96,14 @@ class TypedDataClass:
 @dc.dataclass
 class DataSetting(TypedDataClass):
 
-    raw: Path = Path('data/raw')
-    interim: Path = Path('data/interim')
-    preprocessed: Path = Path('data/preprocessed')
-    inferred: Path = Path('data/inferred')
+    raw: typing.List[Path] = dc.field(
+        default_factory=lambda: [Path('data/raw')])
+    interim: typing.List[Path] = dc.field(
+        default_factory=lambda: [Path('data/interim')])
+    preprocessed: typing.List[Path] = dc.field(
+        default_factory=lambda: [Path('data/preprocessed')])
+    inferred: typing.List[Path] = dc.field(
+        default_factory=lambda: [Path('data/inferred')])
     train: typing.List[Path] = dc.field(
         default_factory=lambda: [Path('data/preprocessed/train')])
     validation: typing.List[Path] = dc.field(
