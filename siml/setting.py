@@ -135,6 +135,10 @@ class DataSetting(TypedDataClass):
     def preprocessed_root(self):
         return Path(os.path.commonprefix(self.preprocessed))
 
+    @property
+    def inferred_root(self):
+        return Path(os.path.commonprefix(self.inferred))
+
 
 @dc.dataclass
 class DBSetting(TypedDataClass):
