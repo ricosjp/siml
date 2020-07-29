@@ -55,9 +55,9 @@ class TestNetworksGPU(unittest.TestCase):
         ir = inferer.Inferer(main_setting)
         results = ir.infer(
             model=main_setting.trainer.output_directory,
-            preprocessed_data_directory=main_setting.data.preprocessed
+            preprocessed_data_directory=main_setting.data.preprocessed_root
             / 'test',
-            converter_parameters_pkl=main_setting.data.preprocessed
+            converter_parameters_pkl=main_setting.data.preprocessed_root
             / 'preprocessors.pkl')
         self.assertLess(results[0]['loss'], 1e-1)
         if PLOT:
@@ -89,9 +89,9 @@ class TestNetworksGPU(unittest.TestCase):
         ir = inferer.Inferer(main_setting)
         results = ir.infer(
             model=main_setting.trainer.output_directory,
-            preprocessed_data_directory=main_setting.data.preprocessed
+            preprocessed_data_directory=main_setting.data.preprocessed_root
             / 'test',
-            converter_parameters_pkl=main_setting.data.preprocessed
+            converter_parameters_pkl=main_setting.data.preprocessed_root
             / 'preprocessors.pkl')
         self.assertLess(results[0]['loss'], 1e-1)
         if PLOT:
@@ -123,9 +123,9 @@ class TestNetworksGPU(unittest.TestCase):
         ir = inferer.Inferer(main_setting)
         results = ir.infer(
             model=main_setting.trainer.output_directory,
-            preprocessed_data_directory=main_setting.data.preprocessed
+            preprocessed_data_directory=main_setting.data.preprocessed_root
             / 'test',
-            converter_parameters_pkl=main_setting.data.preprocessed
+            converter_parameters_pkl=main_setting.data.preprocessed_root
             / 'preprocessors.pkl')
         self.assertLess(results[0]['loss'], .2)
         if PLOT:
@@ -157,9 +157,9 @@ class TestNetworksGPU(unittest.TestCase):
         ir = inferer.Inferer(main_setting)
         results = ir.infer(
             model=main_setting.trainer.output_directory,
-            preprocessed_data_directory=main_setting.data.preprocessed
+            preprocessed_data_directory=main_setting.data.preprocessed_root
             / 'test',
-            converter_parameters_pkl=main_setting.data.preprocessed
+            converter_parameters_pkl=main_setting.data.preprocessed_root
             / 'preprocessors.pkl')
         self.assertLess(results[0]['loss'], 5e-1)
         if PLOT:

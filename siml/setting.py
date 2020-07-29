@@ -121,6 +121,20 @@ class DataSetting(TypedDataClass):
                 f"pad = True option is deprecated. Set pad = False")
         super().__post_init__()
 
+        return
+
+    @property
+    def raw_root(self):
+        return Path(os.path.commonprefix(self.raw))
+
+    @property
+    def interim_root(self):
+        return Path(os.path.commonprefix(self.interim))
+
+    @property
+    def preprocessed_root(self):
+        return Path(os.path.commonprefix(self.preprocessed))
+
 
 @dc.dataclass
 class DBSetting(TypedDataClass):
@@ -677,11 +691,6 @@ class MainSetting:
                     'self.data.preprocessed differs from self.data.train. '
                     'Replaced.')
                 self.data.preprocessed = [self.data.train[0].parent]
-
-        self.data.raw_root = Path(os.path.commonprefix(self.data.raw))
-        self.data.interim_root = Path(os.path.commonprefix(self.data.interim))
-        self.data.preprocessed_root = Path(os.path.commonprefix(
-            self.data.preprocessed))
         return
 
     def update_with_dict(self, new_dict):
