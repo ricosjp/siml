@@ -128,14 +128,14 @@ class TestPrepost(unittest.TestCase):
         main_setting = setting.MainSetting(
             data=data_setting, conversion=conversion_setting)
 
-        shutil.rmtree(data_setting.interim, ignore_errors=True)
-        shutil.rmtree(data_setting.preprocessed, ignore_errors=True)
+        shutil.rmtree(data_setting.interim_root, ignore_errors=True)
+        shutil.rmtree(data_setting.preprocessed_root, ignore_errors=True)
 
         rc = pre.RawConverter(
             main_setting, recursive=True, load_function=load_function)
         rc.convert()
 
-        interim_directory = data_setting.interim / 'train/1'
+        interim_directory = data_setting.interim_root / 'train/1'
         expected_a = np.array([[1], [2], [3], [4]])
         expected_b = np.array([[2.1], [4.1], [6.1], [8.1]])
         expected_c = np.array([[3.2], [7.2], [8.2], [10.2]])
@@ -161,14 +161,14 @@ class TestPrepost(unittest.TestCase):
             preprocess=preprocess_setting.preprocess, data=data_setting)
 
         # Clean up data
-        shutil.rmtree(data_setting.interim, ignore_errors=True)
-        shutil.rmtree(data_setting.preprocessed, ignore_errors=True)
-        data_setting.preprocessed.mkdir(parents=True)
+        shutil.rmtree(data_setting.interim_root, ignore_errors=True)
+        shutil.rmtree(data_setting.preprocessed_root, ignore_errors=True)
+        data_setting.preprocessed_root.mkdir(parents=True)
 
         # Create data
         interim_paths = [
-            data_setting.interim / 'a',
-            data_setting.interim / 'b']
+            data_setting.interim_root / 'a',
+            data_setting.interim_root / 'b']
         for i, interim_path in enumerate(interim_paths):
             interim_path.mkdir(parents=True)
             n_element = int(1e5)
@@ -188,8 +188,8 @@ class TestPrepost(unittest.TestCase):
         # Test preprocessed data is as desired
         epsilon = 1e-5
         preprocessed_paths = [
-            data_setting.preprocessed / 'a',
-            data_setting.preprocessed / 'b']
+            data_setting.preprocessed_root / 'a',
+            data_setting.preprocessed_root / 'b']
 
         int_identity = np.concatenate([
             np.load(p / 'identity.npy') for p in interim_paths])
@@ -239,14 +239,14 @@ class TestPrepost(unittest.TestCase):
             preprocess=preprocess_setting.preprocess, data=data_setting)
 
         # Clean up data
-        shutil.rmtree(data_setting.interim, ignore_errors=True)
-        shutil.rmtree(data_setting.preprocessed, ignore_errors=True)
-        data_setting.preprocessed.mkdir(parents=True)
+        shutil.rmtree(data_setting.interim_root, ignore_errors=True)
+        shutil.rmtree(data_setting.preprocessed_root, ignore_errors=True)
+        data_setting.preprocessed_root.mkdir(parents=True)
 
         # Create data
         interim_paths = [
-            data_setting.interim / 'a',
-            data_setting.interim / 'b']
+            data_setting.interim_root / 'a',
+            data_setting.interim_root / 'b']
         for i, interim_path in enumerate(interim_paths):
             interim_path.mkdir(parents=True)
             n_element = np.random.randint(1e4)
@@ -264,10 +264,10 @@ class TestPrepost(unittest.TestCase):
         preprocessor.preprocess_interim_data()
 
         postprocessor = pre.Converter(
-            data_setting.preprocessed / 'preprocessors.pkl')
+            data_setting.preprocessed_root / 'preprocessors.pkl')
         preprocessed_paths = [
-            data_setting.preprocessed / 'a',
-            data_setting.preprocessed / 'b']
+            data_setting.preprocessed_root / 'a',
+            data_setting.preprocessed_root / 'b']
         for interim_path, preprocessed_path in zip(
                 interim_paths, preprocessed_paths):
             dict_data_x = {
@@ -287,13 +287,13 @@ class TestPrepost(unittest.TestCase):
     def test_preprocess_deform(self):
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/deform/data.yml'))
-        main_setting.data.interim = Path(
-            'tests/data/deform/test_prepost/interim')
-        main_setting.data.preprocessed = Path(
-            'tests/data/deform/test_prepost/preprocessed')
+        main_setting.data.interim = [Path(
+            'tests/data/deform/test_prepost/interim')]
+        main_setting.data.preprocessed = [Path(
+            'tests/data/deform/test_prepost/preprocessed')]
 
-        shutil.rmtree(main_setting.data.interim, ignore_errors=True)
-        shutil.rmtree(main_setting.data.preprocessed, ignore_errors=True)
+        shutil.rmtree(main_setting.data.interim_root, ignore_errors=True)
+        shutil.rmtree(main_setting.data.preprocessed_root, ignore_errors=True)
 
         raw_converter = pre.RawConverter(
             main_setting, conversion_function=conversion_function)
@@ -326,7 +326,7 @@ class TestPrepost(unittest.TestCase):
     def test_convert_raw_data_with_filter_function(self):
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/test_prepost_to_filter/data.yml'))
-        shutil.rmtree(main_setting.data.interim, ignore_errors=True)
+        shutil.rmtree(main_setting.data.interim_root, ignore_errors=True)
 
         raw_converter = pre.RawConverter(
             main_setting, filter_function=filter_function)
@@ -336,10 +336,10 @@ class TestPrepost(unittest.TestCase):
             main_setting.data.interim,
             required_file_names=['elemental_strain.npy']))
         expected_directories = sorted([
-            main_setting.data.interim / 'tet2_3_modulusx0.9000',
-            main_setting.data.interim / 'tet2_3_modulusx1.1000',
-            main_setting.data.interim / 'tet2_4_modulusx1.0000',
-            main_setting.data.interim / 'tet2_4_modulusx1.1000'])
+            main_setting.data.interim_root / 'tet2_3_modulusx0.9000',
+            main_setting.data.interim_root / 'tet2_3_modulusx1.1000',
+            main_setting.data.interim_root / 'tet2_4_modulusx1.0000',
+            main_setting.data.interim_root / 'tet2_4_modulusx1.1000'])
         np.testing.assert_array_equal(actual_directories, expected_directories)
 
     def test_generate_converters(self):
@@ -398,20 +398,23 @@ class TestPrepost(unittest.TestCase):
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/csv_timeseries/lstm.yml'))
 
-        shutil.rmtree(main_setting.data.preprocessed, ignore_errors=True)
+        shutil.rmtree(main_setting.data.preprocessed_root, ignore_errors=True)
 
         p = pre.Preprocessor(main_setting)
         p.preprocess_interim_data()
 
         c = pre.Converter(
-            main_setting.data.preprocessed / 'preprocessors.pkl')
+            main_setting.data.preprocessed_root / 'preprocessors.pkl')
         original_dict_x = {
-            'a': np.load(main_setting.data.interim / 'train/0/a.npy')[:, None]}
+            'a': np.load(
+                main_setting.data.interim_root / 'train/0/a.npy')[:, None]}
         preprocessed_dict_x = c.preprocess(original_dict_x)
         postprocessed_dict_x, _ = c.postprocess(preprocessed_dict_x, {})
         np.testing.assert_almost_equal(
             preprocessed_dict_x['a'],
-            np.load(main_setting.data.preprocessed / 'train/0/a.npy')[:, None])
+            np.load(
+                main_setting.data.preprocessed_root
+                / 'train/0/a.npy')[:, None])
         np.testing.assert_almost_equal(
             original_dict_x['a'][:, 0], postprocessed_dict_x['a'])
 
@@ -419,10 +422,10 @@ class TestPrepost(unittest.TestCase):
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/ode/data.yml'))
 
-        shutil.rmtree(main_setting.data.preprocessed, ignore_errors=True)
+        shutil.rmtree(main_setting.data.preprocessed_root, ignore_errors=True)
         preprocessor = pre.Preprocessor(main_setting, force_renew=True)
         preprocessor.preprocess_interim_data()
-        data_directory = main_setting.data.preprocessed / 'train/0'
+        data_directory = main_setting.data.preprocessed_root / 'train/0'
         y0 = np.load(data_directory / 'y0.npy')
         y0_initial = np.load(data_directory / 'y0_initial.npy')
         np.testing.assert_almost_equal(y0[0], y0_initial[0])
@@ -432,10 +435,10 @@ class TestPrepost(unittest.TestCase):
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/deform/power.yml'))
 
-        shutil.rmtree(main_setting.data.preprocessed, ignore_errors=True)
+        shutil.rmtree(main_setting.data.preprocessed_root, ignore_errors=True)
         preprocessor = pre.Preprocessor(main_setting, force_renew=True)
         preprocessor.preprocess_interim_data()
-        data_directory = main_setting.data.preprocessed \
+        data_directory = main_setting.data.preprocessed_root \
             / 'train/tet2_3_modulusx0.9000'
         preprocessed_x_grad = sp.load_npz(
             data_directory / 'x_grad.npz')
@@ -443,7 +446,7 @@ class TestPrepost(unittest.TestCase):
             'tests/data/deform/interim/train/tet2_3_modulusx0.9000'
             '/x_grad.npz').toarray()
         with open(
-                main_setting.data.preprocessed / 'preprocessors.pkl',
+                main_setting.data.preprocessed_root / 'preprocessors.pkl',
                 'rb') as f:
             preprocess_converter = pickle.load(f)['x_grad'][
                 'preprocess_converter']
@@ -458,7 +461,7 @@ class TestPrepost(unittest.TestCase):
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/heat_time_series/data.yml'))
 
-        shutil.rmtree(main_setting.data.interim, ignore_errors=True)
+        shutil.rmtree(main_setting.data.interim_root, ignore_errors=True)
 
         rc = pre.RawConverter(
             main_setting, recursive=True, write_ucd=False,

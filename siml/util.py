@@ -144,7 +144,7 @@ def collect_data_directories(
         found_directories: list of pathlib.Path
             All found directories.
     """
-    if isinstance(base_directory, list):
+    if isinstance(base_directory, (list, tuple, set)):
         return list(np.unique(np.concatenate([
             collect_data_directories(
                 bd, required_file_names=required_file_names,

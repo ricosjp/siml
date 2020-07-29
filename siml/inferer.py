@@ -65,7 +65,7 @@ class Inferer(trainer.Trainer):
             Simulation file type to write.
         converter_parameters_pkl: pathlib.Path, optional [None]
             Pickel file of converter parameters. IF not fed,
-            DataSetting.preprocessed is used.
+            DataSetting.preprocessed_root is used.
         conversion_function: function, optional [None]
             Conversion function to preprocess raw data. It should receive
             two parameters, fem_data and raw_directory. If not fed,
@@ -203,7 +203,7 @@ class Inferer(trainer.Trainer):
         self.loss = self._create_loss_function(pad=False)
         self.model.eval()
         if converter_parameters_pkl is None:
-            converter_parameters_pkl = self.setting.data.preprocessed \
+            converter_parameters_pkl = self.setting.data.preprocessed_root \
                 / 'preprocessors.pkl'
         self.prepost_converter = prepost.Converter(converter_parameters_pkl)
 
@@ -479,13 +479,13 @@ class Inferer(trainer.Trainer):
             if output_directory is None:
                 try:
                     output_directory = prepost.determine_output_directory(
-                        directory, self.setting.data.inferred,
-                        self.setting.data.preprocessed.stem) \
+                        directory, self.setting.data.inferred_root,
+                        self.setting.data.preprocessed_root.stem) \
                         / f"{self.setting.trainer.name}_{util.date_string()}"
                 except ValueError:
                     output_directory = prepost.determine_output_directory(
-                        directory, self.setting.data.inferred,
-                        self.setting.data.raw.stem) \
+                        directory, self.setting.data.inferred_root,
+                        self.setting.data.raw_root.stem) \
                         / f"{self.setting.trainer.name}_{util.date_string()}"
 
             output_directory.mkdir(parents=True, exist_ok=overwrite)

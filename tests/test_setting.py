@@ -35,13 +35,17 @@ class TestSetting(unittest.TestCase):
             real_file_setting.model.blocks[1].destinations,
             str_setting.model.blocks[1].destinations)
 
+    def test_read_settings_yaml_data(self):
+        yaml_file = Path('tests/data/deform/data.yml')
+        main_setting = setting.MainSetting.read_settings_yaml(yaml_file)
+        self.assertEqual(
+            main_setting.data.interim, [Path('tests/data/deform/interim')])
+
     def test_main_setting(self):
         main_setting = setting.MainSetting()
         np.testing.assert_array_equal(
             main_setting.conversion.required_file_names, [])
-        self.assertEqual(
-            main_setting.data.interim,
-            Path('data/interim'))
+        self.assertEqual(main_setting.data.interim, [Path('data/interim')])
 
     def test_update_with_dict(self):
         main_setting = setting.MainSetting.read_settings_yaml(

@@ -169,8 +169,8 @@ class TestTrainer(unittest.TestCase):
         setting_yaml = Path('tests/data/simplified/mlp.yml')
         main_setting = setting.MainSetting.read_settings_yaml(setting_yaml)
 
-        if main_setting.data.preprocessed.exists():
-            shutil.rmtree(main_setting.data.preprocessed)
+        if main_setting.data.preprocessed_root.exists():
+            shutil.rmtree(main_setting.data.preprocessed_root)
         preprocessor = prepost.Preprocessor.read_settings(setting_yaml)
         preprocessor.preprocess_interim_data()
 
@@ -216,8 +216,8 @@ class TestTrainer(unittest.TestCase):
     def test_whole_processs(self):
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/deform/whole.yml'))
-        shutil.rmtree(main_setting.data.interim, ignore_errors=True)
-        shutil.rmtree(main_setting.data.preprocessed, ignore_errors=True)
+        shutil.rmtree(main_setting.data.interim_root, ignore_errors=True)
+        shutil.rmtree(main_setting.data.preprocessed_root, ignore_errors=True)
 
         raw_converter = prepost.RawConverter(
             main_setting, conversion_function=conversion_function)
@@ -233,9 +233,9 @@ class TestTrainer(unittest.TestCase):
         ir = inferer.Inferer(main_setting)
         results = ir.infer(
             model=Path('tests/data/deform/pretrained'),
-            raw_data_directory=main_setting.data.raw
+            raw_data_directory=main_setting.data.raw_root
             / 'train/tet2_3_modulusx0.9000',
-            converter_parameters_pkl=main_setting.data.preprocessed
+            converter_parameters_pkl=main_setting.data.preprocessed_root
             / 'preprocessors.pkl',
             conversion_function=conversion_function, save=False)
         self.assertLess(results[0]['loss'], loss)
