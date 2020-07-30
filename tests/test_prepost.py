@@ -57,8 +57,13 @@ class TestPrepost(unittest.TestCase):
     def test_determine_output_directory(self):
         self.assertEqual(
             pre.determine_output_directory(
-                Path('data/raw/a/b'), Path('test/sth'), 'raw'),
-            Path('test/sth/a/b'))
+                Path('data/raw/a/b'), Path('data/sth'), 'raw'),
+            Path('data/sth/a/b'))
+        self.assertEqual(
+            pre.determine_output_directory(
+                Path('tests/data/list/data/tet2_3_modulusx0.9000/interim'),
+                Path('tests/data/list/preprocessed'), 'interim'),
+            Path('tests/data/list/preprocessed/data/tet2_3_modulusx0.9000'))
 
     def test_normalize_adjacency_matrix(self):
         adj = np.array([
@@ -158,7 +163,8 @@ class TestPrepost(unittest.TestCase):
                 'standardize': 'standardize'}
         )
         main_setting = setting.MainSetting(
-            preprocess=preprocess_setting.preprocess, data=data_setting)
+            preprocess=preprocess_setting.preprocess, data=data_setting,
+            replace_preprocessed=False)
 
         # Clean up data
         shutil.rmtree(data_setting.interim_root, ignore_errors=True)
@@ -236,7 +242,8 @@ class TestPrepost(unittest.TestCase):
                 'standardize': 'standardize'}
         )
         main_setting = setting.MainSetting(
-            preprocess=preprocess_setting.preprocess, data=data_setting)
+            preprocess=preprocess_setting.preprocess, data=data_setting,
+            replace_preprocessed=False)
 
         # Clean up data
         shutil.rmtree(data_setting.interim_root, ignore_errors=True)
@@ -467,3 +474,17 @@ class TestPrepost(unittest.TestCase):
             main_setting, recursive=True, write_ucd=False,
             conversion_function=conversion_function_heat_time_series)
         rc.convert()
+
+    def test_preprocess_interim_list(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/list/data.yml'))
+        shutil.rmtree(main_setting.data.preprocessed_root, ignore_errors=True)
+
+        preprocessor = pre.Preprocessor(main_setting)
+        preprocessor.preprocess_interim_data()
+        self.assertTrue(Path(
+            'tests/data/list/preprocessed/data/tet2_3_modulusx0.9500'
+        ).exists())
+        self.assertTrue(Path(
+            'tests/data/list/preprocessed/data/tet2_4_modulusx0.9000'
+        ).exists())

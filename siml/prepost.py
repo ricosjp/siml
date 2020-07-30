@@ -7,6 +7,7 @@ import io
 import itertools as it
 import multiprocessing as multi
 from operator import or_
+import os
 from pathlib import Path
 import pickle
 
@@ -921,21 +922,22 @@ def determine_output_directory(
     Output:
         output_directory: pathlib.Path
             Detemined output directory path.
-
     """
+    common_prefix = Path(os.path.commonprefix(
+        [input_directory, output_base_directory]))
+    relative_input_path = Path(os.path.relpath(input_directory, common_prefix))
+
     replace_indices = np.where(
-        np.array(input_directory.parts) == str_replace)[0]
+        np.array(relative_input_path.parts) == str_replace)[0]
     if len(replace_indices) != 1:
         raise ValueError(
             f"Input directory {input_directory} does not contain "
             f"{str_replace} directory or ambiguous.")
-
     replace_index = replace_indices[0]
-    if replace_index + 1 == len(input_directory.parts):
-        output_directory = output_base_directory
-    else:
-        output_directory = output_base_directory / '/'.join(
-            input_directory.parts[replace_index + 1:])
+    parts = list(relative_input_path.parts)
+    parts[replace_index] = ''
+    output_directory = output_base_directory / '/'.join(parts).lstrip('/')
+
     return output_directory
 
 
@@ -1080,7 +1082,6 @@ def split_data_arrays(xs, fs, *, n_split=10, ref_index=0):
     """
 
     x_grids = _generate_grids(xs, n_split)
-    # raise ValueError(x_grids)
 
     # Analyze data by grid
     ranges = np.transpose(
