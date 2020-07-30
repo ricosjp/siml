@@ -46,30 +46,32 @@ class TypedDataClass:
                 and getattr(self, field_name) is None:
             return
 
+        def to_list_if_needed(x):
+            if isinstance(x, np.ndarray):
+                x = list(x)
+            if not isinstance(x, (list, tuple)):
+                x = [x]
+            return x
+
         if field.type == typing.List[Path]:
             def type_function(x):
-                if not isinstance(x, (list, tuple)):
-                    x = [x]
+                x = to_list_if_needed(x)
                 return [Path(_x) for _x in x]
         elif field.type == typing.List[str]:
             def type_function(x):
-                if not isinstance(x, (list, tuple)):
-                    x = [x]
+                x = to_list_if_needed(x)
                 return [str(_x) for _x in x]
         elif field.type == typing.List[int]:
             def type_function(x):
-                if not isinstance(x, (list, tuple)):
-                    x = [x]
+                x = to_list_if_needed(x)
                 return [int(_x) for _x in x]
         elif field.type == typing.List[float]:
             def type_function(x):
-                if not isinstance(x, (list, tuple)):
-                    x = [x]
+                x = to_list_if_needed(x)
                 return [float(_x) for _x in x]
         elif field.type == typing.List[dict]:
             def type_function(x):
-                if not isinstance(x, (list, tuple)):
-                    x = [x]
+                x = to_list_if_needed(x)
                 return [dict(_x) for _x in x]
         elif field.type == typing.Tuple:
             def type_function(x):
