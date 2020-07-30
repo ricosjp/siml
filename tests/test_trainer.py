@@ -266,3 +266,37 @@ class TestTrainer(unittest.TestCase):
             dict_data['dict_block.ResGCN2.subchains.0.1.bias']['grad_absmax'],
             0.8443880081176758, decimal=3)
         self.assertEqual(dict_data['iteration'], 110)
+
+    def test_trainer_train_test_split(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/split/mlp.yml'))
+        shutil.rmtree(
+            main_setting.trainer.output_directory, ignore_errors=True)
+        tr = trainer.Trainer(main_setting)
+        tr.train()
+
+        trained_setting = setting.MainSetting.read_settings_yaml(
+            tr.setting.trainer.output_directory / 'settings.yml')
+        self.assertEqual(
+            len(trained_setting.data.train), 5)
+        self.assertEqual(
+            len(trained_setting.data.validation), 3)
+        self.assertEqual(
+            len(trained_setting.data.test), 2)
+
+    def test_trainer_train_test_split_test0(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/split/mlp_test0.yml'))
+        shutil.rmtree(
+            main_setting.trainer.output_directory, ignore_errors=True)
+        tr = trainer.Trainer(main_setting)
+        tr.train()
+
+        trained_setting = setting.MainSetting.read_settings_yaml(
+            tr.setting.trainer.output_directory / 'settings.yml')
+        self.assertEqual(
+            len(trained_setting.data.train), 9)
+        self.assertEqual(
+            len(trained_setting.data.validation), 1)
+        self.assertEqual(
+            len(trained_setting.data.test), 0)
