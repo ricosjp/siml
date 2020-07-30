@@ -46,30 +46,32 @@ class TypedDataClass:
                 and getattr(self, field_name) is None:
             return
 
+        def to_list_if_needed(x):
+            if isinstance(x, np.ndarray):
+                x = list(x)
+            if not isinstance(x, (list, tuple)):
+                x = [x]
+            return x
+
         if field.type == typing.List[Path]:
             def type_function(x):
-                if not isinstance(x, (list, tuple)):
-                    x = [x]
+                x = to_list_if_needed(x)
                 return [Path(_x) for _x in x]
         elif field.type == typing.List[str]:
             def type_function(x):
-                if not isinstance(x, (list, tuple)):
-                    x = [x]
+                x = to_list_if_needed(x)
                 return [str(_x) for _x in x]
         elif field.type == typing.List[int]:
             def type_function(x):
-                if not isinstance(x, (list, tuple)):
-                    x = [x]
+                x = to_list_if_needed(x)
                 return [int(_x) for _x in x]
         elif field.type == typing.List[float]:
             def type_function(x):
-                if not isinstance(x, (list, tuple)):
-                    x = [x]
+                x = to_list_if_needed(x)
                 return [float(_x) for _x in x]
         elif field.type == typing.List[dict]:
             def type_function(x):
-                if not isinstance(x, (list, tuple)):
-                    x = [x]
+                x = to_list_if_needed(x)
                 return [dict(_x) for _x in x]
         elif field.type == typing.Tuple:
             def type_function(x):
@@ -254,6 +256,10 @@ class TrainerSetting(TypedDataClass):
         If True, draw network (requireing graphviz).
     output_stats: bool [False]
         If True, output stats of training (like mean of weight, grads, ...)
+    split_ratio: Dict[str, float]
+        If fed, split the data into train, validation, and test at the
+        beginning of the training. Should be
+        {'validation': float, 'test': float} dict.
     """
 
     inputs: typing.List[dict] = dc.field(default_factory=list)
@@ -316,6 +322,7 @@ class TrainerSetting(TypedDataClass):
     model_parallel: bool = False
     draw_network: bool = True
     output_stats: bool = False
+    split_ratio: dict = dc.field(default_factory=dict)
 
     def __post_init__(self):
         if self.element_wise and self.lazy:
@@ -752,6 +759,8 @@ def write_yaml(data_class, file_name, *, overwrite=False):
 
 def _standardize_data(data):
     if isinstance(data, list):
+        return [_standardize_data(d) for d in data]
+    elif isinstance(data, np.ndarray):
         return [_standardize_data(d) for d in data]
     elif isinstance(data, tuple):
         return [_standardize_data(d) for d in data]

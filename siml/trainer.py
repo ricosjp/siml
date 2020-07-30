@@ -194,6 +194,14 @@ class Trainer():
         self._load_pretrained_model_if_needed()
         self._load_restart_model_if_needed()
 
+        # Expand data directories
+        self.setting.data.train = self.train_loader.dataset.data_directories
+        self.setting.data.validation \
+            = self.validation_loader.dataset.data_directories
+        self.setting.data.test = self.test_loader.dataset.data_directories
+
+        return
+
     def _determine_element_wise(self):
         if self.setting.trainer.time_series:
             return False
@@ -391,6 +399,19 @@ class Trainer():
                     'batch_size cannot be > 1 when element_batch_size > 1.')
             batch_size = self.setting.trainer.batch_size
             validation_batch_size = self.setting.trainer.validation_batch_size
+
+        if len(self.setting.trainer.split_ratio) > 0:
+            develop_dataset = datasets.LazyDataset(
+                self.setting.trainer.input_names,
+                self.setting.trainer.output_names,
+                self.setting.data.develop)
+
+            train, validation, test = util.split_data(
+                develop_dataset.data_directories,
+                **self.setting.trainer.split_ratio)
+            self.setting.data.train = train
+            self.setting.data.validation = validation
+            self.setting.data.test = test
 
         if self.setting.trainer.support_inputs:
             if self.setting.trainer.time_series:

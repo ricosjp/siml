@@ -1188,3 +1188,49 @@ def determine_max_process(max_process=None):
     else:
         resultant_max_process = min(available_max_process, max_process)
     return resultant_max_process
+
+
+def split_data(list_directories, *, validation=.1, test=.1, shuffle=True):
+    """Split list of data directories into train, validation, and test.
+
+    Parameters
+    ----------
+    list_directories: list
+        List of data directories.
+    validation: float, optional [.1]
+        The ratio of the validation dataset size.
+    test: float, optional [.1]
+        The ratio of the test dataset size.
+    shuffle: bool, optional [True]
+        If True, shuffle list_directories.
+
+    Returns
+    -------
+    train_directories: list
+    validation_directories: list
+    test_directories: list
+    """
+    if validation + test > 1.:
+        raise ValueError(
+            f"Sum of validation + test should be < 1. but {validation+test}")
+    if shuffle:
+        np.random.shuffle(list_directories)
+    list_directories = np.asarray(list_directories)
+
+    data_length = len(list_directories)
+    if validation < 1e-5:
+        validation_length = 0
+    else:
+        validation_length = int(np.ceil(data_length * validation))
+
+    if test < 1e-5:
+        test_length = 0
+    else:
+        test_length = int(np.ceil(data_length * test))
+
+    validation_directories = list_directories[:validation_length]
+    test_directories = list_directories[
+        validation_length:validation_length+test_length]
+    train_directories = list_directories[validation_length+test_length:]
+
+    return train_directories, validation_directories, test_directories

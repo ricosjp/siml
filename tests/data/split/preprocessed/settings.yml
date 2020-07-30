@@ -1,0 +1,174 @@
+conversion:
+  file_type: fistr
+  finished_file: converted
+  mandatory:
+  - elemental_strain
+  - modulus
+  - poisson_ratio
+  mandatory_variables:
+  - elemental_strain
+  - modulus
+  - poisson_ratio
+  optional:
+  - elemental_stress
+  optional_variables:
+  - elemental_stress
+  required_file_names:
+  - '*.msh'
+  - '*.cnt'
+  - '*.res.*'
+  skip_femio: false
+  time_series: false
+data:
+  develop: []
+  inferred:
+  - tests/data/deform/inferred
+  interim: tests/data/deform/test_prepost/interim
+  pad: false
+  preprocessed: tests/data/deform/test_prepost/preprocessed
+  raw:
+  - tests/data/deform/raw
+  test:
+  - tests/data/deform/preprocessed/test
+  train:
+  - tests/data/deform/preprocessed/train
+  validation:
+  - tests/data/deform/preprocessed/validation
+model:
+  blocks:
+  - activation_after_residual: true
+    activations:
+    - identity
+    allow_linear_residual: false
+    bias: true
+    coeff: 1.0
+    destinations: []
+    device: null
+    dropouts:
+    - 0.0
+    hidden_activation: relu
+    hidden_dropout: 0.5
+    hidden_layers: null
+    hidden_nodes: null
+    input_dropout: 0.0
+    input_indices: null
+    input_slice:
+    - 0
+    - null
+    - 1
+    is_first: true
+    is_last: true
+    kernel_sizes: null
+    name: Block
+    nodes:
+    - -1
+    - -1
+    optional: {}
+    output_activation: identity
+    output_dropout: 0.0
+    residual: false
+    support_input_index: null
+    support_input_indices:
+    - 0
+    type: null
+optuna:
+  hyperparameters: []
+  n_trial: 100
+  output_base_directory: models/optuna
+  setting: {}
+preprocess:
+  adj:
+    componentwise: true
+    group_id: 0
+    method: identity
+    power: 1.0
+    same_as: null
+  elemental_strain:
+    componentwise: false
+    group_id: 0
+    method: std_scale
+    power: 1.0
+    same_as: null
+  elemental_stress:
+    componentwise: false
+    group_id: 0
+    method: std_scale
+    power: 1.0
+    same_as: null
+  global_modulus:
+    componentwise: true
+    group_id: 0
+    method: standardize
+    power: 1.0
+    same_as: null
+  modulus:
+    componentwise: true
+    group_id: 0
+    method: std_scale
+    power: 1.0
+    same_as: null
+  nadj:
+    componentwise: true
+    group_id: 0
+    method: identity
+    power: 1.0
+    same_as: null
+  poisson_ratio:
+    componentwise: true
+    group_id: 0
+    method: identity
+    power: 1.0
+    same_as: null
+  x_grad:
+    componentwise: false
+    group_id: 0
+    method: sparse_std
+    power: 1.0
+    same_as: null
+  x_grad_2:
+    componentwise: false
+    group_id: 0
+    method: max_abs
+    power: 1.0
+    same_as: null
+  y_grad:
+    componentwise: true
+    group_id: 0
+    method: identity
+    power: 1.0
+    same_as: x_grad
+  y_grad_2:
+    componentwise: true
+    group_id: 0
+    method: identity
+    power: 1.0
+    same_as: x_grad
+  z_grad:
+    componentwise: true
+    group_id: 0
+    method: identity
+    power: 1.0
+    same_as: x_grad
+  z_grad_2:
+    componentwise: true
+    group_id: 0
+    method: identity
+    power: 1.0
+    same_as: x_grad
+replace_preprocessed: true
+study:
+  n_fold: 10
+  plot_validation: false
+  relative_develop_size_linspace:
+  - 0.2
+  - 1.0
+  - 5
+  root_directory: null
+  scale_loss: false
+  type: learning_curve
+  unit_error: '-'
+  x_from_zero: false
+  x_logscale: false
+  y_from_zero: false
+  y_logscale: false
+trainer: !!python/name:siml.setting.TrainerSetting ''
