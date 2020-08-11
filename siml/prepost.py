@@ -508,7 +508,7 @@ class Preprocessor:
             self, variable_name, dict_preprocessor_settings):
 
         reference_dict = self._collect_reference_dict_setting(
-                variable_name, dict_preprocessor_settings)
+            variable_name, dict_preprocessor_settings)
 
         preprocess_converter = util.PreprocessConverter(
             reference_dict['preprocess_converter'],
