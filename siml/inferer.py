@@ -480,12 +480,12 @@ class Inferer(trainer.Trainer):
                 try:
                     output_directory = prepost.determine_output_directory(
                         directory, self.setting.data.inferred_root,
-                        self.setting.data.preprocessed_root.stem) \
+                        self.setting.data.preprocessed_root.name) \
                         / f"{self.setting.trainer.name}_{util.date_string()}"
                 except ValueError:
                     output_directory = prepost.determine_output_directory(
                         directory, self.setting.data.inferred_root,
-                        self.setting.data.raw_root.stem) \
+                        self.setting.data.raw_root.name) \
                         / f"{self.setting.trainer.name}_{util.date_string()}"
 
             output_directory.mkdir(parents=True, exist_ok=overwrite)
