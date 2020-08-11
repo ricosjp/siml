@@ -574,7 +574,8 @@ class PreprocessSetting:
                     value.update({'power': 1.})
                 self.preprocess.update({key: value})
             else:
-                raise ValueError('Invalid format of preprocess setting')
+                raise ValueError(
+                    f"Invalid format of preprocess setting: {self}")
         return
 
 

@@ -508,12 +508,12 @@ class Preprocessor:
             self, variable_name, dict_preprocessor_settings):
 
         reference_dict = self._collect_reference_dict_setting(
-            variable_name, dict_preprocessor_settings)
+                variable_name, dict_preprocessor_settings)
 
         preprocess_converter = util.PreprocessConverter(
             reference_dict['preprocess_converter'],
             componentwise=reference_dict['componentwise'],
-            power=reference_dict['power'])
+            power=reference_dict.get('power', 1.))
         if preprocess_converter is None:
             raise ValueError(f"Reference of {variable_name} is None")
 
