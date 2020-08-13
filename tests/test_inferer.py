@@ -156,6 +156,11 @@ class TestInferer(unittest.TestCase):
                 'inferred_elemental_stress'),
             res_from_preprocessed[0]['dict_y']['elemental_stress'],
             decimal=7)
+        np.testing.assert_almost_equal(
+            fem_data.elemental_data.get_attribute_data(
+                'difference_elemental_stress'),
+            res_from_preprocessed[0]['dict_y']['elemental_stress']
+            - res_from_preprocessed[0]['dict_x']['elemental_stress'])
 
     def test_infer_simplified_model(self):
         setting_yaml = Path('tests/data/simplified/mlp.yml')
