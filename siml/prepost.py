@@ -236,6 +236,22 @@ def update_fem_data(fem_data, dict_data, prefix=''):
     return fem_data
 
 
+def add_difference(
+        fem_data, dict_data, reference_dict_data, prefix='difference'):
+    intersections = set(
+        dict_data.keys()).intersection(reference_dict_data.keys())
+    if len(intersections) == 0:
+        return fem_data
+
+    difference_dict_data = {
+        intersection:
+        dict_data[intersection] - reference_dict_data[intersection]
+        for intersection in intersections}
+    fem_data = update_fem_data(fem_data, difference_dict_data, prefix=prefix)
+
+    return fem_data
+
+
 def concatenate_preprocessed_data(
         preprocessed_base_directories, output_directory_base, variable_names,
         *, ratios=(.9, .05, .05), overwrite=False):
@@ -818,6 +834,8 @@ class Converter:
 
         fem_data = update_fem_data(fem_data, dict_data_x, prefix='answer_')
         fem_data = update_fem_data(fem_data, dict_data_y, prefix='inferred_')
+        fem_data = add_difference(
+            fem_data, dict_data_y, dict_data_x, prefix='difference_')
         if data_addition_function is not None:
             fem_data = data_addition_function(fem_data)
 
