@@ -68,6 +68,8 @@ pages:
 
 .test:
   stage: test
+  tags:
+    - avx
 
 test_gpu_networks:
   extends: .test
@@ -75,6 +77,7 @@ test_gpu_networks:
     - python3.7 -m pytest tests/gpu/test_networks_gpu.py --capture=no
   tags:
     - multi-gpu
+    - avx
 
 test_gpu:
   extends: .test
@@ -83,6 +86,7 @@ test_gpu:
     - python3.7 -m pytest tests/gpu/test_trainer_gpu.py --capture=no
   tags:
     - multi-gpu
+    - avx
 
 test_networks:
   extends: .test
