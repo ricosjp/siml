@@ -300,3 +300,11 @@ class TestTrainer(unittest.TestCase):
             len(trained_setting.data.validation), 1)
         self.assertEqual(
             len(trained_setting.data.test), 0)
+
+    def test_trainer_train_dict_input(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/deform/dict_input.yml'))
+        shutil.rmtree(
+            main_setting.trainer.output_directory, ignore_errors=True)
+        tr = trainer.Trainer(main_setting)
+        tr.train()

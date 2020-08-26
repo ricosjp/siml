@@ -165,6 +165,8 @@ class TestPrepost(unittest.TestCase):
         main_setting = setting.MainSetting(
             preprocess=preprocess_setting.preprocess, data=data_setting,
             replace_preprocessed=False)
+        main_setting.preprocess['std_scale']['componentwise'] = True
+        main_setting.preprocess['standardize']['componentwise'] = True
 
         # Clean up data
         shutil.rmtree(data_setting.interim_root, ignore_errors=True)

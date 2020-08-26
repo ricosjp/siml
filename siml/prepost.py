@@ -219,14 +219,24 @@ def update_fem_data(fem_data, dict_data, prefix=''):
 
             if len_data == len(fem_data.nodes.ids):
                 # Nodal data
-                fem_data.nodal_data.update({
-                    variable_name: femio.FEMAttribute(
-                        variable_name, fem_data.nodes.ids, value)})
+                try:
+                    fem_data.nodal_data.update({
+                        variable_name: femio.FEMAttribute(
+                            variable_name, fem_data.nodes.ids, value)})
+                except ValueError:
+                    print(
+                        f"{variable_name} is skipped to include in fem_data "
+                        f"because the shape is {value.shape}")
             elif len_data == len(fem_data.elements.ids):
                 # Elemental data
-                fem_data.elemental_data.update({
-                    variable_name: femio.FEMAttribute(
-                        variable_name, fem_data.elements.ids, value)})
+                try:
+                    fem_data.elemental_data.update({
+                        variable_name: femio.FEMAttribute(
+                            variable_name, fem_data.elements.ids, value)})
+                except ValueError:
+                    print(
+                        f"{variable_name} is skipped to include in fem_data "
+                        f"because the shape is {value.shape}")
             else:
                 print(f"{variable_name} is skipped to include in fem_data")
                 continue
