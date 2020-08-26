@@ -944,16 +944,19 @@ def determine_output_directory(
     common_prefix = Path(os.path.commonprefix(
         [input_directory, output_base_directory]))
     relative_input_path = Path(os.path.relpath(input_directory, common_prefix))
+    parts = list(relative_input_path.parts)
 
     replace_indices = np.where(
         np.array(relative_input_path.parts) == str_replace)[0]
-    if len(replace_indices) != 1:
+    if len(replace_indices) == 0:
+        pass
+    elif len(replace_indices) == 1:
+        replace_index = replace_indices[0]
+        parts[replace_index] = ''
+    else:
         raise ValueError(
-            f"Input directory {input_directory} does not contain "
-            f"{str_replace} directory or ambiguous.")
-    replace_index = replace_indices[0]
-    parts = list(relative_input_path.parts)
-    parts[replace_index] = ''
+            f"Input directory {input_directory} contains several "
+            f"{str_replace} parts thus ambiguous.")
     output_directory = output_base_directory / '/'.join(parts).lstrip('/')
 
     return output_directory
