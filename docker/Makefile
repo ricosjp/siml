@@ -1,5 +1,5 @@
 CI_REGISTRY_IMAGE  ?= registry.ritc.jp/ricos/machine_learning/siml
-TAG ?= 0.2.2
+TAG ?= 0.2.3
 
 all: build
 

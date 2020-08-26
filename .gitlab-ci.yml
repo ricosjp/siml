@@ -1,4 +1,4 @@
-image: registry.ritc.jp/ricos/machine_learning/siml:0.2.2
+image: registry.ritc.jp/ricos/machine_learning/siml:0.2.3
 
 default:
   before_script:
@@ -125,7 +125,7 @@ test_other:
 deploy:wheel:master:
   extends: .deploy:wheel
   before_script:
-    - export VERSION=0.2.2.dev$(date +"%Y%m%d%H%M")
+    - export VERSION=0.2.3.dev$(date +"%Y%m%d%H%M")
   only:
     - master
 
