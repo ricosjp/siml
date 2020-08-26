@@ -165,9 +165,9 @@ class TestPrepost(unittest.TestCase):
         main_setting = setting.MainSetting(
             preprocess=preprocess_setting.preprocess, data=data_setting,
             replace_preprocessed=False)
-        main_setting.preprocess[
+        main_setting.preprocess[  # pylint: disable=E1136
             'std_scale']['componentwise'] = True  # pylint: disable=E1136
-        main_setting.preprocess[
+        main_setting.preprocess[  # pylint: disable=E1136
             'standardize']['componentwise'] = True  # pylint: disable=E1136
 
         # Clean up data
