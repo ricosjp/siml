@@ -1,4 +1,4 @@
-image: registry.ritc.jp/ricos/machine_learning/siml
+image: registry.ritc.jp/ricos/machine_learning/siml:0.2.2
 
 default:
   before_script:

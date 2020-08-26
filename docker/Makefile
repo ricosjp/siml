@@ -1,4 +1,5 @@
 CI_REGISTRY_IMAGE  ?= registry.ritc.jp/ricos/machine_learning/siml
+TAG ?= 0.2.2
 
 all: build
 
@@ -11,11 +12,11 @@ endif
 
 build: Dockerfile
 	cp ../pyproject.toml .
-	docker build -t $(CI_REGISTRY_IMAGE) \
+	docker build -t $(CI_REGISTRY_IMAGE):$(TAG) \
 		-f Dockerfile --build-arg ricos_pypi_key=$(key) .
 
 in: build
-	docker run -it --gpus all --rm $(CI_REGISTRY_IMAGE) /bin/bash
+	docker run -it --gpus all --rm $(CI_REGISTRY_IMAGE):$(TAG) /bin/bash
 
 push: login build
-	docker push $(CI_REGISTRY_IMAGE)
+	docker push $(CI_REGISTRY_IMAGE):$(TAG)
