@@ -6,9 +6,15 @@ data:
   validation:
     - tests/data/linear/preprocessed/validation
 preprocess:
-  x1: standardize
-  x2: std_scale
-  y: standardize
+  x1:
+    componentwise: true
+    method: standardize
+  x2:
+    componentwise: true
+    method: std_scale
+  y:
+    componentwise: true
+    method: standardize
 trainer:
   output_directory: tests/data/linear/long
   lazy: false

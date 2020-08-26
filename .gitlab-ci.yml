@@ -111,10 +111,7 @@ test_trainer_long:
 test_other:
   extends: .test
   script:
-    - python3.7 -m pytest tests/test_prepost.py --capture=no
-    - python3.7 -m pytest tests/test_setting.py --capture=no
-    - python3.7 -m pytest tests/test_util.py --capture=no
-    - python3.7 -m pytest tests/test_inferer.py --capture=no
+    - python3.7 -m pytest tests/test_prepost.py tests/test_setting.py tests/test_util.py tests/test_inferer.py --capture=no
 
 .deploy:wheel:
   stage: deploy

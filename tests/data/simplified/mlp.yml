@@ -6,9 +6,15 @@ data:
   validation:
     - tests/data/simplified/preprocessed/validation
 preprocess:
-  a: standardize
-  b: standardize
-  c: standardize
+  a:
+    componentwise: true
+    method: standardize
+  b:
+    componentwise: true
+    method: standardize
+  c:
+    componentwise: true
+    method: standardize
 trainer:
   output_directory: tests/data/simplified/long
   simplified_model: true
