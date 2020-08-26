@@ -13,21 +13,21 @@ stages:
   - test
   - deploy
 
-docker:
-  image: docker:latest
-  stage: docker
-  inherit:
-    default: false
-  services:
-    - docker:dind
-  script:
-    - apk add make
-    - cd docker && make push key=${RICOS_PYPI_KEY}
-  tags:
-    - docker
-    - gpu
-  only:
-    - master
+# docker:
+#   image: docker:latest
+#   stage: docker
+#   inherit:
+#     default: false
+#   services:
+#     - docker:dind
+#   script:
+#     - apk add make
+#     - cd docker && make push key=${RICOS_PYPI_KEY}
+#   tags:
+#     - docker
+#     - gpu
+#   only:
+#     - master
 
 preprocess:
   stage: preprocess
