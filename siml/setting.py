@@ -603,13 +603,13 @@ class PreprocessSetting:
         for key, value in self.preprocess.items():
             if isinstance(value, str):
                 self.preprocess.update({key: {
-                    'method': value, 'componentwise': True, 'same_as': None,
+                    'method': value, 'componentwise': False, 'same_as': None,
                     'group_id': 0, 'power': 1.}})
             elif isinstance(value, dict):
                 if 'method' not in value:
                     value.update({'method': 'identity'})
                 if 'componentwise' not in value:
-                    value.update({'componentwise': True})
+                    value.update({'componentwise': False})
                 if 'same_as' not in value:
                     value.update({'same_as': None})
                 if 'group_id' not in value:
