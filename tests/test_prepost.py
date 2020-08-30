@@ -442,16 +442,16 @@ class TestPrepost(unittest.TestCase):
             main_setting.data.preprocessed_root / 'preprocessors.pkl')
         original_dict_x = {
             'a': np.load(
-                main_setting.data.interim_root / 'train/0/a.npy')[:, None]}
+                main_setting.data.interim_root / 'train/0/a.npy')}
         preprocessed_dict_x = c.preprocess(original_dict_x)
         postprocessed_dict_x, _ = c.postprocess(preprocessed_dict_x, {})
         np.testing.assert_almost_equal(
             preprocessed_dict_x['a'],
             np.load(
                 main_setting.data.preprocessed_root
-                / 'train/0/a.npy')[:, None])
+                / 'train/0/a.npy'))
         np.testing.assert_almost_equal(
-            original_dict_x['a'][:, 0], postprocessed_dict_x['a'])
+            original_dict_x['a'], postprocessed_dict_x['a'])
 
     def test_preprocess_same_as(self):
         main_setting = setting.MainSetting.read_settings_yaml(
