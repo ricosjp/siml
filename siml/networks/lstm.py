@@ -27,7 +27,7 @@ class LSTM(siml_module.SimlModule):
             in zip(nodes[:-1], nodes[1:], block_setting.dropouts)])
         return
 
-    def _forward_core(self, x, supports=None):
+    def _forward_core(self, x, supports=None, original_shapes=None):
         """Execute the NN's forward computation.
 
         Parameters

@@ -7,7 +7,7 @@ from . import siml_module
 class MLP(siml_module.SimlModule):
     """Multi Layer Perceptron."""
 
-    def _forward_core(self, x, supports=None):
+    def _forward_core(self, x, supports=None, original_shapes=None):
         """Execute the NN's forward computation.
 
         Parameters

@@ -53,7 +53,7 @@ class TCN(siml_module.SimlModule):
         return torch.nn.functional.pad(
             x, (padding_length, 0), mode=padding_mode)
 
-    def _forward_core(self, x, supports=None):
+    def _forward_core(self, x, supports=None, original_shapes=None):
         """Execute the NN's forward computation.
 
         Parameters

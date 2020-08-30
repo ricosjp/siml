@@ -20,7 +20,7 @@ def mean(x, original_shapes):
     split_x = split(x, original_shapes)
     dim = len(original_shapes[0]) - 1
     return torch.stack([
-        torch.mean(s, dim=dim, keepdim=False) for s in split_x])
+        torch.mean(s, dim=dim, keepdim=False) for s in split_x], dim=dim)
 
 
 def split(x, original_shapes):
