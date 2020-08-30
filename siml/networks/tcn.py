@@ -67,9 +67,8 @@ class TCN(siml_module.SimlModule):
             y: numpy.ndarray of cupy.ndarray
                 Output of the NN.
         """
-        shape = x.shape
         h = einops.rearrange(
-            x, 'time batch element feature -> (batch element) feature time')
+            x, 'time element feature -> element feature time')
 
         for conv, padding_mode, padding_length, dropout_ratio, activation \
                 in zip(
@@ -83,6 +82,5 @@ class TCN(siml_module.SimlModule):
             h = activation(h)
 
         h = einops.rearrange(
-            h, '(batch element) feature time -> time batch element feature',
-            batch=shape[1], element=shape[2])
+            h, 'element feature time -> time element feature')
         return h

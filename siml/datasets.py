@@ -159,18 +159,16 @@ def collate_fn_with_support(batch):
     padded_supports = concatenate_sparse_sequence(batch, 'supports')
 
     return {
-        'x': x, 't': t, 'supports': padded_supports}
+        'x': x, 't': t, 'supports': padded_supports, 'original_shapes': None}
 
 
 def collate_fn_time_with_support(batch):
     x = pad_time_dense_sequence(batch, 'x')
     t = pad_time_dense_sequence(batch, 't')
-    max_element_length = x.shape[-2]
-    padded_supports = pad_sparse_sequence(
-        batch, 'supports', max_element_length)
+    padded_supports = concatenate_sparse_sequence(batch, 'supports')
 
-    original_shapes = [[b['x'].shape[0], b['x'].shape[-2]] for b in batch]
-
+    original_shapes = np.array(
+        [[b['x'].shape[0], b['x'].shape[-2]] for b in batch])
     return {
         'x': x, 't': t, 'supports': padded_supports,
         'original_shapes': original_shapes}
@@ -180,15 +178,15 @@ def collate_fn_without_support(batch):
     x = concatenate_sequence(batch, 'x')
     t = concatenate_sequence(batch, 't')
 
-    return {'x': x, 't': t}
+    return {'x': x, 't': t, 'original_shapes': None}
 
 
 def collate_fn_time_without_support(batch):
     x = pad_time_dense_sequence(batch, 'x')
     t = pad_time_dense_sequence(batch, 't')
 
-    original_shapes = [[b['x'].shape[0], b['x'].shape[-2]] for b in batch]
-
+    original_shapes = np.array(
+        [[b['x'].shape[0], b['x'].shape[-2]] for b in batch])
     return {
         'x': x, 't': t, 'original_shapes': original_shapes}
 
@@ -222,12 +220,8 @@ def pad_time_dense_sequence(batch, key):
     data = [b[key] for b in batch]
 
     max_time_lengths = np.max([d.shape[0] for d in data])
-    time_padded_data = [
-        pad_time_direction(d, max_time_lengths) for d in data]
-    padded_data = torch.nn.utils.rnn.pad_sequence(
-        [d.permute(1, 0, 2) for d in time_padded_data],
-        batch_first=True).permute(2, 0, 1, 3)
-    return padded_data
+    return torch.cat([
+        pad_time_direction(d, max_time_lengths) for d in data], axis=1)
 
 
 def pad_time_direction(data, time_length):
@@ -287,6 +281,7 @@ def prepare_batch_with_support(
             batch['x'], device=device, non_blocking=non_blocking),
         'supports': convert_sparse_info(
             batch['supports'], device=device, non_blocking=non_blocking),
+        'original_shapes': batch['original_shapes'],
     }, convert_tensor(
         batch['t'], device=output_device, non_blocking=non_blocking)
 
@@ -401,5 +396,6 @@ def prepare_batch_without_support(
     return {
         'x': convert_tensor(
             batch['x'], device=device, non_blocking=non_blocking),
+        'original_shapes': batch['original_shapes'],
     }, convert_tensor(
         batch['t'], device=output_device, non_blocking=non_blocking)

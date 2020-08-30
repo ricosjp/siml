@@ -602,7 +602,7 @@ class Trainer():
         def update_standard(x, y, model, optimizer):
             optimizer.zero_grad()
             y_pred = model(x)
-            loss = self.loss(y_pred, y)
+            loss = self.loss(y_pred, y, x['original_shapes'])
             loss.backward()
             self.optimizer.step()
             return loss
@@ -635,7 +635,7 @@ class Trainer():
                     output_device=self.output_device,
                     non_blocking=self.setting.trainer.non_blocking)
                 y_pred = self.model(x)
-                return y_pred, y
+                return y_pred, y, {'original_shapes': x['original_shapes']}
 
         evaluator_engine = ignite.engine.Engine(_inference)
 
@@ -701,21 +701,25 @@ class Trainer():
         else:
             raise ValueError(f"Unknown loss function name: {loss_name}")
 
-        def loss_function_dict(y_pred, y):
+        def loss_function_dict(y_pred, y, original_shapes=None):
             return torch.mean(torch.stack([
                 loss_core(y_pred[key].view(y[key].shape), y[key])
                 for key in y.keys()]))
 
-        def loss_function_without_padding(y_pred, y):
+        def loss_function_without_padding(y_pred, y, original_shapes=None):
             return loss_core(y_pred, y)
 
         def loss_function_time_with_padding(y_pred, y, original_shapes):
+            split_y_pred = torch.split(
+                y_pred, list(original_shapes[:, 1]), dim=1)
             concatenated_y_pred = torch.cat([
-                y_pred[:s[0], i_batch, :s[1]].reshape(-1)
-                for i_batch, s in enumerate(original_shapes)])
+                sy[:s].reshape(-1)
+                for s, sy in zip(original_shapes[:, 0], split_y_pred)])
+            split_y = torch.split(
+                y, list(original_shapes[:, 1]), dim=1)
             concatenated_y = torch.cat([
-                y[:s[0], i_batch, :s[1]].reshape(-1)
-                for i_batch, s in enumerate(original_shapes)])
+                sy[:s].reshape(-1)
+                for s, sy in zip(original_shapes[:, 0], split_y)])
             return loss_core(concatenated_y_pred, concatenated_y)
 
         output_is_dict = isinstance(self.setting.trainer.outputs, dict)
