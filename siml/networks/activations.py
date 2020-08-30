@@ -6,12 +6,30 @@ def identity(x):
     return x
 
 
-def max_pool(x):
-    return torch.max(x, dim=-2, keepdim=True)[0]
+def max_pool(x, original_shapes):
+    split_x = split(x, original_shapes)
+    dim = len(original_shapes[0]) - 1
+    return torch.stack([
+        torch.max(
+            s, dim=dim, keepdim=False
+        )[0]  # [0] to unwrap tuple output of torch.max
+        for s in split_x], dim=dim)
 
 
-def mean(x):
-    return torch.mean(x, dim=-2, keepdim=True)
+def mean(x, original_shapes):
+    split_x = split(x, original_shapes)
+    dim = len(original_shapes[0]) - 1
+    return torch.stack([
+        torch.mean(s, dim=dim, keepdim=False) for s in split_x])
+
+
+def split(x, original_shapes):
+    if len(original_shapes[0]) == 1:
+        return torch.split(x, [s[0] for s in original_shapes])
+    elif len(original_shapes[0]) == 2:
+        return torch.split(x, [s[1] for s in original_shapes], dim=1)
+    else:
+        raise ValueError(f"Unexpected original_shapes: {original_shapes}")
 
 
 def mish(x):

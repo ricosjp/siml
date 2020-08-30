@@ -93,7 +93,7 @@ class AbstractGCN(siml_module.SimlModule):
         return torch.nn.ModuleList([
             torch.nn.Linear(*node_tuple) for node_tuple in node_tuples])
 
-    def forward(self, x, supports):
+    def forward(self, x, supports, original_shapes=None):
         """Execute the NN's forward computation.
 
         Parameters

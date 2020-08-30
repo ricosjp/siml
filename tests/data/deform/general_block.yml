@@ -61,17 +61,23 @@ model:
     - name: MLP
       type: adjustable_mlp
       destinations:
-        - Reducer
+        - MAX_POOL
       nodes:
         - 10
         - 10
         - 6
       activations:
         - relu
-        - max_pool
+        - identity
       dropouts:
         - 0.0
         - 0.0
+    - name: MAX_POOL
+      type: activation
+      destinations:
+        - Reducer
+      activations:
+        - max_pool
     - name: Reducer
       type: reducer
       destinations:

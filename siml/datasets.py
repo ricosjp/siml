@@ -158,8 +158,11 @@ def collate_fn_with_support(batch):
     t = concatenate_sequence(batch, 't')
     padded_supports = concatenate_sparse_sequence(batch, 'supports')
 
+    original_shapes = np.array(
+        [[b['x'].shape[0]] for b in batch])
     return {
-        'x': x, 't': t, 'supports': padded_supports, 'original_shapes': None}
+        'x': x, 't': t, 'supports': padded_supports,
+        'original_shapes': original_shapes}
 
 
 def collate_fn_time_with_support(batch):
@@ -178,7 +181,10 @@ def collate_fn_without_support(batch):
     x = concatenate_sequence(batch, 'x')
     t = concatenate_sequence(batch, 't')
 
-    return {'x': x, 't': t, 'original_shapes': None}
+    original_shapes = np.array(
+        [[b['x'].shape[0]] for b in batch])
+
+    return {'x': x, 't': t, 'original_shapes': original_shapes}
 
 
 def collate_fn_time_without_support(batch):

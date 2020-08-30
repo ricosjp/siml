@@ -94,7 +94,7 @@ class SimlModule(torch.nn.Module):
             dropout_ratio for dropout_ratio in dropouts]
         return dropout_ratios
 
-    def forward(self, x, supports=None):
+    def forward(self, x, supports=None, original_shapes=None):
         h = self._forward_core(x, supports)
         if self.residual:
             if self.block_setting.activation_after_residual:

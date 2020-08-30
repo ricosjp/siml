@@ -11,5 +11,5 @@ class Concatenator(siml_module.SimlModule):
         super().__init__(block_setting, no_parameter=True)
         return
 
-    def forward(self, *xs, op=None, supports=None):
+    def forward(self, *xs, op=None, supports=None, original_shapes=None):
         return self.activation(torch.cat(xs, dim=-1))

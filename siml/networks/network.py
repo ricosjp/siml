@@ -270,6 +270,7 @@ class Network(torch.nn.Module):
 
     def forward(self, x_):
         x = x_['x']
+        original_shapes = x_['original_shapes']
 
         # Due to lack of support of sparse matrix of scatter in DataParallel
         # and coo_matrix, convert sparse in the forward
@@ -317,9 +318,11 @@ class Network(torch.nn.Module):
                                     :, block_setting.support_input_indices]]
 
                     hidden = self.dict_block[graph_node](
-                        *inputs, supports=selected_supports)
+                        *inputs, supports=selected_supports,
+                        original_shapes=original_shapes)
                 else:
-                    hidden = self.dict_block[graph_node](*inputs)
+                    hidden = self.dict_block[graph_node](
+                        *inputs, original_shapes=original_shapes)
 
                 if block_setting.coeff is not None:
                     hidden = hidden * block_setting.coeff

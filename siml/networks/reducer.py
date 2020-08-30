@@ -31,7 +31,7 @@ class Reducer(siml_module.SimlModule):
 
         return
 
-    def forward(self, *xs, op=None, supports=None):
+    def forward(self, *xs, op=None, supports=None, original_shapes=None):
         if len(xs) == 1:
             return xs[0]
 

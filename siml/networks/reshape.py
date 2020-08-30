@@ -12,5 +12,5 @@ class Reshape(siml_module.SimlModule):
         self.new_shape = block_setting.optional['new_shape']
         return
 
-    def forward(self, x, supports=None):
+    def forward(self, x, supports=None, original_shapes=None):
         return torch.reshape(x, self.new_shape)

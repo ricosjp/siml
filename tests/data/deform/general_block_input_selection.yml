@@ -66,7 +66,7 @@ model:
       type: adjustable_mlp
       is_first: ture
       destinations:
-        - Reducer
+        - MAX_POOL1
       input_indices:
         - 6
       nodes:
@@ -75,10 +75,16 @@ model:
         - 6
       activations:
         - relu
-        - max_pool
+        - identity
       dropouts:
         - 0.3
         - 0.0
+    - name: MAX_POOL1
+      type: activation
+      destinations:
+        - Reducer
+      activations:
+        - max_pool
     - name: Reducer
       type: reducer
       destinations:
