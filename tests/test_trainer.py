@@ -137,26 +137,32 @@ class TestTrainer(unittest.TestCase):
 
     def test_gradient_consistency_with_padding(self):
         main_setting = setting.MainSetting.read_settings_yaml(
-            Path('tests/data/linear/linear.yml'))
+            Path('tests/data/linear/linear_timeseries.yml'))
+        main_setting.trainer.output_directory.mkdir(
+            parents=True, exist_ok=True)
         tr = trainer.Trainer(main_setting)
         tr.prepare_training()
-        x = np.reshape(np.arange(5*3), (1, 5, 3)).astype(np.float32) * .1
+        x = np.reshape(np.arange(10*5*3), (10, 5, 3)).astype(np.float32) * .1
         y = torch.from_numpy((x[:, :, :2] * 2 - .5))
 
+        tr.model.eval()
         pred_y_wo_padding = tr.model({'x': torch.from_numpy(x)})
         tr.optimizer.zero_grad()
         loss_wo_padding = tr.loss(
-            pred_y_wo_padding, y, original_shapes=[[5]])
+            pred_y_wo_padding, y, original_shapes=np.array([[10, 5]]))
         loss_wo_padding.backward(retain_graph=True)
         w_grad_wo_padding = tr.model.dict_block['Block'].linears[0].weight.grad
         b_grad_wo_padding = tr.model.dict_block['Block'].linears[0].bias.grad
 
         tr.optimizer.zero_grad()
-        padded_x = np.concatenate([x, np.zeros((1, 2, 3))], axis=1).astype(
+        padded_x = np.concatenate([x, np.zeros((3, 5, 3))], axis=0).astype(
+            np.float32)
+        padded_y = np.concatenate([y, np.zeros((3, 5, 2))], axis=0).astype(
             np.float32)
         pred_y_w_padding = tr.model({'x': torch.from_numpy(padded_x)})
         loss_w_padding = tr.loss(
-            pred_y_w_padding, y, original_shapes=[[5]])
+            pred_y_w_padding, torch.from_numpy(padded_y),
+            original_shapes=np.array([[10, 5]]))
         loss_wo_padding.backward()
         w_grad_w_padding = tr.model.dict_block['Block'].linears[0].weight.grad
         b_grad_w_padding = tr.model.dict_block['Block'].linears[0].bias.grad
