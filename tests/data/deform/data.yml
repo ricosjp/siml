@@ -52,6 +52,10 @@ preprocess:
     same_as: x_grad
   z_grad_2:
     same_as: x_grad
+  tensor_stress:
+    method: standardize
+  tensor_strain:
+    method: standardize
   tensor_gauss_strain1:
     method: standardize
   tensor_gauss_strain2:

@@ -33,22 +33,30 @@ def conversion_function(fem_data, raw_directory=None):
             'elemental', n_hop=2)
     global_modulus = np.mean(
         fem_data.elemental_data.get_attribute_data('modulus'), keepdims=True)
+
+    tensor_stress = fem_data.convert_array2symmetric_matrix(
+        fem_data.elemental_data.get_attribute_data('ElementalSTRESS'),
+        from_engineering=False)[:, :, :, None]
+    tensor_strain = fem_data.convert_array2symmetric_matrix(
+        fem_data.elemental_data.get_attribute_data('ElementalSTRAIN'),
+        from_engineering=True)[:, :, :, None]
     tensor_gauss_strain1 = fem_data.convert_array2symmetric_matrix(
         fem_data.elemental_data.get_attribute_data('GaussSTRAIN1'),
-        from_engineering=True)
+        from_engineering=True)[:, :, :, None]
     tensor_gauss_strain2 = fem_data.convert_array2symmetric_matrix(
         fem_data.elemental_data.get_attribute_data('GaussSTRAIN2'),
-        from_engineering=True)
+        from_engineering=True)[:, :, :, None]
     tensor_gauss_strain3 = fem_data.convert_array2symmetric_matrix(
         fem_data.elemental_data.get_attribute_data('GaussSTRAIN3'),
-        from_engineering=True)
+        from_engineering=True)[:, :, :, None]
     tensor_gauss_strain4 = fem_data.convert_array2symmetric_matrix(
         fem_data.elemental_data.get_attribute_data('GaussSTRAIN4'),
-        from_engineering=True)
+        from_engineering=True)[:, :, :, None]
     return {
         'adj': adj, 'nadj': nadj, 'global_modulus': global_modulus,
         'x_grad': x_grad, 'y_grad': y_grad, 'z_grad': z_grad,
         'x_grad_2': x_grad_2, 'y_grad_2': y_grad_2, 'z_grad_2': z_grad_2,
+        'tensor_stress': tensor_stress, 'tensor_strain': tensor_strain,
         'tensor_gauss_strain1': tensor_gauss_strain1,
         'tensor_gauss_strain2': tensor_gauss_strain2,
         'tensor_gauss_strain3': tensor_gauss_strain3,
