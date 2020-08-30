@@ -259,12 +259,8 @@ class Inferer(trainer.Trainer):
                 or self.setting.trainer.simplified_model:
             return [input_data, support_input_data], output_data
         else:
-            if output_data is None:
-                extended_output_data = None
-            else:
-                extended_output_data = output_data[None, :, :]
-            return [input_data[None, :, :], support_input_data], \
-                extended_output_data
+            return [input_data, support_input_data], \
+                output_data
 
     def infer_simplified_model(
             self, model_path, raw_dict_x, *,
