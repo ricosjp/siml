@@ -424,7 +424,7 @@ class TrainerSetting(TypedDataClass):
             if isinstance(data, dict):
                 return {v['name']: v for value in data.values() for v in value}
             elif isinstance(data, list):
-                return {d['name'] for d in data}
+                return {d['name']: d for d in data}
             else:
                 raise ValueError(f"Unexpected data: {data}")
         out_dict = to_dict(self.inputs)
