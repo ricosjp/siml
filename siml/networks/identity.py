@@ -9,4 +9,7 @@ class Identity(siml_module.SimlModule):
         return
 
     def forward(self, *x, supports=None):
-        return x
+        if len(x) == 1:
+            return x[0]
+        else:
+            return x

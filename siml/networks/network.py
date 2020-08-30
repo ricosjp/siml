@@ -213,8 +213,11 @@ class Network(torch.nn.Module):
                     raise ValueError(
                         f"{graph_node} has {len(predecessors)} "
                         f"predecessors: {predecessors}")
-                max_first_node = self.dict_block_setting[
-                    predecessors[0]].nodes[-1]
+                if block_setting.is_first:
+                    max_first_node = self.trainer_setting.input_length
+                else:
+                    max_first_node = self.dict_block_setting[
+                        tuple(predecessors)[0]].nodes[-1]
                 first_node = len(np.arange(max_first_node)[
                     block_setting.input_selection])
                 last_node = first_node
@@ -332,7 +335,7 @@ class Network(torch.nn.Module):
                 return_dict.update(h)
             return return_dict
         else:
-            return torch.cat(dict_hidden[self.OUTPUT_LAYER_NAME])
+            return dict_hidden[self.OUTPUT_LAYER_NAME]
 
     def _select_dimension(self, x, input_selection, device):
         if isinstance(x, dict):
@@ -341,7 +344,10 @@ class Network(torch.nn.Module):
                     f"Cannot set input_selection after dict_output")
             return {key: value.to(device) for key, value in x.items()}
         else:
-            return x[..., input_selection].to(device)
+            if input_selection == slice(0, None, 1):
+                return x
+            else:
+                return x[..., input_selection].to(device)
 
     def draw(self, output_file_name):
         figure = plt.figure(dpi=1000)

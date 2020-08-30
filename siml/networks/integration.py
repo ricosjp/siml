@@ -24,14 +24,12 @@ class Integration(siml_module.SimlModule):
         return
 
     def _pad(self, x):
-        shape = x.shape
         x = einops.rearrange(
-            x, 'time batch element feature -> (batch element) feature time')
+            x, 'time element feature -> element feature time')
         x = torch.nn.functional.pad(
             x, (1, 0), mode='replicate')
         x = einops.rearrange(
-            x, '(batch element) feature time -> time batch element feature',
-            batch=shape[1], element=shape[2])
+            x, 'element feature time -> time element feature')
         return x
 
     def _diff(self, x):
