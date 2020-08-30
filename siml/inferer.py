@@ -433,15 +433,7 @@ class Inferer(trainer.Trainer):
         if answer_y is not None:
             with torch.no_grad():
                 answer_y = torch.from_numpy(answer_y)
-                if len(answer_y.shape) == 2:
-                    loss = self.loss(inferred_y[0], answer_y).numpy()
-                elif len(answer_y.shape) == 3:
-                    loss = self.loss(inferred_y, answer_y).numpy()
-                elif len(answer_y.shape) == 4:
-                    loss = self.loss(inferred_y, answer_y).numpy()
-                else:
-                    raise ValueError(
-                        f"Unknown shape of answer_y: {answer_y.shape}")
+                loss = self.loss(inferred_y, answer_y).numpy()
         else:
             # Answer data does not exist
             loss = None
@@ -560,41 +552,19 @@ class Inferer(trainer.Trainer):
                     'Cannot use support_input if '
                     'element_wise or simplified_model is True')
             if return_dict:
-                if self.setting.trainer.time_series:
-                    return {
-                        data_directory: d[:, None]
-                        for data_directory, d
-                        in zip(data_directories, data)}
-                else:
-                    return {
-                        data_directory: d for data_directory, d
-                        in zip(data_directories, data)}
+                return {
+                    data_directory: d for data_directory, d
+                    in zip(data_directories, data)}
             else:
                 return np.concatenate(data), None
         if return_dict:
             if len(supports) > 0:
-                if self.setting.trainer.time_series:
-                    return {
-                        data_directory: [d[:, None], [s]]
-
-                        for data_directory, d, s
-                        in zip(data_directories, data, support_data)}
-                else:
-                    return {
-                        data_directory: [d[None, :], [s]]
-
-                        for data_directory, d, s
-                        in zip(data_directories, data, support_data)}
+                return {
+                    data_directory: [d, [s]] for data_directory, d, s
+                    in zip(data_directories, data, support_data)}
             else:
-                if self.setting.trainer.time_series:
-                    return {
-                        data_directory: d[:, None]
-                        for data_directory, d
-                        in zip(data_directories, data)}
-                else:
-                    return {
-                        data_directory: d[None, :]
-                        for data_directory, d
-                        in zip(data_directories, data)}
+                return {
+                    data_directory: d for data_directory, d
+                    in zip(data_directories, data)}
         else:
             return data, support_data
