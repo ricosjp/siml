@@ -1,0 +1,46 @@
+data:
+  interim: tests/data/linear/interim
+  preprocessed: tests/data/linear/preprocessed
+  train:
+    - tests/data/linear/preprocessed/train
+  validation:
+    - tests/data/linear/preprocessed/validation
+preprocess:
+  x1:
+    componentwise: true
+    method: standardize
+  x2:
+    componentwise: true
+    method: std_scale
+  y:
+    componentwise: true
+    method: standardize
+trainer:
+  output_directory: tests/data/linear/time_series
+  time_series: true
+  lazy: false
+  num_workers: 0
+  inputs:
+    - name: x1
+      dim: 2
+    - name: x2
+      dim: 1
+  outputs:
+    - name: y
+      dim: 2
+  prune: true
+  batch_size: 1
+  n_epoch: 100
+  log_trigger_epoch: 10
+  stop_trigger_epoch: 10
+  seed: 0
+model:
+  blocks:
+    - type: adjustable_mlp
+      nodes:
+        - -1
+        - -1
+      activations:
+        - identity
+      dropouts:
+        - 0.0
