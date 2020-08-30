@@ -594,7 +594,7 @@ class Trainer():
                 optimizer.zero_grad()
                 loss = self.loss(y_pred, y)
                 loss.backward(retain_graph=True)
-                self.optimizer.step()
+            self.optimizer.step()
 
             loss = self.loss(y_pred, y)
             return loss
