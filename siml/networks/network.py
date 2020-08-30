@@ -304,10 +304,14 @@ class Network(torch.nn.Module):
                         # NOTE: support_input_indices are ignored
                         selected_supports = supports
                     else:
-                        selected_supports = [
-                            [s.to(device) for s in sp] for sp
-                            in supports[
-                                :, block_setting.support_input_indices]]
+                        if len(supports.shape) == 1:
+                            selected_supports = supports[
+                                block_setting.support_input_indices]
+                        else:
+                            selected_supports = [
+                                [s.to(device) for s in sp] for sp
+                                in supports[
+                                    :, block_setting.support_input_indices]]
 
                     hidden = self.dict_block[graph_node](
                         *inputs, supports=selected_supports)

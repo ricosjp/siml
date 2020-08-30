@@ -108,15 +108,9 @@ class AbstractGCN(siml_module.SimlModule):
                 Output of the NN.
         """
         if len(x.shape) == 3:
-            hs = torch.stack([
-                self._forward_single(x_, supports_)
-                for x_, supports_ in zip(x, supports)])
+            hs = torch.stack([self._forward_single(x_, supports) for x_ in x])
         else:
-            hs = torch.stack([
-                torch.stack([
-                    self._forward_single(x__, supports_)
-                    for x__, supports_ in zip(x_, supports)])
-                for x_ in x])
+            hs = self._forward_single(x, supports)
         return hs
 
     def _forward_single(self, x, supports):

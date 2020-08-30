@@ -91,6 +91,24 @@ class TypedDataClass:
                     return {key: list(value) for key, value in x.items()}
                 else:
                     raise ValueError(f"Unexpected input: {x}")
+        elif field.type == typing.Union[
+                typing.List[int], typing.Dict[str, list]]:
+            def type_function(x):
+                if isinstance(x, list):
+                    return [int(_x) for _x in x]
+                elif isinstance(x, dict):
+                    return {key: list(value) for key, value in x.items()}
+                else:
+                    raise ValueError(f"Unexpected input: {x}")
+        elif field.type == typing.Union[
+                typing.List[str], typing.Dict[str, list]]:
+            def type_function(x):
+                if isinstance(x, list):
+                    return [str(_x) for _x in x]
+                elif isinstance(x, dict):
+                    return {key: list(value) for key, value in x.items()}
+                else:
+                    raise ValueError(f"Unexpected input: {x}")
         else:
             type_function = field.type
 
@@ -279,7 +297,16 @@ class TrainerSetting(TypedDataClass):
     outputs: typing.Union[typing.List[dict], typing.Dict[str, list]] \
         = dc.field(default_factory=list)
 
+    input_names: typing.Union[typing.List[str], typing.Dict[str, list]] \
+        = dc.field(default=None, metadata={'allow_none': True})
+    input_dims: typing.Union[typing.List[int], typing.Dict[str, list]] \
+        = dc.field(default=None, metadata={'allow_none': True})
+    output_names: typing.Union[typing.List[str], typing.Dict[str, list]] \
+        = dc.field(default=None, metadata={'allow_none': True})
+    output_dims: typing.Union[typing.List[int], typing.Dict[str, list]] \
+        = dc.field(default=None, metadata={'allow_none': True})
     output_directory: Path = None
+
     name: str = 'default'
     batch_size: int = 1
     validation_batch_size: int = dc.field(

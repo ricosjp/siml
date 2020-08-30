@@ -156,15 +156,10 @@ class OnMemoryDataset(BaseDataset):
 def collate_fn_with_support(batch):
     x = concatenate_sequence(batch, 'x')
     t = concatenate_sequence(batch, 't')
-    max_element_length = x.shape[-2]
-    padded_supports = pad_sparse_sequence(
-        batch, 'supports', max_element_length)
-
-    original_shapes = [b['x'].shape[:1] for b in batch]
+    padded_supports = concatenate_sparse_sequence(batch, 'supports')
 
     return {
-        'x': x, 't': t, 'supports': padded_supports,
-        'original_shapes': original_shapes}
+        'x': x, 't': t, 'supports': padded_supports}
 
 
 def collate_fn_time_with_support(batch):
@@ -244,6 +239,14 @@ def pad_time_direction(data, time_length):
     return padded_data
 
 
+def concatenate_sparse_sequence(batch, key):
+    sparse_infos = pad_sparse_sequence(batch, key)
+    n_sparse_features = len(sparse_infos[0])
+    return [
+        merge_sparse_tensors([s[i] for s in sparse_infos], return_coo=False)
+        for i in range(n_sparse_features)]
+
+
 def pad_sparse_sequence(batch, key, length=None):
     return [[pad_sparse(s, length) for s in b[key]] for b in batch]
 
@@ -290,16 +293,27 @@ def prepare_batch_with_support(
 
 def convert_sparse_info(sparse_info, device=None, non_blocking=False):
     device = 'cpu'
-    return [
-        [{
+    if isinstance(sparse_info[0], list):
+        return [
+            [{
+                'row': convert_tensor(
+                    s['row'], device=device, non_blocking=non_blocking),
+                'col': convert_tensor(
+                    s['col'], device=device, non_blocking=non_blocking),
+                'values': convert_tensor(
+                    s['values'], device=device, non_blocking=non_blocking),
+                'size': s['size'],
+            } for s in si] for si in sparse_info]
+    else:
+        return [{
             'row': convert_tensor(
-                s['row'], device=device, non_blocking=non_blocking),
+                si['row'], device=device, non_blocking=non_blocking),
             'col': convert_tensor(
-                s['col'], device=device, non_blocking=non_blocking),
+                si['col'], device=device, non_blocking=non_blocking),
             'values': convert_tensor(
-                s['values'], device=device, non_blocking=non_blocking),
-            'size': s['size'],
-        } for s in si] for si in sparse_info]
+                si['values'], device=device, non_blocking=non_blocking),
+            'size': si['size'],
+        } for si in sparse_info]
 
 
 def convert_sparse_tensor(
@@ -325,25 +339,36 @@ def convert_sparse_tensor(
             merge_sparse_tensors(si).to(device)
             for si in sparse_info])
     else:
-        converted_sparses = np.array([
-            [
+        if isinstance(sparse_info[0], list):
+            converted_sparses = np.array([
+                [
+                    torch.sparse_coo_tensor(
+                        torch.stack([s['row'], s['col']]),
+                        s['values'], s['size']
+                    ).to(device)
+                    for s in si]
+                for si in sparse_info])
+        else:
+            converted_sparses = np.array([
                 torch.sparse_coo_tensor(
-                    torch.stack([s['row'], s['col']]),
-                    s['values'], s['size']
+                    torch.stack([si['row'], si['col']]),
+                    si['values'], si['size']
                 ).to(device)
-                for s in si]
-            for si in sparse_info])
+                for si in sparse_info])
 
     return converted_sparses
 
 
-def merge_sparse_tensors(stripped_sparse_info):
+def merge_sparse_tensors(stripped_sparse_info, *, return_coo=True):
     """Merge sparse tensors.
 
     Parameters
     ----------
     stripped_sparse_info: List[Dict[str: torch.Tensor]]
         Sparse data which has: row, col, values, size in COO format.
+    return_coo: bool
+        If True, return torch.sparse_coo_tensor. Else, return sparse info
+        dict. The default is True.
 
     Returns
     -------
@@ -361,9 +386,14 @@ def merge_sparse_tensors(stripped_sparse_info):
         merged_rows = torch.cat([merged_rows, rows[i] + row_shifts[i-1]])
         merged_cols = torch.cat([merged_cols, cols[i] + col_shifts[i-1]])
 
-    return torch.sparse_coo_tensor(
-        torch.stack([merged_rows, merged_cols]), values,
-        [row_shifts[-1], col_shifts[-1]])
+    shape = [row_shifts[-1], col_shifts[-1]]
+    if return_coo:
+        return torch.sparse_coo_tensor(
+            torch.stack([merged_rows, merged_cols]), values, shape)
+    else:
+        return {
+            'row': merged_rows, 'col': merged_cols, 'values': values,
+            'size': shape}
 
 
 def prepare_batch_without_support(
