@@ -385,12 +385,9 @@ class Inferer(trainer.Trainer):
             load_function=None, required_file_names=[],
             convert_to_order1=False):
 
-        if self.setting.trainer.time_series and len(x.shape) == 3:
-            x = x[:, None, :, :]
-
         if supports is not None:
-            converted_supports = [[
-                datasets.pad_sparse(s) for s in supports[0]]]
+            converted_supports = [
+                datasets.pad_sparse(s) for s in supports[0]]
         else:
             converted_supports = None
 
@@ -409,9 +406,6 @@ class Inferer(trainer.Trainer):
             inferred_y = inferred_y[accomodate_length:]
             x = x[accomodate_length:]
 
-        if len(x.shape) == 2:
-            x = x[None, :, :]
-            inferred_y = inferred_y[None, :, :]
         dict_var_x = self._separate_data(
             x.numpy(), self.setting.trainer.inputs)
         dict_var_inferred_y = self._separate_data(

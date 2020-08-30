@@ -707,7 +707,7 @@ class Trainer():
                 for key in y.keys()]))
 
         def loss_function_without_padding(y_pred, y, original_shapes=None):
-            return loss_core(y_pred, y)
+            return loss_core(y_pred.view(y.shape), y)
 
         def loss_function_time_with_padding(y_pred, y, original_shapes):
             split_y_pred = torch.split(
