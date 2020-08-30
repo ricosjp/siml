@@ -18,10 +18,18 @@ class BaseDataset(torch.utils.data.Dataset):
         self.supports = supports
         self.num_workers = num_workers
 
+        self.x_dict_mode = isinstance(self.x_variable_names, dict)
+        self.y_dict_mode = isinstance(self.y_variable_names, dict)
+
+        if self.x_dict_mode:
+            first_variable_name = list(self.x_variable_names.values())[0][0]
+        else:
+            first_variable_name = self.x_variable_names[0]
+
         data_directories = []
         for directory in directories:
             data_directories += util.collect_data_directories(
-                directory, required_file_names=[f"{x_variable_names[0]}.npy"],
+                directory, required_file_names=[f"{first_variable_name}.npy"],
                 allow_no_data=allow_no_data)
         self.data_directories = np.unique(data_directories)
 
@@ -62,35 +70,36 @@ class BaseDataset(torch.utils.data.Dataset):
         pbar.close()
         return data
 
+    def _load_from_names(self, data_directory, variable_names):
+        if isinstance(variable_names, dict):
+            return {
+                key: torch.from_numpy(util.concatenate_variable([
+                    util.load_variable(data_directory, variable_name)
+                    for variable_name in value]))
+                for key, value in variable_names.items()}
+        elif isinstance(variable_names, list):
+            return torch.from_numpy(util.concatenate_variable([
+                util.load_variable(data_directory, variable_name)
+                for variable_name in variable_names]))
+        else:
+            raise ValueError(f"Unexpected variable names: {variable_names}")
+
     def _load_data(self, data_directory, pbar=None):
-        x_data = util.concatenate_variable([
-            util.load_variable(data_directory, x_variable_name)
-            for x_variable_name in self.x_variable_names])
-        y_data = util.concatenate_variable([
-            util.load_variable(data_directory, y_variable_name)
-            for y_variable_name in self.y_variable_names])
-        has_nan = False
-        if np.any(np.isnan(x_data)):
-            has_nan = True
-            print(f"NaN found in x: {data_directory}")
-        if np.any(np.isnan(y_data)):
-            has_nan = True
-            print(f"NaN found in y: {data_directory}")
-        if has_nan:
-            raise ValueError('Nan found')
+        x_data = self._load_from_names(
+            data_directory, self.x_variable_names)
+        y_data = self._load_from_names(
+            data_directory, self.y_variable_names)
+
         if pbar:
             pbar.update()
         if self.supports is None:
-            return {
-                'x': torch.from_numpy(x_data), 't': torch.from_numpy(y_data)}
+            return {'x': x_data, 't': y_data}
         else:
             # TODO: use appropreate sparse data class
             support_data = [
                 util.load_variable(data_directory, support)
                 for support in self.supports]
-            return {
-                'x': torch.from_numpy(x_data), 't': torch.from_numpy(y_data),
-                'supports': support_data}
+            return {'x': x_data, 't': y_data, 'supports': support_data}
 
 
 class LazyDataset(BaseDataset):
@@ -145,7 +154,7 @@ class OnMemoryDataset(BaseDataset):
 
 
 def collate_fn_with_support(batch):
-    x = pad_dense_sequence(batch, 'x')
+    x = concatenate_sequence(batch, 'x')
     t = concatenate_sequence(batch, 't')
     max_element_length = x.shape[-2]
     padded_supports = pad_sparse_sequence(
@@ -173,12 +182,10 @@ def collate_fn_time_with_support(batch):
 
 
 def collate_fn_without_support(batch):
-    x = pad_dense_sequence(batch, 'x')
+    x = concatenate_sequence(batch, 'x')
     t = concatenate_sequence(batch, 't')
 
-    original_shapes = [b['x'].shape[:1] for b in batch]
-
-    return {'x': x, 't': t, 'original_shapes': original_shapes}
+    return {'x': x, 't': t}
 
 
 def collate_fn_time_without_support(batch):
@@ -192,7 +199,13 @@ def collate_fn_time_without_support(batch):
 
 
 def concatenate_sequence(batch, key):
-    return torch.cat([b[key] for b in batch])
+    if isinstance(batch[0][key], dict):
+        return {
+            dict_key:
+            torch.cat([b[key][dict_key] for b in batch])
+            for dict_key in batch[0][key].keys()}
+    else:
+        return torch.cat([b[key] for b in batch])
 
 
 def collate_fn_element_wise(batch):
@@ -271,7 +284,6 @@ def prepare_batch_with_support(
             batch['x'], device=device, non_blocking=non_blocking),
         'supports': convert_sparse_info(
             batch['supports'], device=device, non_blocking=non_blocking),
-        'original_shapes': batch['original_shapes'],
     }, convert_tensor(
         batch['t'], device=output_device, non_blocking=non_blocking)
 
@@ -359,6 +371,5 @@ def prepare_batch_without_support(
     return {
         'x': convert_tensor(
             batch['x'], device=device, non_blocking=non_blocking),
-        'original_shapes': batch['original_shapes'],
     }, convert_tensor(
         batch['t'], device=output_device, non_blocking=non_blocking)

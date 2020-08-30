@@ -8,5 +8,5 @@ class Identity(siml_module.SimlModule):
         super().__init__(block_setting, no_parameter=True)
         return
 
-    def forward(self, x, supports=None):
+    def forward(self, *x, supports=None):
         return x

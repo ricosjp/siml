@@ -1,4 +1,5 @@
 
+import numpy as np
 import torch
 
 from . import siml_module
@@ -36,5 +37,25 @@ class Reducer(siml_module.SimlModule):
 
         x = xs[0]
         for other in xs[1:]:
-            x = self.op(x, other)
+            len_x = len(x.shape)
+            len_other = len(other.shape)
+            if len_x == len_other:
+                x = self.op(x, other)
+            elif len_x >= len_other:
+                axes = self._get_permute_axis(len_x, len_other)
+                x = self.op(x.permute(axes), other)
+                x = self._inverse_permute(x, axes)
+            else:
+                axes = self._get_permute_axis(len_other, len_x)
+                x = self.op(x, other.permute(axes))
+                x = self._inverse_permute(x, axes)
         return self.activation(x)
+
+    def _get_permute_axis(self, len_x, len_other):
+        axes = list(range(len_other - 1, len_x - 1)) \
+            + list(range(len_other - 1)) + [len_x - 1]
+        return axes
+
+    def _inverse_permute(self, x, axes):
+        inverse_axes = np.argsort(axes)
+        return x.permute(list(inverse_axes))
