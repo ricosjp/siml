@@ -586,16 +586,15 @@ class Trainer():
             y_pred = model(x)
 
             optimizer.zero_grad()
-            for _y_pred, _y in zip(y_pred, y):
-                split_y_pred = torch.split(
-                    _y_pred, self.setting.trainer.element_batch_size)
-                split_y = torch.split(
-                    _y, self.setting.trainer.element_batch_size)
-                for syp, sy in zip(split_y_pred, split_y):
-                    optimizer.zero_grad()
-                    loss = self.loss(y_pred, y)
-                    loss.backward(retain_graph=True)
-                    self.optimizer.step()
+            split_y_pred = torch.split(
+                y_pred, self.setting.trainer.element_batch_size)
+            split_y = torch.split(
+                y, self.setting.trainer.element_batch_size)
+            for syp, sy in zip(split_y_pred, split_y):
+                optimizer.zero_grad()
+                loss = self.loss(y_pred, y)
+                loss.backward(retain_graph=True)
+                self.optimizer.step()
 
             loss = self.loss(y_pred, y)
             return loss
@@ -708,7 +707,7 @@ class Trainer():
                 for key in y.keys()]))
 
         def loss_function_without_padding(y_pred, y):
-            return loss_core(y_pred.view(y.shape), y)
+            return loss_core(y_pred, y)
 
         def loss_function_time_with_padding(y_pred, y, original_shapes):
             concatenated_y_pred = torch.cat([

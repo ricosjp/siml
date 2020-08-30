@@ -12,6 +12,9 @@ import siml.setting as setting
 import siml.trainer as trainer
 
 
+torch.autograd.set_detect_anomaly(True)
+
+
 def conversion_function(fem_data, raw_directory=None):
     # To be used in test_preprocess_deform
     adj = fem_data.calculate_adjacency_matrix_element()

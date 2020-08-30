@@ -328,7 +328,7 @@ class Network(torch.nn.Module):
                 return_dict.update(h)
             return return_dict
         else:
-            return dict_hidden[self.OUTPUT_LAYER_NAME][0]
+            return torch.cat(dict_hidden[self.OUTPUT_LAYER_NAME])
 
     def _select_dimension(self, x, input_selection, device):
         if isinstance(x, dict):
