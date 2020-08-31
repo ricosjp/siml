@@ -503,3 +503,12 @@ class TestNetwork(unittest.TestCase):
         np.testing.assert_almost_equal(
             results[0]['dict_y']['t_100'],
             results[1]['dict_y']['t_100'], decimal=5)
+
+    def test_iso_gcn_inverse_temperature(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/heat_time_series/iso_gcn_inverse.yml'))
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, 5.)

@@ -17,7 +17,39 @@ conversion:
     - '*.res.*'
   time_series: true
 preprocess:
-  temperature:
+  nodal_grad_x:
+    method: sparse_std
+  nodal_grad_y:
+    same_as: nodal_grad_x
+  nodal_grad_z:
+    same_as: nodal_grad_x
+  nodal_laplacian:
+    method: sparse_std
+  t_0:
     method: standardize
-  thermal_conductivity:
+  t_1:
+    same_as: t_0
+  t_2:
+    same_as: t_0
+  t_3:
+    same_as: t_0
+  t_4:
+    same_as: t_0
+  t_5:
+    same_as: t_0
+  t_6:
+    same_as: t_0
+  t_7:
+    same_as: t_0
+  t_8:
+    same_as: t_0
+  t_9:
+    same_as: t_0
+  t_10:
+    same_as: t_0
+  elemental_conductivity:
     method: standardize
+  nodal_conductivity:
+    method: standardize
+  global_conductivity:
+    medhod: standardize

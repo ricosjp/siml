@@ -67,7 +67,20 @@ def conversion_function(fem_data, raw_directory=None):
 def conversion_function_heat_time_series(fem_data, raw_directory=None):
     # To be used in test_convert_heat_time_series
     temperature = fem_data.nodal_data.get_attribute_data('TEMPERATURE')
-    return {'temperature': temperature}
+    raw_conductivity = fem_data.elemental_data.get_attribute_data(
+        'thermal_conductivity')
+    elemental_conductivity = np.array([a[0][:, 0] for a in raw_conductivity])
+    nodal_conductivity = fem_data.convert_elemental2nodal(
+        elemental_conductivity, mode='effective')
+    global_conductivity = np.mean(
+        elemental_conductivity, axis=0, keepdims=True)
+    dict_data = {
+        f"t_{i}": t for i, t in enumerate(temperature)}
+    dict_data.update({
+        'elemental_conductivity': elemental_conductivity,
+        'nodal_conductivity': nodal_conductivity,
+        'global_conductivity': global_conductivity})
+    return dict_data
 
 
 def filter_function(fem_data, raw_directory=None, data_dict=None):

@@ -52,6 +52,36 @@ def conversion_function(fem_data, data_directory):
     }
 
 
+def conversion_function_heat_time_series(fem_data, raw_directory=None):
+    nodal_grad_x, nodal_grad_y, nodal_grad_z = \
+        fem_data.calculate_spatial_gradient_adjacency_matrices(
+            'nodal', n_hop=2)
+    nodal_laplacian = (
+        nodal_grad_x.dot(nodal_grad_x)
+        + nodal_grad_y.dot(nodal_grad_y)
+        + nodal_grad_z.dot(nodal_grad_z)).tocoo() / 6
+
+    temperature = fem_data.nodal_data.get_attribute_data('TEMPERATURE')
+    raw_conductivity = fem_data.elemental_data.get_attribute_data(
+        'thermal_conductivity')
+    elemental_conductivity = np.array([a[0][:, 0] for a in raw_conductivity])
+    nodal_conductivity = fem_data.convert_elemental2nodal(
+        elemental_conductivity, mode='effective')
+    global_conductivity = np.mean(
+        elemental_conductivity, axis=0, keepdims=True)
+    dict_data = {
+        f"t_{i}": t for i, t in enumerate(temperature)}
+    dict_data.update({
+        'nodal_grad_x': nodal_grad_x,
+        'nodal_grad_y': nodal_grad_y,
+        'nodal_grad_z': nodal_grad_z,
+        'nodal_laplacian': nodal_laplacian,
+        'elemental_conductivity': elemental_conductivity,
+        'nodal_conductivity': nodal_conductivity,
+        'global_conductivity': global_conductivity})
+    return dict_data
+
+
 def preprocess_deform():
     main_setting = setting.MainSetting.read_settings_yaml(
         pathlib.Path('tests/data/deform/data.yml'))
@@ -59,6 +89,21 @@ def preprocess_deform():
     raw_converter = prepost.RawConverter(
         main_setting, recursive=True, force_renew=True,
         conversion_function=conversion_function)
+    raw_converter.convert()
+
+    preprocessor = prepost.Preprocessor(main_setting, force_renew=True)
+    preprocessor.preprocess_interim_data()
+    return
+
+
+def preprocess_heat_time_series():
+    main_setting = setting.MainSetting.read_settings_yaml(
+        pathlib.Path('tests/data/heat_time_series/data.yml'))
+
+    raw_converter = prepost.RawConverter(
+        main_setting, recursive=True, force_renew=True,
+        conversion_function=conversion_function_heat_time_series,
+        write_ucd=False)
     raw_converter.convert()
 
     preprocessor = prepost.Preprocessor(main_setting, force_renew=True)
@@ -274,6 +319,7 @@ def generate_large():
 
 
 if __name__ == '__main__':
+    preprocess_heat_time_series()
     generate_ode()
     preprocess_deform()
     preprocess_deform_timeseries()
