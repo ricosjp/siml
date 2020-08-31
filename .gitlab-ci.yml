@@ -87,6 +87,15 @@ test_gpu:
     - multi-gpu
     - avx
 
+test_gpu_parallel:
+  extends: .test
+  script:
+    - python3.7 -m pytest tests/gpu/test_trainer_gpu_parallel.py --capture=no
+  allow_failure: true
+  tags:
+    - multi-gpu
+    - avx
+
 test_networks:
   extends: .test
   script: python3.7 -m pytest tests/test_networks.py --capture=no
