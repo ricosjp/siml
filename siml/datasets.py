@@ -181,8 +181,13 @@ def collate_fn_without_support(batch):
     x = concatenate_sequence(batch, 'x')
     t = concatenate_sequence(batch, 't')
 
-    original_shapes = np.array(
-        [[b['x'].shape[0]] for b in batch])
+    if isinstance(batch[0]['x'], dict):
+        original_shapes = np.array([
+            {key: [v.shape[0] for v in value] for key, value in b['x'].items()}
+            for b in batch])
+    else:
+        original_shapes = np.array(
+            [[b['x'].shape[0]] for b in batch])
 
     return {'x': x, 't': t, 'original_shapes': original_shapes}
 
