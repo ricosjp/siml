@@ -20,7 +20,7 @@ trainer:
       dim: 6
   prune: true
   batch_size: 2
-  n_epoch: 100
+  n_epoch: 200
   log_trigger_epoch: 10
   stop_trigger_epoch: 10
   seed: 0
@@ -119,7 +119,6 @@ model:
         - OUT_REDUCER
       residual: true
       support_input_index: 0
-      is_last: true
       nodes:
         - -1
         - 6
@@ -132,4 +131,5 @@ model:
         - 0.0
       allow_linear_residual: true
     - name: OUT_REDUCER
+      is_last: true
       type: reducer
