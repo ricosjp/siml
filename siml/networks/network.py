@@ -270,7 +270,7 @@ class Network(torch.nn.Module):
 
     def forward(self, x_):
         x = x_['x']
-        original_shapes = x_['original_shapes']
+        original_shapes = x_.get('original_shapes', None)
 
         # Due to lack of support of sparse matrix of scatter in DataParallel
         # and coo_matrix, convert sparse in the forward

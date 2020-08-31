@@ -220,7 +220,7 @@ class TestNetwork(unittest.TestCase):
         loss = tr.train()
         self.assertLess(loss, 1.)
         input_data = tr.train_loader.dataset[0]
-        input_data = {'x': input_data['x'][:, :, :]}
+        input_data = {'x': input_data['x']}
         out = tr.model(input_data)
         np.testing.assert_almost_equal(out.detach().numpy()[0], 0.)
 
