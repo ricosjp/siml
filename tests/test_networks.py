@@ -446,9 +446,9 @@ class TestNetwork(unittest.TestCase):
             [0., 1., 1., 1.],
             [0., 1., 1., 1.],
         ], dtype=np.float32)
-        s = [[torch.sparse_coo_tensor(
+        s = [torch.sparse_coo_tensor(
             torch.stack([torch.from_numpy(_s.row), torch.from_numpy(_s.col)]),
-            torch.from_numpy(_s.data), _s.shape)]]
+            torch.from_numpy(_s.data), _s.shape)]
         y = tr.model.dict_block['RES_GCN'](x, s)
         abs_residual = np.abs((y - x).detach().numpy())
         zero_fraction = np.sum(abs_residual < 1e-5) / abs_residual.size
