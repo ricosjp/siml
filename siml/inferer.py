@@ -389,13 +389,22 @@ class Inferer(trainer.Trainer):
 
         if accomodate_length:
             x = np.concatenate([x[:accomodate_length], x])
+        shape = x.shape
+        if len(shape) == 2:
+            original_shapes = [shape[:1]]
+        elif len(shape) == 3:
+            original_shapes = [shape[:2]]
+        else:
+            raise ValueError(f"Unexpected x shape: {shape}")
         x = torch.from_numpy(x)
 
         # Inference
         self.model.eval()
         with torch.no_grad():
             start_time = time.time()
-            inferred_y = self.model({'x': x, 'supports': converted_supports})
+            inferred_y = self.model({
+                'x': x, 'supports': converted_supports,
+                'original_shapes': original_shapes})
             end_time = time.time()
             elapsed_time = end_time - start_time
         if accomodate_length:
