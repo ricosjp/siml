@@ -259,12 +259,8 @@ class Inferer(trainer.Trainer):
                 or self.setting.trainer.simplified_model:
             return [input_data, support_input_data], output_data
         else:
-            if output_data is None:
-                extended_output_data = None
-            else:
-                extended_output_data = output_data[None, :, :]
-            return [input_data[None, :, :], support_input_data], \
-                extended_output_data
+            return [input_data, support_input_data], \
+                output_data
 
     def infer_simplified_model(
             self, model_path, raw_dict_x, *,
@@ -385,33 +381,36 @@ class Inferer(trainer.Trainer):
             load_function=None, required_file_names=[],
             convert_to_order1=False):
 
-        if self.setting.trainer.time_series and len(x.shape) == 3:
-            x = x[:, None, :, :]
-
         if supports is not None:
-            converted_supports = [[
-                datasets.pad_sparse(s) for s in supports[0]]]
+            converted_supports = [
+                datasets.pad_sparse(s) for s in supports[0]]
         else:
             converted_supports = None
 
         if accomodate_length:
             x = np.concatenate([x[:accomodate_length], x])
+        shape = x.shape
+        if len(shape) == 2:
+            original_shapes = [shape[:1]]
+        elif len(shape) == 3:
+            original_shapes = [shape[:2]]
+        else:
+            raise ValueError(f"Unexpected x shape: {shape}")
         x = torch.from_numpy(x)
 
         # Inference
         self.model.eval()
         with torch.no_grad():
             start_time = time.time()
-            inferred_y = self.model({'x': x, 'supports': converted_supports})
+            inferred_y = self.model({
+                'x': x, 'supports': converted_supports,
+                'original_shapes': original_shapes})
             end_time = time.time()
             elapsed_time = end_time - start_time
         if accomodate_length:
             inferred_y = inferred_y[accomodate_length:]
             x = x[accomodate_length:]
 
-        if len(x.shape) == 2:
-            x = x[None, :, :]
-            inferred_y = inferred_y[None, :, :]
         dict_var_x = self._separate_data(
             x.numpy(), self.setting.trainer.inputs)
         dict_var_inferred_y = self._separate_data(
@@ -439,15 +438,7 @@ class Inferer(trainer.Trainer):
         if answer_y is not None:
             with torch.no_grad():
                 answer_y = torch.from_numpy(answer_y)
-                if len(answer_y.shape) == 2:
-                    loss = self.loss(inferred_y[0], answer_y).numpy()
-                elif len(answer_y.shape) == 3:
-                    loss = self.loss(inferred_y, answer_y).numpy()
-                elif len(answer_y.shape) == 4:
-                    loss = self.loss(inferred_y, answer_y).numpy()
-                else:
-                    raise ValueError(
-                        f"Unknown shape of answer_y: {answer_y.shape}")
+                loss = self.loss(inferred_y, answer_y).numpy()
         else:
             # Answer data does not exist
             loss = None
@@ -566,41 +557,19 @@ class Inferer(trainer.Trainer):
                     'Cannot use support_input if '
                     'element_wise or simplified_model is True')
             if return_dict:
-                if self.setting.trainer.time_series:
-                    return {
-                        data_directory: d[:, None]
-                        for data_directory, d
-                        in zip(data_directories, data)}
-                else:
-                    return {
-                        data_directory: d for data_directory, d
-                        in zip(data_directories, data)}
+                return {
+                    data_directory: d for data_directory, d
+                    in zip(data_directories, data)}
             else:
                 return np.concatenate(data), None
         if return_dict:
             if len(supports) > 0:
-                if self.setting.trainer.time_series:
-                    return {
-                        data_directory: [d[:, None], [s]]
-
-                        for data_directory, d, s
-                        in zip(data_directories, data, support_data)}
-                else:
-                    return {
-                        data_directory: [d[None, :], [s]]
-
-                        for data_directory, d, s
-                        in zip(data_directories, data, support_data)}
+                return {
+                    data_directory: [d, [s]] for data_directory, d, s
+                    in zip(data_directories, data, support_data)}
             else:
-                if self.setting.trainer.time_series:
-                    return {
-                        data_directory: d[:, None]
-                        for data_directory, d
-                        in zip(data_directories, data)}
-                else:
-                    return {
-                        data_directory: d[None, :]
-                        for data_directory, d
-                        in zip(data_directories, data)}
+                return {
+                    data_directory: d for data_directory, d
+                    in zip(data_directories, data)}
         else:
             return data, support_data

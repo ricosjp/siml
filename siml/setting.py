@@ -82,6 +82,33 @@ class TypedDataClass:
                     return x
                 else:
                     return slice(*x)
+        elif field.type == typing.Union[
+                typing.List[dict], typing.Dict[str, list]]:
+            def type_function(x):
+                if isinstance(x, list):
+                    return [dict(_x) for _x in x]
+                elif isinstance(x, dict):
+                    return {key: list(value) for key, value in x.items()}
+                else:
+                    raise ValueError(f"Unexpected input: {x}")
+        elif field.type == typing.Union[
+                typing.List[int], typing.Dict[str, list]]:
+            def type_function(x):
+                if isinstance(x, list):
+                    return [int(_x) for _x in x]
+                elif isinstance(x, dict):
+                    return {key: list(value) for key, value in x.items()}
+                else:
+                    raise ValueError(f"Unexpected input: {x}")
+        elif field.type == typing.Union[
+                typing.List[str], typing.Dict[str, list]]:
+            def type_function(x):
+                if isinstance(x, list):
+                    return [str(_x) for _x in x]
+                elif isinstance(x, dict):
+                    return {key: list(value) for key, value in x.items()}
+                else:
+                    raise ValueError(f"Unexpected input: {x}")
         else:
             type_function = field.type
 
@@ -178,9 +205,9 @@ class StudySetting(TypedDataClass):
 class TrainerSetting(TypedDataClass):
 
     """
-    inputs: list of dict
+    inputs: list of dict or dict
         Variable names of inputs.
-    outputs: list of dict
+    outputs: list of dict or dict
         Variable names of outputs.
     train_directories: list of str or pathlib.Path
         Training data directories.
@@ -262,20 +289,22 @@ class TrainerSetting(TypedDataClass):
         {'validation': float, 'test': float} dict.
     """
 
-    inputs: typing.List[dict] = dc.field(default_factory=list)
+    inputs: typing.Union[typing.List[dict], typing.Dict[str, list]] \
+        = dc.field(default_factory=list)
     support_input: str = dc.field(default=None, metadata={'allow_none': True})
     support_inputs: typing.List[str] = dc.field(
         default=None, metadata={'allow_none': True})
-    outputs: typing.List[dict] = dc.field(default_factory=list)
+    outputs: typing.Union[typing.List[dict], typing.Dict[str, list]] \
+        = dc.field(default_factory=list)
 
-    input_names: typing.List[str] = dc.field(
-        default=None, metadata={'allow_none': True})
-    input_dims: typing.List[int] = dc.field(
-        default=None, metadata={'allow_none': True})
-    output_names: typing.List[str] = dc.field(
-        default=None, metadata={'allow_none': True})
-    output_dims: typing.List[int] = dc.field(
-        default=None, metadata={'allow_none': True})
+    input_names: typing.Union[typing.List[str], typing.Dict[str, list]] \
+        = dc.field(default=None, metadata={'allow_none': True})
+    input_dims: typing.Union[typing.List[int], typing.Dict[str, list]] \
+        = dc.field(default=None, metadata={'allow_none': True})
+    output_names: typing.Union[typing.List[str], typing.Dict[str, list]] \
+        = dc.field(default=None, metadata={'allow_none': True})
+    output_dims: typing.Union[typing.List[int], typing.Dict[str, list]] \
+        = dc.field(default=None, metadata={'allow_none': True})
     output_directory: Path = None
 
     name: str = 'default'
@@ -339,12 +368,18 @@ class TrainerSetting(TypedDataClass):
         if self.validation_element_batch_size is None:
             self.validation_element_batch_size = self.element_batch_size
 
-        self.input_names = [i['name'] for i in self.inputs]
-        self.input_dims = [i['dim'] for i in self.inputs]
-        self.output_names = [o['name'] for o in self.outputs]
-        self.output_dims = [o['dim'] for o in self.outputs]
-        self.input_length = np.sum(self.input_dims)
-        self.output_length = np.sum(self.output_dims)
+        self.input_names = self._collect_values(
+            self.inputs, 'name', asis=True)
+        self.input_dims = self._collect_values(
+            self.inputs, 'dim', default=1, asis=True)
+        self.output_names = self._collect_values(
+            self.outputs, 'name', asis=True)
+        self.output_dims = self._collect_values(
+            self.outputs, 'dim', default=1, asis=True)
+        self.input_length = self._sum_dims(self.input_dims)
+        self.output_length = self._sum_dims(self.output_dims)
+
+        self.variable_information = self._generate_variable_information()
 
         if self.output_directory is None:
             self.update_output_directory()
@@ -389,6 +424,46 @@ class TrainerSetting(TypedDataClass):
             self.output_directory = base \
                 / f"{self.name}_{id_}_{util.date_string()}"
 
+    def _collect_values(self, data, key, *, default=None, asis=False):
+        if default is None:
+            def get(dict_data, key):
+                return dict_data[key]
+        else:
+            def get(dict_data, key):
+                return dict_data.get(key, default)
+
+        if isinstance(data, list):
+            return [get(d, key) for d in data]
+        elif isinstance(data, dict):
+            if asis:
+                return {
+                    dict_key: [get(v, key) for v in dict_value]
+                    for dict_key, dict_value in data.items()}
+            else:
+                return [
+                    get(v, key)
+                    for dict_value in data.values() for v in dict_value]
+        else:
+            raise ValueError(f"Unexpected data: {data}")
+
+    def _generate_variable_information(self):
+        def to_dict(data):
+            if isinstance(data, dict):
+                return {v['name']: v for value in data.values() for v in value}
+            elif isinstance(data, list):
+                return {d['name']: d for d in data}
+            else:
+                raise ValueError(f"Unexpected data: {data}")
+        out_dict = to_dict(self.inputs)
+        out_dict.update(to_dict(self.outputs))
+        return out_dict
+
+    def _sum_dims(self, dim_data):
+        if isinstance(dim_data, dict):
+            return {key: np.sum(value) for key, value in dim_data.items()}
+        else:
+            return np.sum(dim_data)
+
 
 @dc.dataclass
 class BlockSetting(TypedDataClass):
@@ -406,6 +481,10 @@ class BlockSetting(TypedDataClass):
     input_slice: slice = slice(0, None, 1)
     input_indices: typing.List[int] = dc.field(
         default=None, metadata={'allow_none': True})
+    input_keys: typing.List[str] = dc.field(
+        default=None, metadata={'allow_none': True})
+    output_key: str = dc.field(
+        default=None, metadata={'allow_none': True})
     support_input_index: int = dc.field(
         default=None, metadata={'allow_none': True})
     support_input_indices: typing.List[int] = dc.field(
@@ -420,7 +499,8 @@ class BlockSetting(TypedDataClass):
         default=None, metadata={'allow_none': True})
     device: int = dc.field(
         default=None, metadata={'allow_none': True})
-    coeff: float = 1.
+    coeff: float = dc.field(
+        default=None, metadata={'allow_none': True})
 
     optional: dict = dc.field(default_factory=dict)
 
@@ -603,13 +683,13 @@ class PreprocessSetting:
         for key, value in self.preprocess.items():
             if isinstance(value, str):
                 self.preprocess.update({key: {
-                    'method': value, 'componentwise': True, 'same_as': None,
+                    'method': value, 'componentwise': False, 'same_as': None,
                     'group_id': 0, 'power': 1.}})
             elif isinstance(value, dict):
                 if 'method' not in value:
                     value.update({'method': 'identity'})
                 if 'componentwise' not in value:
-                    value.update({'componentwise': True})
+                    value.update({'componentwise': False})
                 if 'same_as' not in value:
                     value.update({'same_as': None})
                 if 'group_id' not in value:

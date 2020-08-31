@@ -219,14 +219,24 @@ def update_fem_data(fem_data, dict_data, prefix=''):
 
             if len_data == len(fem_data.nodes.ids):
                 # Nodal data
-                fem_data.nodal_data.update({
-                    variable_name: femio.FEMAttribute(
-                        variable_name, fem_data.nodes.ids, value)})
+                try:
+                    fem_data.nodal_data.update({
+                        variable_name: femio.FEMAttribute(
+                            variable_name, fem_data.nodes.ids, value)})
+                except ValueError:
+                    print(
+                        f"{variable_name} is skipped to include in fem_data "
+                        f"because the shape is {value.shape}")
             elif len_data == len(fem_data.elements.ids):
                 # Elemental data
-                fem_data.elemental_data.update({
-                    variable_name: femio.FEMAttribute(
-                        variable_name, fem_data.elements.ids, value)})
+                try:
+                    fem_data.elemental_data.update({
+                        variable_name: femio.FEMAttribute(
+                            variable_name, fem_data.elements.ids, value)})
+                except ValueError:
+                    print(
+                        f"{variable_name} is skipped to include in fem_data "
+                        f"because the shape is {value.shape}")
             else:
                 print(f"{variable_name} is skipped to include in fem_data")
                 continue
@@ -707,17 +717,6 @@ class Converter:
             if variable_name in self.converters.keys()}
         return converted_dict_data_x
 
-    def _extract_first_batch(self, data):
-        shape = data.shape
-        if len(shape) == 2:
-            return data
-        elif len(shape) == 3 and shape[0] == 1:
-            return data[0]
-        elif len(shape) == 4 and shape[1] == 1:
-            return data[:, 0]
-        else:
-            raise ValueError(f"Unsupported shape: {shape}")
-
     def postprocess(
             self, dict_data_x, dict_data_y, output_directory=None, *,
             overwrite=False, save_x=False, write_simulation=False,
@@ -770,13 +769,11 @@ class Converter:
         """
         inversed_dict_data_x = {
             variable_name:
-            self._extract_first_batch(
-                self.converters[variable_name].inverse(data))
+            self.converters[variable_name].inverse(data)
             for variable_name, data in dict_data_x.items()}
         inversed_dict_data_y = {
             variable_name:
-            self._extract_first_batch(
-                self.converters[variable_name].inverse(data))
+            self.converters[variable_name].inverse(data)
             for variable_name, data in dict_data_y.items()}
 
         # Save data

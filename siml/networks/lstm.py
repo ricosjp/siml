@@ -27,7 +27,7 @@ class LSTM(siml_module.SimlModule):
             in zip(nodes[:-1], nodes[1:], block_setting.dropouts)])
         return
 
-    def _forward_core(self, x, supports=None):
+    def _forward_core(self, x, supports=None, original_shapes=None):
         """Execute the NN's forward computation.
 
         Parameters
@@ -41,10 +41,8 @@ class LSTM(siml_module.SimlModule):
             y: numpy.ndarray of cupy.ndarray
                 Output of the NN.
         """
-        shape = x.shape
-        h = x.view(
-            shape[0], shape[1] * shape[2], -1)
+        h = x
         hidden = None
         for lstm_layer in self.lstm_layers:
             h, hidden = lstm_layer(h, hidden)
-        return h.view(shape[0], shape[1], shape[2], h.shape[-1])
+        return h

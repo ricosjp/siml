@@ -18,10 +18,18 @@ class BaseDataset(torch.utils.data.Dataset):
         self.supports = supports
         self.num_workers = num_workers
 
+        self.x_dict_mode = isinstance(self.x_variable_names, dict)
+        self.y_dict_mode = isinstance(self.y_variable_names, dict)
+
+        if self.x_dict_mode:
+            first_variable_name = list(self.x_variable_names.values())[0][0]
+        else:
+            first_variable_name = self.x_variable_names[0]
+
         data_directories = []
         for directory in directories:
             data_directories += util.collect_data_directories(
-                directory, required_file_names=[f"{x_variable_names[0]}.npy"],
+                directory, required_file_names=[f"{first_variable_name}.npy"],
                 allow_no_data=allow_no_data)
         self.data_directories = np.unique(data_directories)
 
@@ -62,35 +70,36 @@ class BaseDataset(torch.utils.data.Dataset):
         pbar.close()
         return data
 
+    def _load_from_names(self, data_directory, variable_names):
+        if isinstance(variable_names, dict):
+            return {
+                key: torch.from_numpy(util.concatenate_variable([
+                    util.load_variable(data_directory, variable_name)
+                    for variable_name in value]))
+                for key, value in variable_names.items()}
+        elif isinstance(variable_names, list):
+            return torch.from_numpy(util.concatenate_variable([
+                util.load_variable(data_directory, variable_name)
+                for variable_name in variable_names]))
+        else:
+            raise ValueError(f"Unexpected variable names: {variable_names}")
+
     def _load_data(self, data_directory, pbar=None):
-        x_data = util.concatenate_variable([
-            util.load_variable(data_directory, x_variable_name)
-            for x_variable_name in self.x_variable_names])
-        y_data = util.concatenate_variable([
-            util.load_variable(data_directory, y_variable_name)
-            for y_variable_name in self.y_variable_names])
-        has_nan = False
-        if np.any(np.isnan(x_data)):
-            has_nan = True
-            print(f"NaN found in x: {data_directory}")
-        if np.any(np.isnan(y_data)):
-            has_nan = True
-            print(f"NaN found in y: {data_directory}")
-        if has_nan:
-            raise ValueError('Nan found')
+        x_data = self._load_from_names(
+            data_directory, self.x_variable_names)
+        y_data = self._load_from_names(
+            data_directory, self.y_variable_names)
+
         if pbar:
             pbar.update()
         if self.supports is None:
-            return {
-                'x': torch.from_numpy(x_data), 't': torch.from_numpy(y_data)}
+            return {'x': x_data, 't': y_data}
         else:
             # TODO: use appropreate sparse data class
             support_data = [
                 util.load_variable(data_directory, support)
                 for support in self.supports]
-            return {
-                'x': torch.from_numpy(x_data), 't': torch.from_numpy(y_data),
-                'supports': support_data}
+            return {'x': x_data, 't': y_data, 'supports': support_data}
 
 
 class LazyDataset(BaseDataset):
@@ -145,14 +154,12 @@ class OnMemoryDataset(BaseDataset):
 
 
 def collate_fn_with_support(batch):
-    x = pad_dense_sequence(batch, 'x')
+    x = concatenate_sequence(batch, 'x')
     t = concatenate_sequence(batch, 't')
-    max_element_length = x.shape[-2]
-    padded_supports = pad_sparse_sequence(
-        batch, 'supports', max_element_length)
+    padded_supports = concatenate_sparse_sequence(batch, 'supports')
 
-    original_shapes = [b['x'].shape[:1] for b in batch]
-
+    original_shapes = np.array(
+        [[b['x'].shape[0]] for b in batch])
     return {
         'x': x, 't': t, 'supports': padded_supports,
         'original_shapes': original_shapes}
@@ -161,22 +168,26 @@ def collate_fn_with_support(batch):
 def collate_fn_time_with_support(batch):
     x = pad_time_dense_sequence(batch, 'x')
     t = pad_time_dense_sequence(batch, 't')
-    max_element_length = x.shape[-2]
-    padded_supports = pad_sparse_sequence(
-        batch, 'supports', max_element_length)
+    padded_supports = concatenate_sparse_sequence(batch, 'supports')
 
-    original_shapes = [[b['x'].shape[0], b['x'].shape[-2]] for b in batch]
-
+    original_shapes = np.array(
+        [[b['x'].shape[0], b['x'].shape[-2]] for b in batch])
     return {
         'x': x, 't': t, 'supports': padded_supports,
         'original_shapes': original_shapes}
 
 
 def collate_fn_without_support(batch):
-    x = pad_dense_sequence(batch, 'x')
+    x = concatenate_sequence(batch, 'x')
     t = concatenate_sequence(batch, 't')
 
-    original_shapes = [b['x'].shape[:1] for b in batch]
+    if isinstance(batch[0]['x'], dict):
+        original_shapes = np.array([
+            {key: [v.shape[0] for v in value] for key, value in b['x'].items()}
+            for b in batch])
+    else:
+        original_shapes = np.array(
+            [[b['x'].shape[0]] for b in batch])
 
     return {'x': x, 't': t, 'original_shapes': original_shapes}
 
@@ -185,14 +196,20 @@ def collate_fn_time_without_support(batch):
     x = pad_time_dense_sequence(batch, 'x')
     t = pad_time_dense_sequence(batch, 't')
 
-    original_shapes = [[b['x'].shape[0], b['x'].shape[-2]] for b in batch]
-
+    original_shapes = np.array(
+        [[b['x'].shape[0], b['x'].shape[-2]] for b in batch])
     return {
         'x': x, 't': t, 'original_shapes': original_shapes}
 
 
 def concatenate_sequence(batch, key):
-    return torch.cat([b[key] for b in batch])
+    if isinstance(batch[0][key], dict):
+        return {
+            dict_key:
+            torch.cat([b[key][dict_key] for b in batch])
+            for dict_key in batch[0][key].keys()}
+    else:
+        return torch.cat([b[key] for b in batch])
 
 
 def collate_fn_element_wise(batch):
@@ -214,12 +231,8 @@ def pad_time_dense_sequence(batch, key):
     data = [b[key] for b in batch]
 
     max_time_lengths = np.max([d.shape[0] for d in data])
-    time_padded_data = [
-        pad_time_direction(d, max_time_lengths) for d in data]
-    padded_data = torch.nn.utils.rnn.pad_sequence(
-        [d.permute(1, 0, 2) for d in time_padded_data],
-        batch_first=True).permute(2, 0, 1, 3)
-    return padded_data
+    return torch.cat([
+        pad_time_direction(d, max_time_lengths) for d in data], axis=1)
 
 
 def pad_time_direction(data, time_length):
@@ -229,6 +242,14 @@ def pad_time_direction(data, time_length):
     zeros = torch.zeros((remaining_length, *data.shape[1:]))
     padded_data = torch.cat([data, zeros])
     return padded_data
+
+
+def concatenate_sparse_sequence(batch, key):
+    sparse_infos = pad_sparse_sequence(batch, key)
+    n_sparse_features = len(sparse_infos[0])
+    return [
+        merge_sparse_tensors([s[i] for s in sparse_infos], return_coo=False)
+        for i in range(n_sparse_features)]
 
 
 def pad_sparse_sequence(batch, key, length=None):
@@ -278,16 +299,27 @@ def prepare_batch_with_support(
 
 def convert_sparse_info(sparse_info, device=None, non_blocking=False):
     device = 'cpu'
-    return [
-        [{
+    if isinstance(sparse_info[0], list):
+        return [
+            [{
+                'row': convert_tensor(
+                    s['row'], device=device, non_blocking=non_blocking),
+                'col': convert_tensor(
+                    s['col'], device=device, non_blocking=non_blocking),
+                'values': convert_tensor(
+                    s['values'], device=device, non_blocking=non_blocking),
+                'size': s['size'],
+            } for s in si] for si in sparse_info]
+    else:
+        return [{
             'row': convert_tensor(
-                s['row'], device=device, non_blocking=non_blocking),
+                si['row'], device=device, non_blocking=non_blocking),
             'col': convert_tensor(
-                s['col'], device=device, non_blocking=non_blocking),
+                si['col'], device=device, non_blocking=non_blocking),
             'values': convert_tensor(
-                s['values'], device=device, non_blocking=non_blocking),
-            'size': s['size'],
-        } for s in si] for si in sparse_info]
+                si['values'], device=device, non_blocking=non_blocking),
+            'size': si['size'],
+        } for si in sparse_info]
 
 
 def convert_sparse_tensor(
@@ -313,25 +345,36 @@ def convert_sparse_tensor(
             merge_sparse_tensors(si).to(device)
             for si in sparse_info])
     else:
-        converted_sparses = np.array([
-            [
+        if isinstance(sparse_info[0], list):
+            converted_sparses = np.array([
+                [
+                    torch.sparse_coo_tensor(
+                        torch.stack([s['row'], s['col']]),
+                        s['values'], s['size']
+                    ).to(device)
+                    for s in si]
+                for si in sparse_info])
+        else:
+            converted_sparses = np.array([
                 torch.sparse_coo_tensor(
-                    torch.stack([s['row'], s['col']]),
-                    s['values'], s['size']
+                    torch.stack([si['row'], si['col']]),
+                    si['values'], si['size']
                 ).to(device)
-                for s in si]
-            for si in sparse_info])
+                for si in sparse_info])
 
     return converted_sparses
 
 
-def merge_sparse_tensors(stripped_sparse_info):
+def merge_sparse_tensors(stripped_sparse_info, *, return_coo=True):
     """Merge sparse tensors.
 
     Parameters
     ----------
     stripped_sparse_info: List[Dict[str: torch.Tensor]]
         Sparse data which has: row, col, values, size in COO format.
+    return_coo: bool
+        If True, return torch.sparse_coo_tensor. Else, return sparse info
+        dict. The default is True.
 
     Returns
     -------
@@ -349,9 +392,14 @@ def merge_sparse_tensors(stripped_sparse_info):
         merged_rows = torch.cat([merged_rows, rows[i] + row_shifts[i-1]])
         merged_cols = torch.cat([merged_cols, cols[i] + col_shifts[i-1]])
 
-    return torch.sparse_coo_tensor(
-        torch.stack([merged_rows, merged_cols]), values,
-        [row_shifts[-1], col_shifts[-1]])
+    shape = [row_shifts[-1], col_shifts[-1]]
+    if return_coo:
+        return torch.sparse_coo_tensor(
+            torch.stack([merged_rows, merged_cols]), values, shape)
+    else:
+        return {
+            'row': merged_rows, 'col': merged_cols, 'values': values,
+            'size': shape}
 
 
 def prepare_batch_without_support(

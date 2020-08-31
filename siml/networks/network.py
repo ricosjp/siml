@@ -22,6 +22,7 @@ from . import lstm
 from . import mlp
 from . import nri
 from . import reducer
+from . import reshape
 from . import tcn
 from . import time_norm
 
@@ -47,6 +48,7 @@ class Network(torch.nn.Module):
         'integration': BlockInformation(
             integration.Integration, trainable=False),
         'reducer': BlockInformation(reducer.Reducer, trainable=False),
+        'reshape': BlockInformation(reshape.Reshape, trainable=False),
         'time_norm': BlockInformation(time_norm.TimeNorm, trainable=False),
 
         # Layers with weights
@@ -69,6 +71,7 @@ class Network(torch.nn.Module):
         super().__init__()
         self.model_setting = model_setting
         self.trainer_setting = trainer_setting
+        self.y_dict_mode = isinstance(self.trainer_setting.outputs, dict)
 
         for block in self.model_setting.blocks:
             if 'distributor' == block.type:
@@ -92,8 +95,9 @@ class Network(torch.nn.Module):
         self.use_support = np.any([
             block_information.use_support
             for block_information in self.dict_block_information.values()])
-        self.merge_sparses = np.any([
-            isinstance(v, iso_gcn.IsoGCN) for v in self.dict_block.values()])
+        self.merge_sparses = False
+        # self.merge_sparses = np.any([
+        #     isinstance(v, iso_gcn.IsoGCN) for v in self.dict_block.values()])
         if self.merge_sparses:
             print('Sparse matrices are merged for IsoGCN')
 
@@ -174,6 +178,14 @@ class Network(torch.nn.Module):
                     self.dict_block_setting[predecessor].nodes[-1]
                     for predecessor in predecessors])
 
+            elif block_type == 'reshape':
+                max_first_node = np.sum([
+                    self.dict_block_setting[predecessor].nodes[-1]
+                    for predecessor in predecessors])
+                first_node = len(np.arange(max_first_node)[
+                    block_setting.input_selection])
+                last_node = block_setting.optional['new_shape'][1]
+
             elif block_type == 'integration':
                 max_first_node = self.dict_block_setting[
                     predecessors[0]].nodes[-1]
@@ -187,10 +199,13 @@ class Network(torch.nn.Module):
                     raise ValueError(
                         f"{graph_node} has {len(predecessors)} "
                         f"predecessors: {predecessors}")
-                max_first_node = self.dict_block_setting[
-                    tuple(predecessors)[0]].nodes[-1]
-                first_node = len(np.arange(max_first_node)[
-                    block_setting.input_selection])
+                if block_setting.is_first:
+                    first_node = self.trainer_setting.input_length
+                else:
+                    max_first_node = self.dict_block_setting[
+                        tuple(predecessors)[0]].nodes[-1]
+                    first_node = len(np.arange(max_first_node)[
+                        block_setting.input_selection])
                 last_node = self.trainer_setting.output_length
 
             else:
@@ -199,23 +214,50 @@ class Network(torch.nn.Module):
                     raise ValueError(
                         f"{graph_node} has {len(predecessors)} "
                         f"predecessors: {predecessors}")
-                max_first_node = self.dict_block_setting[
-                    predecessors[0]].nodes[-1]
+                if block_setting.is_first:
+                    max_first_node = self.trainer_setting.input_length
+                else:
+                    max_first_node = self.dict_block_setting[
+                        tuple(predecessors)[0]].nodes[-1]
                 first_node = len(np.arange(max_first_node)[
                     block_setting.input_selection])
                 last_node = first_node
 
-            if self.dict_block_setting[graph_node].nodes[0] == -1:
-                self.dict_block_setting[graph_node].nodes[0] = int(first_node)
+            if graph_node not in [
+                    self.INPUT_LAYER_NAME, self.OUTPUT_LAYER_NAME] \
+                    and block_setting.nodes[0] == -1:
+                input_keys = block_setting.input_keys
+                if input_keys is None:
+                    block_setting.nodes[0] = int(
+                        first_node)
+                else:
+                    if block_setting.is_first:
+                        input_length = self.trainer_setting.input_length
+                        block_setting.nodes[0] = int(
+                            np.sum([
+                                input_length[input_key] for input_key
+                                in input_keys]))
+                    else:
+                        raise ValueError(
+                            'Cannot put input_keys when is_first is False: '
+                            f"{block_setting}")
 
-            if self.DICT_BLOCKS[block_type].trainable:
-                if self.dict_block_setting[graph_node].nodes[-1] == -1:
-                    self.dict_block_setting[graph_node].nodes[-1] = int(
+            if graph_node not in [
+                    self.INPUT_LAYER_NAME, self.OUTPUT_LAYER_NAME] \
+                    and block_setting.nodes[-1] == -1:
+                output_key = block_setting.output_key
+                if output_key is None:
+                    block_setting.nodes[-1] = int(
                         last_node)
-            else:
-                if self.dict_block_setting[graph_node].nodes[-1] == -1:
-                    self.dict_block_setting[graph_node].nodes[-1] = int(
-                        last_node)
+                else:
+                    if block_setting.is_last:
+                        output_length = self.trainer_setting.output_length
+                        block_setting.nodes[-1] = int(
+                            output_length[output_key])
+                    else:
+                        raise ValueError(
+                            'Cannot put output_key when is_last is False: '
+                            f"{block_setting}")
 
         return
 
@@ -229,6 +271,7 @@ class Network(torch.nn.Module):
 
     def forward(self, x_):
         x = x_['x']
+        original_shapes = x_.get('original_shapes', None)
 
         # Due to lack of support of sparse matrix of scatter in DataParallel
         # and coo_matrix, convert sparse in the forward
@@ -244,30 +287,71 @@ class Network(torch.nn.Module):
                 dict_hidden[graph_node] = x
             else:
                 device = block_setting.device
-                inputs = [
-                    dict_hidden[predecessor][
-                        ..., block_setting.input_selection].to(device)
-                    for predecessor
-                    in self.call_graph.predecessors(graph_node)]
+
+                if block_setting.input_keys is None:
+                    inputs = [
+                        self._select_dimension(
+                            dict_hidden[predecessor],
+                            block_setting.input_selection, device)
+                        for predecessor
+                        in self.call_graph.predecessors(graph_node)]
+                else:
+                    inputs = [
+                        torch.cat([
+                            dict_hidden[predecessor][input_key][
+                                ..., block_setting.input_selection].to(device)
+                            for input_key in block_setting.input_keys], dim=1)
+                        for predecessor
+                        in self.call_graph.predecessors(graph_node)]
 
                 if self.dict_block_information[graph_node].use_support:
                     if self.merge_sparses:
                         # NOTE: support_input_indices are ignored
                         selected_supports = supports
                     else:
-                        selected_supports = [
-                            [s.to(device) for s in sp] for sp
-                            in supports[
-                                :, block_setting.support_input_indices]]
+                        if len(supports.shape) == 1:
+                            selected_supports = supports[
+                                block_setting.support_input_indices]
+                        else:
+                            selected_supports = [
+                                [s.to(device) for s in sp] for sp
+                                in supports[
+                                    :, block_setting.support_input_indices]]
 
-                    dict_hidden[graph_node] = self.dict_block[graph_node](
-                        *inputs, supports=selected_supports) \
-                        * self.dict_block[graph_node].coeff
+                    hidden = self.dict_block[graph_node](
+                        *inputs, supports=selected_supports,
+                        original_shapes=original_shapes)
                 else:
-                    dict_hidden[graph_node] = self.dict_block[graph_node](
-                        *inputs) * self.dict_block[graph_node].coeff
+                    hidden = self.dict_block[graph_node](
+                        *inputs, original_shapes=original_shapes)
 
-        return dict_hidden[self.OUTPUT_LAYER_NAME]
+                if block_setting.coeff is not None:
+                    hidden = hidden * block_setting.coeff
+                if block_setting.output_key is None:
+                    dict_hidden[graph_node] = hidden
+                else:
+                    dict_hidden[graph_node] = {
+                        block_setting.output_key: hidden}
+
+        if self.y_dict_mode:
+            return_dict = {}
+            for h in dict_hidden[self.OUTPUT_LAYER_NAME]:
+                return_dict.update(h)
+            return return_dict
+        else:
+            return dict_hidden[self.OUTPUT_LAYER_NAME]
+
+    def _select_dimension(self, x, input_selection, device):
+        if isinstance(x, dict):
+            if input_selection != slice(0, None, 1):
+                raise ValueError(
+                    f"Cannot set input_selection after dict_output")
+            return {key: value.to(device) for key, value in x.items()}
+        else:
+            if input_selection == slice(0, None, 1):
+                return x
+            else:
+                return x[..., input_selection].to(device)
 
     def draw(self, output_file_name):
         figure = plt.figure(dpi=1000)
@@ -280,12 +364,5 @@ class Network(torch.nn.Module):
         d = nx.drawing.nx_pydot.to_pydot(nx.relabel.relabel_nodes(
             self.call_graph, mapping=mapping, copy=True))
         d.write_pdf(output_file_name)
-        # pdf_str = d.create_pdf()
-        # sio = BytesIO()
-        # sio.write(pdf_str)
-        # sio.seek(0)
-        # img = mpimg.imread(sio)
-        # plt.axis('off')
-        # plt.imshow(img)
-        # plt.savefig(output_file_name)
         plt.close(figure)
+        return

@@ -1,6 +1,8 @@
 
+import numpy as np
 import torch
 
+from . import activations
 from . import siml_module
 
 
@@ -30,11 +32,47 @@ class Reducer(siml_module.SimlModule):
 
         return
 
-    def forward(self, *xs, op=None, supports=None):
+    def forward(self, *xs, op=None, supports=None, original_shapes=None):
         if len(xs) == 1:
             return xs[0]
 
         x = xs[0]
         for other in xs[1:]:
-            x = self.op(x, other)
+            len_x = len(x.shape)
+            len_other = len(other.shape)
+            if len_x == len_other:
+                if x.shape[0] == other.shape[0]:
+                    x = self.op(x, other)
+                else:
+                    x = self._broadcase_batchsize(
+                        self.op, x, other, original_shapes)
+            elif len_x >= len_other:
+                axes = self._get_permute_axis(len_x, len_other)
+                x = self.op(x.permute(axes), other)
+                x = self._inverse_permute(x, axes)
+            else:
+                axes = self._get_permute_axis(len_other, len_x)
+                x = self.op(x, other.permute(axes))
+                x = self._inverse_permute(x, axes)
         return self.activation(x)
+
+    def _broadcase_batchsize(self, op, x, other, original_shapes):
+        if x.shape[0] > other.shape[0]:
+            split_data = activations.split(x, original_shapes)
+            smaller = other
+        elif x.shape[0] < other.shape[0]:
+            split_data = activations.split(other, original_shapes)
+            smaller = x
+        else:
+            raise ValueError('Shoud not reach here')
+        return torch.cat([
+            op(sd, smaller[i]) for i, sd in enumerate(split_data)])
+
+    def _get_permute_axis(self, len_x, len_other):
+        axes = list(range(len_other - 1, len_x - 1)) \
+            + list(range(len_other - 1)) + [len_x - 1]
+        return axes
+
+    def _inverse_permute(self, x, axes):
+        inverse_axes = np.argsort(axes)
+        return x.permute(list(inverse_axes))

@@ -86,7 +86,8 @@ class TestNetworksGPU(unittest.TestCase):
         loss = tr.train()
         self.assertLess(loss, 1e-2)
 
-        ir = inferer.Inferer(main_setting)
+        ir = inferer.Inferer.read_settings(
+            main_setting.trainer.output_directory / 'settings.yml')
         results = ir.infer(
             model=main_setting.trainer.output_directory,
             preprocessed_data_directory=main_setting.data.preprocessed_root

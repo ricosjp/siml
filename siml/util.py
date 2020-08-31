@@ -97,7 +97,9 @@ def save_variable(
     return
 
 
-def load_variable(data_directory, file_basename, *, allow_missing=False):
+def load_variable(
+        data_directory, file_basename, *, allow_missing=False,
+        check_nan=True):
     """Load variable data.
 
     Parameters
@@ -114,14 +116,26 @@ def load_variable(data_directory, file_basename, *, allow_missing=False):
         data: numpy.ndarray or scipy.sparse.coo_matrix
     """
     if (data_directory / (file_basename + '.npy')).exists():
-        return np.load(data_directory / (file_basename + '.npy'))
+        loaded_data = np.load(data_directory / (file_basename + '.npy'))
+        data_for_check_nan = loaded_data
+        ext = '.npy'
     elif (data_directory / (file_basename + '.npz')).exists():
-        return sp.load_npz(data_directory / (file_basename + '.npz'))
+        loaded_data = sp.load_npz(data_directory / (file_basename + '.npz'))
+        data_for_check_nan = loaded_data.data
+        ext = '.npz'
     else:
         if allow_missing:
             return None
         else:
-            raise ValueError(f"File type not understood for: {file_basename}")
+            raise ValueError(
+                'File type not understood or file missing for: '
+                f"{file_basename}")
+
+    if check_nan and np.any(np.isnan(data_for_check_nan)):
+        raise ValueError(
+            f"NaN found in {data_directory / (file_basename + ext)}")
+
+    return loaded_data
 
 
 def collect_data_directories(

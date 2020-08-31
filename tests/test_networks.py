@@ -33,12 +33,16 @@ class TestNetwork(unittest.TestCase):
         tr = trainer.Trainer(main_setting)
         tr.prepare_training()
         x = np.reshape(np.arange(5*3), (1, 5, 3)).astype(np.float32) * .1
+        original_shapes = [[1, 5]]
 
-        y_wo_permutation = tr.model({'x': torch.from_numpy(x)})
+        y_wo_permutation = tr.model({
+            'x': torch.from_numpy(x), 'original_shapes': original_shapes})
 
         x_w_permutation = np.concatenate(
             [x[0, None, 2:], x[0, None, :2]], axis=1)
-        y_w_permutation = tr.model({'x': torch.from_numpy(x_w_permutation)})
+        y_w_permutation = tr.model({
+            'x': torch.from_numpy(x_w_permutation),
+            'original_shapes': original_shapes})
 
         np.testing.assert_almost_equal(
             np.concatenate(
@@ -216,7 +220,7 @@ class TestNetwork(unittest.TestCase):
         loss = tr.train()
         self.assertLess(loss, 1.)
         input_data = tr.train_loader.dataset[0]
-        input_data = {'x': input_data['x'][:, None, :, :]}
+        input_data = {'x': input_data['x']}
         out = tr.model(input_data)
         np.testing.assert_almost_equal(out.detach().numpy()[0], 0.)
 
@@ -442,9 +446,9 @@ class TestNetwork(unittest.TestCase):
             [0., 1., 1., 1.],
             [0., 1., 1., 1.],
         ], dtype=np.float32)
-        s = [[torch.sparse_coo_tensor(
+        s = [torch.sparse_coo_tensor(
             torch.stack([torch.from_numpy(_s.row), torch.from_numpy(_s.col)]),
-            torch.from_numpy(_s.data), _s.shape)]]
+            torch.from_numpy(_s.data), _s.shape)]
         y = tr.model.dict_block['RES_GCN'](x, s)
         abs_residual = np.abs((y - x).detach().numpy())
         zero_fraction = np.sum(abs_residual < 1e-5) / abs_residual.size

@@ -33,10 +33,34 @@ def conversion_function(fem_data, raw_directory=None):
             'elemental', n_hop=2)
     global_modulus = np.mean(
         fem_data.elemental_data.get_attribute_data('modulus'), keepdims=True)
+
+    tensor_stress = fem_data.convert_array2symmetric_matrix(
+        fem_data.elemental_data.get_attribute_data('ElementalSTRESS'),
+        from_engineering=False)[:, :, :, None]
+    tensor_strain = fem_data.convert_array2symmetric_matrix(
+        fem_data.elemental_data.get_attribute_data('ElementalSTRAIN'),
+        from_engineering=True)[:, :, :, None]
+    tensor_gauss_strain1 = fem_data.convert_array2symmetric_matrix(
+        fem_data.elemental_data.get_attribute_data('GaussSTRAIN1'),
+        from_engineering=True)[:, :, :, None]
+    tensor_gauss_strain2 = fem_data.convert_array2symmetric_matrix(
+        fem_data.elemental_data.get_attribute_data('GaussSTRAIN2'),
+        from_engineering=True)[:, :, :, None]
+    tensor_gauss_strain3 = fem_data.convert_array2symmetric_matrix(
+        fem_data.elemental_data.get_attribute_data('GaussSTRAIN3'),
+        from_engineering=True)[:, :, :, None]
+    tensor_gauss_strain4 = fem_data.convert_array2symmetric_matrix(
+        fem_data.elemental_data.get_attribute_data('GaussSTRAIN4'),
+        from_engineering=True)[:, :, :, None]
     return {
         'adj': adj, 'nadj': nadj, 'global_modulus': global_modulus,
         'x_grad': x_grad, 'y_grad': y_grad, 'z_grad': z_grad,
         'x_grad_2': x_grad_2, 'y_grad_2': y_grad_2, 'z_grad_2': z_grad_2,
+        'tensor_stress': tensor_stress, 'tensor_strain': tensor_strain,
+        'tensor_gauss_strain1': tensor_gauss_strain1,
+        'tensor_gauss_strain2': tensor_gauss_strain2,
+        'tensor_gauss_strain3': tensor_gauss_strain3,
+        'tensor_gauss_strain4': tensor_gauss_strain4,
     }
 
 
@@ -165,6 +189,10 @@ class TestPrepost(unittest.TestCase):
         main_setting = setting.MainSetting(
             preprocess=preprocess_setting.preprocess, data=data_setting,
             replace_preprocessed=False)
+        main_setting.preprocess[  # pylint: disable=E1136
+            'std_scale']['componentwise'] = True  # pylint: disable=E1136
+        main_setting.preprocess[  # pylint: disable=E1136
+            'standardize']['componentwise'] = True  # pylint: disable=E1136
 
         # Clean up data
         shutil.rmtree(data_setting.interim_root, ignore_errors=True)
@@ -414,16 +442,16 @@ class TestPrepost(unittest.TestCase):
             main_setting.data.preprocessed_root / 'preprocessors.pkl')
         original_dict_x = {
             'a': np.load(
-                main_setting.data.interim_root / 'train/0/a.npy')[:, None]}
+                main_setting.data.interim_root / 'train/0/a.npy')}
         preprocessed_dict_x = c.preprocess(original_dict_x)
         postprocessed_dict_x, _ = c.postprocess(preprocessed_dict_x, {})
         np.testing.assert_almost_equal(
             preprocessed_dict_x['a'],
             np.load(
                 main_setting.data.preprocessed_root
-                / 'train/0/a.npy')[:, None])
+                / 'train/0/a.npy'))
         np.testing.assert_almost_equal(
-            original_dict_x['a'][:, 0], postprocessed_dict_x['a'])
+            original_dict_x['a'], postprocessed_dict_x['a'])
 
     def test_preprocess_same_as(self):
         main_setting = setting.MainSetting.read_settings_yaml(

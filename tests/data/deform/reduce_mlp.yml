@@ -28,7 +28,7 @@ model:
   blocks:
     - name: MLP1
       destinations:
-        - MLP2
+        - MAX
       type: adjustable_mlp
       nodes:
         - -1
@@ -38,11 +38,17 @@ model:
       activations:
         - relu
         - relu
-        - max
+        - identity
       dropouts:
         - 0.0
         - 0.0
         - 0.0
+    - name: MAX
+      type: activation
+      destinations:
+        - MLP2
+      activations:
+        - max
     - name: MLP2
       type: adjustable_mlp
       nodes:

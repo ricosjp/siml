@@ -445,7 +445,8 @@ class Trainer():
                     self._get_data_loaders(
                         datasets.OnMemoryDataset, batch_size,
                         validation_batch_size)
-        self._check_data_dimension()
+        self._check_data_dimension(self.setting.trainer.input_names)
+        self._check_data_dimension(self.setting.trainer.output_names)
 
         self.optimizer = self._create_optimizer()
 
@@ -585,16 +586,15 @@ class Trainer():
             y_pred = model(x)
 
             optimizer.zero_grad()
-            for _y_pred, _y in zip(y_pred, y):
-                split_y_pred = torch.split(
-                    _y_pred, self.setting.trainer.element_batch_size)
-                split_y = torch.split(
-                    _y, self.setting.trainer.element_batch_size)
-                for syp, sy in zip(split_y_pred, split_y):
-                    optimizer.zero_grad()
-                    loss = self.loss(y_pred, y)
-                    loss.backward(retain_graph=True)
-                    self.optimizer.step()
+            split_y_pred = torch.split(
+                y_pred, self.setting.trainer.element_batch_size)
+            split_y = torch.split(
+                y, self.setting.trainer.element_batch_size)
+            for syp, sy in zip(split_y_pred, split_y):
+                optimizer.zero_grad()
+                loss = self.loss(y_pred, y)
+                loss.backward(retain_graph=True)
+            self.optimizer.step()
 
             loss = self.loss(y_pred, y)
             return loss
@@ -701,57 +701,67 @@ class Trainer():
         else:
             raise ValueError(f"Unknown loss function name: {loss_name}")
 
-        def loss_function_with_padding(y_pred, y, original_shapes):
-            concatenated_y_pred = torch.cat([
-                _yp[:_l[0]] for _yp, _l in zip(y_pred, original_shapes)])
-            return loss_core(concatenated_y_pred, y)
+        def loss_function_dict(y_pred, y, original_shapes=None):
+            return torch.mean(torch.stack([
+                loss_core(y_pred[key].view(y[key].shape), y[key])
+                for key in y.keys()]))
 
         def loss_function_without_padding(y_pred, y, original_shapes=None):
             return loss_core(y_pred.view(y.shape), y)
 
         def loss_function_time_with_padding(y_pred, y, original_shapes):
+            split_y_pred = torch.split(
+                y_pred, list(original_shapes[:, 1]), dim=1)
             concatenated_y_pred = torch.cat([
-                y_pred[:s[0], i_batch, :s[1]].reshape(-1)
-                for i_batch, s in enumerate(original_shapes)])
+                sy[:s].reshape(-1)
+                for s, sy in zip(original_shapes[:, 0], split_y_pred)])
+            split_y = torch.split(
+                y, list(original_shapes[:, 1]), dim=1)
             concatenated_y = torch.cat([
-                y[:s[0], i_batch, :s[1]].reshape(-1)
-                for i_batch, s in enumerate(original_shapes)])
+                sy[:s].reshape(-1)
+                for s, sy in zip(original_shapes[:, 0], split_y)])
             return loss_core(concatenated_y_pred, concatenated_y)
 
-        if pad is None:
-            if self.element_wise or self.setting.trainer.batch_size == 1:
+        output_is_dict = isinstance(self.setting.trainer.outputs, dict)
+
+        if self.setting.trainer.time_series:
+            if pad is False:
                 return loss_function_without_padding
             else:
-                if self.setting.trainer.time_series:
-                    return loss_function_time_with_padding
-                else:
-                    return loss_function_with_padding
+                return loss_function_time_with_padding
         else:
-            if pad:
-                if self.setting.trainer.time_series:
-                    return loss_function_time_with_padding
-                else:
-                    return loss_function_with_padding
+            if output_is_dict:
+                return loss_function_dict
             else:
                 return loss_function_without_padding
 
-    def _check_data_dimension(self):
-        variable_names = self.setting.trainer.input_names
-        data_directories = self.train_loader.dataset.data_directories
+    def _check_data_dimension(self, variable_names):
+        data_directory = self.train_loader.dataset.data_directories[0]
 
-        # Check data dimension correctness
-        data_wo_concatenation = {
-            variable_name:
-            util.load_variable(data_directories[0], variable_name)
-            for variable_name in variable_names}
-        for input_setting in self.setting.trainer.inputs:
-            if input_setting['name'] in data_wo_concatenation and \
-                    (data_wo_concatenation[input_setting['name']].shape[-1]
-                     != input_setting['dim']):
-                setting_dim = input_setting['dim']
-                actual_dim = data_wo_concatenation[
-                    input_setting['name']].shape[-1]
+        if isinstance(variable_names, dict):
+            for value in variable_names.values():
+                for variable_name in value:
+                    self._check_single_variable_dimension(
+                        data_directory, variable_name)
+
+        elif isinstance(variable_names, list):
+            for variable_name in variable_names:
+                self._check_single_variable_dimension(
+                    data_directory, variable_name)
+
+        else:
+            raise ValueError(f"Unexpected variable_names: {variable_names}")
+
+    def _check_single_variable_dimension(self, data_directory, variable_name):
+        loaded_variable = util.load_variable(data_directory, variable_name)
+        shape = loaded_variable.shape
+        variable_information = self.setting.trainer.variable_information[
+            variable_name]
+        if len(shape) == 2:
+            if shape[-1] != variable_information['dim']:
                 raise ValueError(
-                    f"{input_setting['name']} dimension incorrect: "
-                    f"{setting_dim} vs {actual_dim}")
+                    f"{variable_name} dimension incorrect: "
+                    f"{shape} vs {variable_information['dim']}")
+        else:
+            pass
         return

@@ -30,7 +30,7 @@ model:
       type: gcn
       residual: true
       destinations:
-        - MLP
+        - MEAN
       support_input_index: 0  # assume one support input (e.g. adjacency matrix) for each block
       nodes:
         - -1
@@ -38,11 +38,17 @@ model:
         - 200
       activations:
         - relu
-        - mean
+        - identity
       dropouts:
         - 0.0
         - 0.0
       allow_linear_residual: true
+    - name: MEAN
+      type: activation
+      destinations:
+        - MLP
+      activations:
+        - mean
     - name: MLP
       type: adjustable_mlp
       nodes:

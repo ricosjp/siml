@@ -68,6 +68,8 @@ pages:
 
 .test:
   stage: test
+  tags:
+    - avx
 
 test_gpu_networks:
   extends: .test
@@ -75,14 +77,24 @@ test_gpu_networks:
     - python3.7 -m pytest tests/gpu/test_networks_gpu.py --capture=no
   tags:
     - multi-gpu
+    - avx
 
 test_gpu:
   extends: .test
   script:
-    - python3.7 -m pytest tests/gpu/test_optimize_gpu.py --capture=no
-    - python3.7 -m pytest tests/gpu/test_trainer_gpu.py --capture=no
+    - python3.7 -m pytest tests/gpu/test_optimize_gpu.py tests/gpu/test_trainer_gpu.py --capture=no
   tags:
     - multi-gpu
+    - avx
+
+test_gpu_parallel:
+  extends: .test
+  script:
+    - python3.7 -m pytest tests/gpu/test_trainer_gpu_parallel.py --capture=no
+  allow_failure: true
+  tags:
+    - multi-gpu
+    - avx
 
 test_networks:
   extends: .test
@@ -107,10 +119,7 @@ test_trainer_long:
 test_other:
   extends: .test
   script:
-    - python3.7 -m pytest tests/test_prepost.py --capture=no
-    - python3.7 -m pytest tests/test_setting.py --capture=no
-    - python3.7 -m pytest tests/test_util.py --capture=no
-    - python3.7 -m pytest tests/test_inferer.py --capture=no
+    - python3.7 -m pytest tests/test_prepost.py tests/test_setting.py tests/test_util.py tests/test_inferer.py --capture=no
 
 .deploy:wheel:
   stage: deploy
