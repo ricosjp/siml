@@ -95,8 +95,9 @@ class Network(torch.nn.Module):
         self.use_support = np.any([
             block_information.use_support
             for block_information in self.dict_block_information.values()])
-        self.merge_sparses = np.any([
-            isinstance(v, iso_gcn.IsoGCN) for v in self.dict_block.values()])
+        self.merge_sparses = False
+        # self.merge_sparses = np.any([
+        #     isinstance(v, iso_gcn.IsoGCN) for v in self.dict_block.values()])
         if self.merge_sparses:
             print('Sparse matrices are merged for IsoGCN')
 
