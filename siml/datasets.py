@@ -159,13 +159,19 @@ class CollateFunctionGenerator():
             self, *, time_series=False, dict_input=False, use_support=False,
             element_wise=False):
         if time_series:
-            self.convert_dense = self._pad_time_dense_sequence
+            if element_wise:
+                self.convert_dense = self._stack_sequence
+            else:
+                self.convert_dense = self._pad_time_dense_sequence
             self.shape_length = 2
         else:
             if dict_input:
                 self.convert_dense = self._concatenate_sequence_dict
             else:
-                self.convert_dense = self._concatenate_sequence_list
+                if element_wise:
+                    self.convert_dense = self._stack_sequence
+                else:
+                    self.convert_dense = self._concatenate_sequence_list
             self.shape_length = 1
 
         if use_support:
@@ -199,6 +205,9 @@ class CollateFunctionGenerator():
         zeros = torch.zeros((remaining_length, *data.shape[1:]))
         padded_data = torch.cat([data, zeros])
         return padded_data
+
+    def _stack_sequence(self, batch, key):
+        return torch.stack([b[key] for b in batch])
 
     def _concatenate_sequence_list(self, batch, key):
         return torch.cat([b[key] for b in batch])
@@ -244,10 +253,6 @@ class CollateFunctionGenerator():
             'original_shapes': original_shapes}
 
 
-# def stack_sequence(batch, key):
-#     return torch.stack([b[key] for b in batch])
-#
-#
 # def pad_dense_sequence(batch, key):
 #     return torch.nn.utils.rnn.pad_sequence(
 #         [b[key] for b in batch], batch_first=True)
