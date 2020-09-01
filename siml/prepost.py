@@ -767,14 +767,29 @@ class Converter:
             inversed_dict_data_y: dict
                 Inversed output data.
         """
-        inversed_dict_data_x = {
-            variable_name:
-            self.converters[variable_name].inverse(data)
-            for variable_name, data in dict_data_x.items()}
-        inversed_dict_data_y = {
-            variable_name:
-            self.converters[variable_name].inverse(data)
-            for variable_name, data in dict_data_y.items()}
+        if isinstance(list(dict_data_x.values())[0], dict):
+            inversed_dict_data_x = {
+                variable_name:
+                self.converters[variable_name].inverse(data)
+                for value in dict_data_x.values()
+                for variable_name, data in value.items()}
+        else:
+            inversed_dict_data_x = {
+                variable_name:
+                self.converters[variable_name].inverse(data)
+                for variable_name, data in dict_data_x.items()}
+
+        if isinstance(list(dict_data_y.values())[0], dict):
+            inversed_dict_data_y = {
+                variable_name:
+                self.converters[variable_name].inverse(data)
+                for value in dict_data_y.values()
+                for variable_name, data in value.items()}
+        else:
+            inversed_dict_data_y = {
+                variable_name:
+                self.converters[variable_name].inverse(data)
+                for variable_name, data in dict_data_y.items()}
 
         # Save data
         if output_directory is not None:

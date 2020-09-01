@@ -96,15 +96,17 @@ def conversion_function_rotation_thermal_stress(fem_data, raw_directory=None):
     nodal_hess_zy = nodal_grad_z.dot(nodal_grad_y).tocoo()
     nodal_hess_zz = nodal_grad_z.dot(nodal_grad_z).tocoo()
 
-    node = fem_data.nodes.data
+    filter_ = fem_data.filter_first_order_nodes()
+
+    node = fem_data.nodes.data[filter_]
     nodal_mean_volume = fem_data.convert_elemental2nodal(
         fem_data.calculate_element_volumes(), mode='mean')
     nodal_concentrated_volume = fem_data.convert_elemental2nodal(
         fem_data.calculate_element_volumes(), mode='effective')
     initial_temperature = fem_data.nodal_data.get_attribute_data(
-        'INITIAL_TEMPERATURE')
+        'INITIAL_TEMPERATURE')[filter_]
     cnt_temperature = fem_data.nodal_data.get_attribute_data(
-        'CNT_TEMPERATURE')
+        'CNT_TEMPERATURE')[filter_]
 
     elemental_lte_array = fem_data.elemental_data.get_attribute_data(
         'linear_thermal_expansion_coefficient_full')
@@ -123,7 +125,7 @@ def conversion_function_rotation_thermal_stress(fem_data, raw_directory=None):
     elemental_strain_array = fem_data.elemental_data.get_attribute_data(
         'ElementalSTRAIN')
     nodal_strain_array = fem_data.nodal_data.get_attribute_data(
-        'NodalSTRAIN')
+        'NodalSTRAIN')[filter_]
     elemental_strain_mat = fem_data.convert_array2symmetric_matrix(
         elemental_strain_array, from_engineering=True)
     nodal_strain_mat = fem_data.convert_array2symmetric_matrix(
@@ -145,8 +147,8 @@ def conversion_function_rotation_thermal_stress(fem_data, raw_directory=None):
         'node': node,
         'nodal_strain_array': nodal_strain_array,
         'elemental_strain_array': elemental_strain_array,
-        'nodal_strain_mat': nodal_strain_mat,
-        'elemental_strain_mat': elemental_strain_mat,
+        'nodal_strain_mat': nodal_strain_mat[..., None],
+        'elemental_strain_mat': elemental_strain_mat[..., None],
         'nodal_mean_volume': nodal_mean_volume,
         'nodal_concentrated_volume': nodal_concentrated_volume,
         'initial_temperature': initial_temperature,
@@ -154,9 +156,9 @@ def conversion_function_rotation_thermal_stress(fem_data, raw_directory=None):
         'elemental_lte_array': elemental_lte_array,
         'nodal_lte_array': nodal_lte_array,
         'global_lte_array': global_lte_array,
-        'elemental_lte_mat': elemental_lte_mat,
-        'nodal_lte_mat': nodal_lte_mat,
-        'global_lte_mat': global_lte_mat,
+        'elemental_lte_mat': elemental_lte_mat[..., None],
+        'nodal_lte_mat': nodal_lte_mat[..., None],
+        'global_lte_mat': global_lte_mat[..., None],
     }
     return dict_data
 

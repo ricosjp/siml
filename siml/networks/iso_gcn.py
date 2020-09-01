@@ -92,8 +92,8 @@ class IsoGCN(abstract_gcn.AbstractGCN):
                 return self._convolution_without_merge
             elif str_propagation == 'contraction':
                 return self._contraction_without_merge
-            elif str_propagation == 'tensor_product':
-                return self._tensor_product_without_merge
+            # elif str_propagation == 'tensor_product':
+            #     return self._tensor_product_without_merge
             else:
                 raise ValueError(
                     f"Unexpected propagation method: {str_propagation}")
@@ -113,16 +113,28 @@ class IsoGCN(abstract_gcn.AbstractGCN):
         Parameters
         ----------
         x: torch.Tensor
-            [n_vertex, n_feature]-shaped tensor.
+            [n_vertex, dim, dim, ..., n_feature]-shaped tensor.
+                       ~~~~~~~~~~~~~~
+                       tensor rank repetition
         supports: List[torch.Tensor]
             List of [n_vertex, n_vertex]-shaped sparse tensor.
 
         Returns
         -------
         y: torch.Tensor
-            [dim, n_vertex, n_feature]-shaped tensor.
+            [n_vertex, dim, dim, ..., dim, n_feature]-shaped tensor.
+                       ~~~~~~~~~~~~~~~~~~~
+                       tensor rank+1 repetition
         """
-        return torch.stack([support.mm(x) for support in supports])
+        shape = x.shape
+        dim = len(supports)
+        tensor_rank = len(shape) - 2
+        if tensor_rank == 0:
+            return torch.stack([support.mm(x) for support in supports], axis=1)
+        else:
+            return torch.stack([
+                self._convolution_without_merge(x[:, i_dim], supports)
+                for i_dim in range(dim)], dim=1)
 
     def _contraction_without_merge(self, x, supports):
         """Calculate contraction G \\cdot x.
@@ -130,7 +142,9 @@ class IsoGCN(abstract_gcn.AbstractGCN):
         Parameters
         ----------
         x: torch.Tensor
-            [dim, n_vertex, n_feature]-shaped tensor.
+            [n_vertex, dim, dim, ..., n_feature]-shaped tensor.
+                       ~~~~~~~~~~~~~~
+                       tensor rank repetition
         supports: List[torch.Tensor]
             List of [n_vertex, n_vertex]-shaped sparse tensor.
 
@@ -139,11 +153,22 @@ class IsoGCN(abstract_gcn.AbstractGCN):
         y: torch.Tensor
             [n_vertex, n_feature]-shaped tensor.
         """
-        return torch.sum(torch.stack([
-            support.mm(_x) for support, _x in zip(supports, x)]), dim=0)
+        shape = x.shape
+        dim = len(supports)
+        tensor_rank = len(shape) - 2
+        if tensor_rank == 1:
+            return torch.sum(torch.stack([
+                support.mm(x[:, i_dim]) for i_dim, support
+                in enumerate(supports)]), dim=0)
+        elif tensor_rank > 1:
+            return torch.sum(torch.stack([
+                self._contraction_without_merge(x[:, i_dim], supports)
+                for i_dim in range(dim)]), dim=0)
+        else:
+            raise ValueError(f"Tensor rank is 0 (shape: {shape})")
 
     def _tensor_product_without_merge(self, x, supports):
-        raise NotImplementedError
+        raise ValueError(x.shape)
 
     def _calculate_dim_with_merge(self, merged_support, n_vertex):
         dim, mod = divmod(merged_support.shape[0], n_vertex)
@@ -167,12 +192,13 @@ class IsoGCN(abstract_gcn.AbstractGCN):
         Returns
         -------
         y: torch.Tensor
-            [dim, n_vertex, n_feature]-shaped tensor.
+            [n_vertex, dim, n_feature]-shaped tensor.
         """
+        raise NotImplementedError
         n_vertex = len(x)
         dim = self._calculate_dim_with_merge(merged_support, n_vertex)
         x = torch.cat([x] * dim, dim=0)
-        return merged_support.mm(x).view(dim, n_vertex, -1)
+        return merged_support.mm(x).view(n_vertex, dim, -1)
 
     def _contraction_with_merge(self, x, merged_support):
         """Calculate contraction G \\cdot x.
@@ -180,7 +206,7 @@ class IsoGCN(abstract_gcn.AbstractGCN):
         Parameters
         ----------
         x: torch.Tensor
-            [dim, n_vertex, n_feature]-shaped tensor.
+            [n_vertex, dim, n_feature]-shaped tensor.
         merged_support: torch.Tensor
             [n_vertex * dim, n_vertex * dim]-shaped sparse tensor.
 
@@ -189,6 +215,7 @@ class IsoGCN(abstract_gcn.AbstractGCN):
         y: torch.Tensor
             [n_vertex, n_feature]-shaped tensor.
         """
+        raise NotImplementedError
         n_vertex = x.shape[1]
         dim = self._calculate_dim_with_merge(merged_support, n_vertex)
         return torch.sum(merged_support.mm(x.view(dim * n_vertex, -1)).view(

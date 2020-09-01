@@ -326,4 +326,4 @@ class TestTrainer(unittest.TestCase):
             main_setting.trainer.output_directory, ignore_errors=True)
         tr = trainer.Trainer(main_setting)
         loss = tr.train()
-        np.testing.assert_array_less(loss, .1)
+        np.testing.assert_array_less(loss, 1.)
