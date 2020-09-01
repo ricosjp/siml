@@ -1,7 +1,9 @@
 
+import einops
 import torch
 
 from . import abstract_gcn
+from . import identity
 
 
 class IsoGCN(abstract_gcn.AbstractGCN):
@@ -13,12 +15,20 @@ class IsoGCN(abstract_gcn.AbstractGCN):
             raise ValueError(
                 'len(support_input_indices) should be larger than 1 '
                 f"({len_support} found.)")
+        create_subchain = block_setting.optional.get('create_subchain', True)
         super().__init__(
-            block_setting, create_subchain=True, multiple_networks=False,
-            residual=block_setting.residual)
+            block_setting, create_subchain=create_subchain,
+            multiple_networks=False, residual=block_setting.residual)
+        if not create_subchain:
+            print(f"Skipe subchain creation for: {block_setting.name}")
+            self.subchains = [[identity.Identity(block_setting)]]
         if len(self.subchains[0]) > 1:
             raise ValueError(
                 f"# of layers should be 0 or 1 for: {block_setting}")
+
+        self.symmetric = block_setting.optional.get('symmetric', False)
+        if self.symmetric:
+            print(f"Output symmetric matrix for: {block_setting.name}")
 
         self.merge_sparse = block_setting.optional.get('merge_sparse', False)
         print(f"Merge sparse: {self.merge_sparse}")
@@ -47,10 +57,10 @@ class IsoGCN(abstract_gcn.AbstractGCN):
 
         h_res = self._propagate(x, merged_support)
         if self.block_setting.activation_after_residual:
-            return self.activations[-1](h_res + shortcut)
+            h_res = self.activations[-1](h_res + shortcut)
         else:
-            return self.activations[-1](h_res) + shortcut
-        return
+            h_res = self.activations[-1](h_res) + shortcut
+        return h_res
 
     def _propagate(self, x, support):
         h = x
@@ -62,7 +72,7 @@ class IsoGCN(abstract_gcn.AbstractGCN):
             h = propagation_function(h, support)
 
         if self.ah_w:
-            # A (H W)
+            # (A H) W
             h = self.subchains[0][0](self.factor * h)
 
         h = torch.nn.functional.dropout(
@@ -107,7 +117,7 @@ class IsoGCN(abstract_gcn.AbstractGCN):
                 f"    n_vertex: {n_vertex}")
         return dim
 
-    def _convolution_without_merge(self, x, supports):
+    def _convolution_without_merge(self, x, supports, top=True):
         """Calculate convolution G \\ast x.
 
         Parameters
@@ -130,11 +140,19 @@ class IsoGCN(abstract_gcn.AbstractGCN):
         dim = len(supports)
         tensor_rank = len(shape) - 2
         if tensor_rank == 0:
-            return torch.stack([support.mm(x) for support in supports], axis=1)
-        else:
-            return torch.stack([
-                self._convolution_without_merge(x[:, i_dim], supports)
+            h = torch.stack([support.mm(x) for support in supports], axis=1)
+        elif tensor_rank > 0:
+            h = torch.stack([
+                self._convolution_without_merge(
+                    x[:, i_dim], supports, top=False)
                 for i_dim in range(dim)], dim=1)
+            if self.symmetric:
+                h = (h + einops.rearrange(
+                    h, 'element x1 x2 feature -> element x2 x1 feature')) / 2
+        else:
+            raise ValueError(f"Tensor shape invalid: {shape}")
+
+        return h
 
     def _contraction_without_merge(self, x, supports):
         """Calculate contraction G \\cdot x.
@@ -162,7 +180,8 @@ class IsoGCN(abstract_gcn.AbstractGCN):
                 in enumerate(supports)]), dim=0)
         elif tensor_rank > 1:
             return torch.sum(torch.stack([
-                self._contraction_without_merge(x[:, i_dim], supports)
+                supports[i_dim].mm(
+                    self._contraction_without_merge(x[:, i_dim], supports))
                 for i_dim in range(dim)]), dim=0)
         else:
             raise ValueError(f"Tensor rank is 0 (shape: {shape})")

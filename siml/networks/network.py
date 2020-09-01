@@ -215,7 +215,14 @@ class Network(torch.nn.Module):
                         f"{graph_node} has {len(predecessors)} "
                         f"predecessors: {predecessors}")
                 if block_setting.is_first:
-                    max_first_node = self.trainer_setting.input_length
+                    if block_setting.input_keys is None:
+                        max_first_node = self.trainer_setting.input_length
+                    else:
+                        input_length = self.trainer_setting.input_length
+                        max_first_node = int(
+                            np.sum([
+                                input_length[input_key] for input_key
+                                in block_setting.input_keys]))
                 else:
                     max_first_node = self.dict_block_setting[
                         tuple(predecessors)[0]].nodes[-1]
@@ -228,8 +235,11 @@ class Network(torch.nn.Module):
                     and block_setting.nodes[0] == -1:
                 input_keys = block_setting.input_keys
                 if input_keys is None:
-                    block_setting.nodes[0] = int(
-                        first_node)
+                    if isinstance(first_node, dict):
+                        raise ValueError(
+                            'Input is dict. Plese specify input_keys to the '
+                            'first nodes')
+                    block_setting.nodes[0] = int(first_node)
                 else:
                     if block_setting.is_first:
                         input_length = self.trainer_setting.input_length
