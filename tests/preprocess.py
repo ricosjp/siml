@@ -82,6 +82,85 @@ def conversion_function_heat_time_series(fem_data, raw_directory=None):
     return dict_data
 
 
+def conversion_function_rotation_thermal_stress(fem_data, raw_directory=None):
+    nodal_grad_x, nodal_grad_y, nodal_grad_z = \
+        fem_data.calculate_spatial_gradient_adjacency_matrices(
+            'nodal', n_hop=2)
+    nodal_hess_xx = nodal_grad_x.dot(nodal_grad_x).tocoo()
+    nodal_hess_xy = nodal_grad_x.dot(nodal_grad_y).tocoo()
+    nodal_hess_xz = nodal_grad_x.dot(nodal_grad_z).tocoo()
+    nodal_hess_yx = nodal_grad_y.dot(nodal_grad_x).tocoo()
+    nodal_hess_yy = nodal_grad_y.dot(nodal_grad_y).tocoo()
+    nodal_hess_yz = nodal_grad_y.dot(nodal_grad_z).tocoo()
+    nodal_hess_zx = nodal_grad_z.dot(nodal_grad_x).tocoo()
+    nodal_hess_zy = nodal_grad_z.dot(nodal_grad_y).tocoo()
+    nodal_hess_zz = nodal_grad_z.dot(nodal_grad_z).tocoo()
+
+    node = fem_data.nodes.data
+    nodal_mean_volume = fem_data.convert_elemental2nodal(
+        fem_data.calculate_element_volumes(), mode='mean')
+    nodal_concentrated_volume = fem_data.convert_elemental2nodal(
+        fem_data.calculate_element_volumes(), mode='effective')
+    initial_temperature = fem_data.nodal_data.get_attribute_data(
+        'INITIAL_TEMPERATURE')
+    cnt_temperature = fem_data.nodal_data.get_attribute_data(
+        'CNT_TEMPERATURE')
+
+    elemental_lte_array = fem_data.elemental_data.get_attribute_data(
+        'linear_thermal_expansion_coefficient_full')
+    nodal_lte_array = fem_data.convert_elemental2nodal(
+        elemental_lte_array, mode='effective')
+    global_lte_array = np.mean(
+        elemental_lte_array, axis=0, keepdims=True)
+
+    elemental_lte_mat = fem_data.convert_array2symmetric_matrix(
+        elemental_lte_array, from_engineering=True)
+    nodal_lte_mat = fem_data.convert_array2symmetric_matrix(
+        nodal_lte_array, from_engineering=True)
+    global_lte_mat = np.mean(
+        elemental_lte_mat, axis=0, keepdims=True)
+
+    elemental_strain_array = fem_data.elemental_data.get_attribute_data(
+        'ElementalSTRAIN')
+    nodal_strain_array = fem_data.nodal_data.get_attribute_data(
+        'NodalSTRAIN')
+    elemental_strain_mat = fem_data.convert_array2symmetric_matrix(
+        elemental_strain_array, from_engineering=True)
+    nodal_strain_mat = fem_data.convert_array2symmetric_matrix(
+        nodal_strain_array, from_engineering=True)
+
+    dict_data = {
+        'nodal_grad_x': nodal_grad_x,
+        'nodal_grad_y': nodal_grad_y,
+        'nodal_grad_z': nodal_grad_z,
+        'nodal_hess_xx': nodal_hess_xx,
+        'nodal_hess_xy': nodal_hess_xy,
+        'nodal_hess_xz': nodal_hess_xz,
+        'nodal_hess_yx': nodal_hess_yx,
+        'nodal_hess_yy': nodal_hess_yy,
+        'nodal_hess_yz': nodal_hess_yz,
+        'nodal_hess_zx': nodal_hess_zx,
+        'nodal_hess_zy': nodal_hess_zy,
+        'nodal_hess_zz': nodal_hess_zz,
+        'node': node,
+        'nodal_strain_array': nodal_strain_array,
+        'elemental_strain_array': elemental_strain_array,
+        'nodal_strain_mat': nodal_strain_mat,
+        'elemental_strain_mat': elemental_strain_mat,
+        'nodal_mean_volume': nodal_mean_volume,
+        'nodal_concentrated_volume': nodal_concentrated_volume,
+        'initial_temperature': initial_temperature,
+        'cnt_temperature': cnt_temperature,
+        'elemental_lte_array': elemental_lte_array,
+        'nodal_lte_array': nodal_lte_array,
+        'global_lte_array': global_lte_array,
+        'elemental_lte_mat': elemental_lte_mat,
+        'nodal_lte_mat': nodal_lte_mat,
+        'global_lte_mat': global_lte_mat,
+    }
+    return dict_data
+
+
 def preprocess_deform():
     main_setting = setting.MainSetting.read_settings_yaml(
         pathlib.Path('tests/data/deform/data.yml'))
@@ -89,6 +168,20 @@ def preprocess_deform():
     raw_converter = prepost.RawConverter(
         main_setting, recursive=True, force_renew=True,
         conversion_function=conversion_function)
+    raw_converter.convert()
+
+    preprocessor = prepost.Preprocessor(main_setting, force_renew=True)
+    preprocessor.preprocess_interim_data()
+    return
+
+
+def preprocess_rotation_thermal_stress():
+    main_setting = setting.MainSetting.read_settings_yaml(
+        pathlib.Path('tests/data/rotation_thermal_stress/data.yml'))
+
+    raw_converter = prepost.RawConverter(
+        main_setting, recursive=True, force_renew=True,
+        conversion_function=conversion_function_rotation_thermal_stress)
     raw_converter.convert()
 
     preprocessor = prepost.Preprocessor(main_setting, force_renew=True)
@@ -319,6 +412,7 @@ def generate_large():
 
 
 if __name__ == '__main__':
+    preprocess_rotation_thermal_stress()
     preprocess_heat_time_series()
     generate_ode()
     preprocess_deform()

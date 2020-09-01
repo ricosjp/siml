@@ -413,22 +413,33 @@ class Trainer():
             self.setting.data.validation = validation
             self.setting.data.test = test
 
+        output_is_dict = isinstance(self.setting.trainer.outputs, dict)
+        self.collate_fn = datasets.CollateFunctionGenerator(
+            time_series=self.setting.trainer.time_series,
+            dict_input=output_is_dict,
+            use_support=self.setting.trainer.support_inputs,
+            element_wise=self.element_wise)
         if self.setting.trainer.support_inputs:
-            if self.setting.trainer.time_series:
-                self.collate_fn = datasets.collate_fn_time_with_support
-            else:
-                self.collate_fn = datasets.collate_fn_with_support
             self.prepare_batch = datasets.prepare_batch_with_support
         else:
-            if self.element_wise:
-                self.collate_fn = datasets.collate_fn_element_wise
-                self.prepare_batch = datasets.prepare_batch_without_support
-            else:
-                if self.setting.trainer.time_series:
-                    self.collate_fn = datasets.collate_fn_time_without_support
-                else:
-                    self.collate_fn = datasets.collate_fn_without_support
-                self.prepare_batch = datasets.prepare_batch_without_support
+            self.prepare_batch = datasets.prepare_batch_without_support
+
+        # if self.setting.trainer.support_inputs:
+        #     if self.setting.trainer.time_series:
+        #         self.collate_fn = datasets.collate_fn_time_with_support
+        #     else:
+        #         self.collate_fn = datasets.collate_fn_with_support
+        #     self.prepare_batch = datasets.prepare_batch_with_support
+        # else:
+        #     if self.element_wise:
+        #         self.collate_fn = datasets.collate_fn_element_wise
+        #         self.prepare_batch = datasets.prepare_batch_without_support
+        #     else:
+        #         if self.setting.trainer.time_series:
+        #             self.collate_fn = datasets.collate_fn_time_without_support
+        #         else:
+        #             self.collate_fn = datasets.collate_fn_without_support
+        #         self.prepare_batch = datasets.prepare_batch_without_support
 
         if self.setting.trainer.lazy:
             self.train_loader, self.validation_loader, self.test_loader = \

@@ -153,107 +153,104 @@ class OnMemoryDataset(BaseDataset):
         return self.data[i]
 
 
-def collate_fn_with_support(batch):
-    x = concatenate_sequence(batch, 'x')
-    t = concatenate_sequence(batch, 't')
-    padded_supports = concatenate_sparse_sequence(batch, 'supports')
+class CollateFunctionGenerator():
 
-    original_shapes = np.array(
-        [[b['x'].shape[0]] for b in batch])
-    return {
-        'x': x, 't': t, 'supports': padded_supports,
-        'original_shapes': original_shapes}
+    def __init__(
+            self, *, time_series=False, dict_input=False, use_support=False,
+            element_wise=False):
+        if time_series:
+            self.convert_dense = self._pad_time_dense_sequence
+            self.shape_length = 2
+        else:
+            if dict_input:
+                self.convert_dense = self._concatenate_sequence_dict
+            else:
+                self.convert_dense = self._concatenate_sequence_list
+            self.shape_length = 1
 
+        if use_support:
+            self.convert_sparse = self._concatenate_sparse_sequence
+        else:
+            self.convert_sparse = self._return_none
 
-def collate_fn_time_with_support(batch):
-    x = pad_time_dense_sequence(batch, 'x')
-    t = pad_time_dense_sequence(batch, 't')
-    padded_supports = concatenate_sparse_sequence(batch, 'supports')
+        if element_wise:
+            self.extract_original_shapes = self._return_none
+        if dict_input:
+            self.extract_original_shapes \
+                = self._extract_original_shapes_from_dict
+        else:
+            self.extract_original_shapes \
+                = self._extract_original_shapes_from_list
 
-    original_shapes = np.array(
-        [[b['x'].shape[0], b['x'].shape[-2]] for b in batch])
-    return {
-        'x': x, 't': t, 'supports': padded_supports,
-        'original_shapes': original_shapes}
+        return
 
+    def _pad_time_dense_sequence(self, batch, key):
+        data = [b[key] for b in batch]
 
-def collate_fn_without_support(batch):
-    x = concatenate_sequence(batch, 'x')
-    t = concatenate_sequence(batch, 't')
+        max_time_lengths = np.max([d.shape[0] for d in data])
+        return torch.cat(
+            [self._pad_time_direction(d, max_time_lengths) for d in data],
+            axis=1)
 
-    if isinstance(batch[0]['x'], dict):
-        original_shapes = np.array([
-            {key: [v.shape[0] for v in value] for key, value in b['x'].items()}
-            for b in batch])
-    else:
-        original_shapes = np.array(
-            [[b['x'].shape[0]] for b in batch])
+    def _pad_time_direction(self, data, time_length):
+        if len(data) == time_length:
+            return data
+        remaining_length = time_length - len(data)
+        zeros = torch.zeros((remaining_length, *data.shape[1:]))
+        padded_data = torch.cat([data, zeros])
+        return padded_data
 
-    return {'x': x, 't': t, 'original_shapes': original_shapes}
+    def _concatenate_sequence_list(self, batch, key):
+        return torch.cat([b[key] for b in batch])
 
-
-def collate_fn_time_without_support(batch):
-    x = pad_time_dense_sequence(batch, 'x')
-    t = pad_time_dense_sequence(batch, 't')
-
-    original_shapes = np.array(
-        [[b['x'].shape[0], b['x'].shape[-2]] for b in batch])
-    return {
-        'x': x, 't': t, 'original_shapes': original_shapes}
-
-
-def concatenate_sequence(batch, key):
-    if isinstance(batch[0][key], dict):
+    def _concatenate_sequence_dict(self, batch, key):
         return {
             dict_key:
             torch.cat([b[key][dict_key] for b in batch])
             for dict_key in batch[0][key].keys()}
-    else:
-        return torch.cat([b[key] for b in batch])
+
+    def _return_none(self, *args, **kwargs):
+        return None
+
+    def _extract_original_shapes_from_dict(self, batch):
+        return np.array([
+            {
+                key:
+                [v.shape[:self.shape_length] for v in value]
+                for key, value in b['x'].items()}
+            for b in batch])
+
+    def _extract_original_shapes_from_list(self, batch):
+        return np.array([b['x'].shape[:self.shape_length] for b in batch])
+
+    def _concatenate_sparse_sequence(self, batch, key):
+        sparse_infos = self._pad_sparse_sequence(batch, key)
+        n_sparse_features = len(sparse_infos[0])
+        return [
+            merge_sparse_tensors(
+                [s[i] for s in sparse_infos], return_coo=False)
+            for i in range(n_sparse_features)]
+
+    def _pad_sparse_sequence(self, batch, key, length=None):
+        return [[pad_sparse(s, length) for s in b[key]] for b in batch]
+
+    def __call__(self, batch):
+        x = self.convert_dense(batch, 'x')
+        t = self.convert_dense(batch, 't')
+        supports = self.convert_sparse(batch, 'supports')
+        original_shapes = self.extract_original_shapes(batch)
+        return {
+            'x': x, 't': t, 'supports': supports,
+            'original_shapes': original_shapes}
 
 
-def collate_fn_element_wise(batch):
-    x = stack_sequence(batch, 'x')
-    t = stack_sequence(batch, 't')
-    return {'x': x, 't': t, 'original_shapes': None}
-
-
-def stack_sequence(batch, key):
-    return torch.stack([b[key] for b in batch])
-
-
-def pad_dense_sequence(batch, key):
-    return torch.nn.utils.rnn.pad_sequence(
-        [b[key] for b in batch], batch_first=True)
-
-
-def pad_time_dense_sequence(batch, key):
-    data = [b[key] for b in batch]
-
-    max_time_lengths = np.max([d.shape[0] for d in data])
-    return torch.cat([
-        pad_time_direction(d, max_time_lengths) for d in data], axis=1)
-
-
-def pad_time_direction(data, time_length):
-    if len(data) == time_length:
-        return data
-    remaining_length = time_length - len(data)
-    zeros = torch.zeros((remaining_length, *data.shape[1:]))
-    padded_data = torch.cat([data, zeros])
-    return padded_data
-
-
-def concatenate_sparse_sequence(batch, key):
-    sparse_infos = pad_sparse_sequence(batch, key)
-    n_sparse_features = len(sparse_infos[0])
-    return [
-        merge_sparse_tensors([s[i] for s in sparse_infos], return_coo=False)
-        for i in range(n_sparse_features)]
-
-
-def pad_sparse_sequence(batch, key, length=None):
-    return [[pad_sparse(s, length) for s in b[key]] for b in batch]
+# def stack_sequence(batch, key):
+#     return torch.stack([b[key] for b in batch])
+#
+#
+# def pad_dense_sequence(batch, key):
+#     return torch.nn.utils.rnn.pad_sequence(
+#         [b[key] for b in batch], batch_first=True)
 
 
 def pad_sparse(sparse, length=None):

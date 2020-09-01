@@ -316,4 +316,14 @@ class TestTrainer(unittest.TestCase):
         shutil.rmtree(
             main_setting.trainer.output_directory, ignore_errors=True)
         tr = trainer.Trainer(main_setting)
-        tr.train()
+        loss = tr.train()
+        np.testing.assert_array_less(loss, 1.)
+
+    def test_trainer_train_dict_input_w_support(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/deform/dict_input_w_support.yml'))
+        shutil.rmtree(
+            main_setting.trainer.output_directory, ignore_errors=True)
+        tr = trainer.Trainer(main_setting)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, .1)
