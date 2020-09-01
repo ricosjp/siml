@@ -396,14 +396,17 @@ class Inferer(trainer.Trainer):
         if accomodate_length:
             x = np.concatenate([x[:accomodate_length], x])
 
+        if self.setting.trainer.time_series:
+            shape_length = 2
+        else:
+            shape_length = 1
         if isinstance(x, dict):
             shape = list(x.values())[0].shape
+            original_shapes = {
+                key: [value.shape[:shape_length]] for key, value in x.items()}
         else:
             shape = x.shape
-        if self.setting.trainer.time_series:
-            original_shapes = [shape[:2]]
-        else:
-            original_shapes = [shape[:1]]
+            original_shapes = [shape[:shape_length]]
 
         # Inference
         self.model.eval()

@@ -238,7 +238,7 @@ class Network(torch.nn.Module):
                     if isinstance(first_node, dict):
                         raise ValueError(
                             'Input is dict. Plese specify input_keys to the '
-                            'first nodes')
+                            "first nodes: {block_setting}")
                     block_setting.nodes[0] = int(first_node)
                 else:
                     if block_setting.is_first:
@@ -257,6 +257,10 @@ class Network(torch.nn.Module):
                     and block_setting.nodes[-1] == -1:
                 output_key = block_setting.output_key
                 if output_key is None:
+                    if isinstance(last_node, dict):
+                        raise ValueError(
+                            'Output is dict. Plese specify output_key to the '
+                            f"last nodes: {block_setting}")
                     block_setting.nodes[-1] = int(
                         last_node)
                 else:
