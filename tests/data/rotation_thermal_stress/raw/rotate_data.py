@@ -135,6 +135,10 @@ def _rotate_data(fem_data, rotation_matrix, output_directory):
         new_fem_data.elements.ids, elemental_data_dict)
 
     # Other info
+    new_fem_data.settings = {
+        'solution_type': 'STATIC',
+        'output_res': 'NSTRAIN,ON\nNSTRESS,ON\n',
+        'output_vis': 'NSTRAIN,ON\nNSTRESS,ON\n'}
     new_fem_data.element_groups = {'ALL': fem_data.elements.ids}
     new_fem_data.sections.update_data(
         'MAT_ALL', {'TYPE': 'SOLID', 'EGRP': 'ALL'})
