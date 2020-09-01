@@ -409,6 +409,8 @@ class Inferer(trainer.Trainer):
             original_shapes = [shape[:shape_length]]
 
         # Inference
+        if isinstance(x, np.ndarray):
+            x = torch.from_numpy(x)
         self.model.eval()
         with torch.no_grad():
             start_time = time.time()
@@ -436,11 +438,15 @@ class Inferer(trainer.Trainer):
         dict_var_inferred_y = self._separate_data(
             np_inferred_y, self.setting.trainer.outputs)
         if answer_y is not None:
-            if isinstance(answer_y, dict):
-                np_answer_y = {
-                    key: value.numpy() for key, value in answer_y.items()}
+            if isinstance(answer_y, np.ndarray):
+                np_answer_y = answer_y
+                answer_y = torch.from_numpy(answer_y)
             else:
-                np_answer_y = answer_y.numpy()
+                if isinstance(answer_y, dict):
+                    np_answer_y = {
+                        key: value.numpy() for key, value in answer_y.items()}
+                else:
+                    np_answer_y = answer_y.numpy()
 
             dict_var_answer_y = self._separate_data(
                 np_answer_y, self.setting.trainer.outputs)
@@ -468,7 +474,10 @@ class Inferer(trainer.Trainer):
         # Compute loss
         if answer_y is not None:
             with torch.no_grad():
-                loss = self.loss(inferred_y, answer_y).numpy()
+                try:
+                    loss = self.loss(inferred_y, answer_y).numpy()
+                except:
+                    raise ValueError(inferred_y.__class__, answer_y.__class__)
         else:
             # Answer data does not exist
             loss = None

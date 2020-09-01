@@ -779,17 +779,20 @@ class Converter:
                 self.converters[variable_name].inverse(data)
                 for variable_name, data in dict_data_x.items()}
 
-        if isinstance(list(dict_data_y.values())[0], dict):
-            inversed_dict_data_y = {
-                variable_name:
-                self.converters[variable_name].inverse(data)
-                for value in dict_data_y.values()
-                for variable_name, data in value.items()}
+        if len(dict_data_y) > 0:
+            if isinstance(list(dict_data_y.values())[0], dict):
+                inversed_dict_data_y = {
+                    variable_name:
+                    self.converters[variable_name].inverse(data)
+                    for value in dict_data_y.values()
+                    for variable_name, data in value.items()}
+            else:
+                inversed_dict_data_y = {
+                    variable_name:
+                    self.converters[variable_name].inverse(data)
+                    for variable_name, data in dict_data_y.items()}
         else:
-            inversed_dict_data_y = {
-                variable_name:
-                self.converters[variable_name].inverse(data)
-                for variable_name, data in dict_data_y.items()}
+            inversed_dict_data_y = {}
 
         # Save data
         if output_directory is not None:
