@@ -43,6 +43,7 @@ preprocess:
       - tests/data/ode/interim
       - tests/data/ode/preprocessed
       - tests/data/ode/preprocessed
+      - tests/data/rotation_thermal_stress/preprocessed
     expire_in: 60min
 
 autopep8:
