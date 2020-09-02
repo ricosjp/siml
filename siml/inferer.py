@@ -474,10 +474,7 @@ class Inferer(trainer.Trainer):
         # Compute loss
         if answer_y is not None:
             with torch.no_grad():
-                try:
-                    loss = self.loss(inferred_y, answer_y).numpy()
-                except:
-                    raise ValueError(inferred_y.__class__, answer_y.__class__)
+                loss = self.loss(inferred_y, answer_y).numpy()
         else:
             # Answer data does not exist
             loss = None
