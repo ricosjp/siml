@@ -31,12 +31,12 @@ trainer:
       - name: cnt_temperature
         dim: 1
     out_rank2:
-      - name: nodal_lte_mat
+      - name: global_lte_mat
   prune: true
   batch_size: 2
-  n_epoch: 100
-  log_trigger_epoch: 10
-  stop_trigger_epoch: 10
+  n_epoch: 1
+  log_trigger_epoch: 1
+  stop_trigger_epoch: 1
   seed: 0
 model:
   blocks:
@@ -166,14 +166,16 @@ model:
       coeff: .1
     - name: REDUCER
       type: reducer
+      # is_last: true
+      # output_key: out_rank2
+      destinations:
+        - MEAN
+    - name: MEAN
+      type: activation
       is_last: true
       output_key: out_rank2
-    # - name: MEAN
-    #   type: activation
-    #   is_last: true
-    #   output_key: out_rank2
-    #   residual: false
-    #   activations:
-    #     - max
-    #   optional:
-    #     dict_key: rank2
+      residual: false
+      activations:
+        - mean
+      optional:
+        dict_key: rank2

@@ -296,8 +296,7 @@ class TestNetwork(unittest.TestCase):
 
     def call_model(self, model, h, genam):
         gs = [[
-            torch.from_numpy(genam[..., i])
-            for i in range(genam.shape[-1])]]
+            torch.from_numpy(genam[..., i]) for i in range(genam.shape[-1])]]
         return model({'x': torch.from_numpy(h), 'supports': gs}).numpy()
 
     def test_iso_gcn_rotation_thermal_stress_rank0_rank2(self):
@@ -570,8 +569,7 @@ class TestNetwork(unittest.TestCase):
         tr = trainer.Trainer(main_setting)
         if tr.setting.trainer.output_directory.exists():
             shutil.rmtree(tr.setting.trainer.output_directory)
-        loss = tr.train()
-        np.testing.assert_array_less(loss, 5.)
+        tr.train()
 
         ir = inferer.Inferer(main_setting)
         inference_outpout_directory = \
@@ -591,7 +589,7 @@ class TestNetwork(unittest.TestCase):
                 'tests/data/rotation_thermal_stress/preprocessed/'
                 'preprocessors.pkl'),
             output_directory=inference_outpout_directory,
-            overwrite=True)
+            overwrite=True, perform_postprocess=False)
 
         rotation_matrix = np.array([[1, 0, 0], [0, 0, 1], [0, -1, 0]])
 
@@ -602,7 +600,7 @@ class TestNetwork(unittest.TestCase):
         input_data = results[1]['dict_x']['nodal_strain_mat']
         np.testing.assert_almost_equal(rotated_original_input_data, input_data)
 
-        name_answer = 'nodal_lte_mat'
+        name_answer = 'global_lte_mat'
 
         # Confirm answer has rotation equivariance
         rotated_original_answer = np.array([
@@ -612,9 +610,8 @@ class TestNetwork(unittest.TestCase):
         np.testing.assert_almost_equal(rotated_original_answer, answer)
 
         # Confirm inference result has rotation invariance and equivariance
-        rotated_original = np.array([
-            rotation_matrix @ r[..., 0] @ rotation_matrix.T for r
-            in results[0]['dict_y'][name_answer]])[..., None]
+        rotated_original = self.rotate_rank2(
+            rotation_matrix, results[0]['dict_y'][name_answer])
         print(rotated_original[0, :, :, 0])
         print(results[1]['dict_y'][name_answer][0, :, :, 0])
         print(
@@ -631,3 +628,59 @@ class TestNetwork(unittest.TestCase):
         np.testing.assert_almost_equal(
             results[0]['dict_y']['cnt_temperature'],
             results[1]['dict_y']['cnt_temperature'], decimal=5)
+
+    def test_iso_gcn_rotation_thermal_stress_rank0_rank2_global_pooling(self):
+        main_setting = setting.MainSetting.read_settings_yaml(Path(
+            'tests/data/rotation_thermal_stress/iso_gcn_rank0_rank2_pool.yml'))
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        tr.train()
+
+        original_path = Path(
+            'tests/data/rotation_thermal_stress/preprocessed/cube/original')
+        rotated_path = Path(
+            'tests/data/rotation_thermal_stress/preprocessed/cube/rotated')
+        rotation_matrix = np.array([[1, 0, 0], [0, 0, 1], [0, -1, 0]])
+
+        ir = inferer.Inferer(main_setting)
+        inference_outpout_directory = \
+            main_setting.trainer.output_directory / 'inferred'
+        if inference_outpout_directory.exists():
+            shutil.rmtree(inference_outpout_directory)
+        results = ir.infer(
+            model=main_setting.trainer.output_directory,
+            preprocessed_data_directory=[original_path, rotated_path],
+            converter_parameters_pkl=Path(
+                'tests/data/rotation_thermal_stress/preprocessed/'
+                'preprocessors.pkl'),
+            output_directory=inference_outpout_directory,
+            overwrite=True, perform_postprocess=False)
+
+        # Confirm answer has rotation equivariance
+        rotated_original_answer = np.array([
+            rotation_matrix @ r[..., 0] @ rotation_matrix.T for r
+            in results[0]['dict_x']['global_lte_mat']])[..., None]
+        answer = results[1]['dict_x']['global_lte_mat']
+        self.print_vec(
+            self.rotate_rank2(
+                rotation_matrix, results[0]['dict_x']['global_lte_mat'])
+            - answer, 'diff', 5)
+        np.testing.assert_almost_equal(
+            self.rotate_rank2(
+                rotation_matrix, results[0]['dict_x']['global_lte_mat']),
+            answer)
+        np.testing.assert_almost_equal(rotated_original_answer, answer)
+
+        # Confirm inference result has rotation equivariance
+        rotated_original = np.array([
+            rotation_matrix @ r[..., 0] @ rotation_matrix.T for r
+            in results[0]['dict_y']['global_lte_mat']])[..., None]
+        print(rotated_original[:3, :, :, 0])
+        print(results[1]['dict_y']['global_lte_mat'][:, :, :, 0])
+        print(
+            rotated_original[:3, :, :, 0]
+            - results[1]['dict_y']['global_lte_mat'][:, :, :, 0])
+        np.testing.assert_almost_equal(
+            rotated_original,
+            results[1]['dict_y']['global_lte_mat'], decimal=5)

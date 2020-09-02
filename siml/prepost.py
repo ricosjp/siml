@@ -770,7 +770,24 @@ class Converter:
         """
         if not perform_inverse:
             print('Postprocess skipped')
-            return dict_data_x, dict_data_y
+            if isinstance(list(dict_data_x.values())[0], dict):
+                return_dict_data_x = {
+                    variable_name:
+                    data
+                    for value in dict_data_x.values()
+                    for variable_name, data in value.items()}
+            else:
+                return_dict_data_x = dict_data_x
+
+            if isinstance(list(dict_data_y.values())[0], dict):
+                return_dict_data_y = {
+                    variable_name:
+                    data
+                    for value in dict_data_y.values()
+                    for variable_name, data in value.items()}
+            else:
+                return_dict_data_y = dict_data_y
+            return return_dict_data_x, return_dict_data_y
 
         if isinstance(list(dict_data_x.values())[0], dict):
             inversed_dict_data_x = {
