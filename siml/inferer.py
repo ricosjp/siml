@@ -27,7 +27,7 @@ class Inferer(trainer.Trainer):
             converter_parameters_pkl=None, conversion_function=None,
             load_function=None, convert_to_order1=False,
             data_addition_function=None, accomodate_length=None,
-            required_file_names=[]):
+            required_file_names=[], perform_postprocess=True):
         """Perform inference.
 
         Parameters
@@ -89,6 +89,7 @@ class Inferer(trainer.Trainer):
                 - output variables
                 - loss
         """
+        self.perform_postprocess = perform_postprocess
         self._prepare_inference(
             model,
             converter_parameters_pkl=converter_parameters_pkl)
@@ -469,7 +470,8 @@ class Inferer(trainer.Trainer):
             skip_femio=self.setting.conversion.skip_femio,
             load_function=load_function, convert_to_order1=convert_to_order1,
             required_file_names=required_file_names,
-            data_addition_function=data_addition_function)
+            data_addition_function=data_addition_function,
+            perform_inverse=self.perform_postprocess)
 
         # Compute loss
         if answer_y is not None:
