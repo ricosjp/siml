@@ -1,0 +1,72 @@
+data:
+  raw: tests/data/rotation_thermal_stress/raw
+  interim: tests/data/rotation_thermal_stress/interim
+  preprocessed: tests/data/rotation_thermal_stress/preprocessed
+  inferred: tests/data/rotation_thermal_stress/inferred
+  train:
+    - tests/data/rotation_thermal_stress/preprocessed
+  validation:
+    - tests/data/rotation_thermal_stress/preprocessed
+conversion:
+  required_file_names:
+    - '*.msh'
+    - '*.cnt'
+    - '*.res.0.1'
+preprocess:
+  nodal_grad_x:
+    method: sparse_std
+    componentwise: false
+  nodal_grad_y:
+    same_as: nodal_grad_x
+  nodal_grad_z:
+    same_as: nodal_grad_x
+  nodal_hess_xx:
+    method: sparse_std
+    componentwise: false
+  nodal_hess_xy:
+    same_as: nodal_hess_xx
+  nodal_hess_xz:
+    same_as: nodal_hess_xx
+  nodal_hess_yx:
+    same_as: nodal_hess_xx
+  nodal_hess_yy:
+    same_as: nodal_hess_xx
+  nodal_hess_yz:
+    same_as: nodal_hess_xx
+  nodal_hess_zx:
+    same_as: nodal_hess_xx
+  nodal_hess_zy:
+    same_as: nodal_hess_xx
+  nodal_hess_zz:
+    same_as: nodal_hess_xx
+  nodal_mean_volume:
+    method: max_abs
+  nodal_concentrated_volume:
+    method: max_abs
+  node:
+    method: standardize
+    componentwise: false
+  initial_temperature:
+    method: identity
+  cnt_temperature:
+    same_as: initial_temperature
+  elemental_lte_array:
+    method: standardize
+  nodal_lte_array:
+    method: standardize
+  global_lte_array:
+    method: standardize
+  elemental_lte_mat:
+    method: standardize
+  nodal_lte_mat:
+    method: standardize
+  global_lte_mat:
+    method: standardize
+  elemental_strain_array:
+    method: standardize
+  nodal_strain_array:
+    method: standardize
+  elemental_strain_mat:
+    method: standardize
+  nodal_strain_mat:
+    method: standardize

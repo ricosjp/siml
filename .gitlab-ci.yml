@@ -43,6 +43,8 @@ preprocess:
       - tests/data/ode/interim
       - tests/data/ode/preprocessed
       - tests/data/ode/preprocessed
+      - tests/data/rotation_thermal_stress/preprocessed
+      - tests/data/heat_time_series/preprocessed
     expire_in: 60min
 
 autopep8:
@@ -99,6 +101,10 @@ test_gpu_parallel:
 test_networks:
   extends: .test
   script: python3.7 -m pytest tests/test_networks.py --capture=no
+
+test_iso_gcn:
+  extends: .test
+  script: python3.7 -m pytest tests/test_iso_gcn.py --capture=no
 
 test_optimize:
   extends: .test

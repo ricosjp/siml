@@ -107,6 +107,12 @@ class Inferer(trainer.Trainer):
                         or isinstance(preprocessed_data_directory, set):
                     input_directories = preprocessed_data_directory
 
+            if isinstance(self.setting.trainer.input_names, dict):
+                input_names = []
+                for value in self.setting.trainer.input_names.values():
+                    input_names = input_names + value
+            else:
+                input_names = self.setting.trainer.input_names
             dict_dir_x = self._load_data(
                 self.setting.trainer.input_names, input_directories,
                 return_dict=True, supports=self.setting.trainer.support_inputs)
@@ -389,16 +395,22 @@ class Inferer(trainer.Trainer):
 
         if accomodate_length:
             x = np.concatenate([x[:accomodate_length], x])
-        shape = x.shape
-        if len(shape) == 2:
-            original_shapes = [shape[:1]]
-        elif len(shape) == 3:
-            original_shapes = [shape[:2]]
+
+        if self.setting.trainer.time_series:
+            shape_length = 2
         else:
-            raise ValueError(f"Unexpected x shape: {shape}")
-        x = torch.from_numpy(x)
+            shape_length = 1
+        if isinstance(x, dict):
+            shape = list(x.values())[0].shape
+            original_shapes = {
+                key: [value.shape[:shape_length]] for key, value in x.items()}
+        else:
+            shape = x.shape
+            original_shapes = [shape[:shape_length]]
 
         # Inference
+        if isinstance(x, np.ndarray):
+            x = torch.from_numpy(x)
         self.model.eval()
         with torch.no_grad():
             start_time = time.time()
@@ -411,14 +423,39 @@ class Inferer(trainer.Trainer):
             inferred_y = inferred_y[accomodate_length:]
             x = x[accomodate_length:]
 
+        if isinstance(x, dict):
+            x = {key: value.numpy() for key, value in x.items()}
+        else:
+            x = x.numpy()
+        if isinstance(inferred_y, dict):
+            np_inferred_y = {
+                key: value.numpy() for key, value in inferred_y.items()}
+        else:
+            np_inferred_y = inferred_y.numpy()
+
         dict_var_x = self._separate_data(
-            x.numpy(), self.setting.trainer.inputs)
+            x, self.setting.trainer.inputs)
         dict_var_inferred_y = self._separate_data(
-            inferred_y.numpy(), self.setting.trainer.outputs)
+            np_inferred_y, self.setting.trainer.outputs)
         if answer_y is not None:
+            if isinstance(answer_y, np.ndarray):
+                np_answer_y = answer_y
+                answer_y = torch.from_numpy(answer_y)
+            else:
+                if isinstance(answer_y, dict):
+                    np_answer_y = {
+                        key: value.numpy() for key, value in answer_y.items()}
+                else:
+                    np_answer_y = answer_y.numpy()
+
             dict_var_answer_y = self._separate_data(
-                answer_y, self.setting.trainer.outputs)
-            dict_var_x.update(dict_var_answer_y)
+                np_answer_y, self.setting.trainer.outputs)
+            if isinstance(list(dict_var_x.values())[0], dict) \
+                    and not isinstance(
+                        list(dict_var_answer_y.values())[0], dict):
+                dict_var_x.update({'t': dict_var_answer_y})
+            else:
+                dict_var_x.update(dict_var_answer_y)
 
         # Postprocess
         inversed_dict_x, inversed_dict_y = postprocessor.postprocess(
@@ -437,7 +474,6 @@ class Inferer(trainer.Trainer):
         # Compute loss
         if answer_y is not None:
             with torch.no_grad():
-                answer_y = torch.from_numpy(answer_y)
                 loss = self.loss(inferred_y, answer_y).numpy()
         else:
             # Answer data does not exist
@@ -522,11 +558,15 @@ class Inferer(trainer.Trainer):
     def _load_data(
             self, variable_names, directories, *,
             return_dict=False, supports=None, allow_missing=False):
+        if isinstance(variable_names, dict):
+            first_variable_name = list(variable_names.values())[0][0]
+        else:
+            first_variable_name = variable_names[0]
 
         data_directories = []
         for directory in directories:
             data_directories += util.collect_data_directories(
-                directory, required_file_names=[f"{variable_names[0]}.npy"])
+                directory, required_file_names=[f"{first_variable_name}.npy"])
         data_directories = np.unique(data_directories)
 
         if len(data_directories) == 0:
@@ -538,11 +578,13 @@ class Inferer(trainer.Trainer):
         if supports is None:
             supports = []
 
+        dataset = datasets.BaseDataset(
+            variable_names, [],
+            [], supports=supports, allow_no_data=True)
         data = [
-            util.concatenate_variable([
-                util.load_variable(data_directory, variable_name)
-                for variable_name in variable_names])
-            for data_directory in data_directories]
+            dataset._load_from_names(
+                data_directory, variable_names) for data_directory
+            in data_directories]
         support_data = [
             [
                 util.load_variable(data_directory, support)
@@ -573,3 +615,21 @@ class Inferer(trainer.Trainer):
                     in zip(data_directories, data)}
         else:
             return data, support_data
+
+    def _separate_data(self, data, descriptions, *, axis=-1):
+        if isinstance(data, dict):
+            return {
+                key:
+                self._separate_data(data[key], descriptions[key], axis=axis)
+                for key in data.keys()}
+
+        data_dict = {}
+        index = 0
+        data = np.swapaxes(data, 0, axis)
+        for description in descriptions:
+            dim = description.get('dim', 1)
+            data_dict.update({
+                description['name']:
+                np.swapaxes(data[index:index+dim], 0, axis)})
+            index += dim
+        return data_dict

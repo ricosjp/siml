@@ -72,11 +72,11 @@ class BaseDataset(torch.utils.data.Dataset):
 
     def _load_from_names(self, data_directory, variable_names):
         if isinstance(variable_names, dict):
-            return {
+            return DataDict({
                 key: torch.from_numpy(util.concatenate_variable([
                     util.load_variable(data_directory, variable_name)
                     for variable_name in value]))
-                for key, value in variable_names.items()}
+                for key, value in variable_names.items()})
         elif isinstance(variable_names, list):
             return torch.from_numpy(util.concatenate_variable([
                 util.load_variable(data_directory, variable_name)
@@ -153,107 +153,163 @@ class OnMemoryDataset(BaseDataset):
         return self.data[i]
 
 
-def collate_fn_with_support(batch):
-    x = concatenate_sequence(batch, 'x')
-    t = concatenate_sequence(batch, 't')
-    padded_supports = concatenate_sparse_sequence(batch, 'supports')
+class DataDict(dict):
 
-    original_shapes = np.array(
-        [[b['x'].shape[0]] for b in batch])
-    return {
-        'x': x, 't': t, 'supports': padded_supports,
-        'original_shapes': original_shapes}
+    @property
+    def device(self):
+        devices = [v.device for v in self.values()]
+        return devices[0]
 
 
-def collate_fn_time_with_support(batch):
-    x = pad_time_dense_sequence(batch, 'x')
-    t = pad_time_dense_sequence(batch, 't')
-    padded_supports = concatenate_sparse_sequence(batch, 'supports')
+class CollateFunctionGenerator():
 
-    original_shapes = np.array(
-        [[b['x'].shape[0], b['x'].shape[-2]] for b in batch])
-    return {
-        'x': x, 't': t, 'supports': padded_supports,
-        'original_shapes': original_shapes}
+    def __init__(
+            self, *, time_series=False, dict_input=False, dict_output=False,
+            use_support=False, element_wise=False):
 
+        if time_series:
+            self.shape_length = 2
+        else:
+            self.shape_length = 1
 
-def collate_fn_without_support(batch):
-    x = concatenate_sequence(batch, 'x')
-    t = concatenate_sequence(batch, 't')
+        self.convert_input_dense = self._determine_convert_dense(
+            time_series, dict_input, element_wise)
+        self.convert_output_dense = self._determine_convert_dense(
+            time_series, dict_output, element_wise)
 
-    if isinstance(batch[0]['x'], dict):
-        original_shapes = np.array([
-            {key: [v.shape[0] for v in value] for key, value in b['x'].items()}
-            for b in batch])
-    else:
-        original_shapes = np.array(
-            [[b['x'].shape[0]] for b in batch])
+        if dict_input:
+            self.convert_input_tensor = self._convert_dict_tensor
+        else:
+            self.convert_input_tensor = convert_tensor
+        if dict_output:
+            self.convert_output_tensor = self._convert_dict_tensor
+        else:
+            self.convert_output_tensor = convert_tensor
 
-    return {'x': x, 't': t, 'original_shapes': original_shapes}
+        if use_support:
+            self.convert_sparse = self._concatenate_sparse_sequence
+            self.prepare_batch = self._prepare_batch_with_support
+        else:
+            self.convert_sparse = self._return_none
+            self.prepare_batch = self._prepare_batch_without_support
 
+        if element_wise:
+            self.extract_original_shapes = self._return_none
+        else:
+            if dict_input:
+                self.extract_original_shapes \
+                    = self._extract_original_shapes_from_dict
+            else:
+                self.extract_original_shapes \
+                    = self._extract_original_shapes_from_list
 
-def collate_fn_time_without_support(batch):
-    x = pad_time_dense_sequence(batch, 'x')
-    t = pad_time_dense_sequence(batch, 't')
+        return
 
-    original_shapes = np.array(
-        [[b['x'].shape[0], b['x'].shape[-2]] for b in batch])
-    return {
-        'x': x, 't': t, 'original_shapes': original_shapes}
+    def _determine_convert_dense(self, time_series, dict_input, element_wise):
+        if time_series:
+            if dict_input:
+                return self._concatenate_sequence_dict
+            else:
+                if element_wise:
+                    return self._stack_sequence
+                else:
+                    return self._pad_time_dense_sequence
+        else:
+            if dict_input:
+                return self._concatenate_sequence_dict
+            else:
+                if element_wise:
+                    return self._stack_sequence
+                else:
+                    return self._concatenate_sequence_list
 
+    def _pad_time_dense_sequence(self, batch, key):
+        data = [b[key] for b in batch]
 
-def concatenate_sequence(batch, key):
-    if isinstance(batch[0][key], dict):
+        max_time_lengths = np.max([d.shape[0] for d in data])
+        return torch.cat(
+            [self._pad_time_direction(d, max_time_lengths) for d in data],
+            axis=1)
+
+    def _pad_time_direction(self, data, time_length):
+        if len(data) == time_length:
+            return data
+        remaining_length = time_length - len(data)
+        zeros = torch.zeros((remaining_length, *data.shape[1:]))
+        padded_data = torch.cat([data, zeros])
+        return padded_data
+
+    def _stack_sequence(self, batch, key):
+        return torch.stack([b[key] for b in batch])
+
+    def _concatenate_sequence_list(self, batch, key):
+        return torch.cat([b[key] for b in batch])
+
+    def _concatenate_sequence_dict(self, batch, key):
+        keys = batch[0][key].keys()
         return {
             dict_key:
             torch.cat([b[key][dict_key] for b in batch])
-            for dict_key in batch[0][key].keys()}
-    else:
-        return torch.cat([b[key] for b in batch])
+            for dict_key in keys}
 
+    def _return_none(self, *args, **kwargs):
+        return None
 
-def collate_fn_element_wise(batch):
-    x = stack_sequence(batch, 'x')
-    t = stack_sequence(batch, 't')
-    return {'x': x, 't': t, 'original_shapes': None}
+    def _extract_original_shapes_from_dict(self, batch):
+        keys = batch[0]['x'].keys()
+        return {
+            dict_key:
+            np.array([
+                list(b['x'][dict_key].shape[:self.shape_length])
+                for b in batch])
+            for dict_key in keys}
 
+    def _extract_original_shapes_from_list(self, batch):
+        return np.array([b['x'].shape[:self.shape_length] for b in batch])
 
-def stack_sequence(batch, key):
-    return torch.stack([b[key] for b in batch])
+    def _concatenate_sparse_sequence(self, batch, key):
+        sparse_infos = self._pad_sparse_sequence(batch, key)
+        n_sparse_features = len(sparse_infos[0])
+        return [
+            merge_sparse_tensors(
+                [s[i] for s in sparse_infos], return_coo=False)
+            for i in range(n_sparse_features)]
 
+    def _pad_sparse_sequence(self, batch, key, length=None):
+        return [[pad_sparse(s, length) for s in b[key]] for b in batch]
 
-def pad_dense_sequence(batch, key):
-    return torch.nn.utils.rnn.pad_sequence(
-        [b[key] for b in batch], batch_first=True)
+    def __call__(self, batch):
+        x = self.convert_input_dense(batch, 'x')
+        t = self.convert_output_dense(batch, 't')
+        supports = self.convert_sparse(batch, 'supports')
+        original_shapes = self.extract_original_shapes(batch)
+        return {
+            'x': x, 't': t, 'supports': supports,
+            'original_shapes': original_shapes}
 
+    def _prepare_batch_without_support(
+            self, batch, device=None, output_device=None, non_blocking=False):
+        return {
+            'x': self.convert_input_tensor(
+                batch['x'], device=device, non_blocking=non_blocking),
+            'original_shapes': batch['original_shapes'],
+        }, self.convert_output_tensor(
+            batch['t'], device=output_device, non_blocking=non_blocking)
 
-def pad_time_dense_sequence(batch, key):
-    data = [b[key] for b in batch]
+    def _prepare_batch_with_support(
+            self, batch, device=None, output_device=None, non_blocking=False):
+        return {
+            'x': self.convert_input_tensor(
+                batch['x'], device=device, non_blocking=non_blocking),
+            'supports': convert_sparse_info(
+                batch['supports'], device=device, non_blocking=non_blocking),
+            'original_shapes': batch['original_shapes'],
+        }, self.convert_output_tensor(
+            batch['t'], device=output_device, non_blocking=non_blocking)
 
-    max_time_lengths = np.max([d.shape[0] for d in data])
-    return torch.cat([
-        pad_time_direction(d, max_time_lengths) for d in data], axis=1)
-
-
-def pad_time_direction(data, time_length):
-    if len(data) == time_length:
-        return data
-    remaining_length = time_length - len(data)
-    zeros = torch.zeros((remaining_length, *data.shape[1:]))
-    padded_data = torch.cat([data, zeros])
-    return padded_data
-
-
-def concatenate_sparse_sequence(batch, key):
-    sparse_infos = pad_sparse_sequence(batch, key)
-    n_sparse_features = len(sparse_infos[0])
-    return [
-        merge_sparse_tensors([s[i] for s in sparse_infos], return_coo=False)
-        for i in range(n_sparse_features)]
-
-
-def pad_sparse_sequence(batch, key, length=None):
-    return [[pad_sparse(s, length) for s in b[key]] for b in batch]
+    def _convert_dict_tensor(self, dict_tensor, device, non_blocking):
+        return DataDict({
+            k: convert_tensor(v) for k, v in dict_tensor.items()})
 
 
 def pad_sparse(sparse, length=None):
@@ -283,18 +339,6 @@ def pad_sparse(sparse, length=None):
     return {
         'row': row, 'col': col, 'values': values,
         'size': torch.Size(shape)}
-
-
-def prepare_batch_with_support(
-        batch, device=None, output_device=None, non_blocking=False):
-    return {
-        'x': convert_tensor(
-            batch['x'], device=device, non_blocking=non_blocking),
-        'supports': convert_sparse_info(
-            batch['supports'], device=device, non_blocking=non_blocking),
-        'original_shapes': batch['original_shapes'],
-    }, convert_tensor(
-        batch['t'], device=output_device, non_blocking=non_blocking)
 
 
 def convert_sparse_info(sparse_info, device=None, non_blocking=False):
@@ -400,13 +444,3 @@ def merge_sparse_tensors(stripped_sparse_info, *, return_coo=True):
         return {
             'row': merged_rows, 'col': merged_cols, 'values': values,
             'size': shape}
-
-
-def prepare_batch_without_support(
-        batch, device=None, output_device=None, non_blocking=False):
-    return {
-        'x': convert_tensor(
-            batch['x'], device=device, non_blocking=non_blocking),
-        'original_shapes': batch['original_shapes'],
-    }, convert_tensor(
-        batch['t'], device=output_device, non_blocking=non_blocking)

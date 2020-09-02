@@ -1,0 +1,164 @@
+data:
+  train:
+    - tests/data/rotation_thermal_stress/preprocessed
+  validation:
+    - tests/data/rotation_thermal_stress/preprocessed
+  develop:
+    - tests/data/rotation_thermal_stress/preprocessed
+trainer:
+  lazy: false
+  num_workers: 0
+  output_directory: tests/data/rotation_thermal_stress/models/iso_gcn_thermal
+  split_ratio:
+    validation: 0.1
+    test: .0
+  inputs:
+    rank0:
+      - name: initial_temperature
+        dim: 1
+      - name: nodal_mean_volume
+        dim: 1
+      - name: nodal_concentrated_volume
+        dim: 1
+    rank2:
+      - name: nodal_strain_mat
+  support_inputs:
+    - nodal_grad_x
+    - nodal_grad_y
+    - nodal_grad_z
+  outputs:
+    out_rank0:
+      - name: cnt_temperature
+        dim: 1
+    out_rank2:
+      - name: global_lte_mat
+  prune: true
+  batch_size: 2
+  n_epoch: 100
+  log_trigger_epoch: 10
+  stop_trigger_epoch: 10
+  seed: 0
+model:
+  blocks:
+    - name: MLP_RANK0
+      type: mlp
+      is_first: true
+      input_keys:
+        - rank0
+      destinations:
+        - CONCATENATOR
+      nodes:
+        - -1
+        - 10
+      activations:
+        - tanh
+    - name: ISO_GCN_TENSOR
+      type: iso_gcn
+      is_first: true
+      input_keys:
+        - rank2
+      destinations:
+        - MLP_RANK2
+      residual: false
+      activation_after_residual: false
+      support_input_indices:
+        - 0
+        - 1
+        - 2
+      nodes:
+        - -1
+        - 10
+      activations:
+        - tanh
+      optional:
+        propagations:
+          - contraction
+      coeff: .1
+    - name: MLP_RANK2
+      type: mlp
+      destinations:
+        - CONCATENATOR
+      nodes:
+        - -1
+        - 10
+      activations:
+        - tanh
+    - name: CONCATENATOR
+      type: concatenator
+      destinations:
+        - ISO_GCN_LAPLACE
+    - name: ISO_GCN_LAPLACE
+      type: iso_gcn
+      destinations:
+        - OUT_MLP
+      residual: true
+      activation_after_residual: false
+      support_input_indices:
+        - 0
+        - 1
+        - 2
+      nodes:
+        - -1
+        - 20
+      activations:
+        - tanh
+      optional:
+        propagations:
+          - convolution
+          - contraction
+      coeff: .1
+    - name: OUT_MLP
+      type: mlp
+      destinations:
+        - ISO_GCN_TO_TENSOR
+        - OUT_MLP_RANK0
+      nodes:
+        - -1
+        - 10
+        - 1
+      activations:
+        - tanh
+        - tanh
+    - name: OUT_MLP_RANK0
+      type: mlp
+      is_last: true
+      output_key: out_rank0
+      nodes:
+        - -1
+        - 10
+        - -1
+      activations:
+        - tanh
+        - identity
+    - name: ISO_GCN_TO_TENSOR
+      type: iso_gcn
+      destinations:
+        - MEAN
+      residual: false
+      activation_after_residual: false
+      support_input_indices:
+        - 0
+        - 1
+        - 2
+      nodes:
+        - -1
+        - 1
+      activations:
+        - identity
+      optional:
+        propagations:
+          - convolution
+          - convolution
+        ah_w: false
+        create_subchain: false
+        symmetric: true
+      coeff: .1
+    - name: MEAN
+      type: activation
+      is_last: true
+      output_key: out_rank2
+      residual: false
+      activations:
+        - mean
+      optional:
+        dict_key: rank2

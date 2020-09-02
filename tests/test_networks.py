@@ -285,7 +285,7 @@ class TestNetwork(unittest.TestCase):
             shutil.rmtree(main_setting.trainer.output_directory)
         tr = trainer.Trainer(main_setting)
         loss = tr.train()
-        self.assertLess(loss, 1e-1)
+        self.assertLess(loss, 3e-1)
 
         ir = inferer.Inferer(main_setting)
         results = ir.infer(
@@ -294,7 +294,7 @@ class TestNetwork(unittest.TestCase):
             / 'test',
             converter_parameters_pkl=main_setting.data.preprocessed_root
             / 'preprocessors.pkl')
-        self.assertLess(results[0]['loss'], 1e-1)
+        self.assertLess(results[0]['loss'], 3e-1)
 
     def test_grad_gcn(self):
         main_setting = setting.MainSetting.read_settings_yaml(
@@ -469,37 +469,3 @@ class TestNetwork(unittest.TestCase):
             torch.from_numpy(e), torch.from_numpy(epsilon))
         np.testing.assert_almost_equal(
             sigma.detach().numpy(), e * epsilon)
-
-    def test_iso_gcn_rank0_rank0(self):
-        main_setting = setting.MainSetting.read_settings_yaml(
-            Path('tests/data/rotation/iso_gcn_rank0_rank0.yml'))
-        tr = trainer.Trainer(main_setting)
-        if tr.setting.trainer.output_directory.exists():
-            shutil.rmtree(tr.setting.trainer.output_directory)
-        loss = tr.train()
-        np.testing.assert_array_less(loss, 1.)
-        self.assertEqual(len(tr.model.dict_block['ISO_GCN1'].subchains), 1)
-        self.assertEqual(len(tr.model.dict_block['ISO_GCN2'].subchains), 1)
-
-        # Confirm results does not change under rigid body transformation
-        ir = inferer.Inferer(main_setting)
-        inference_outpout_directory = \
-            main_setting.trainer.output_directory / 'inferred'
-        if inference_outpout_directory.exists():
-            shutil.rmtree(inference_outpout_directory)
-        results = ir.infer(
-            model=main_setting.trainer.output_directory,
-            preprocessed_data_directory=[
-                Path(
-                    'tests/data/rotation/preprocessed/cube/clscale1.0/'
-                    'original'),
-                Path(
-                    'tests/data/rotation/preprocessed/cube/clscale1.0/'
-                    'rotated')],
-            converter_parameters_pkl=Path(
-                'tests/data/rotation/preprocessed/preprocessors.pkl'),
-            output_directory=inference_outpout_directory,
-            overwrite=True)
-        np.testing.assert_almost_equal(
-            results[0]['dict_y']['t_100'],
-            results[1]['dict_y']['t_100'], decimal=5)

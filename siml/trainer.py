@@ -219,17 +219,6 @@ class Trainer():
         torch.manual_seed(seed)
         return
 
-    def _separate_data(self, data, descriptions, *, axis=-1):
-        data_dict = {}
-        index = 0
-        data = np.swapaxes(data, 0, axis)
-        for description in descriptions:
-            data_dict.update({
-                description['name']:
-                np.swapaxes(data[index:index+description['dim']], 0, axis)})
-            index += description['dim']
-        return data_dict
-
     def output_stats(self):
         dict_stats = {
             name: self._calculate_stats(parameter)
@@ -413,22 +402,14 @@ class Trainer():
             self.setting.data.validation = validation
             self.setting.data.test = test
 
-        if self.setting.trainer.support_inputs:
-            if self.setting.trainer.time_series:
-                self.collate_fn = datasets.collate_fn_time_with_support
-            else:
-                self.collate_fn = datasets.collate_fn_with_support
-            self.prepare_batch = datasets.prepare_batch_with_support
-        else:
-            if self.element_wise:
-                self.collate_fn = datasets.collate_fn_element_wise
-                self.prepare_batch = datasets.prepare_batch_without_support
-            else:
-                if self.setting.trainer.time_series:
-                    self.collate_fn = datasets.collate_fn_time_without_support
-                else:
-                    self.collate_fn = datasets.collate_fn_without_support
-                self.prepare_batch = datasets.prepare_batch_without_support
+        input_is_dict = isinstance(self.setting.trainer.inputs, dict)
+        output_is_dict = isinstance(self.setting.trainer.outputs, dict)
+        self.collate_fn = datasets.CollateFunctionGenerator(
+            time_series=self.setting.trainer.time_series,
+            dict_input=input_is_dict, dict_output=output_is_dict,
+            use_support=self.setting.trainer.support_inputs,
+            element_wise=self.element_wise)
+        self.prepare_batch = self.collate_fn.prepare_batch
 
         if self.setting.trainer.lazy:
             self.train_loader, self.validation_loader, self.test_loader = \
