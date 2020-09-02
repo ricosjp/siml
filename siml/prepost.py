@@ -724,7 +724,8 @@ class Converter:
             write_simulation_base=None, read_simulation_type='fistr',
             write_simulation_type='fistr', skip_femio=False,
             load_function=None, convert_to_order1=False,
-            data_addition_function=None, required_file_names=[]):
+            data_addition_function=None, required_file_names=[],
+            perform_inverse=True):
         """Postprocess data with inversely converting them.
 
         Parameters
@@ -767,6 +768,27 @@ class Converter:
             inversed_dict_data_y: dict
                 Inversed output data.
         """
+        if not perform_inverse:
+            print('Postprocess skipped')
+            if isinstance(list(dict_data_x.values())[0], dict):
+                return_dict_data_x = {
+                    variable_name:
+                    data
+                    for value in dict_data_x.values()
+                    for variable_name, data in value.items()}
+            else:
+                return_dict_data_x = dict_data_x
+
+            if isinstance(list(dict_data_y.values())[0], dict):
+                return_dict_data_y = {
+                    variable_name:
+                    data
+                    for value in dict_data_y.values()
+                    for variable_name, data in value.items()}
+            else:
+                return_dict_data_y = dict_data_y
+            return return_dict_data_x, return_dict_data_y
+
         if isinstance(list(dict_data_x.values())[0], dict):
             inversed_dict_data_x = {
                 variable_name:

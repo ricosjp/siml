@@ -57,16 +57,16 @@ preprocess:
   global_lte_array:
     method: standardize
   elemental_lte_mat:
-    method: standardize
+    method: std_scale
   nodal_lte_mat:
-    method: standardize
+    method: std_scale
   global_lte_mat:
-    method: standardize
+    method: std_scale
   elemental_strain_array:
     method: standardize
   nodal_strain_array:
     method: standardize
   elemental_strain_mat:
-    method: standardize
+    method: std_scale
   nodal_strain_mat:
-    method: standardize
+    method: std_scale
