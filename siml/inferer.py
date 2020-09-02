@@ -459,6 +459,8 @@ class Inferer(trainer.Trainer):
                 dict_var_x.update(dict_var_answer_y)
 
         # Postprocess
+        if not hasattr(self, 'perform_postprocess'):
+            self.perform_postprocess = True
         inversed_dict_x, inversed_dict_y = postprocessor.postprocess(
             dict_var_x, dict_var_inferred_y,
             output_directory=output_directory, overwrite=overwrite,
