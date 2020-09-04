@@ -77,6 +77,11 @@ class TestTrainer(unittest.TestCase):
         loss = tr.train()
         np.testing.assert_array_less(loss, 50.)
 
+        # Confirm input feature dimension is as expected
+        self.assertEqual(
+            tr.model.dict_block['ResGCN1'].subchains[0][0].in_features, 6)
+        self.assertEqual(tr.model.dict_block['MLP'].linears[0].in_features, 1)
+
     def test_train_element_wise(self):
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/linear/linear_element_wise.yml'))
