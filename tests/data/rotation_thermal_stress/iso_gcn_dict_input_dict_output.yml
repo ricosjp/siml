@@ -153,7 +153,7 @@ model:
         - 2
       nodes:
         - -1
-        - 1
+        - 10
       activations:
         - identity
       optional:
@@ -161,21 +161,26 @@ model:
           - convolution
           - tensor_product
         ah_w: false
-        create_subchain: false
+        bias: false
         symmetric: true
       coeff: .1
     - name: REDUCER
       type: reducer
-      # is_last: true
-      # output_key: out_rank2
       destinations:
         - MEAN
     - name: MEAN
       type: activation
-      is_last: true
-      output_key: out_rank2
-      residual: false
+      destinations:
+        - OUT_LINEAR
       activations:
         - mean
       optional:
         dict_key: rank2
+    - name: OUT_LINEAR
+      type: mlp
+      is_last: true
+      nodes:
+        - -1
+        - -1
+      output_key: out_rank2
+      bias: false
