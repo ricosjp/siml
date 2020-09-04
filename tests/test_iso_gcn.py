@@ -41,9 +41,11 @@ class TestNetwork(unittest.TestCase):
             'symmetric': True})
         self.trial(
             x, rotation_matrix, h,
-            rotate=self.rotate_rank2, iso_gcn_=ig)
+            rotate=self.rotate_rank2, iso_gcn_=ig, check_symmetric=True)
 
-    def trial(self, x, rotation_matrix, h, *, rotate=None, iso_gcn_=None):
+    def trial(
+            self, x, rotation_matrix, h,
+            *, rotate=None, iso_gcn_=None, check_symmetric=False):
         g, g_eye, g_tilde = self.generate_gs(x)
         original_h_conv = self.conv(iso_gcn_, h, g_tilde)
 
@@ -57,6 +59,18 @@ class TestNetwork(unittest.TestCase):
 
         np.testing.assert_array_almost_equal(
             rotated_h_conv, original_rotated_h_conv)
+
+        if check_symmetric:
+            for i in range(h.shape[-1]):
+                np.testing.assert_array_almost_equal(
+                    original_rotated_h_conv[:, 0, 1, i],
+                    original_rotated_h_conv[:, 1, 0, i])
+                np.testing.assert_array_almost_equal(
+                    original_rotated_h_conv[:, 0, 2, i],
+                    original_rotated_h_conv[:, 2, 0, i])
+                np.testing.assert_array_almost_equal(
+                    original_rotated_h_conv[:, 1, 2, i],
+                    original_rotated_h_conv[:, 2, 1, i])
         return
 
     def test_convolution_rank0_rank2_real_data(self):
