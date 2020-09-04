@@ -66,7 +66,7 @@ def conversion_function_heat_time_series(fem_data, raw_directory=None):
         'thermal_conductivity')
     elemental_conductivity = np.array([a[0][:, 0] for a in raw_conductivity])
     nodal_conductivity = fem_data.convert_elemental2nodal(
-        elemental_conductivity, mode='effective')
+        elemental_conductivity, mode='mean')
     global_conductivity = np.mean(
         elemental_conductivity, axis=0, keepdims=True)
     dict_data = {
@@ -111,7 +111,7 @@ def conversion_function_rotation_thermal_stress(fem_data, raw_directory=None):
     elemental_lte_array = fem_data.elemental_data.get_attribute_data(
         'linear_thermal_expansion_coefficient_full')
     nodal_lte_array = fem_data.convert_elemental2nodal(
-        elemental_lte_array, mode='effective')
+        elemental_lte_array, mode='mean')
     global_lte_array = np.mean(
         elemental_lte_array, axis=0, keepdims=True)
 
@@ -183,6 +183,7 @@ def preprocess_rotation_thermal_stress():
 
     raw_converter = prepost.RawConverter(
         main_setting, recursive=True, force_renew=True,
+        to_first_order=True,
         conversion_function=conversion_function_rotation_thermal_stress)
     raw_converter.convert()
 
