@@ -193,64 +193,40 @@ class Network(torch.nn.Module):
                     block_setting.input_selection])
                 last_node = first_node - 1
 
-            elif self.DICT_BLOCKS[block_type].trainable:
-                # Trainable layers
-                if len(predecessors) != 1:
-                    raise ValueError(
-                        f"{graph_node} has {len(predecessors)} "
-                        f"predecessors: {predecessors}")
-                if block_setting.is_first:
-                    first_node = self.trainer_setting.input_length
-                else:
-                    max_first_node = self.dict_block_setting[
-                        tuple(predecessors)[0]].nodes[-1]
-                    first_node = len(np.arange(max_first_node)[
-                        block_setting.input_selection])
-                last_node = self.trainer_setting.output_length
-
             else:
-                # Non trainable other layers
                 if len(predecessors) != 1:
                     raise ValueError(
                         f"{graph_node} has {len(predecessors)} "
                         f"predecessors: {predecessors}")
                 if block_setting.is_first:
-                    if block_setting.input_keys is None:
-                        max_first_node = self.trainer_setting.input_length
-                    else:
+                    if isinstance(self.trainer_setting.input_length, dict):
+                        input_keys = block_setting.input_keys
+                        if input_keys is None:
+                            raise ValueError(
+                                'Input is dict. Plese specify input_keys to '
+                                f"the first nodes: {block_setting}")
                         input_length = self.trainer_setting.input_length
                         max_first_node = int(
                             np.sum([
                                 input_length[input_key] for input_key
-                                in block_setting.input_keys]))
+                                in input_keys]))
+                    else:
+                        max_first_node = self.trainer_setting.input_length
                 else:
                     max_first_node = self.dict_block_setting[
                         tuple(predecessors)[0]].nodes[-1]
                 first_node = len(np.arange(max_first_node)[
                     block_setting.input_selection])
-                last_node = first_node
+
+                if self.DICT_BLOCKS[block_type].trainable:
+                    last_node = self.trainer_setting.output_length
+                else:
+                    last_node = first_node
 
             if graph_node not in [
                     self.INPUT_LAYER_NAME, self.OUTPUT_LAYER_NAME] \
                     and block_setting.nodes[0] == -1:
-                input_keys = block_setting.input_keys
-                if input_keys is None:
-                    if isinstance(first_node, dict):
-                        raise ValueError(
-                            'Input is dict. Plese specify input_keys to the '
-                            "first nodes: {block_setting}")
-                    block_setting.nodes[0] = int(first_node)
-                else:
-                    if block_setting.is_first:
-                        input_length = self.trainer_setting.input_length
-                        block_setting.nodes[0] = int(
-                            np.sum([
-                                input_length[input_key] for input_key
-                                in input_keys]))
-                    else:
-                        raise ValueError(
-                            'Cannot put input_keys when is_first is False: '
-                            f"{block_setting}")
+                block_setting.nodes[0] = int(first_node)
 
             if graph_node not in [
                     self.INPUT_LAYER_NAME, self.OUTPUT_LAYER_NAME] \
