@@ -36,14 +36,16 @@ class TestNetwork(unittest.TestCase):
         h = np.random.rand(4, 2)
         rotation_matrix = self.generate_rotation_matrix()
         ig = self.generate_isogcn({
-            'propagations': ['convolution', 'convolution'],
+            'propagations': ['convolution', 'tensor_product'],
             'create_subchain': False,
             'symmetric': True})
         self.trial(
             x, rotation_matrix, h,
-            rotate=self.rotate_rank2, iso_gcn_=ig)
+            rotate=self.rotate_rank2, iso_gcn_=ig, check_symmetric=True)
 
-    def trial(self, x, rotation_matrix, h, *, rotate=None, iso_gcn_=None):
+    def trial(
+            self, x, rotation_matrix, h,
+            *, rotate=None, iso_gcn_=None, check_symmetric=False):
         g, g_eye, g_tilde = self.generate_gs(x)
         original_h_conv = self.conv(iso_gcn_, h, g_tilde)
 
@@ -57,6 +59,18 @@ class TestNetwork(unittest.TestCase):
 
         np.testing.assert_array_almost_equal(
             rotated_h_conv, original_rotated_h_conv)
+
+        if check_symmetric:
+            for i in range(h.shape[-1]):
+                np.testing.assert_array_almost_equal(
+                    original_rotated_h_conv[:, 0, 1, i],
+                    original_rotated_h_conv[:, 1, 0, i])
+                np.testing.assert_array_almost_equal(
+                    original_rotated_h_conv[:, 0, 2, i],
+                    original_rotated_h_conv[:, 2, 0, i])
+                np.testing.assert_array_almost_equal(
+                    original_rotated_h_conv[:, 1, 2, i],
+                    original_rotated_h_conv[:, 2, 1, i])
         return
 
     def test_convolution_rank0_rank2_real_data(self):
@@ -66,9 +80,9 @@ class TestNetwork(unittest.TestCase):
             'tests/data/rotation_thermal_stress/preprocessed/cube/rotated')
         rotation_matrix = np.array([[1, 0, 0], [0, 0, 1], [0, -1, 0]])
         ig = self.generate_isogcn({
-            'propagations': ['convolution', 'convolution'],
+            'propagations': ['convolution', 'tensor_product'],
             'create_subchain': False,
-            'symmetric': True})
+            'symmetric': False})
         h = np.load(original_path / 'initial_temperature.npy')
 
         # Use dense
@@ -83,6 +97,19 @@ class TestNetwork(unittest.TestCase):
         self.print_vec(rotated_conv - rotated_original_conv, 'Diff', 10)
         np.testing.assert_array_almost_equal(
             rotated_conv, rotated_original_conv)
+
+        # Compare with hand written results
+        hess = np.einsum(
+            'ijp,jkq->ikpq',
+            original_genam[:10, :10], original_genam[:10, :10])
+        siml_conv = self.conv(ig, h[:10] / 100, original_genam[:10, :10])
+        handwritten_original_conv = np.einsum(
+            'ijpq,jf->ipqf', hess, h[:10] / 100)
+        self.print_vec(siml_conv, 'IsoGCN', 5)
+        self.print_vec(handwritten_original_conv, 'einsum', 5)
+        self.print_vec(siml_conv - handwritten_original_conv, 'Diff', 5)
+        np.testing.assert_almost_equal(
+            siml_conv, handwritten_original_conv, decimal=6)
 
         # Use sparse
         torch_original_genam = self.load_genam(original_path, mode='torch')

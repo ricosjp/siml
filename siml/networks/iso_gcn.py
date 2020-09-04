@@ -102,8 +102,8 @@ class IsoGCN(abstract_gcn.AbstractGCN):
                 return self._convolution_without_merge
             elif str_propagation == 'contraction':
                 return self._contraction_without_merge
-            # elif str_propagation == 'tensor_product':
-            #     return self._tensor_product_without_merge
+            elif str_propagation == 'tensor_product':
+                return self._tensor_product_without_merge
             else:
                 raise ValueError(
                     f"Unexpected propagation method: {str_propagation}")
@@ -117,8 +117,8 @@ class IsoGCN(abstract_gcn.AbstractGCN):
                 f"    n_vertex: {n_vertex}")
         return dim
 
-    def _convolution_without_merge(self, x, supports, top=True):
-        """Calculate convolution G \\ast x.
+    def _tensor_product_without_merge(self, x, supports):
+        """Calculate tensor product G \\otimes x.
 
         Parameters
         ----------
@@ -140,17 +140,41 @@ class IsoGCN(abstract_gcn.AbstractGCN):
         dim = len(supports)
         tensor_rank = len(shape) - 2
         if tensor_rank == 0:
-            h = torch.stack([support.mm(x) for support in supports], axis=1)
+            h = self._convolution_without_merge(x, supports)
         elif tensor_rank > 0:
             h = torch.stack([
-                self._convolution_without_merge(
-                    x[:, i_dim], supports, top=False)
-                for i_dim in range(dim)], dim=1)
-            if self.symmetric:
-                h = (h + einops.rearrange(
-                    h, 'element x1 x2 feature -> element x2 x1 feature')) / 2
+                self._convolution_without_merge(x[:, i_dim], supports)
+                for i_dim in range(dim)], dim=-2)
         else:
             raise ValueError(f"Tensor shape invalid: {shape}")
+
+        if self.symmetric:
+            h = (h + einops.rearrange(
+                h, 'element x1 x2 feature -> element x2 x1 feature')) / 2
+
+        return h
+
+    def _convolution_without_merge(self, x, supports, top=True):
+        """Calculate convolution G \\ast x.
+
+        Parameters
+        ----------
+        x: torch.Tensor
+            [n_vertex, n_feature]-shaped tensor.
+        supports: List[torch.Tensor]
+            List of [n_vertex, n_vertex]-shaped sparse tensor.
+
+        Returns
+        -------
+        y: torch.Tensor
+            [n_vertex, dim, n_feature]-shaped tensor.
+        """
+        shape = x.shape
+        tensor_rank = len(shape) - 2
+        if tensor_rank == 0:
+            h = torch.stack([support.mm(x) for support in supports], axis=-2)
+        else:
+            raise ValueError(f"Input tensor rank is not 0: {shape}")
 
         return h
 
@@ -185,9 +209,6 @@ class IsoGCN(abstract_gcn.AbstractGCN):
                 for i_dim in range(dim)]), dim=0)
         else:
             raise ValueError(f"Tensor rank is 0 (shape: {shape})")
-
-    def _tensor_product_without_merge(self, x, supports):
-        raise ValueError(x.shape)
 
     def _calculate_dim_with_merge(self, merged_support, n_vertex):
         dim, mod = divmod(merged_support.shape[0], n_vertex)

@@ -56,7 +56,7 @@ model:
       optional:
         propagations:
           - convolution
-          - convolution
+          - tensor_product
         ah_w: false
         create_subchain: false
         symmetric: true
