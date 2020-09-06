@@ -14,6 +14,16 @@ def main():
         'root_data_directory',
         type=pathlib.Path,
         help='Root of the data directory which contains thermal analysis')
+    parser.add_argument(
+        '-n', '--n-trial',
+        type=int,
+        default=2,
+        help='The number of trial [2]')
+    parser.add_argument(
+        '-f', '--file-basename',
+        type=str,
+        default='thermal',
+        help='Base name of output files [''thermal'']')
     args = parser.parse_args()
 
     original_data_paths = [
@@ -23,11 +33,13 @@ def main():
             recursive=True)]
 
     for original_data_path in original_data_paths:
-        transform_data(original_data_path, additional_trial=2)
+        transform_data(
+            original_data_path, additional_trial=args.n_trial,
+            basename=args.file_basename)
     return
 
 
-def transform_data(data_path, *, additional_trial=2):
+def transform_data(data_path, *, additional_trial=2, basename='thermal'):
     fem_data = femio.FEMData.read_directory('fistr', data_path, read_npy=False)
 
     # Simple rotation
@@ -42,7 +54,9 @@ def transform_data(data_path, *, additional_trial=2):
     translation_vector = np.array([0., 0., 0.])
     output_directory = data_path.parent / (
         data_path.name + '_transformed_mirror_xy')
-    process(fem_data, orthogonal_matrix, translation_vector, output_directory)
+    process(
+        fem_data, orthogonal_matrix, translation_vector, output_directory,
+        basename=basename)
 
     for i in range(additional_trial):
         orthogonal_matrix = generate_orthogonal_matrix()
@@ -50,13 +64,17 @@ def transform_data(data_path, *, additional_trial=2):
         output_directory = data_path.parent / (
             data_path.name + f"_transformed_{i}")
         process(
-            fem_data, orthogonal_matrix, translation_vector, output_directory)
+            fem_data, orthogonal_matrix, translation_vector, output_directory,
+            basename=basename)
     return
 
 
-def process(fem_data, orthogonal_matrix, translation_vector, output_directory):
+def process(
+        fem_data, orthogonal_matrix, translation_vector, output_directory,
+        basename='thermal'):
     _transform_data(
-        fem_data, orthogonal_matrix, translation_vector, output_directory)
+        fem_data, orthogonal_matrix, translation_vector, output_directory,
+        basename)
     np.savetxt(output_directory / 'orthogonal_matrix.txt', orthogonal_matrix)
     np.savetxt(
         output_directory / 'det.txt', np.linalg.det(orthogonal_matrix)[None])
@@ -129,14 +147,15 @@ def transform_tensor_array(fem_data, tensor_array, orthogonal_matrix):
     symmetric_mat = fem_data.convert_array2symmetric_matrix(
         tensor_array, from_engineering=True)
     transformed_mat = np.array([
-        orthogonal_matrix @ l @ orthogonal_matrix.T for l in symmetric_mat])
+        orthogonal_matrix @ m @ orthogonal_matrix.T for m in symmetric_mat])
     transformed_array = fem_data.convert_symmetric_matrix2array(
         transformed_mat, to_engineering=True)
     return transformed_array
 
 
 def _transform_data(
-        fem_data, orthogonal_matrix, translation_vector, output_directory):
+        fem_data, orthogonal_matrix, translation_vector, output_directory,
+        basename):
     shutil.rmtree(output_directory, ignore_errors=True)
 
     # Node
@@ -221,7 +240,7 @@ def _transform_data(
     new_fem_data.constraints['spring'] = fem_data.constraints['spring']
     new_fem_data.material_overwritten = False
 
-    new_fem_data.write('fistr', output_directory / 'mesh')
+    new_fem_data.write('fistr', output_directory / basename)
     return
 
 

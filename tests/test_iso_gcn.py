@@ -18,7 +18,7 @@ import siml.trainer as trainer
 PLOT = False
 
 
-class TestNetwork(unittest.TestCase):
+class TestIsoGCN(unittest.TestCase):
 
     def test_convolution_rank0_rank1(self):
         x = np.random.rand(4, 3)
