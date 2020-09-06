@@ -422,9 +422,9 @@ class Preprocessor:
                 chunksize=1)
 
         dict_preprocessor_settings = {}
-        for l in list_dict_preprocessor_setting:
-            if l is not None:
-                dict_preprocessor_settings.update(l)
+        for dict_preprocessor_setting in list_dict_preprocessor_setting:
+            if dict_preprocessor_setting is not None:
+                dict_preprocessor_settings.update(dict_preprocessor_setting)
         return dict_preprocessor_settings
 
     def merge_dict_preprocessor_setting_pkls(self, data_directory=None):
