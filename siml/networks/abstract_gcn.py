@@ -78,6 +78,7 @@ class AbstractGCN(siml_module.SimlModule):
     def _create_subsubchain(
             self, nodes, *,
             twice_input_nodes=False, square_weight=False, start_index=0):
+        bias = self.block_setting.bias
         nodes = nodes[start_index:]
         if twice_input_nodes:
             factor = 2
@@ -91,7 +92,8 @@ class AbstractGCN(siml_module.SimlModule):
                 (n1 * factor, n2) for n1, n2 in zip(nodes[:-1], nodes[1:])]
 
         return torch.nn.ModuleList([
-            torch.nn.Linear(*node_tuple) for node_tuple in node_tuples])
+            torch.nn.Linear(*node_tuple, bias=bias)
+            for node_tuple in node_tuples])
 
     def forward(self, x, supports, original_shapes=None):
         """Execute the NN's forward computation.
