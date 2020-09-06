@@ -198,6 +198,8 @@ class Inferer(trainer.Trainer):
                 model_file = None
             elif model.is_file():
                 model_file = model
+            else:
+                raise ValueError(f"Model does not exist: {model}")
         else:
             raise ValueError(
                 f"{model} is neither file, directory, nor buffer.")

@@ -1,3 +1,5 @@
+import argparse
+import glob
 import pathlib
 import shutil
 import subprocess
@@ -7,103 +9,177 @@ import numpy as np
 
 
 def main():
-    original_paths = [
-        pathlib.Path('cube/original'), pathlib.Path('cylinder/original')]
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        'root_data_directory',
+        type=pathlib.Path,
+        help='Root of the data directory which contains thermal analysis')
+    args = parser.parse_args()
 
-    for original_path in original_paths:
-        rotate_data(original_path, additional_trial=2)
+    original_data_paths = [
+        pathlib.Path(cnt_file).parent for cnt_file
+        in glob.glob(
+            str(args.root_data_directory / '**/thermal.cnt'),
+            recursive=True)]
+
+    for original_data_path in original_data_paths:
+        transform_data(original_data_path, additional_trial=2)
     return
 
 
-def rotate_data(data_path, *, additional_trial=2):
+def transform_data(data_path, *, additional_trial=2):
     fem_data = femio.FEMData.read_directory('fistr', data_path, read_npy=False)
 
-    rotation_matrix = np.array([[1, 0, 0], [0, 0, 1], [0, -1, 0]])
-    output_directory = data_path.parent / 'rotated'
-    process(fem_data, rotation_matrix, output_directory)
+    # Simple rotation
+    orthogonal_matrix = np.array([[1, 0, 0], [0, 0, 1], [0, -1, 0]])
+    translation_vector = np.array([0., 0., 0.])
+    output_directory = data_path.parent / (
+        data_path.name + '_transformed_rotation_yz')
+    process(fem_data, orthogonal_matrix, translation_vector, output_directory)
+
+    # Simple mirror
+    orthogonal_matrix = np.array([[1, 0, 0], [0, 1, 0], [0, 0, -1]])
+    translation_vector = np.array([0., 0., 0.])
+    output_directory = data_path.parent / (
+        data_path.name + '_transformed_mirror_xy')
+    process(fem_data, orthogonal_matrix, translation_vector, output_directory)
 
     for i in range(additional_trial):
-        rotation_matrix = generate_rotation_matrix()
-        output_directory = data_path.parent / f"rotated_{i}"
-        process(fem_data, rotation_matrix, output_directory)
+        orthogonal_matrix = generate_orthogonal_matrix()
+        translation_vector = (2 * np.random.rand(3) - 1.) * 10.
+        output_directory = data_path.parent / (
+            data_path.name + f"_transformed_{i}")
+        process(
+            fem_data, orthogonal_matrix, translation_vector, output_directory)
     return
 
 
-def process(fem_data, rotation_matrix, output_directory):
-    _rotate_data(fem_data, rotation_matrix, output_directory)
+def process(fem_data, orthogonal_matrix, translation_vector, output_directory):
+    _transform_data(
+        fem_data, orthogonal_matrix, translation_vector, output_directory)
+    np.savetxt(output_directory / 'orthogonal_matrix.txt', orthogonal_matrix)
+    np.savetxt(
+        output_directory / 'det.txt', np.linalg.det(orthogonal_matrix)[None])
+    np.savetxt(output_directory / 'translation_vector.txt', translation_vector)
     sp = subprocess.run(
         f"cd {output_directory} && fistr1", shell=True, check=True)
     print(sp)
-    validate_results(fem_data, output_directory, rotation_matrix)
-    np.savetxt(output_directory / 'matrix.txt', rotation_matrix)
+    validate_results(
+        fem_data, output_directory, orthogonal_matrix, translation_vector)
     return
 
 
-def generate_rotation_matrix():
+def generate_orthogonal_matrix():
     vec1 = normalize(np.random.rand(3)*2 - 1)
     vec2 = normalize(np.random.rand(3)*2 - 1)
     vec3 = normalize(np.cross(vec1, vec2))
     vec2 = np.cross(vec3, vec1)
-    return np.array([vec1, vec2, vec3])
+    return np.array([
+        vec1 * np.random.choice([-1, 1]),  # det = -1 or 1
+        vec2 * np.random.choice([-1, 1]),  # det = -1 or 1
+        vec3 * np.random.choice([-1, 1]),  # det = -1 or 1
+    ])
 
 
 def normalize(x):
     return x / np.linalg.norm(x)
 
 
-def validate_results(original_fem_data, output_directory, rotation_matrix):
+def validate_results(
+        original_fem_data, output_directory, orthogonal_matrix,
+        translation_vector):
     calculated_fem_data = femio.FEMData.read_directory(
         'fistr', output_directory, read_npy=False)
-    rotated_original_strain = rotate_tensor_array(
+    transformed_original_strain = transform_tensor_array(
         original_fem_data,
         original_fem_data.elemental_data.get_attribute_data(
-            'ElementalSTRAIN'), rotation_matrix)
+            'ElementalSTRAIN'), orthogonal_matrix)
     calculated_strain = calculated_fem_data.elemental_data.get_attribute_data(
         'ElementalSTRAIN')
     mean_rmse = np.mean((
-        rotated_original_strain - calculated_strain)**2)**.5
-    ref = np.mean(rotated_original_strain**2)**.5
+        transformed_original_strain - calculated_strain)**2)**.5
+    ref = np.mean(transformed_original_strain**2)**.5
+    relative_error_percent = mean_rmse / ref * 100
     print('========================')
     print(f"mean error: {mean_rmse}")
-    print(f"relative mean error: {mean_rmse / ref * 100}")
+    print(f"relative mean error: {relative_error_percent}")
     print('========================')
     with open(output_directory / 'log.txt', 'w') as f:
         f.write(f"mean error: {mean_rmse}\n")
-        f.write(f"relative mean error: {mean_rmse / ref * 100}\n")
-    if mean_rmse / ref * 100 > 1e-5:
-        raise ValueError('Error too big')
+        f.write(f"relative mean error: {relative_error_percent}\n")
+    transformed_original_strain_mat \
+        = original_fem_data.convert_array2symmetric_matrix(
+            transformed_original_strain[:5], from_engineering=True)
+    calculated_strain_mat = calculated_fem_data.convert_array2symmetric_matrix(
+        calculated_strain[:5], from_engineering=True)
+    if relative_error_percent > 1e-5:
+        print(transformed_original_strain_mat)
+        print(calculated_strain_mat)
+        print(transformed_original_strain_mat - calculated_strain_mat)
+        raise ValueError(
+            f"Error too big for: {output_directory}\n"
+            f"Matrix: {orthogonal_matrix}\n"
+            f"Det: {np.linalg.det(orthogonal_matrix)}\n"
+            f"Translation: {translation_vector}\n"
+        )
     return
 
 
-def rotate_tensor_array(fem_data, tensor_array, rotation_matrix):
+def transform_tensor_array(fem_data, tensor_array, orthogonal_matrix):
     symmetric_mat = fem_data.convert_array2symmetric_matrix(
         tensor_array, from_engineering=True)
-    rotated_mat = np.array([
-        rotation_matrix @ l @ rotation_matrix.T for l in symmetric_mat])
-    rotated_array = fem_data.convert_symmetric_matrix2array(
-        rotated_mat, to_engineering=True)
-    return rotated_array
+    transformed_mat = np.array([
+        orthogonal_matrix @ l @ orthogonal_matrix.T for l in symmetric_mat])
+    transformed_array = fem_data.convert_symmetric_matrix2array(
+        transformed_mat, to_engineering=True)
+    return transformed_array
 
 
-def _rotate_data(fem_data, rotation_matrix, output_directory):
+def _transform_data(
+        fem_data, orthogonal_matrix, translation_vector, output_directory):
     shutil.rmtree(output_directory, ignore_errors=True)
+
+    # Node
+    original_node = fem_data.nodal_data.get_attribute_data('NODE')
+    transformed_nodes = np.array([
+        orthogonal_matrix @ n for n in original_node]) + translation_vector
+
+    # Element
+    e = fem_data.elements.data
+    if np.linalg.det(orthogonal_matrix) < 0:
+        new_e = np.stack([
+            e[:, 1],
+            e[:, 0],
+            e[:, 2],
+            e[:, 3],
+            e[:, 5],
+            e[:, 4],
+            e[:, 6],
+            e[:, 8],
+            e[:, 7],
+            e[:, 9],
+        ], axis=1)
+    else:
+        new_e = e
+
     new_fem_data = femio.FEMData(
-        fem_data.nodes, fem_data.elements)
+        femio.FEMAttribute(
+            'NODE', ids=fem_data.nodes.ids, data=transformed_nodes),
+        femio.FEMElementalAttribute(
+            'ELEMENT', data={'tet2': femio.FEMAttribute(
+                'tet2', fem_data.elements.ids, new_e)}))
+    # Confirm volume is positive
+    new_fem_data.calculate_element_volumes(raise_negative_volume=True)
 
     # Nodal data
-    original_node = fem_data.nodal_data.get_attribute_data('NODE')
-    rotated_nodes = np.array([
-        rotation_matrix @ n for n in original_node])
-    new_fem_data.nodes.data = rotated_nodes
     original_t_init = fem_data.nodal_data.get_attribute_data(
         'INITIAL_TEMPERATURE')
     original_t_cnt = fem_data.nodal_data.get_attribute_data('CNT_TEMPERATURE')
     nodal_data_dict = {
-        'NODE': rotated_nodes,
         'INITIAL_TEMPERATURE': original_t_init,
         'CNT_TEMPERATURE': original_t_cnt}
     new_fem_data.nodal_data.update_data(
-        new_fem_data.nodes.ids, nodal_data_dict, allow_overwrite=True)
+        new_fem_data.nodes.ids, nodal_data_dict)
 
     # Material data
     original_poisson_ratio = np.mean(
@@ -116,12 +192,12 @@ def _rotate_data(fem_data, rotation_matrix, output_directory):
         fem_data.elemental_data.get_attribute_data(
             'linear_thermal_expansion_coefficient_full'),
         axis=0, keepdims=True)
-    rotated_lte_array = rotate_tensor_array(
-        new_fem_data, original_ltec, rotation_matrix)
+    transformed_ltec_array = transform_tensor_array(
+        new_fem_data, original_ltec, orthogonal_matrix)
     material_data_dict = {
         'Poisson_ratio': original_poisson_ratio,
         'Young_modulus': original_young_modulus,
-        'linear_thermal_expansion_coefficient_full': rotated_lte_array}
+        'linear_thermal_expansion_coefficient_full': transformed_ltec_array}
     new_fem_data.materials.update_data('MAT_ALL', material_data_dict)
 
     # Elemental data
@@ -130,7 +206,7 @@ def _rotate_data(fem_data, rotation_matrix, output_directory):
         'Poisson_ratio': original_poisson_ratio * np.ones((n_element, 1)),
         'Young_modulus': original_young_modulus * np.ones((n_element, 1)),
         'linear_thermal_expansion_coefficient_full':
-        rotated_lte_array * np.ones((n_element, 6))}
+        transformed_ltec_array * np.ones((n_element, 6))}
     new_fem_data.elemental_data.update_data(
         new_fem_data.elements.ids, elemental_data_dict)
 

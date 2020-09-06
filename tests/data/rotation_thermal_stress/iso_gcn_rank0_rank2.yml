@@ -42,6 +42,7 @@ model:
         - identity
     - name: ISO_GCN_TO_TENSOR
       type: iso_gcn
+      bias: false
       residual: false
       activation_after_residual: false
       support_input_indices:
@@ -57,7 +58,7 @@ model:
         propagations:
           - convolution
           - tensor_product
-        ah_w: false
-        create_subchain: false
+        ah_w: true
+        create_subchain: true
         symmetric: true
       coeff: 1.
