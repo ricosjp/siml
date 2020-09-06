@@ -31,6 +31,7 @@ model:
   blocks:
     - name: ISO_GCN_TENSOR
       type: iso_gcn
+      bias: true
       destinations:
         - ISO_GCN_TO_TENSOR
       residual: false
@@ -45,11 +46,13 @@ model:
       activations:
         - tanh
       optional:
+        ah_w: true
         propagations:
           - contraction
       coeff: 1.
     - name: ISO_GCN_TO_TENSOR
       type: iso_gcn
+      bias: false
       residual: false
       activation_after_residual: false
       support_input_indices:
@@ -65,7 +68,7 @@ model:
         propagations:
           - convolution
           - tensor_product
-        ah_w: false
-        create_subchain: false
+        ah_w: true
+        create_subchain: true
         symmetric: true
       coeff: 1.
