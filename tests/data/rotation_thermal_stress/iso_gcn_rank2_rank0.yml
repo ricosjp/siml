@@ -31,6 +31,7 @@ model:
   blocks:
     - name: ISO_GCN_TENSOR
       type: iso_gcn
+      bias: true
       residual: false
       activation_after_residual: false
       support_input_indices:
@@ -45,4 +46,5 @@ model:
       optional:
         propagations:
           - contraction
+        ah_w: true
       coeff: 1.

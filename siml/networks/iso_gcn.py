@@ -47,6 +47,23 @@ class IsoGCN(abstract_gcn.AbstractGCN):
 
         self.propagation_functions = self._create_propagation_functions()
 
+        str_propagations = self.block_setting.optional['propagations']
+        if create_subchain:
+            # rank k -> rank 0 tensor
+            if 'contraction' in str_propagations \
+                    and 'convolution' not in str_propagations:
+                if block_setting.bias and not self.ah_w:
+                    raise ValueError(
+                        'Set bias = False for contraction with A (HW): '
+                        f"{block_setting}")
+
+            # rank 0 -> rank k tensor
+            if 'contraction' not in str_propagations:
+                if block_setting.bias and self.ah_w:
+                    raise ValueError(
+                        'Set bias = False for convolution with (AH) W: '
+                        f"{block_setting}")
+
         return
 
     def _forward_single(self, x, merged_support):
@@ -205,7 +222,8 @@ class IsoGCN(abstract_gcn.AbstractGCN):
         elif tensor_rank > 1:
             return torch.sum(torch.stack([
                 supports[i_dim].mm(
-                    self._contraction_without_merge(x[:, i_dim], supports))
+                    self._contraction_without_merge(
+                        x[..., i_dim, :], supports))
                 for i_dim in range(dim)]), dim=0)
         else:
             raise ValueError(f"Tensor rank is 0 (shape: {shape})")
