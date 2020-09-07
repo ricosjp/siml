@@ -619,7 +619,13 @@ class Preprocessor:
         else:
             raise ValueError(
                 f"Unknown extension or file not found for {variable_name}")
-        if preprocess_setting['same_as'] is None:
+
+        if preprocess_setting['method'] == 'identity':
+            preprocess_converter = util.PreprocessConverter(
+                preprocess_setting['method'],
+                componentwise=preprocess_setting['componentwise'],
+                power=preprocess_setting['power'])
+        elif preprocess_setting['same_as'] is None:
             data_files = [
                 data_directory / (variable_name + ext)
                 for data_directory in self.interim_directories]
@@ -627,8 +633,8 @@ class Preprocessor:
                 preprocess_setting['method'], data_files=data_files,
                 componentwise=preprocess_setting['componentwise'],
                 power=preprocess_setting['power'])
-
         else:
+            # same_as is set so no need to prepare preprocessor
             preprocess_converter = None
 
         dict_preprocessor_setting = {
@@ -663,7 +669,22 @@ class Preprocessor:
         --------
         None
         """
+        if isinstance(preprocess_converter.converter, util.Identity):
+            # Shortcut preprocessing
+
+            for data_directory in self.interim_directories:
+                output_directory = determine_output_directory(
+                    data_directory, self.setting.data.preprocessed_root,
+                    self.str_replace)
+                util.copy_variable_file(
+                    data_directory, variable_name, output_directory)
+            return
+
         for data_directory in self.interim_directories:
+            output_directory = determine_output_directory(
+                data_directory, self.setting.data.preprocessed_root,
+                self.str_replace)
+
             loaded_data = util.load_variable(
                 data_directory, variable_name,
                 allow_missing=self.allow_missing)
@@ -672,13 +693,6 @@ class Preprocessor:
             else:
                 transformed_data = preprocess_converter.transform(loaded_data)
 
-            if self.setting.data.pad:
-                transformed_data = util.pad_array(
-                    transformed_data, self.max_n_element)
-
-            output_directory = determine_output_directory(
-                data_directory, self.setting.data.preprocessed_root,
-                self.str_replace)
             if self.save_func is None:
                 util.save_variable(
                     output_directory, variable_name, transformed_data)
