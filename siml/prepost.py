@@ -620,19 +620,20 @@ class Preprocessor:
             raise ValueError(
                 f"Unknown extension or file not found for {variable_name}")
 
-        if preprocess_setting['method'] == 'identity':
-            preprocess_converter = util.PreprocessConverter(
-                preprocess_setting['method'],
-                componentwise=preprocess_setting['componentwise'],
-                power=preprocess_setting['power'])
-        elif preprocess_setting['same_as'] is None:
-            data_files = [
-                data_directory / (variable_name + ext)
-                for data_directory in self.interim_directories]
-            preprocess_converter = util.PreprocessConverter(
-                preprocess_setting['method'], data_files=data_files,
-                componentwise=preprocess_setting['componentwise'],
-                power=preprocess_setting['power'])
+        if preprocess_setting['same_as'] is None:
+            if preprocess_setting['method'] == 'identity':
+                preprocess_converter = util.PreprocessConverter(
+                    preprocess_setting['method'],
+                    componentwise=preprocess_setting['componentwise'],
+                    power=preprocess_setting['power'])
+            else:
+                data_files = [
+                    data_directory / (variable_name + ext)
+                    for data_directory in self.interim_directories]
+                preprocess_converter = util.PreprocessConverter(
+                    preprocess_setting['method'], data_files=data_files,
+                    componentwise=preprocess_setting['componentwise'],
+                    power=preprocess_setting['power'])
         else:
             # same_as is set so no need to prepare preprocessor
             preprocess_converter = None
