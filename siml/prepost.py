@@ -20,7 +20,6 @@ from . import util
 from . import setting
 
 
-DTYPE = np.float32
 FEMIO_FILE = 'femio_npy_saved.npy'
 
 
