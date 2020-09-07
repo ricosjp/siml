@@ -6,6 +6,7 @@ import itertools as it
 import os
 from pathlib import Path
 import re
+import shutil
 import subprocess
 
 from femio import FEMData, FEMAttribute
@@ -89,7 +90,7 @@ def save_variable(
             output_directory / (file_basename + '.npy'), data.astype(dtype))
     elif isinstance(data, (sp.coo_matrix, sp.csr_matrix)):
         save_file_path = output_directory / (file_basename + '.npz')
-        sp.save_npz(save_file_path, data.astype(dtype))
+        sp.save_npz(save_file_path, data.tocoo().astype(dtype))
     else:
         raise ValueError(f"{file_basename} has unknown type: {data.__class__}")
 
@@ -136,6 +137,45 @@ def load_variable(
             f"NaN found in {data_directory / (file_basename + ext)}")
 
     return loaded_data
+
+
+def copy_variable_file(
+        input_directory, file_basename, output_directory,
+        *, allow_missing=False):
+    """Copy variable file.
+
+    Parameters
+    ----------
+        input_directory: pathlib.Path
+            Input directory path.
+        file_basename: str
+            File base name without extenstion.
+        output_directory: pathlib.Path
+            Putput directory path.
+        allow_missing: bool, optional [False]
+            If True, return None when the corresponding file is missing.
+            Otherwise, raise ValueError.
+    Returns
+    --------
+        None
+    """
+    if (input_directory / (file_basename + '.npy')).exists():
+        ext = '.npy'
+    elif (input_directory / (file_basename + '.npz')).exists():
+        ext = '.npz'
+    else:
+        if allow_missing:
+            return
+        else:
+            raise ValueError(
+                'File type not understood or file missing for: '
+                f"{file_basename}")
+    basename = file_basename + ext
+    output_directory.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(
+        input_directory / basename, output_directory / basename)
+
+    return
 
 
 def collect_data_directories(
