@@ -161,11 +161,17 @@ class RawConverter():
                 fem_data = femio.FEMData.read_npy_directory(
                     output_directory)
             else:
-                fem_data = femio.FEMData.read_directory(
-                    conversion_setting.file_type, raw_directory,
-                    read_npy=self.read_npy, save=False,
-                    read_res=self.read_res,
-                    time_series=conversion_setting.time_series)
+                try:
+                    fem_data = femio.FEMData.read_directory(
+                        conversion_setting.file_type, raw_directory,
+                        read_npy=self.read_npy, save=False,
+                        read_res=self.read_res,
+                        time_series=conversion_setting.time_series)
+                except ValueError:
+                    print(f"femio read failed. Skipped.")
+                    output_directory.mkdir(parents=True, exist_ok=True)
+                    (output_directory / 'failed').touch()
+                    return
 
             if conversion_setting.mandatory_variables is not None \
                     and len(conversion_setting.mandatory_variables) > 0:
