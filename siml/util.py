@@ -185,7 +185,7 @@ def copy_variable_file(
             else:
                 raise ValueError(
                     'File type not understood or file missing for: '
-                    f"{file_basename} in {data_directory}")
+                    f"{file_basename} in {input_directory}")
     basename = file_basename + ext
     output_directory.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(
