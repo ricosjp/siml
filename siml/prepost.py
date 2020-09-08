@@ -676,6 +676,16 @@ class Preprocessor:
                 output_directory = determine_output_directory(
                     data_directory, self.setting.data.preprocessed_root,
                     self.str_replace)
+                if not self.force_renew:
+                    npy_file = output_directory / (variable_name + '.npy')
+                    if npy_file.is_file():
+                        print(f"{npy_file} already exists. Skipped")
+                        continue
+                    npz_file = output_directory / (variable_name + '.npz')
+                    if npz_file.is_file():
+                        print(f"{npz_file} already exists. Skipped")
+                        continue
+
                 util.copy_variable_file(
                     data_directory, variable_name, output_directory)
             return
@@ -684,6 +694,15 @@ class Preprocessor:
             output_directory = determine_output_directory(
                 data_directory, self.setting.data.preprocessed_root,
                 self.str_replace)
+            if not self.force_renew:
+                npy_file = output_directory / (variable_name + '.npy')
+                if npy_file.is_file():
+                    print(f"{npy_file} already exists. Skipped")
+                    continue
+                npz_file = output_directory / (variable_name + '.npz')
+                if npz_file.is_file():
+                    print(f"{npz_file} already exists. Skipped")
+                    continue
 
             loaded_data = util.load_variable(
                 data_directory, variable_name,
