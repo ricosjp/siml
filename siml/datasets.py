@@ -309,7 +309,8 @@ class CollateFunctionGenerator():
 
     def _convert_dict_tensor(self, dict_tensor, device, non_blocking):
         return DataDict({
-            k: convert_tensor(v) for k, v in dict_tensor.items()})
+            k: convert_tensor(v, device=device, non_blocking=non_blocking)
+            for k, v in dict_tensor.items()})
 
 
 def pad_sparse(sparse, length=None):
