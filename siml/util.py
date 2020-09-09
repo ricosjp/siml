@@ -100,7 +100,7 @@ def save_variable(
 
 def load_variable(
         data_directory, file_basename, *, allow_missing=False,
-        check_nan=True):
+        check_nan=True, retry=True):
     """Load variable data.
 
     Parameters
@@ -128,9 +128,17 @@ def load_variable(
         if allow_missing:
             return None
         else:
-            raise ValueError(
-                'File type not understood or file missing for: '
-                f"{file_basename}")
+            if retry:
+                print(f"Retrying for: {data_directory}")
+                subprocess.run(
+                    f"find {data_directory}", shell=True, check=True)
+                load_variable(
+                    data_directory, file_basename, allow_missing=allow_missing,
+                    check_nan=check_nan, retry=False)
+            else:
+                raise ValueError(
+                    'File type not understood or file missing for: '
+                    f"{file_basename} in {data_directory}")
 
     if check_nan and np.any(np.isnan(data_for_check_nan)):
         raise ValueError(
@@ -141,7 +149,7 @@ def load_variable(
 
 def copy_variable_file(
         input_directory, file_basename, output_directory,
-        *, allow_missing=False):
+        *, allow_missing=False, retry=True):
     """Copy variable file.
 
     Parameters
@@ -167,9 +175,17 @@ def copy_variable_file(
         if allow_missing:
             return
         else:
-            raise ValueError(
-                'File type not understood or file missing for: '
-                f"{file_basename}")
+            if retry:
+                print(f"Retrying for: {input_directory}")
+                subprocess.run(
+                    f"find {input_directory}", shell=True, check=True)
+                copy_variable_file(
+                    input_directory, file_basename, output_directory,
+                    allow_missing=allow_missing, retry=False)
+            else:
+                raise ValueError(
+                    'File type not understood or file missing for: '
+                    f"{file_basename} in {input_directory}")
     basename = file_basename + ext
     output_directory.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(
