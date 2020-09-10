@@ -687,7 +687,8 @@ class Preprocessor:
                         continue
 
                 util.copy_variable_file(
-                    data_directory, variable_name, output_directory)
+                    data_directory, variable_name, output_directory,
+                    allow_missing=self.allow_missing)
             return
 
         for data_directory in self.interim_directories:
