@@ -435,18 +435,19 @@ class Trainer():
         self.evaluator = self._create_supervised_evaluator()
 
         self.desc = "loss: {:.5e}"
-        trainer_tick = max(len(self.train_loader) // 100, 1)
+        # trainer_tick = max(len(self.train_loader) // 100, 1)
+        trainer_tick = 1
 
-        @self.trainer.on(
-            ignite.engine.Events.ITERATION_COMPLETED(every=trainer_tick))
+        @self.trainer.on(ignite.engine.Events.ITERATION_COMPLETED)
         def log_training_loss(engine):
             self.pbar.desc = self.desc.format(engine.state.output)
             self.pbar.update(trainer_tick)
             return
 
         self.evaluator_desc = "evaluating"
-        evaluator_tick = max(
-            (len(self.train_loader) + len(self.validation_loader)) // 100, 1)
+        # evaluator_tick = max(
+        #     (len(self.train_loader) + len(self.validation_loader)) // 100, 1)
+        evaluator_tick = 1
 
         @self.evaluator.on(
             ignite.engine.Events.ITERATION_COMPLETED(every=evaluator_tick))
