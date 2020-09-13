@@ -78,6 +78,7 @@ model:
         - 0.0
     - name: MAX_POOL
       type: activation
+      device: 0
       destinations:
         - Reducer
       activations:
