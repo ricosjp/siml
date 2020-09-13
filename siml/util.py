@@ -182,6 +182,7 @@ def copy_variable_file(
                 copy_variable_file(
                     input_directory, file_basename, output_directory,
                     allow_missing=allow_missing, retry=False)
+                return
             else:
                 raise ValueError(
                     'File type not understood or file missing for: '
