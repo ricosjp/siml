@@ -273,13 +273,13 @@ class TestTrainer(unittest.TestCase):
         np.testing.assert_almost_equal(loss, original_loss, decimal=3)
 
         stats_file = tr.setting.trainer.output_directory \
-            / 'stats_epoch37_iteration110.yml'
+            / 'stats_epoch37_iteration74.yml'
         with open(stats_file, 'r') as f:
             dict_data = yaml.load(f, Loader=yaml.SafeLoader)
         np.testing.assert_almost_equal(
             dict_data['dict_block.ResGCN2.subchains.0.1.bias']['grad_absmax'],
-            0.8, decimal=1)
-        self.assertEqual(dict_data['iteration'], 110)
+            0.5, decimal=1)
+        self.assertEqual(dict_data['iteration'], 74)
 
     def test_trainer_train_test_split(self):
         main_setting = setting.MainSetting.read_settings_yaml(
