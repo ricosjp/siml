@@ -392,7 +392,9 @@ class Inferer(trainer.Trainer):
 
         if supports is not None:
             converted_supports = [
-                datasets.pad_sparse(s) for s in supports[0]]
+                datasets.merge_sparse_tensors(
+                    [datasets.pad_sparse(s)], return_coo=True)
+                for s in supports[0]]
         else:
             converted_supports = None
 

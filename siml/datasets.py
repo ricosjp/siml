@@ -165,7 +165,7 @@ class CollateFunctionGenerator():
 
     def __init__(
             self, *, time_series=False, dict_input=False, dict_output=False,
-            use_support=False, element_wise=False):
+            use_support=False, element_wise=False, data_parallel=False):
 
         if time_series:
             self.shape_length = 2
@@ -173,22 +173,33 @@ class CollateFunctionGenerator():
             self.shape_length = 1
 
         self.convert_input_dense = self._determine_convert_dense(
-            time_series, dict_input, element_wise)
+            time_series, dict_input, element_wise, data_parallel)
+
+        # No need to scatter output data even when data_parallel
         self.convert_output_dense = self._determine_convert_dense(
             time_series, dict_output, element_wise)
 
         if dict_input:
-            self.convert_input_tensor = self._convert_dict_tensor
+            if data_parallel:
+                self.convert_input_tensor = self._convert_dict_list
+            else:
+                self.convert_input_tensor = self._convert_dict_tensor
         else:
             self.convert_input_tensor = convert_tensor
         if dict_output:
+            # No need to scatter output data even when data_parallel
             self.convert_output_tensor = self._convert_dict_tensor
         else:
             self.convert_output_tensor = convert_tensor
 
         if use_support:
-            self.convert_sparse = self._concatenate_sparse_sequence
-            self.prepare_batch = self._prepare_batch_with_support
+            if data_parallel:
+                self.convert_sparse = self._generate_sparse_list
+                self.prepare_batch \
+                    = self._prepare_batch_with_support_data_parallel
+            else:
+                self.convert_sparse = self._concatenate_sparse_sequence
+                self.prepare_batch = self._prepare_batch_with_support
         else:
             self.convert_sparse = self._return_none
             self.prepare_batch = self._prepare_batch_without_support
@@ -205,10 +216,14 @@ class CollateFunctionGenerator():
 
         return
 
-    def _determine_convert_dense(self, time_series, dict_input, element_wise):
+    def _determine_convert_dense(
+            self, time_series, dict_input, element_wise, data_parallel=False):
         if time_series:
             if dict_input:
-                return self._concatenate_sequence_dict
+                if data_parallel:
+                    return self._generate_sequence_dict_list
+                else:
+                    return self._concatenate_sequence_dict
             else:
                 if element_wise:
                     return self._stack_sequence
@@ -216,12 +231,18 @@ class CollateFunctionGenerator():
                     return self._pad_time_dense_sequence
         else:
             if dict_input:
-                return self._concatenate_sequence_dict
+                if data_parallel:
+                    return self._generate_sequence_dict_list
+                else:
+                    return self._concatenate_sequence_dict
             else:
                 if element_wise:
                     return self._stack_sequence
                 else:
-                    return self._concatenate_sequence_list
+                    if data_parallel:
+                        return self._generate_sequence_list
+                    else:
+                        return self._concatenate_sequence_list
 
     def _pad_time_dense_sequence(self, batch, key):
         data = [b[key] for b in batch]
@@ -252,6 +273,14 @@ class CollateFunctionGenerator():
             torch.cat([b[key][dict_key] for b in batch])
             for dict_key in keys}
 
+    def _generate_sequence_dict_list(self, batch, key):
+        keys = batch[0][key].keys()
+        return {
+            dict_key: [b[key][dict_key] for b in batch] for dict_key in keys}
+
+    def _generate_sequence_list(self, batch, key):
+        return [b[key] for b in batch]
+
     def _return_none(self, *args, **kwargs):
         return None
 
@@ -272,8 +301,11 @@ class CollateFunctionGenerator():
         n_sparse_features = len(sparse_infos[0])
         return [
             merge_sparse_tensors(
-                [s[i] for s in sparse_infos], return_coo=False)
+                [s[i] for s in sparse_infos], return_coo=True)
             for i in range(n_sparse_features)]
+
+    def _generate_sparse_list(self, batch, key):
+        return self._pad_sparse_sequence(batch, key)
 
     def _pad_sparse_sequence(self, batch, key, length=None):
         return [[pad_sparse(s, length) for s in b[key]] for b in batch]
@@ -301,8 +333,20 @@ class CollateFunctionGenerator():
         return {
             'x': self.convert_input_tensor(
                 batch['x'], device=device, non_blocking=non_blocking),
+            'supports': [
+                convert_tensor(s, device=device, non_blocking=non_blocking)
+                for s in batch['supports']],
+            'original_shapes': batch['original_shapes'],
+        }, self.convert_output_tensor(
+            batch['t'], device=output_device, non_blocking=non_blocking)
+
+    def _prepare_batch_with_support_data_parallel(
+            self, batch, device=None, output_device=None, non_blocking=False):
+        return {
+            'x': self.convert_input_tensor(
+                batch['x'], device='cpu', non_blocking=non_blocking),
             'supports': convert_sparse_info(
-                batch['supports'], device=device, non_blocking=non_blocking),
+                batch['supports'], device='cpu', non_blocking=non_blocking),
             'original_shapes': batch['original_shapes'],
         }, self.convert_output_tensor(
             batch['t'], device=output_device, non_blocking=non_blocking)
@@ -311,6 +355,9 @@ class CollateFunctionGenerator():
         return DataDict({
             k: convert_tensor(v, device=device, non_blocking=non_blocking)
             for k, v in dict_tensor.items()})
+
+    def _convert_dict_list(self, dict_list, device, non_blocking):
+        return DataDict({k: v for k, v in dict_list.items()})
 
 
 def pad_sparse(sparse, length=None):
@@ -343,7 +390,6 @@ def pad_sparse(sparse, length=None):
 
 
 def convert_sparse_info(sparse_info, device=None, non_blocking=False):
-    device = 'cpu'
     if isinstance(sparse_info[0], list):
         return [
             [{
