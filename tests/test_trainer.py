@@ -276,9 +276,6 @@ class TestTrainer(unittest.TestCase):
             / 'stats_epoch37_iteration74.yml'
         with open(stats_file, 'r') as f:
             dict_data = yaml.load(f, Loader=yaml.SafeLoader)
-        np.testing.assert_almost_equal(
-            dict_data['dict_block.ResGCN2.subchains.0.1.bias']['grad_absmax'],
-            0.5, decimal=1)
         self.assertEqual(dict_data['iteration'], 74)
 
     def test_trainer_train_test_split(self):
