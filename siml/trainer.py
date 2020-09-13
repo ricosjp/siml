@@ -15,6 +15,7 @@ import torch.nn.functional as functional
 from tqdm import tqdm
 import yaml
 
+from . import data_parallel
 from . import datasets
 from . import networks
 from . import setting
@@ -163,7 +164,11 @@ class Trainer():
                 self.device = 'cuda:0'
                 self.output_device = self.device
                 gpu_count = torch.cuda.device_count()
-                self.model = torch.nn.DataParallel(self.model)
+                # TODO: Use DistributedDataParallel
+                # torch.distributed.init_process_group(backend='nccl')
+                # self.model = torch.nn.parallel.DistributedDataParallel(
+                #     self.model)
+                self.model = data_parallel.DataParallel(self.model)
                 self.model.to(self.device)
                 print(f"Data parallel enabled with {gpu_count} GPUs.")
             elif self.setting.trainer.model_parallel:
@@ -408,7 +413,8 @@ class Trainer():
             time_series=self.setting.trainer.time_series,
             dict_input=input_is_dict, dict_output=output_is_dict,
             use_support=self.setting.trainer.support_inputs,
-            element_wise=self.element_wise)
+            element_wise=self.element_wise,
+            data_parallel=self.setting.trainer.data_parallel)
         self.prepare_batch = self.collate_fn.prepare_batch
 
         if self.setting.trainer.lazy:
