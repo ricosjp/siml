@@ -34,12 +34,10 @@ class GCN(abstract_gcn.AbstractGCN):
 
             if self.ah_w:
                 # Pattern A: (A H) W
-                support = support.to(h.device)
                 h = subchain(self.factor * torch.sparse.mm(support, h))
 
             else:
                 # Pattern B: A (H W)
-                support = support.to(subchain.weight.device)
                 h = torch.sparse.mm(support, subchain(self.factor * h))
 
             h = torch.nn.functional.dropout(
