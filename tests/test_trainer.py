@@ -353,3 +353,19 @@ class TestTrainer(unittest.TestCase):
             tr.setting.trainer.output_directory / 'log.csv',
             header=0, index_col=None, skipinitialspace=True)
         self.assertEqual(len(restart_df.values), 8)
+
+    def test_pretrain(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/linear/linear_short.yml'))
+        tr_wo_pretrain = trainer.Trainer(main_setting)
+        if tr_wo_pretrain.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr_wo_pretrain.setting.trainer.output_directory)
+        loss_wo_pretrain = tr_wo_pretrain.train()
+
+        main_setting.trainer.pretrain_directory = Path(
+            'tests/data/linear/linear_short_completed')
+        tr_w_pretrain = trainer.Trainer(main_setting)
+        if tr_w_pretrain.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr_w_pretrain.setting.trainer.output_directory)
+        loss_w_pretrain = tr_w_pretrain.train()
+        self.assertLess(loss_w_pretrain, loss_wo_pretrain)
