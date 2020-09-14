@@ -97,7 +97,7 @@ class TestNetworksGPU(unittest.TestCase):
             shutil.rmtree(main_setting.trainer.output_directory)
         tr = trainer.Trainer(main_setting)
         loss = tr.train()
-        self.assertLess(loss, 1e-2)
+        self.assertLess(loss, 5e-2)
 
         ir = inferer.Inferer.read_settings(
             main_setting.trainer.output_directory / 'settings.yml')
