@@ -132,9 +132,10 @@ def load_variable(
                 print(f"Retrying for: {data_directory}")
                 subprocess.run(
                     f"find {data_directory}", shell=True, check=True)
-                load_variable(
+                loaded_data = load_variable(
                     data_directory, file_basename, allow_missing=allow_missing,
                     check_nan=check_nan, retry=False)
+                return loaded_data
             else:
                 raise ValueError(
                     'File type not understood or file missing for: '
