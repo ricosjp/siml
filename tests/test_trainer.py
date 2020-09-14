@@ -3,6 +3,7 @@ import shutil
 import unittest
 
 import numpy as np
+import pandas as pd
 import torch
 import yaml
 
@@ -31,7 +32,7 @@ def conversion_function(fem_data, raw_directory=None):
 
 class TestTrainer(unittest.TestCase):
 
-    def test_train_cpu_short(self):
+    def test_train_cpu_short_on_memory(self):
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/linear/linear_short.yml'))
         tr = trainer.Trainer(main_setting)
@@ -332,3 +333,23 @@ class TestTrainer(unittest.TestCase):
         tr = trainer.Trainer(main_setting)
         loss = tr.train()
         np.testing.assert_array_less(loss, 1.)
+
+    def test_restart(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/linear/linear_short.yml'))
+        main_setting.trainer.restart_directory = Path(
+            'tests/data/linear/linear_short_restart')
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        df = pd.read_csv(
+            'tests/data/linear/linear_short_completed/log.csv',
+            header=0, index_col=None, skipinitialspace=True)
+        np.testing.assert_almost_equal(
+            loss, df['validation_loss'].values[-1], decimal=5)
+
+        restart_df = pd.read_csv(
+            tr.setting.trainer.output_directory / 'log.csv',
+            header=0, index_col=None, skipinitialspace=True)
+        self.assertEqual(len(restart_df.values), 8)

@@ -3,6 +3,7 @@ import enum
 import io
 import pathlib
 import random
+import re
 import time
 
 import ignite
@@ -326,8 +327,15 @@ class Trainer():
         checkpoint = torch.load(snapshot)
         self.model.load_state_dict(checkpoint['model_state_dict'])
         self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-        self.epoch = checkpoint['epoch']
-        self.loss = checkpoint['loss']
+        self.trainer.load_state_dict({
+            'epoch': checkpoint['epoch'],
+            'validation_loss': checkpoint['validation_loss'],
+            'seed': self.setting.trainer.seed,
+            'max_epochs': self.setting.trainer.n_epoch,
+            'epoch_length': len(self.train_loader),
+        })
+        self.trainer.state.epoch = checkpoint['epoch']
+        # self.loss = checkpoint['loss']
         print(f"{snapshot} loaded for restart.")
         return
 
@@ -340,7 +348,9 @@ class Trainer():
         elif path.is_dir():
             snapshots = path.glob('snapshot_epoch_*')
             if method == 'latest':
-                return max(snapshots, key=lambda p: p.stat().st_ctime)
+                return max(
+                    snapshots, key=lambda p: int(re.search(
+                        r'snapshot_epoch_(\d+)', str(p)).groups()[0]))
             elif method == 'best':
                 df = pd.read_csv(
                     path / 'log.csv', header=0, index_col=None,
