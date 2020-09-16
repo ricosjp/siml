@@ -483,7 +483,7 @@ class TestNetwork(unittest.TestCase):
         array = torch.from_numpy(np.concatenate([_array, _array * 2], axis=-1))
 
         bs = setting.BlockSetting()
-        bs.optional['to_engineering'] = True
+        bs.optional['to_engineering'] = True  # pylint: disable=E1137
         s2a = symmat2array.Symmat2Array(bs)
         a = s2a(mat)
         np.testing.assert_almost_equal(a.numpy(), array.numpy())
