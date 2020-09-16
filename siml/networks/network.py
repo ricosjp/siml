@@ -7,10 +7,10 @@ import networkx as nx
 import numpy as np
 import torch
 
-from .. import datasets
 from .. import setting
 from . import activation
 from . import concatenator
+from . import array2symmat
 from . import deepsets
 from . import gcn
 from . import grad_gcn
@@ -23,6 +23,7 @@ from . import mlp
 from . import nri
 from . import reducer
 from . import reshape
+from . import symmat2array
 from . import tcn
 from . import time_norm
 
@@ -40,6 +41,8 @@ class Network(torch.nn.Module):
     DICT_BLOCKS = {
         # Layers without weights
         'activation': BlockInformation(activation.Activation, trainable=False),
+        'array2symmat': BlockInformation(
+            array2symmat.Array2Symmat, trainable=False),
         'concatenator': BlockInformation(
             concatenator.Concatenator, trainable=False),
         'distributor': BlockInformation(
@@ -49,6 +52,8 @@ class Network(torch.nn.Module):
             integration.Integration, trainable=False),
         'reducer': BlockInformation(reducer.Reducer, trainable=False),
         'reshape': BlockInformation(reshape.Reshape, trainable=False),
+        'symmat2array': BlockInformation(
+            symmat2array.Symmat2Array, trainable=False),
         'time_norm': BlockInformation(time_norm.TimeNorm, trainable=False),
 
         # Layers with weights
@@ -159,6 +164,18 @@ class Network(torch.nn.Module):
             elif graph_node == self.OUTPUT_LAYER_NAME:
                 first_node = self.trainer_setting.output_length
                 last_node = self.trainer_setting.output_length
+
+            elif block_type == 'array2symmat':
+                first_node == 6
+                last_node = 1
+
+            elif block_type == 'symmat2array':
+                max_first_node = np.sum([
+                    self.dict_block_setting[predecessor].nodes[-1]
+                    for predecessor in predecessors])
+                first_node = max(len(np.arange(max_first_node)[
+                    block_setting.input_selection]), 1)
+                last_node = first_node * 6
 
             elif block_type == 'concatenator':
                 max_first_node = np.sum([

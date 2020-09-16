@@ -83,6 +83,8 @@ def conversion_function_heat_time_series(fem_data, raw_directory=None):
 
 
 def conversion_function_rotation_thermal_stress(fem_data, raw_directory=None):
+    adj = fem_data.calculate_adjacency_matrix_node()
+    nadj = prepost.normalize_adjacency_matrix(adj)
     nodal_grad_x, nodal_grad_y, nodal_grad_z = \
         fem_data.calculate_spatial_gradient_adjacency_matrices(
             'nodal', n_hop=2)
@@ -132,6 +134,7 @@ def conversion_function_rotation_thermal_stress(fem_data, raw_directory=None):
         nodal_strain_array, from_engineering=True)
 
     dict_data = {
+        'nadj': nadj,
         'nodal_grad_x': nodal_grad_x,
         'nodal_grad_y': nodal_grad_y,
         'nodal_grad_z': nodal_grad_z,
