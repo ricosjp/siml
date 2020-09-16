@@ -13,6 +13,8 @@ conversion:
     - '*.cnt'
     - '*.res.0.1'
 preprocess:
+  nadj:
+    method: identity
   nodal_grad_x:
     method: sparse_std
     componentwise: false

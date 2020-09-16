@@ -9,6 +9,8 @@ import torch
 
 import siml.inferer as inferer
 import siml.networks.activations as activations
+import siml.networks.symmat2array as symmat2array
+import siml.networks.array2symmat as array2symmat
 import siml.setting as setting
 import siml.trainer as trainer
 
@@ -469,3 +471,32 @@ class TestNetwork(unittest.TestCase):
             torch.from_numpy(e), torch.from_numpy(epsilon))
         np.testing.assert_almost_equal(
             sigma.detach().numpy(), e * epsilon)
+
+    def test_gcn_with_array2symmat_symmat2array(self):
+        _mat = np.load(
+            'tests/data/rotation_thermal_stress/interim/cube/original'
+            '/nodal_strain_mat.npy')
+        mat = torch.from_numpy(np.concatenate([_mat, _mat * 2], axis=-1))
+        _array = np.load(
+            'tests/data/rotation_thermal_stress/interim/cube/original'
+            '/nodal_strain_array.npy')
+        array = torch.from_numpy(np.concatenate([_array, _array * 2], axis=-1))
+
+        bs = setting.BlockSetting()
+        bs.optional['to_engineering'] = True
+        s2a = symmat2array.Symmat2Array(bs)
+        a = s2a(mat)
+        np.testing.assert_almost_equal(a.numpy(), array.numpy())
+
+        a2s = array2symmat.Array2Symmat(setting.BlockSetting())
+        s = a2s(array)
+        np.testing.assert_almost_equal(s.numpy(), mat)
+
+        main_setting = setting.MainSetting.read_settings_yaml(Path(
+            'tests/data/rotation_thermal_stress'
+            '/gcn_dict_input_dict_output.yml'))
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, 1.)
