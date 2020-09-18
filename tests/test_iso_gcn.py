@@ -54,10 +54,55 @@ class TestIsoGCN(unittest.TestCase):
             x, rotation_matrix, h, rotate_x=self.transform_rank1,
             rotate_y=self.identity, iso_gcn_=ig)
 
+    def test_contraction_rank2_rank1(self):
+        x = np.random.rand(4, 3)
+        h = np.random.rand(4, 3, 3, 2)
+        rotation_matrix = self.generate_rotation_matrix()
+        ig = self.generate_isogcn(optional={
+            'propagations': ['contraction'], 'create_subchain': False})
+        self.trial(
+            x, rotation_matrix, h, rotate_x=self.transform_rank2,
+            rotate_y=self.transform_rank1, iso_gcn_=ig)
+
+    def test_contraction_rank2_rank0(self):
+        x = np.random.rand(4, 3)
+        h = np.random.rand(4, 3, 3, 2)
+        rotation_matrix = self.generate_rotation_matrix()
+        ig = self.generate_isogcn({
+            'propagations': ['contraction', 'contraction'],
+            'create_subchain': False})
+        self.trial(
+            x, rotation_matrix, h, rotate_x=self.transform_rank2,
+            rotate_y=self.identity, iso_gcn_=ig)
+
     def trial(
             self, x, rotation_matrix, h,
             *, rotate_x=None, rotate_y=None, iso_gcn_=None,
             check_symmetric=False):
+        """Operate IsoGCN Layer and confirm its invariance or equivariance.
+
+        Parameters
+        ----------
+        x: np.ndarray
+            (n_node, dim) shaped array of vertex positions.
+        h: np.ndarray
+            (n_node, dim, dim, ..., n_feature) shaped array of a collection
+                    ^^^^^^^^^^^^^^^
+                    k repetition for rank k tensors
+            of input tensors.
+        rotate_x: callable, optional
+            Callable to rotate the input. For identity, input None. The default
+            is None.
+        rotate_y: callable, optional
+            Callable to rotate the output. For identity, input None.
+            The default is None.
+        iso_gcn: siml.networks.IsoGCN, optional
+            IsoGCN layer. If not fed, created automatically with the default
+            setting.
+        check_symmetric: bool, optional
+            If True, check wheather the output is symmetric. The default is
+            False.
+        """
         g, g_eye, g_tilde = self.generate_gs(x)
         original_h_conv = self.conv(iso_gcn_, h, g_tilde)
 
@@ -114,7 +159,8 @@ class TestIsoGCN(unittest.TestCase):
         mirror_matrix = np.array([[1, 0, 0], [0, 1, 0], [0, 0, -1]])
 
         ig = self.generate_isogcn({
-            'propagations': ['contraction'], 'create_subchain': False})
+            'propagations': ['contraction', 'contraction'],
+            'create_subchain': False})
         h = np.load(original_path / 'nodal_strain_mat.npy')
         rotated_h = self.transform_rank2(rotation_matrix, h).astype(np.float32)
         mirrored_h = self.transform_rank2(mirror_matrix, h).astype(np.float32)
@@ -141,7 +187,7 @@ class TestIsoGCN(unittest.TestCase):
         self.print_vec(handwritten_original_conv, 'einsum', 10)
         self.print_vec(siml_conv - handwritten_original_conv, 'Diff', 10)
         np.testing.assert_almost_equal(
-            siml_conv, handwritten_original_conv, decimal=6)
+            siml_conv, handwritten_original_conv, decimal=5)
 
         # Use sparse
         torch_original_genam = self.load_genam(original_path, mode='torch')
@@ -321,10 +367,11 @@ class TestIsoGCN(unittest.TestCase):
             for i in range(g_tilde.shape[-1])]
         return iso_gcn_._forward_single(torch.from_numpy(h), gs).numpy()
 
-    def generate_isogcn(self, optional={}):
+    def generate_isogcn(self, optional={}, bias=True):
         block_setting = setting.BlockSetting(
             type='iso_gcn', residual=False, support_input_indices=[0, 1, 2],
-            nodes=[-1, -1], activations=['identity'], optional=optional)
+            nodes=[-1, -1], activations=['identity'], optional=optional,
+            bias=bias)
         return iso_gcn.IsoGCN(block_setting)
 
     def generate_gs(self, x):
@@ -591,7 +638,7 @@ class TestIsoGCN(unittest.TestCase):
 
         self.validate_results(
             original_results, transformed_results, rank2='nodal_strain_mat',
-            decimal=3, threshold_percent=1e-2)
+            decimal=3, threshold_percent=2e-2)
 
     def test_iso_gcn_rotation_thermal_stress_rank0_rank2_with_postprocess(
             self):
@@ -633,7 +680,7 @@ class TestIsoGCN(unittest.TestCase):
 
         self.validate_results(
             original_results, transformed_results, rank2='nodal_strain_mat',
-            decimal=3, threshold_percent=1e-2)
+            decimal=3, threshold_percent=2e-2)
 
     def test_iso_gcn_rotation_thermal_stress_rank2_rank2(self):
         main_setting = setting.MainSetting.read_settings_yaml(
@@ -716,7 +763,7 @@ class TestIsoGCN(unittest.TestCase):
 
         self.validate_results(
             original_results, transformed_results, rank2='nodal_strain_mat',
-            threshold_percent=1., decimal=1)
+            threshold_percent=2., decimal=1)
 
     def test_iso_gcn_rotation_thermal_stress_dict_input_dict_output(self):
         main_setting = setting.MainSetting.read_settings_yaml(Path(
@@ -798,4 +845,5 @@ class TestIsoGCN(unittest.TestCase):
             overwrite=True)
 
         self.validate_results(
-            original_results, transformed_results, rank2='global_lte_mat')
+            original_results, transformed_results, rank2='global_lte_mat',
+            threshold_percent=.002)

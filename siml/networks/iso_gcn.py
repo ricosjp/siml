@@ -10,18 +10,23 @@ class IsoGCN(abstract_gcn.AbstractGCN):
     """IsoGCN according to https://arxiv.org/abs/2005.06316 ."""
 
     def __init__(self, block_setting):
+        self.is_first = True  # For block setting validation
+
         len_support = len(block_setting.support_input_indices)
         if len_support < 2:
             raise ValueError(
                 'len(support_input_indices) should be larger than 1 '
                 f"({len_support} found.)")
-        create_subchain = block_setting.optional.get('create_subchain', True)
+
+        self.create_subchain = block_setting.optional.get(
+            'create_subchain', True)
         super().__init__(
-            block_setting, create_subchain=create_subchain,
+            block_setting, create_subchain=self.create_subchain,
             multiple_networks=False, residual=block_setting.residual)
-        if not create_subchain:
+        if not self.create_subchain:
             print(f"Skipe subchain creation for: {block_setting.name}")
             self.subchains = [[identity.Identity(block_setting)]]
+
         if len(self.subchains[0]) > 1:
             raise ValueError(
                 f"# of layers should be 0 or 1 for: {block_setting}")
@@ -47,26 +52,48 @@ class IsoGCN(abstract_gcn.AbstractGCN):
 
         self.propagation_functions = self._create_propagation_functions()
 
+        return
+
+    def _validate_block(self, x):
+        if not self.create_subchain:
+            return
+
         str_propagations = self.block_setting.optional['propagations']
-        if create_subchain:
-            # rank k -> rank 0 tensor
-            if 'contraction' in str_propagations \
-                    and 'convolution' not in str_propagations:
-                if block_setting.bias and not self.ah_w:
-                    raise ValueError(
-                        'Set bias = False for contraction with A (HW): '
-                        f"{block_setting}")
+        tensor_rank = len(x.shape) - 2  # (n_vertex, dim, dim, ..., n_feature)
+        n_propagation = len(str_propagations)
+        n_contraction = sum([
+            s == 'contraction' for s in str_propagations])
+        n_rank_raise_propagation = n_propagation - n_contraction
+        estimated_output_tensor_rank = \
+            tensor_rank - n_contraction + n_rank_raise_propagation
 
-            # rank 0 -> rank k tensor
-            if 'contraction' not in str_propagations:
-                if block_setting.bias and self.ah_w:
+        if tensor_rank == 0:
+            if estimated_output_tensor_rank > 0:
+                # rank 0 -> rank k tensor
+                if self.block_setting.bias and self.ah_w:
                     raise ValueError(
-                        'Set bias = False for convolution with (AH) W: '
-                        f"{block_setting}")
+                        'Set bias = False for rank 0 -> k with (AH) W: '
+                        f"{self.block_setting}")
 
+        else:
+            if estimated_output_tensor_rank == 0:
+                # rank k -> rank 0 tensor
+                if self.block_setting.bias and not self.ah_w:
+                    raise ValueError(
+                        'Set bias = False for rank k -> 0 with A (HW): '
+                        f"{self.block_setting}")
+            else:
+                # rank k -> rank l tensor
+                if self.block_setting.bias:
+                    raise ValueError(
+                        'Set bias = False for rank k -> l with A (HW): '
+                        f"{self.block_setting}")
         return
 
     def _forward_single(self, x, merged_support):
+        if self.is_first:
+            self._validate_block(x)
+            self.is_first = False
         if self.residual:
             shortcut = self.shortcut(x)
         else:
@@ -101,6 +128,7 @@ class IsoGCN(abstract_gcn.AbstractGCN):
         propagation_functions = [
             self._create_propagation_function(str_propagation)
             for str_propagation in str_propagations]
+
         return propagation_functions
 
     def _create_propagation_function(self, str_propagation):
@@ -196,7 +224,8 @@ class IsoGCN(abstract_gcn.AbstractGCN):
         return h
 
     def _contraction_without_merge(self, x, supports):
-        """Calculate contraction G \\cdot x.
+        """Calculate contraction G \\cdot x. It calculates
+        \\sum_k G_{ijk} H_{jkl_1l_2...}
 
         Parameters
         ----------
@@ -210,7 +239,9 @@ class IsoGCN(abstract_gcn.AbstractGCN):
         Returns
         -------
         y: torch.Tensor
-            [n_vertex, n_feature]-shaped tensor.
+            [n_vertex, dim, ..., n_feature]-shaped tensor.
+                       ~~~~~~~~~
+                       tensor rank - 1 repetition
         """
         shape = x.shape
         dim = len(supports)
@@ -220,11 +251,9 @@ class IsoGCN(abstract_gcn.AbstractGCN):
                 support.mm(x[:, i_dim]) for i_dim, support
                 in enumerate(supports)]), dim=0)
         elif tensor_rank > 1:
-            return torch.sum(torch.stack([
-                supports[i_dim].mm(
-                    self._contraction_without_merge(
-                        x[..., i_dim, :], supports))
-                for i_dim in range(dim)]), dim=0)
+            return torch.stack([
+                self._contraction_without_merge(x[..., i_dim, :], supports)
+                for i_dim in range(dim)], dim=-2)
         else:
             raise ValueError(f"Tensor rank is 0 (shape: {shape})")
 

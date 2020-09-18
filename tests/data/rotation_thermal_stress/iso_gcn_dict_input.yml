@@ -74,6 +74,7 @@ model:
         create_subchain: true
         propagations:
           - contraction
+          - contraction
       coeff: 1.
     - name: MLP_RANK2
       type: mlp
