@@ -80,6 +80,7 @@ model:
       optional:
         propagations:
           - contraction
+          - contraction
         ah_w: true
       coeff: .1
     - name: MLP_RANK2

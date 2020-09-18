@@ -47,6 +47,7 @@ model:
       optional:
         propagations:
           - contraction
+          - contraction
       coeff: 1.
     # - name: ISO_GCN_TO_TENSOR
     #   type: iso_gcn
