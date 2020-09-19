@@ -34,7 +34,7 @@ class Reducer(siml_module.SimlModule):
 
     def forward(self, *xs, op=None, supports=None, original_shapes=None):
         if len(xs) == 1:
-            return xs[0]
+            raise ValueError(f"At least 2 inputs expected. Given: {len(xs)}")
 
         x = xs[0]
         for other in xs[1:]:
