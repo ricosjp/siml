@@ -111,7 +111,6 @@ class IsoGCN(abstract_gcn.AbstractGCN):
     def _forward_single(self, x, merged_support):
         if self.is_first:
             self._validate_block(x, merged_support)
-            self.is_first = False
         if self.residual:
             shortcut = self.shortcut(x)
         else:
@@ -122,6 +121,8 @@ class IsoGCN(abstract_gcn.AbstractGCN):
             h_res = self.activations[-1](h_res + shortcut)
         else:
             h_res = self.activations[-1](h_res) + shortcut
+
+        self.is_first = False
         return h_res
 
     def _propagate(self, x, support):
