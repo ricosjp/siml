@@ -82,7 +82,8 @@ class TestIsoGCN(unittest.TestCase):
         h = np.random.rand(4, 3, 3, 2)
         rotation_matrix = self.generate_rotation_matrix()
         ig = self.generate_isogcn(optional={
-            'propagations': ['contraction'], 'create_subchain': False})
+            'propagations': ['contraction'], 'create_subchain': False,
+            'support_tensor_rank': 2})
         self.trial(
             x, rotation_matrix, h, rotate_x=self.transform_rank2,
             rotate_y=self.transform_rank2, iso_gcn_=ig, rank_g=2,
@@ -93,11 +94,24 @@ class TestIsoGCN(unittest.TestCase):
         h = np.random.rand(4, 2)
         rotation_matrix = self.generate_rotation_matrix()
         ig = self.generate_isogcn(optional={
-            'propagations': ['convolution'], 'create_subchain': False})
+            'propagations': ['convolution'], 'create_subchain': False,
+            'support_tensor_rank': 2})
         self.trial(
             x, rotation_matrix, h, rotate_x=self.identity,
             rotate_y=self.transform_rank2, iso_gcn_=ig, rank_g=2,
             einstring='ijkm,jf->ikmf')
+
+    def test_convolution_g2_rank0_rank2_symmetric(self):
+        x = np.random.rand(4, 3)
+        h = np.random.rand(4, 2)
+        rotation_matrix = self.generate_rotation_matrix()
+        ig = self.generate_isogcn(optional={
+            'propagations': ['convolution'], 'create_subchain': False,
+            'support_tensor_rank': 2, 'symmetric': True})
+        self.trial(
+            x, rotation_matrix, h, rotate_x=self.identity,
+            rotate_y=self.transform_rank2, iso_gcn_=ig, rank_g=2,
+            einstring='ijkm,jf->ikmf', check_symmetric=True)
 
     def trial(
             self, x, rotation_matrix, h,

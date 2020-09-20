@@ -33,6 +33,8 @@ class IsoGCN(abstract_gcn.AbstractGCN):
                 f"# of layers should be 0 or 1 for: {block_setting}")
 
         self.dim = block_setting.optional.get('dim', 3)
+        self.support_tensor_rank = block_setting.optional.get(
+            'support_tensor_rank', 1)
         self.symmetric = block_setting.optional.get('symmetric', False)
         if self.symmetric:
             print(f"Output symmetric matrix for: {block_setting.name}")
@@ -60,13 +62,11 @@ class IsoGCN(abstract_gcn.AbstractGCN):
         shape = x.shape
         self.x_tensor_rank \
             = len(shape) - 2  # (n_vertex, dim, dim, ..., n_feature)
-        self.support_tensor_rank = int(
-            np.round(np.log(len(supports)) / np.log(self.dim)))
 
-        if len(supports) % self.dim != 0:
+        if len(supports) != self.dim**self.support_tensor_rank:
             raise ValueError(
-                f"n * {self.dim} length of supports expected "
-                f"(actual: {len(supports)} for: {self.block_setting}")
+                f"{self.dim**self.support_tensor_rank} ength of supports "
+                f"expected (actual: {len(supports)} for: {self.block_setting}")
 
         if not self.create_subchain:
             return
@@ -111,6 +111,7 @@ class IsoGCN(abstract_gcn.AbstractGCN):
     def _forward_single(self, x, merged_support):
         if self.is_first:
             self._validate_block(x, merged_support)
+            self.is_first = False
         if self.residual:
             shortcut = self.shortcut(x)
         else:
@@ -122,7 +123,6 @@ class IsoGCN(abstract_gcn.AbstractGCN):
         else:
             h_res = self.activations[-1](h_res) + shortcut
 
-        self.is_first = False
         return h_res
 
     def _propagate(self, x, support):
@@ -241,6 +241,9 @@ class IsoGCN(abstract_gcn.AbstractGCN):
             h = torch.reshape(
                 torch.stack([support.mm(x) for support in supports], axis=-2),
                 (n, self.dim, self.dim, f))
+            if self.symmetric:
+                h = (h + einops.rearrange(
+                    h, 'element x1 x2 feature -> element x2 x1 feature')) / 2
         else:
             raise NotImplementedError
 
