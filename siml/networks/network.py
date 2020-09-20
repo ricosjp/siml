@@ -25,6 +25,7 @@ from . import reducer
 from . import reshape
 from . import symmat2array
 from . import tcn
+from . import tensor_operations
 from . import time_norm
 
 
@@ -45,6 +46,8 @@ class Network(torch.nn.Module):
             array2symmat.Array2Symmat, trainable=False),
         'concatenator': BlockInformation(
             concatenator.Concatenator, trainable=False),
+        'contraction': BlockInformation(
+            tensor_operations.Contraction, trainable=False),
         'distributor': BlockInformation(
             reducer.Reducer, trainable=False),  # For backward compatibility
         'identity': BlockInformation(identity.Identity, trainable=False),
@@ -185,7 +188,7 @@ class Network(torch.nn.Module):
                     block_setting.input_selection])
                 last_node = first_node
 
-            elif block_type == 'reducer':
+            elif block_type in ['reducer', 'contraction']:
                 max_first_node = np.sum([
                     self.dict_block_setting[predecessor].nodes[-1]
                     for predecessor in predecessors])

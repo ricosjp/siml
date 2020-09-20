@@ -30,7 +30,8 @@ class TestIsoGCN(unittest.TestCase):
             'symmetric': False})
         self.trial(
             x, rotation_matrix, h,
-            rotate_y=self.transform_rank1, iso_gcn_=ig)
+            rotate_y=self.transform_rank1, iso_gcn_=ig,
+            einstring='ijk,jf->ikf')
 
     def test_convolution_rank0_rank2(self):
         x = np.random.rand(4, 3)
@@ -52,7 +53,7 @@ class TestIsoGCN(unittest.TestCase):
             'propagations': ['contraction'], 'create_subchain': False})
         self.trial(
             x, rotation_matrix, h, rotate_x=self.transform_rank1,
-            rotate_y=self.identity, iso_gcn_=ig)
+            rotate_y=self.identity, iso_gcn_=ig, einstring='ijk,jkf->if')
 
     def test_contraction_rank2_rank1(self):
         x = np.random.rand(4, 3)
@@ -62,7 +63,8 @@ class TestIsoGCN(unittest.TestCase):
             'propagations': ['contraction'], 'create_subchain': False})
         self.trial(
             x, rotation_matrix, h, rotate_x=self.transform_rank2,
-            rotate_y=self.transform_rank1, iso_gcn_=ig)
+            rotate_y=self.transform_rank1, iso_gcn_=ig,
+            einstring='ijk,jlkf->ilf')
 
     def test_contraction_rank2_rank0(self):
         x = np.random.rand(4, 3)
@@ -75,10 +77,46 @@ class TestIsoGCN(unittest.TestCase):
             x, rotation_matrix, h, rotate_x=self.transform_rank2,
             rotate_y=self.identity, iso_gcn_=ig)
 
+    def test_contraction_g2_rank2_rank2(self):
+        x = np.random.rand(4, 3)
+        h = np.random.rand(4, 3, 3, 2)
+        rotation_matrix = self.generate_rotation_matrix()
+        ig = self.generate_isogcn(optional={
+            'propagations': ['contraction'], 'create_subchain': False,
+            'support_tensor_rank': 2})
+        self.trial(
+            x, rotation_matrix, h, rotate_x=self.transform_rank2,
+            rotate_y=self.transform_rank2, iso_gcn_=ig, rank_g=2,
+            einstring='ijkm,jlmf->iklf')
+
+    def test_convolution_g2_rank0_rank2(self):
+        x = np.random.rand(4, 3)
+        h = np.random.rand(4, 2)
+        rotation_matrix = self.generate_rotation_matrix()
+        ig = self.generate_isogcn(optional={
+            'propagations': ['convolution'], 'create_subchain': False,
+            'support_tensor_rank': 2})
+        self.trial(
+            x, rotation_matrix, h, rotate_x=self.identity,
+            rotate_y=self.transform_rank2, iso_gcn_=ig, rank_g=2,
+            einstring='ijkm,jf->ikmf')
+
+    def test_convolution_g2_rank0_rank2_symmetric(self):
+        x = np.random.rand(4, 3)
+        h = np.random.rand(4, 2)
+        rotation_matrix = self.generate_rotation_matrix()
+        ig = self.generate_isogcn(optional={
+            'propagations': ['convolution'], 'create_subchain': False,
+            'support_tensor_rank': 2, 'symmetric': True})
+        self.trial(
+            x, rotation_matrix, h, rotate_x=self.identity,
+            rotate_y=self.transform_rank2, iso_gcn_=ig, rank_g=2,
+            einstring='ijkm,jf->ikmf', check_symmetric=True)
+
     def trial(
             self, x, rotation_matrix, h,
             *, rotate_x=None, rotate_y=None, iso_gcn_=None,
-            check_symmetric=False):
+            check_symmetric=False, rank_g=1, einstring=None):
         """Operate IsoGCN Layer and confirm its invariance or equivariance.
 
         Parameters
@@ -103,16 +141,19 @@ class TestIsoGCN(unittest.TestCase):
             If True, check wheather the output is symmetric. The default is
             False.
         """
-        g, g_eye, g_tilde = self.generate_gs(x)
-        original_h_conv = self.conv(iso_gcn_, h, g_tilde)
+        _, _, g_tilde = self.generate_gs(x)
+        original_h_conv = self.conv(
+            iso_gcn_, h, g_tilde, rank_g=rank_g, einstring=einstring)
 
         rotated_x = self.transform_rank1(rotation_matrix, x)
         _, _, rotated_g_tilde = self.generate_gs(rotated_x)
         if rotate_x is None:
-            rotated_h_conv = self.conv(iso_gcn_, h, rotated_g_tilde)
+            rotated_h_conv = self.conv(
+                iso_gcn_, h, rotated_g_tilde, rank_g=rank_g)
         else:
             rotated_h_conv = self.conv(
-                iso_gcn_, rotate_x(rotation_matrix, h), rotated_g_tilde)
+                iso_gcn_, rotate_x(rotation_matrix, h), rotated_g_tilde,
+                rank_g=rank_g)
         print('Rotation matrix:')
         print(rotation_matrix)
         self.print_vec(rotated_h_conv, 'IsoGCN x rotation')
@@ -361,11 +402,25 @@ class TestIsoGCN(unittest.TestCase):
                 for _t in t[..., i_feature]])
             for i_feature in range(n_feature)], axis=-1)
 
-    def conv(self, iso_gcn_, h, g_tilde):
-        gs = [
-            torch.from_numpy(g_tilde[..., i])
-            for i in range(g_tilde.shape[-1])]
-        return iso_gcn_._forward_single(torch.from_numpy(h), gs).numpy()
+    def conv(self, iso_gcn_, h, g_tilde, rank_g=1, einstring=None):
+        if rank_g == 1:
+            gs = [
+                torch.from_numpy(g_tilde[..., i])
+                for i in range(g_tilde.shape[-1])]
+        elif rank_g == 2:
+            g_tilde = np.einsum('ijk,ijl->ijkl', g_tilde, g_tilde)
+            gs = [
+                torch.from_numpy(g_tilde[..., i_row, i_col])
+                for i_row in range(g_tilde.shape[-1])
+                for i_col in range(g_tilde.shape[-1])]
+        else:
+            raise NotImplementedError
+
+        torch_res = iso_gcn_._forward_single(torch.from_numpy(h), gs).numpy()
+        if einstring is not None:
+            np.testing.assert_almost_equal(
+                torch_res, np.einsum(einstring, g_tilde, h))
+        return torch_res
 
     def generate_isogcn(self, optional={}, bias=True):
         block_setting = setting.BlockSetting(
@@ -846,4 +901,45 @@ class TestIsoGCN(unittest.TestCase):
 
         self.validate_results(
             original_results, transformed_results, rank2='global_lte_mat',
+            threshold_percent=.002)
+
+    def test_iso_gcn_rotation_thermal_stress_frame_rank2(self):
+        main_setting = setting.MainSetting.read_settings_yaml(Path(
+            'tests/data/rotation_thermal_stress/iso_gcn_frame_rank2.yml'))
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        tr.train()
+
+        # Confirm inference result has isometric invariance and equivariance
+        original_path = Path(
+            'tests/data/rotation_thermal_stress/preprocessed/cube/original')
+        transformed_paths = self.collect_transformed_paths(
+            'tests/data/rotation_thermal_stress/preprocessed/cube'
+            '/*_transformed_*')
+        ir = inferer.Inferer(main_setting)
+        model_directory = str(main_setting.trainer.output_directory)
+        inference_outpout_directory = \
+            main_setting.trainer.output_directory / 'inferred'
+        if inference_outpout_directory.exists():
+            shutil.rmtree(inference_outpout_directory)
+        original_results = ir.infer(
+            model=model_directory,
+            preprocessed_data_directory=[original_path],
+            converter_parameters_pkl=Path(
+                'tests/data/rotation_thermal_stress/preprocessed'
+                '/preprocessors.pkl'),
+            output_directory=inference_outpout_directory,
+            overwrite=True)
+        transformed_results = ir.infer(
+            model=model_directory,
+            preprocessed_data_directory=transformed_paths,
+            converter_parameters_pkl=Path(
+                'tests/data/rotation_thermal_stress/preprocessed'
+                '/preprocessors.pkl'),
+            output_directory=inference_outpout_directory,
+            overwrite=True)
+
+        self.validate_results(
+            original_results, transformed_results, rank2='nodal_strain_mat',
             threshold_percent=.002)

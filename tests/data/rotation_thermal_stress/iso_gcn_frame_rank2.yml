@@ -1,0 +1,141 @@
+data:
+  train:
+    - tests/data/rotation_thermal_stress/preprocessed
+  validation:
+    - tests/data/rotation_thermal_stress/preprocessed
+  develop:
+    - tests/data/rotation_thermal_stress/preprocessed
+trainer:
+  lazy: false
+  num_workers: 0
+  output_directory: tests/data/rotation_thermal_stress/models/iso_gcn_thermal
+  split_ratio:
+    validation: 0.1
+    test: .0
+  inputs:
+    rank0:
+      - name: initial_temperature
+        dim: 1
+      - name: nodal_mean_volume
+        dim: 1
+      - name: nodal_concentrated_volume
+        dim: 1
+    rank2:
+      - name: nodal_lte_mat
+  support_inputs:
+    - nodal_frame_xx
+    - nodal_frame_xy
+    - nodal_frame_xz
+    - nodal_frame_yx
+    - nodal_frame_yy
+    - nodal_frame_yz
+    - nodal_frame_zx
+    - nodal_frame_zy
+    - nodal_frame_zz
+  outputs:
+    - name: nodal_strain_mat
+      dim: 1
+  prune: true
+  batch_size: 2
+  n_epoch: 1
+  log_trigger_epoch: 1
+  stop_trigger_epoch: 1
+  seed: 0
+model:
+  blocks:
+    - name: MLP_RANK0
+      type: mlp
+      is_first: true
+      input_keys:
+        - rank0
+      destinations:
+        - ISO_GCN_FRAME_RANK0_RANK2_1
+        - ISO_GCN_FRAME_RANK0_RANK2_2
+      nodes:
+        - -1
+        - 10
+      activations:
+        - tanh
+    - name: ISO_GCN_FRAME_RANK0_RANK2_1
+      type: iso_gcn
+      bias: false
+      destinations:
+        - CONTRACTION_1
+      residual: false
+      support_input_indices: [0, 1, 2, 3, 4, 5, 6, 7, 8]
+      nodes:
+        - -1
+        - 10
+      activations:
+        - identity
+      optional:
+        support_tensor_rank: 2
+        propagations:
+          - convolution
+      coeff: .1
+    - name: ISO_GCN_FRAME_RANK0_RANK2_2
+      type: iso_gcn
+      bias: false
+      destinations:
+        - CONTRACTION_2
+      residual: false
+      support_input_indices: [0, 1, 2, 3, 4, 5, 6, 7, 8]
+      nodes:
+        - -1
+        - 10
+      activations:
+        - identity
+      optional:
+        support_tensor_rank: 2
+        propagations:
+          - convolution
+      coeff: .1
+    - name: SHORTCUT
+      type: identity
+      is_first: true
+      input_keys:
+        - rank2
+      destinations:
+        - REDUCER
+    - name: ISO_GCN_RANK2_RANK2
+      type: iso_gcn
+      is_first: true
+      bias: false
+      input_keys:
+        - rank2
+      destinations:
+        - CONTRACTION_1
+      support_input_indices: [0, 1, 2, 3, 4, 5, 6, 7, 8]
+      nodes:
+        - -1
+        - 10
+      activations:
+        - identity
+      optional:
+        support_tensor_rank: 2
+        propagations:
+          - contraction
+      coeff: .1
+    - name: CONTRACTION_1
+      type: contraction
+      destinations:
+        - CONTRACTION_2
+      activations:
+        - identity
+    - name: CONTRACTION_2
+      type: contraction
+      destinations:
+        - REDUCER
+      activations:
+        - identity
+    - name: REDUCER
+      type: reducer
+      destinations:
+        - OUT_LINEAR
+    - name: OUT_LINEAR
+      type: mlp
+      is_last: true
+      nodes:
+        - -1
+        - -1
+      bias: false

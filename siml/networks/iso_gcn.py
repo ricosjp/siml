@@ -1,5 +1,6 @@
 
 import einops
+import numpy as np
 import torch
 
 from . import abstract_gcn
@@ -31,6 +32,9 @@ class IsoGCN(abstract_gcn.AbstractGCN):
             raise ValueError(
                 f"# of layers should be 0 or 1 for: {block_setting}")
 
+        self.dim = block_setting.optional.get('dim', 3)
+        self.support_tensor_rank = block_setting.optional.get(
+            'support_tensor_rank', 1)
         self.symmetric = block_setting.optional.get('symmetric', False)
         if self.symmetric:
             print(f"Output symmetric matrix for: {block_setting.name}")
@@ -54,20 +58,34 @@ class IsoGCN(abstract_gcn.AbstractGCN):
 
         return
 
-    def _validate_block(self, x):
+    def _validate_block(self, x, supports):
+        shape = x.shape
+        self.x_tensor_rank \
+            = len(shape) - 2  # (n_vertex, dim, dim, ..., n_feature)
+
+        if len(supports) != self.dim**self.support_tensor_rank:
+            raise ValueError(
+                f"{self.dim**self.support_tensor_rank} ength of supports "
+                f"expected (actual: {len(supports)} for: {self.block_setting}")
+
         if not self.create_subchain:
             return
 
         str_propagations = self.block_setting.optional['propagations']
-        tensor_rank = len(x.shape) - 2  # (n_vertex, dim, dim, ..., n_feature)
         n_propagation = len(str_propagations)
         n_contraction = sum([
             s == 'contraction' for s in str_propagations])
         n_rank_raise_propagation = n_propagation - n_contraction
         estimated_output_tensor_rank = \
-            tensor_rank - n_contraction + n_rank_raise_propagation
+            self.x_tensor_rank - n_contraction + n_rank_raise_propagation
 
-        if tensor_rank == 0:
+        if estimated_output_tensor_rank > 0 \
+                and self.block_setting.activations[0] != 'identity':
+            raise ValueError(
+                'Set identity activation for rank '
+                f"{estimated_output_tensor_rank} output: {self.block_setting}")
+
+        if self.x_tensor_rank == 0:
             if estimated_output_tensor_rank > 0:
                 # rank 0 -> rank k tensor
                 if self.block_setting.bias and self.ah_w:
@@ -92,7 +110,7 @@ class IsoGCN(abstract_gcn.AbstractGCN):
 
     def _forward_single(self, x, merged_support):
         if self.is_first:
-            self._validate_block(x)
+            self._validate_block(x, merged_support)
             self.is_first = False
         if self.residual:
             shortcut = self.shortcut(x)
@@ -104,6 +122,7 @@ class IsoGCN(abstract_gcn.AbstractGCN):
             h_res = self.activations[-1](h_res + shortcut)
         else:
             h_res = self.activations[-1](h_res) + shortcut
+
         return h_res
 
     def _propagate(self, x, support):
@@ -214,18 +233,25 @@ class IsoGCN(abstract_gcn.AbstractGCN):
         y: torch.Tensor
             [n_vertex, dim, n_feature]-shaped tensor.
         """
-        shape = x.shape
-        tensor_rank = len(shape) - 2
-        if tensor_rank == 0:
+        if self.support_tensor_rank == 1:
             h = torch.stack([support.mm(x) for support in supports], axis=-2)
+        elif self.support_tensor_rank == 2:
+            n = x.shape[0]
+            f = x.shape[-1]
+            h = torch.reshape(
+                torch.stack([support.mm(x) for support in supports], axis=-2),
+                (n, self.dim, self.dim, f))
+            if self.symmetric:
+                h = (h + einops.rearrange(
+                    h, 'element x1 x2 feature -> element x2 x1 feature')) / 2
         else:
-            raise ValueError(f"Input tensor rank is not 0: {shape}")
+            raise NotImplementedError
 
         return h
 
     def _contraction_without_merge(self, x, supports):
-        """Calculate contraction G \\cdot x. It calculates
-        \\sum_k G_{ijk} H_{jkl_1l_2...}
+        """Calculate contraction G \\cdot B. It calculates
+        \\sum_l G_{i,j,k_1,k_2,...,l} H_{jk_1,k_2,...,l,f}
 
         Parameters
         ----------
@@ -244,16 +270,27 @@ class IsoGCN(abstract_gcn.AbstractGCN):
                        tensor rank - 1 repetition
         """
         shape = x.shape
-        dim = len(supports)
         tensor_rank = len(shape) - 2
-        if tensor_rank == 1:
-            return torch.sum(torch.stack([
-                support.mm(x[:, i_dim]) for i_dim, support
-                in enumerate(supports)]), dim=0)
+        if tensor_rank == self.support_tensor_rank:
+            if self.support_tensor_rank == 1:
+                return torch.sum(torch.stack([
+                    supports[i_dim].mm(x[:, i_dim]) for i_dim
+                    in range(self.dim)]), dim=0)
+            elif self.support_tensor_rank == 2:
+                # ijkm, jnmf -> iknf
+                return torch.stack([
+                    torch.stack([
+                        torch.sum(torch.stack([
+                            supports[self.dim*k+m].mm(x[:, n, m])
+                            for m in range(self.dim)]), dim=0)
+                        for n in range(self.dim)], dim=1)
+                    for k in range(self.dim)], dim=1)
+            else:
+                raise ValueError
         elif tensor_rank > 1:
             return torch.stack([
-                self._contraction_without_merge(x[..., i_dim, :], supports)
-                for i_dim in range(dim)], dim=-2)
+                self._contraction_without_merge(x[:, i_dim], supports)
+                for i_dim in range(self.dim)], dim=1)
         else:
             raise ValueError(f"Tensor rank is 0 (shape: {shape})")
 

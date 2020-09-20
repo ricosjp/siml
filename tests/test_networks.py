@@ -9,8 +9,9 @@ import torch
 
 import siml.inferer as inferer
 import siml.networks.activations as activations
-import siml.networks.symmat2array as symmat2array
 import siml.networks.array2symmat as array2symmat
+import siml.networks.symmat2array as symmat2array
+import siml.networks.tensor_operations as tensor_operations
 import siml.setting as setting
 import siml.trainer as trainer
 
@@ -500,3 +501,15 @@ class TestNetwork(unittest.TestCase):
             shutil.rmtree(tr.setting.trainer.output_directory)
         loss = tr.train()
         np.testing.assert_array_less(loss, 1.)
+
+    def test_contraction(self):
+        contraction = tensor_operations.Contraction(setting.BlockSetting())
+        a = np.random.rand(10, 3, 3, 3, 3, 5)
+        b = np.random.rand(10, 3, 3, 5)
+        desired = np.einsum('ijklmf,ilmf->ijkf', a, b)
+        np.testing.assert_almost_equal(
+            contraction(torch.from_numpy(a), torch.from_numpy(b)).numpy(),
+            desired)
+        np.testing.assert_almost_equal(
+            contraction(torch.from_numpy(b), torch.from_numpy(a)).numpy(),
+            desired)
