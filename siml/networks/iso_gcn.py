@@ -1,6 +1,5 @@
 
 import einops
-import numpy as np
 import torch
 
 from . import abstract_gcn
@@ -117,7 +116,7 @@ class IsoGCN(abstract_gcn.AbstractGCN):
         else:
             shortcut = 0.
 
-        h_res = self._propagate(x, merged_support)
+        h_res = self._propagate(x, merged_support) * self.factor
         if self.block_setting.activation_after_residual:
             h_res = self.activations[-1](h_res + shortcut)
         else:
@@ -136,7 +135,7 @@ class IsoGCN(abstract_gcn.AbstractGCN):
 
         if self.ah_w:
             # (A H) W
-            h = self.subchains[0][0](self.factor * h)
+            h = self.subchains[0][0](h)
 
         h = torch.nn.functional.dropout(
             h, p=self.dropout_ratios[0], training=self.training)
