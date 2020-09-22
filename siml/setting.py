@@ -501,6 +501,7 @@ class BlockSetting(TypedDataClass):
         default=None, metadata={'allow_none': True})
     coeff: float = dc.field(
         default=None, metadata={'allow_none': True})
+    time_series: bool = False
 
     optional: dict = dc.field(default_factory=dict)
 
@@ -773,6 +774,9 @@ class MainSetting:
             replace_preprocessed=replace_preprocessed)
 
     def __post_init__(self):
+
+        for block in self.model.blocks:
+            block.time_series = self.trainer.time_series
 
         if self.replace_preprocessed:
             if str(self.data.preprocessed[0]) \
