@@ -1,0 +1,152 @@
+conversion:
+  file_type: fistr
+  finished_file: converted
+  mandatory: []
+  mandatory_variables: []
+  optional: []
+  optional_variables: []
+  required_file_names: []
+  skip_femio: false
+  time_series: false
+data:
+  develop: []
+  inferred:
+  - data/inferred
+  interim:
+  - data/interim
+  pad: false
+  preprocessed:
+  - tests/data/linear/preprocessed
+  raw:
+  - data/raw
+  test: []
+  train:
+  - tests/data/linear/preprocessed/train/0
+  - tests/data/linear/preprocessed/train/1
+  validation:
+  - tests/data/linear/preprocessed/train/0
+  - tests/data/linear/preprocessed/train/1
+model:
+  blocks:
+  - activation_after_residual: true
+    activations:
+    - identity
+    allow_linear_residual: false
+    bias: true
+    coeff: null
+    destinations: []
+    device: null
+    dropouts:
+    - 0.0
+    hidden_activation: relu
+    hidden_dropout: 0.5
+    hidden_layers: null
+    hidden_nodes: null
+    input_dropout: 0.0
+    input_indices: null
+    input_keys: null
+    input_slice:
+    - 0
+    - null
+    - 1
+    is_first: true
+    is_last: true
+    kernel_sizes: null
+    name: Block
+    nodes:
+    - 3
+    - 2
+    optional: {}
+    output_activation: identity
+    output_dropout: 0.0
+    output_key: null
+    residual: false
+    support_input_index: null
+    support_input_indices:
+    - 0
+    type: adjustable_mlp
+optuna:
+  hyperparameters: []
+  n_trial: 100
+  output_base_directory: models/optuna
+  setting: {}
+preprocess: {}
+replace_preprocessed: true
+study:
+  n_fold: 10
+  plot_validation: false
+  relative_develop_size_linspace:
+  - 0.2
+  - 1.0
+  - 5
+  root_directory: null
+  scale_loss: false
+  type: learning_curve
+  unit_error: '-'
+  x_from_zero: false
+  x_logscale: false
+  y_from_zero: false
+  y_logscale: false
+trainer:
+  batch_size: 1
+  compute_accuracy: false
+  data_parallel: false
+  display_mergin: 5
+  draw_network: true
+  element_batch_size: -1
+  element_wise: false
+  gpu_id: -1
+  input_dims:
+  - 2
+  - 1
+  input_names:
+  - x1
+  - x2
+  inputs:
+  - dim: 2
+    name: x1
+  - dim: 1
+    name: x2
+  iterator: serial
+  lazy: false
+  log_trigger_epoch: 10
+  loss_function: mse
+  model_parallel: false
+  n_epoch: 100
+  name: linear_short
+  non_blocking: true
+  num_workers: 0
+  optimizer: adam
+  optimizer_setting:
+    betas:
+    - 0.9
+    - 0.99
+    eps: 1.0e-08
+    lr: 0.001
+    weight_decay: 0
+  optuna_trial: null
+  output_dims:
+  - 2
+  output_directory: tests/data/linear/tmp
+  output_names:
+  - y
+  output_stats: false
+  outputs:
+  - dim: 2
+    name: y
+  patience: 3
+  pretrain_directory: null
+  prune: false
+  restart_directory: null
+  seed: 0
+  simplified_model: false
+  snapshot_choise_method: best
+  split_ratio: {}
+  stop_trigger_epoch: 100
+  support_input: null
+  support_inputs: null
+  time_series: false
+  use_siml_updater: true
+  validation_batch_size: 1
+  validation_directories: []
+  validation_element_batch_size: -1

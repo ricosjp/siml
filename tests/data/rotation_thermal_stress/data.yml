@@ -13,6 +13,8 @@ conversion:
     - '*.cnt'
     - '*.res.0.1'
 preprocess:
+  nadj:
+    method: identity
   nodal_grad_x:
     method: sparse_std
     componentwise: false
@@ -39,6 +41,26 @@ preprocess:
     same_as: nodal_hess_xx
   nodal_hess_zz:
     same_as: nodal_hess_xx
+
+  nodal_frame_xx:
+    method: sparse_std
+  nodal_frame_xy:
+    same_as: nodal_frame_xx
+  nodal_frame_xz:
+    same_as: nodal_frame_xx
+  nodal_frame_yx:
+    same_as: nodal_frame_xx
+  nodal_frame_yy:
+    same_as: nodal_frame_xx
+  nodal_frame_yz:
+    same_as: nodal_frame_xx
+  nodal_frame_zx:
+    same_as: nodal_frame_xx
+  nodal_frame_zy:
+    same_as: nodal_frame_xx
+  nodal_frame_zz:
+    same_as: nodal_frame_xx
+
   nodal_mean_volume:
     method: max_abs
   nodal_concentrated_volume:

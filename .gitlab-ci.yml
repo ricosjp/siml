@@ -44,6 +44,7 @@ preprocess:
       - tests/data/ode/preprocessed
       - tests/data/ode/preprocessed
       - tests/data/rotation_thermal_stress/preprocessed
+      - tests/data/rotation_thermal_stress/interim/cube/original
       - tests/data/heat_time_series/preprocessed
     expire_in: 60min
 

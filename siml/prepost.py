@@ -199,12 +199,12 @@ class RawConverter():
         # Save data
         output_directory.mkdir(parents=True, exist_ok=True)
         if fem_data is not None:
+            fem_data.save(output_directory)
             if self.to_first_order:
                 fem_data_to_save = fem_data.to_first_order()
             else:
                 fem_data_to_save = fem_data
             fem_data_to_save = update_fem_data(fem_data_to_save, dict_data)
-            fem_data_to_save.save(output_directory)
             if self.write_ucd:
                 fem_data_to_save.to_first_order().write(
                     'ucd', output_directory / 'mesh.inp',

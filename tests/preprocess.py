@@ -83,6 +83,8 @@ def conversion_function_heat_time_series(fem_data, raw_directory=None):
 
 
 def conversion_function_rotation_thermal_stress(fem_data, raw_directory=None):
+    adj = fem_data.calculate_adjacency_matrix_node()
+    nadj = prepost.normalize_adjacency_matrix(adj)
     nodal_grad_x, nodal_grad_y, nodal_grad_z = \
         fem_data.calculate_spatial_gradient_adjacency_matrices(
             'nodal', n_hop=2)
@@ -95,6 +97,17 @@ def conversion_function_rotation_thermal_stress(fem_data, raw_directory=None):
     nodal_hess_zx = nodal_grad_z.dot(nodal_grad_x).tocoo()
     nodal_hess_zy = nodal_grad_z.dot(nodal_grad_y).tocoo()
     nodal_hess_zz = nodal_grad_z.dot(nodal_grad_z).tocoo()
+
+    frame_adjs = fem_data.calculate_frame_tensor_adjs(mode='nodal', n_hop=2)
+    nodal_frame_xx = frame_adjs[0][0]
+    nodal_frame_xy = frame_adjs[0][1]
+    nodal_frame_xz = frame_adjs[0][2]
+    nodal_frame_yx = frame_adjs[1][0]
+    nodal_frame_yy = frame_adjs[1][1]
+    nodal_frame_yz = frame_adjs[1][2]
+    nodal_frame_zx = frame_adjs[2][0]
+    nodal_frame_zy = frame_adjs[2][1]
+    nodal_frame_zz = frame_adjs[2][2]
 
     filter_ = fem_data.filter_first_order_nodes()
 
@@ -132,6 +145,7 @@ def conversion_function_rotation_thermal_stress(fem_data, raw_directory=None):
         nodal_strain_array, from_engineering=True)
 
     dict_data = {
+        'nadj': nadj,
         'nodal_grad_x': nodal_grad_x,
         'nodal_grad_y': nodal_grad_y,
         'nodal_grad_z': nodal_grad_z,
@@ -144,6 +158,15 @@ def conversion_function_rotation_thermal_stress(fem_data, raw_directory=None):
         'nodal_hess_zx': nodal_hess_zx,
         'nodal_hess_zy': nodal_hess_zy,
         'nodal_hess_zz': nodal_hess_zz,
+        'nodal_frame_xx': nodal_frame_xx,
+        'nodal_frame_xy': nodal_frame_xy,
+        'nodal_frame_xz': nodal_frame_xz,
+        'nodal_frame_yx': nodal_frame_yx,
+        'nodal_frame_yy': nodal_frame_yy,
+        'nodal_frame_yz': nodal_frame_yz,
+        'nodal_frame_zx': nodal_frame_zx,
+        'nodal_frame_zy': nodal_frame_zy,
+        'nodal_frame_zz': nodal_frame_zz,
         'node': node,
         'nodal_strain_array': nodal_strain_array,
         'elemental_strain_array': elemental_strain_array,
