@@ -109,10 +109,7 @@ class AbstractGCN(siml_module.SimlModule):
             y: numpy.ndarray of cupy.ndarray
                 Output of the NN.
         """
-        if len(x.shape) == 3:
-            hs = torch.stack([self._forward_single(x_, supports) for x_ in x])
-        else:
-            hs = self._forward_single(x, supports)
+        hs = self._forward_single(x, supports)
         return hs
 
     def _forward_single(self, x, supports):
