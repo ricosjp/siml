@@ -44,7 +44,7 @@ class Reducer(siml_module.SimlModule):
                 if x.shape[0] == other.shape[0]:
                     x = self.op(x, other)
                 else:
-                    x = self._broadcase_batchsize(
+                    x = self._broadcast_batchsize(
                         self.op, x, other, original_shapes)
             elif len_x >= len_other:
                 axes = self._get_permute_axis(len_x, len_other)
@@ -56,7 +56,7 @@ class Reducer(siml_module.SimlModule):
                 x = self._inverse_permute(x, axes)
         return self.activation(x)
 
-    def _broadcase_batchsize(self, op, x, other, original_shapes):
+    def _broadcast_batchsize(self, op, x, other, original_shapes):
         if x.shape[0] > other.shape[0]:
             split_data = activations.split(x, original_shapes)
             smaller = other

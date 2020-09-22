@@ -10,6 +10,7 @@ import torch
 import siml.inferer as inferer
 import siml.networks.activations as activations
 import siml.networks.array2symmat as array2symmat
+import siml.networks.reducer as reducer
 import siml.networks.symmat2array as symmat2array
 import siml.networks.tensor_operations as tensor_operations
 import siml.setting as setting
@@ -91,6 +92,41 @@ class TestNetwork(unittest.TestCase):
             shutil.rmtree(tr.setting.trainer.output_directory)
         loss = tr.train()
         np.testing.assert_array_less(loss, 1.)
+
+    def test_reducer_feature_direction(self):
+        reducer_layer = reducer.Reducer(
+            setting.BlockSetting(optional={'operator': 'mul'}))
+        rank1 = np.random.rand(10, 3, 5)  # (n_node, dim, n_feature)
+        rank0 = np.random.rand(10, 5)
+
+        result = reducer_layer(
+            torch.from_numpy(rank1), torch.from_numpy(rank0))
+        desired = np.stack(
+            [rank1[:, i_dim] * rank0 for i_dim in range(3)], axis=1)
+        np.testing.assert_almost_equal(result, desired)
+
+        swapped_result = reducer_layer(
+            torch.from_numpy(rank0), torch.from_numpy(rank1))
+        np.testing.assert_almost_equal(swapped_result, desired)
+
+    def test_reducer_element_direction(self):
+        reducer_layer = reducer.Reducer(
+            setting.BlockSetting(optional={'operator': 'mul'}))
+        n_batch = 2
+        n_vertex_0 = 7
+        n_vertex_1 = 13
+        local_value_0 = np.random.rand(n_vertex_0, 5)
+        local_value_1 = np.random.rand(n_vertex_1, 5)
+        local_value = np.concatenate([local_value_0, local_value_1], axis=0)
+        global_value = np.random.rand(n_batch, 5)
+        original_shapes = [[n_vertex_0], [n_vertex_1]]
+        result = reducer_layer(
+            torch.from_numpy(local_value), torch.from_numpy(global_value),
+            original_shapes=original_shapes)
+        desired = np.concatenate([
+            local_value_0 * global_value[0],
+            local_value_1 * global_value[1]], axis=0)
+        np.testing.assert_almost_equal(result, desired)
 
     def test_reduce(self):
         main_setting = setting.MainSetting.read_settings_yaml(
