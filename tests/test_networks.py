@@ -478,7 +478,7 @@ class TestNetwork(unittest.TestCase):
             shutil.rmtree(tr.setting.trainer.output_directory)
         loss = tr.train()
         np.testing.assert_array_less(loss, 1.)
-        x = torch.from_numpy(np.random.rand(1, 4, 6).astype(np.float32))
+        x = torch.from_numpy(np.random.rand(4, 6).astype(np.float32))
         _s = sp.coo_matrix([
             [1., 1., 0., 0.],
             [1., 1., 1., 1.],

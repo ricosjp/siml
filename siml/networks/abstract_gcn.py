@@ -109,7 +109,11 @@ class AbstractGCN(siml_module.SimlModule):
             y: numpy.ndarray of cupy.ndarray
                 Output of the NN.
         """
-        hs = self._forward_single(x, supports)
+        if self.block_setting.time_series:
+            hs = torch.stack([
+                self._forward_single(_x, supports) for _x in x])
+        else:
+            hs = self._forward_single(x, supports)
         return hs
 
     def _forward_single(self, x, supports):
