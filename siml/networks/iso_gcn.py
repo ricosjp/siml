@@ -116,7 +116,7 @@ class IsoGCN(abstract_gcn.AbstractGCN):
         else:
             shortcut = 0.
 
-        h_res = self._propagate(x, merged_support) * self.factor
+        h_res = self._propagate(x, merged_support)
         if self.block_setting.activation_after_residual:
             h_res = self.activations[-1](h_res + shortcut)
         else:
@@ -131,7 +131,7 @@ class IsoGCN(abstract_gcn.AbstractGCN):
             h = self.subchains[0][0](h)
 
         for propagation_function in self.propagation_functions:
-            h = propagation_function(h, support)
+            h = propagation_function(h, support) * self.factor
 
         if self.ah_w:
             # (A H) W

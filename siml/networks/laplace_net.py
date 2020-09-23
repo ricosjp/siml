@@ -47,8 +47,9 @@ class LaplaceNet(abstract_gcn.AbstractGCN):
 
             if self.ah_w:
                 # Pattern A: (GX (GX H) + GY (GY H) + GZ (GZ H)) W
-                h = subchain(self.factor * torch.sum(torch.stack([
+                h = subchain(torch.sum(torch.stack([
                     torch.sparse.mm(support, torch.sparse.mm(support, h))
+                    * self.factor**2
                     for support in supports]), dim=0))
 
             else:
@@ -56,7 +57,7 @@ class LaplaceNet(abstract_gcn.AbstractGCN):
                 h = subchain(self.factor * h)
                 h = torch.sum(torch.stack([
                     torch.sparse.mm(support, torch.sparse.mm(support, h))
-                    for support in supports]), dim=0)
+                    for support in supports]) ** self.factor**2, dim=0)
 
             h = torch.nn.functional.dropout(
                 h, p=dropout_ratio, training=self.training)
