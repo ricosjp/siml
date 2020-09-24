@@ -12,6 +12,6 @@ class Array2Diagmat(siml_module.SimlModule):
         return
 
     def forward(self, x, supports=None, original_shapes=None):
-        eye = torch.eye(3)
+        eye = torch.eye(3, device=x.device)
         y = torch.einsum('ik,mn->imnk', x, eye)
         return y
