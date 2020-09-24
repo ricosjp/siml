@@ -1,0 +1,81 @@
+data:
+  train:
+    - tests/data/rotation_thermal_stress/preprocessed
+  validation:
+    - tests/data/rotation_thermal_stress/preprocessed
+  develop:
+    - tests/data/rotation_thermal_stress/preprocessed
+trainer:
+  lazy: false
+  num_workers: 0
+  output_directory: tests/data/rotation_thermal_stress/models/iso_gcn_rank2_rank2
+  split_ratio:
+    validation: .1
+    test: .0
+  inputs:
+    - name: initial_temperature
+      dim: 1
+  support_inputs:
+    - nodal_grad_x
+    - nodal_grad_y
+    - nodal_grad_z
+  outputs:
+    - name: nodal_strain_mat
+      dim: 1
+  prune: true
+  batch_size: 2
+  n_epoch: 3
+  log_trigger_epoch: 1
+  stop_trigger_epoch: 1
+  seed: 0
+model:
+  blocks:
+    - name: IN_MLP
+      type: mlp
+      destinations:
+        - ISO_GCN_RANK0_RANK2
+        - ARRAY2DIAGMAT
+      residual: false
+      nodes:
+        - -1
+        - 10
+      activations:
+        - tanh
+    - name: ISO_GCN_RANK0_RANK2
+      type: iso_gcn
+      destinations:
+        - ADD
+      bias: false
+      residual: false
+      activation_after_residual: false
+      support_input_indices:
+        - 0
+        - 1
+        - 2
+      nodes:
+        - -1
+        - 10
+      activations:
+        - identity
+      optional:
+        propagations:
+          - convolution
+          - tensor_product
+        ah_w: true
+        create_subchain: true
+        symmetric: true
+      coeff: 1.
+    - name: ARRAY2DIAGMAT
+      type: array2diagmat
+      destinations:
+        - ADD
+    - name: ADD
+      type: reducer
+      destinations:
+        - OUT_LINEAR
+    - name: OUT_LINEAR
+      type: mlp
+      nodes:
+        - -1
+        - -1
+      bias: false
