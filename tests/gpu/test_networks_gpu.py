@@ -157,6 +157,17 @@ class TestNetworksGPU(unittest.TestCase):
             plt.show()
 
     @testing.attr.multi_gpu(2)
+    def test_iso_gcn_diag(self):
+        main_setting = setting.MainSetting.read_settings_yaml(Path(
+            'tests/data/rotation_thermal_stress/iso_gcn_rank0_rank2_diag.yml'))
+        main_setting.trainer.gpu_id = 1
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        self.assertLess(loss, 10.)
+
+    @testing.attr.multi_gpu(2)
     def test_integration_y3(self):
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/ode/integration_y3.yml'))
