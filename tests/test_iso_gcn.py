@@ -903,6 +903,47 @@ class TestIsoGCN(unittest.TestCase):
             original_results, transformed_results, rank2='global_lte_mat',
             threshold_percent=.002)
 
+    def test_iso_gcn_rotation_thermal_stress_rank0_rank2_diag(self):
+        main_setting = setting.MainSetting.read_settings_yaml(Path(
+            'tests/data/rotation_thermal_stress/iso_gcn_rank0_rank2_diag.yml'))
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        tr.train()
+
+        # Confirm inference result has isometric invariance and equivariance
+        original_path = Path(
+            'tests/data/rotation_thermal_stress/preprocessed/cube/original')
+        transformed_paths = self.collect_transformed_paths(
+            'tests/data/rotation_thermal_stress/preprocessed/cube'
+            '/*_transformed_*')
+        ir = inferer.Inferer(main_setting)
+        model_directory = str(main_setting.trainer.output_directory)
+        inference_outpout_directory = \
+            main_setting.trainer.output_directory / 'inferred'
+        if inference_outpout_directory.exists():
+            shutil.rmtree(inference_outpout_directory)
+        original_results = ir.infer(
+            model=model_directory,
+            preprocessed_data_directory=[original_path],
+            converter_parameters_pkl=Path(
+                'tests/data/rotation_thermal_stress/preprocessed'
+                '/preprocessors.pkl'),
+            output_directory=inference_outpout_directory,
+            overwrite=True)
+        transformed_results = ir.infer(
+            model=model_directory,
+            preprocessed_data_directory=transformed_paths,
+            converter_parameters_pkl=Path(
+                'tests/data/rotation_thermal_stress/preprocessed'
+                '/preprocessors.pkl'),
+            output_directory=inference_outpout_directory,
+            overwrite=True)
+
+        self.validate_results(
+            original_results, transformed_results, rank2='nodal_strain_mat',
+            threshold_percent=.002, decimal=4)
+
     def test_iso_gcn_rotation_thermal_stress_frame_rank2(self):
         main_setting = setting.MainSetting.read_settings_yaml(Path(
             'tests/data/rotation_thermal_stress/iso_gcn_frame_rank2.yml'))
