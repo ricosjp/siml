@@ -9,6 +9,7 @@ import torch
 
 import siml.inferer as inferer
 import siml.networks.activations as activations
+import siml.networks.array2diagmat as array2diagmat
 import siml.networks.array2symmat as array2symmat
 import siml.networks.reducer as reducer
 import siml.networks.symmat2array as symmat2array
@@ -537,6 +538,18 @@ class TestNetwork(unittest.TestCase):
             shutil.rmtree(tr.setting.trainer.output_directory)
         loss = tr.train()
         np.testing.assert_array_less(loss, 1.)
+
+    def test_gcn_with_array2diagmat(self):
+        array = np.random.rand(10, 4)
+
+        bs = setting.BlockSetting()
+        a2d = array2diagmat.Array2Diagmat(bs)
+        diags = a2d(torch.from_numpy(array)).numpy()
+        for i_vertex in range(array.shape[0]):
+            for i_feature in range(array.shape[1]):
+                np.testing.assert_almost_equal(
+                    np.diag(diags[i_vertex, :, :, i_feature]),
+                    array[i_vertex, i_feature])
 
     def test_contraction(self):
         contraction = tensor_operations.Contraction(setting.BlockSetting())

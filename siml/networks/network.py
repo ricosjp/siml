@@ -10,6 +10,7 @@ import torch
 from .. import setting
 from . import activation
 from . import concatenator
+from . import array2diagmat
 from . import array2symmat
 from . import deepsets
 from . import gcn
@@ -42,6 +43,8 @@ class Network(torch.nn.Module):
     DICT_BLOCKS = {
         # Layers without weights
         'activation': BlockInformation(activation.Activation, trainable=False),
+        'array2diagmat': BlockInformation(
+            array2diagmat.Array2Diagmat, trainable=False),
         'array2symmat': BlockInformation(
             array2symmat.Array2Symmat, trainable=False),
         'concatenator': BlockInformation(
