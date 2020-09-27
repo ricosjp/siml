@@ -5,7 +5,9 @@ default:
     - poetry config virtualenvs.create false
     - poetry config repositories.ricos https://pypi.ritc.jp
     - poetry config http-basic.ricos ricos ${RICOS_PYPI_KEY}
-    - poetry install
+    - poetry buiuld
+    - poetry run python3 -m pip install dist/siml-*.whl  # Only install root project, not dependencies
+    # - poetry install
 
 stages:
   - docker
