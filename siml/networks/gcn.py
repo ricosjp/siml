@@ -5,8 +5,7 @@ from . import abstract_gcn
 
 
 class GCN(abstract_gcn.AbstractGCN):
-    """Graph Convolutional network according to
-    https://arxiv.org/abs/1609.02907 .
+    """Graph Convolutional network based on https://arxiv.org/abs/1609.02907 .
     """
 
     def __init__(self, block_setting):

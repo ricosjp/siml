@@ -1,8 +1,6 @@
-# from io import BytesIO
 import warnings
 
 import matplotlib.pyplot as plt
-# import matplotlib.image as mpimg
 import networkx as nx
 import numpy as np
 import torch
@@ -14,6 +12,7 @@ from . import array2diagmat
 from . import array2symmat
 from . import deepsets
 from . import gcn
+from . import geo
 from . import grad_gcn
 from . import identity
 from . import integration
@@ -74,6 +73,9 @@ class Network(torch.nn.Module):
         'mlp': BlockInformation(mlp.MLP),
         'nri': BlockInformation(nri.NRI, use_support=True),
         'tcn': BlockInformation(tcn.TCN),
+
+        # Layers wrapped from torch_geometric
+        'gin': BlockInformation(geo.GIN, use_support=True),
     }
     INPUT_LAYER_NAME = 'Input'
     OUTPUT_LAYER_NAME = 'Output'
