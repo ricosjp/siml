@@ -1,5 +1,6 @@
 
 import torch
+import torch_geometric
 
 from . import siml_module
 
@@ -31,6 +32,8 @@ class AbstractGCN(siml_module.SimlModule):
             self.multiple_networks = multiple_networks
         self.gather_function = block_setting.optional.get(
             'gather_function', 'sum')
+        self.keep_self_loop = block_setting.optional.get(
+            'keep_self_loop', False)
 
         if self.gather_function == 'cat':
             len_support = len(block_setting.support_input_indices)
@@ -50,6 +53,10 @@ class AbstractGCN(siml_module.SimlModule):
         if create_subchain:
             self.subchains, self.subchain_indices = self._create_subchains(
                 block_setting, nodes=overwritten_nodes)
+        else:
+            self.subchain_indices = list(range(len(
+                block_setting.support_input_indices)))
+
         return
 
     def _create_subchains(
@@ -161,3 +168,15 @@ class AbstractGCN(siml_module.SimlModule):
 
     def _forward_single_core(self, x, subchain_index, support):
         raise NotImplementedError
+
+    def _remove_self_loop_if_exists(self, support):
+        edge_index = support._indices()
+        if self.keep_self_loop:
+            return edge_index
+
+        if torch_geometric.utils.contains_self_loops(edge_index):
+            return_edge_index, _ = torch_geometric.utils.remove_self_loops(
+                edge_index)
+        else:
+            return_edge_index = support._indices()
+        return return_edge_index
