@@ -75,6 +75,7 @@ class Network(torch.nn.Module):
         'tcn': BlockInformation(tcn.TCN),
 
         # Layers wrapped from torch_geometric
+        'cluster_gcn': BlockInformation(geo.ClusterGCN, use_support=True),
         'gin': BlockInformation(geo.GIN, use_support=True),
         'gcnii': BlockInformation(geo.GCNII, use_support=True),
     }
