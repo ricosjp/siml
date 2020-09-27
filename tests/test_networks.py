@@ -325,7 +325,7 @@ class TestNetwork(unittest.TestCase):
             shutil.rmtree(main_setting.trainer.output_directory)
         tr = trainer.Trainer(main_setting)
         loss = tr.train()
-        self.assertLess(loss, 3e-1)
+        self.assertLess(loss, 3.e-1)
 
         ir = inferer.Inferer(main_setting)
         results = ir.infer(
@@ -334,7 +334,7 @@ class TestNetwork(unittest.TestCase):
             / 'test',
             converter_parameters_pkl=main_setting.data.preprocessed_root
             / 'preprocessors.pkl')
-        self.assertLess(results[0]['loss'], 3e-1)
+        self.assertLess(results[0]['loss'], 1.)
 
     def test_grad_gcn(self):
         main_setting = setting.MainSetting.read_settings_yaml(
