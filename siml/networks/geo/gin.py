@@ -1,3 +1,4 @@
+
 import torch
 import torch_geometric
 
@@ -16,8 +17,6 @@ class GIN(abstract_gcn.AbstractGCN):
 
         self.epsilon = block_setting.optional.get('epsilon', 0.)
         self.train_epsilon = block_setting.optional.get('train_epsilon', False)
-        self.remove_self_loops = self.block_setting.optional.get(
-            'remove_self_loops', True)
 
         self.gins = torch.nn.ModuleList([
             torch_geometric.nn.GINConv(
@@ -34,10 +33,6 @@ class GIN(abstract_gcn.AbstractGCN):
         return
 
     def _forward_single_core(self, x, subchain_index, support):
-        if self.remove_self_loops:
-            edge_index, _ = torch_geometric.utils.remove_self_loops(
-                support._indices())
-        else:
-            edge_index = support._indices()
+        edge_index = self._remove_self_loop_if_exists(support)
         return self.mlps[subchain_index](
             self.gins[subchain_index](x, edge_index))

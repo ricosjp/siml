@@ -76,6 +76,7 @@ class Network(torch.nn.Module):
 
         # Layers wrapped from torch_geometric
         'gin': BlockInformation(geo.GIN, use_support=True),
+        'gcnii': BlockInformation(geo.GCNII, use_support=True),
     }
     INPUT_LAYER_NAME = 'Input'
     OUTPUT_LAYER_NAME = 'Output'
