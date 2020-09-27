@@ -1704,7 +1704,7 @@ PyQt5 = ["PyQt5"]
 cupy = []
 
 [metadata]
-content-hash = "d7ab99a87cbf2c4542c1ef5c6f9a93c779f31f839be681fbbabe2f140d7f8d84"
+content-hash = "a66fb8cc5a47073125c3a3e28d5c218fb99c7346eaa44febfb0e0e48088fa80f"
 lock-version = "1.0"
 python-versions = "^3.7"
 
