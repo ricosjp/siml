@@ -200,3 +200,14 @@ class TestNetworksGPU(unittest.TestCase):
                     color=cmap(i), label=f"y3 inferred of data {i}")
             plt.legend()
             plt.show()
+
+    @testing.attr.multi_gpu(2)
+    def test_gin_gpu(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/deform/gin.yml'))
+        main_setting.trainer.gpu_id = 1
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, 1.)
