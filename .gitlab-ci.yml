@@ -6,7 +6,7 @@ default:
     - poetry config repositories.ricos https://pypi.ritc.jp
     - poetry config http-basic.ricos ricos ${RICOS_PYPI_KEY}
     - poetry build
-    - poetry run python3 -m pip install dist/siml-*.whl  # Only install root project, not dependencies
+    - python3.7 -m pip install dist/siml-*.whl  # Only install root project, not dependencies
     # - poetry install
 
 stages:
