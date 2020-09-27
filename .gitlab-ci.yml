@@ -107,6 +107,10 @@ test_networks:
   extends: .test
   script: python3.7 -m pytest tests/test_networks.py --capture=no
 
+test_geo:
+  extends: .test
+  script: python3.7 -m pytest tests/test_geo.py --capture=no
+
 test_iso_gcn:
   extends: .test
   script: python3.7 -m pytest tests/test_iso_gcn.py --capture=no
