@@ -149,7 +149,7 @@ test_other:
 deploy:wheel:master:
   extends: .deploy:wheel
   before_script:
-    - export VERSION=0.2.3.dev$(date +"%Y%m%d%H%M")
+    - export VERSION=0.2.4.dev$(date +"%Y%m%d%H%M")
   only:
     - master
 
