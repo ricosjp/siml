@@ -48,6 +48,11 @@ def main():
         default=1,
         help='If True, plot minimum loss point [True]')
     parser.add_argument(
+        '-l', '--show-legend',
+        type=strtobool,
+        default=1,
+        help='If True, show legend [True]')
+    parser.add_argument(
         '-n', '--max-n-files',
         type=int,
         default=None,
@@ -132,7 +137,8 @@ def main():
             raise ValueError(
                 f"Length of y_limit should be 2 ({len(args.y_limit)} given)")
         plt.ylim(args.y_limit)
-    plt.legend()
+    if args.show_legend:
+        plt.legend()
 
     if args.out_dir is None:
         plt.show()
