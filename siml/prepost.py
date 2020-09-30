@@ -218,30 +218,45 @@ class RawConverter():
 
 def update_fem_data(fem_data, dict_data, prefix=''):
     for key, value in dict_data.items():
+
         variable_name = prefix + key
         if isinstance(value, np.ndarray):
-            len_data = len(value)
+            if len(value.shape) > 2 and value.shape[-1] == 1:
+                if len(value.shape) == 4 and value.shape[1] == 3 \
+                        and value.shape[2] == 3:
+                    # NOTE: Assume this is symmetric matrix
+                    value_for_fem_data \
+                        = fem_data.convert_symmetric_matrix2array(
+                            value[..., 0])
+                else:
+                    value_for_fem_data = value[..., 0]
+            else:
+                value_for_fem_data = value
+
+            len_data = len(value_for_fem_data)
 
             if len_data == len(fem_data.nodes.ids):
                 # Nodal data
                 try:
                     fem_data.nodal_data.update({
                         variable_name: femio.FEMAttribute(
-                            variable_name, fem_data.nodes.ids, value)})
+                            variable_name, fem_data.nodes.ids,
+                            value_for_fem_data)})
                 except ValueError:
                     print(
                         f"{variable_name} is skipped to include in fem_data "
-                        f"because the shape is {value.shape}")
+                        f"because the shape is {value_for_fem_data.shape}")
             elif len_data == len(fem_data.elements.ids):
                 # Elemental data
                 try:
                     fem_data.elemental_data.update({
                         variable_name: femio.FEMAttribute(
-                            variable_name, fem_data.elements.ids, value)})
+                            variable_name, fem_data.elements.ids,
+                            value_for_fem_data)})
                 except ValueError:
                     print(
                         f"{variable_name} is skipped to include in fem_data "
-                        f"because the shape is {value.shape}")
+                        f"because the shape is {value_for_fem_data.shape}")
             else:
                 print(f"{variable_name} is skipped to include in fem_data")
                 continue
