@@ -188,6 +188,7 @@ class Inferer(trainer.Trainer):
             else:
                 model = self.setting.trainer.pretrain_directory
 
+        self.setting.trainer.restart_directory = None
         if isinstance(model, io.BufferedIOBase):
             model_file = model
         elif isinstance(model, str) or isinstance(model, pathlib.Path):
