@@ -33,12 +33,14 @@ ENV PATH $PATH:/root/.poetry/bin
 
 RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python3.7 \
   && sed -i.bak s/python/python3.7/g ~/.poetry/bin/poetry \
+  && python3.7 -m pip install -U pip \
   && python3.7 -m pip install -U setuptools \
-  && python3.7 -m pip install wheel \
+  && python3.7 -m pip install -U wheel \
+  && python3.7 -m pip install --ignore-installed -U PyYAML \
   && poetry config virtualenvs.create false \
   && poetry config repositories.ricos https://pypi.ritc.jp \
   && poetry config http-basic.ricos ricos $ricos_pypi_key \
-  && poetry install \
+  && poetry update \
   && python3.7 -m pip install torch==1.6.0+cu101 torchvision==0.7.0+cu101 -f https://download.pytorch.org/whl/torch_stable.html \
   && python3.7 -m pip install torch-scatter==2.0.5+cu101 -f https://pytorch-geometric.com/whl/torch-1.6.0.html \
   && python3.7 -m pip install torch-sparse==0.6.7+cu101 -f https://pytorch-geometric.com/whl/torch-1.6.0.html \
