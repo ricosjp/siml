@@ -143,6 +143,8 @@ class DataSetting(TypedDataClass):
     test: typing.List[Path] = dc.field(
         default_factory=lambda: [])
     pad: bool = False
+    encrypt_key: bytes = dc.field(
+        default=None, metadata={'allow_none': True})
 
     def __post_init__(self):
         if self.pad:
@@ -629,6 +631,8 @@ class ConversionSetting(TypedDataClass):
         user-defined data format such as csv, h5, etc.
     time_series: bool, optional [False]
         If True, make femio parse time series data.
+    save_femio: bool, optional [True]
+        If True, save femio data in the interim directories.
     """
 
     mandatory_variables: typing.List[str] = dc.field(
@@ -644,6 +648,7 @@ class ConversionSetting(TypedDataClass):
     required_file_names: typing.List[str] = dc.field(default_factory=list)
     skip_femio: bool = False
     time_series: bool = False
+    save_femio: bool = False
 
     @classmethod
     def read_settings_yaml(cls, settings_yaml):
@@ -836,6 +841,11 @@ def write_yaml(data_class, file_name, *, overwrite=False):
 
     dict_data = dc.asdict(data_class)
     standardized_dict_data = _standardize_data(dict_data)
+    if 'encrypt_key' in standardized_dict_data:
+        standardized_dict_data.pop('encrypt_key')
+    if 'data' in standardized_dict_data:
+        if 'encrypt_key' in standardized_dict_data['data']:
+            standardized_dict_data['data'].pop('encrypt_key')
 
     with open(file_name, 'w') as f:
         yaml.dump(standardized_dict_data, f)
