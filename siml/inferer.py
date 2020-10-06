@@ -589,7 +589,8 @@ class Inferer(trainer.Trainer):
 
         dataset = datasets.BaseDataset(
             variable_names, [],
-            [], supports=supports, allow_no_data=True)
+            [], supports=supports, allow_no_data=True,
+            decrypt_key=self.setting.data.encrypt_key)
         data = [
             dataset._load_from_names(
                 data_directory, variable_names) for data_directory

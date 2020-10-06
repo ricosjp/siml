@@ -12,11 +12,13 @@ class BaseDataset(torch.utils.data.Dataset):
 
     def __init__(
             self, x_variable_names, y_variable_names, directories, *,
-            supports=None, num_workers=0, allow_no_data=False):
+            supports=None, num_workers=0, allow_no_data=False,
+            decrypt_key=None):
         self.x_variable_names = x_variable_names
         self.y_variable_names = y_variable_names
         self.supports = supports
         self.num_workers = num_workers
+        self.decrypt_key = decrypt_key
 
         self.x_dict_mode = isinstance(self.x_variable_names, dict)
         self.y_dict_mode = isinstance(self.y_variable_names, dict)
@@ -74,12 +76,16 @@ class BaseDataset(torch.utils.data.Dataset):
         if isinstance(variable_names, dict):
             return DataDict({
                 key: torch.from_numpy(util.concatenate_variable([
-                    util.load_variable(data_directory, variable_name)
+                    util.load_variable(
+                        data_directory, variable_name,
+                        decrypt_key=self.decrypt_key)
                     for variable_name in value]))
                 for key, value in variable_names.items()})
         elif isinstance(variable_names, list):
             return torch.from_numpy(util.concatenate_variable([
-                util.load_variable(data_directory, variable_name)
+                util.load_variable(
+                    data_directory, variable_name,
+                    decrypt_key=self.decrypt_key)
                 for variable_name in variable_names]))
         else:
             raise ValueError(f"Unexpected variable names: {variable_names}")
@@ -97,7 +103,8 @@ class BaseDataset(torch.utils.data.Dataset):
         else:
             # TODO: use appropreate sparse data class
             support_data = [
-                util.load_variable(data_directory, support)
+                util.load_variable(
+                    data_directory, support, decrypt_key=self.decrypt_key)
                 for support in self.supports]
             return {'x': x_data, 't': y_data, 'supports': support_data}
 
@@ -113,10 +120,10 @@ class ElementWiseDataset(BaseDataset):
 
     def __init__(
             self, x_variable_names, y_variable_names, directories, *,
-            supports=None, num_workers=0, allow_no_data=False):
+            supports=None, num_workers=0, allow_no_data=False, **kwargs):
         super().__init__(
             x_variable_names, y_variable_names, directories, supports=supports,
-            num_workers=num_workers, allow_no_data=allow_no_data)
+            num_workers=num_workers, allow_no_data=allow_no_data, **kwargs)
 
         if len(self.data_directories) == 0:
             self.x = []
@@ -141,10 +148,10 @@ class OnMemoryDataset(BaseDataset):
 
     def __init__(
             self, x_variable_names, y_variable_names, directories, *,
-            supports=None, num_workers=0, allow_no_data=False):
+            supports=None, num_workers=0, allow_no_data=False, **kwargs):
         super().__init__(
             x_variable_names, y_variable_names, directories, supports=supports,
-            num_workers=num_workers, allow_no_data=allow_no_data)
+            num_workers=num_workers, allow_no_data=allow_no_data, **kwargs)
 
         self.data = self._load_all_data(self.data_directories)
         return

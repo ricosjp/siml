@@ -116,18 +116,25 @@ class RawConverter():
 
         with multi.Pool(self.max_process) as pool:
             pool.map(
-                self.convert_single_directory, raw_directories,
+                self.convert_single_data, raw_directories,
                 chunksize=chunksize)
 
         return
 
-    def convert_single_directory(self, raw_directory):
+    def convert_single_data(
+            self, raw_path, *, output_directory=None,
+            raise_when_overwrite=False):
         """Convert single directory.
 
         Parameters
         ----------
-        raw_directory: pathlib.Path
-            Input directory of raw data.
+        raw_path: pathlib.Path
+            Input data path of raw data.
+        output_directory: pathlib.Path, optional
+            If fed, use the fed path as the output directory.
+        raise_when_overwrite: bool, optional
+            If True, raise when the output directory exists. The default is
+            False.
 
         Returns
         -------
@@ -136,19 +143,28 @@ class RawConverter():
         conversion_setting = self.setting.conversion
 
         # Determine output directory
-        raw_directory = Path(raw_directory)
-        print(f"Processing: {raw_directory}")
-        output_directory = determine_output_directory(
-            raw_directory, conversion_setting.output_base_directory, 'raw')
+        raw_path = Path(raw_path)
+        print(f"Processing: {raw_path}")
+        if output_directory is None:
+            output_directory = determine_output_directory(
+                raw_path, conversion_setting.output_base_directory, 'raw')
 
         # Guard
-        if not util.files_exist(
-                raw_directory, conversion_setting.required_file_names):
-            return
-        if (output_directory / conversion_setting.finished_file).exists() \
-                and not self.force_renew:
-            print(
-                f"Already converted. Skipped conversion: {raw_directory}")
+        if raw_path.is_dir():
+            if not util.files_exist(
+                    raw_path, conversion_setting.required_file_names):
+                return
+        elif raw_path.is_file():
+            pass
+        else:
+            raise ValueError(f"raw_path not understandable: {raw_path}")
+
+        if (output_directory / conversion_setting.finished_file).exists():
+            if raise_when_overwrite:
+                raise ValueError(f"{output_directory} already exists.")
+            if not self.force_renew:
+                print(
+                    f"Already converted. Skipped conversion: {raw_path}")
             return
 
         # Main process
@@ -161,11 +177,16 @@ class RawConverter():
                     output_directory)
             else:
                 try:
-                    fem_data = femio.FEMData.read_directory(
-                        conversion_setting.file_type, raw_directory,
-                        read_npy=self.read_npy, save=False,
-                        read_res=self.read_res,
-                        time_series=conversion_setting.time_series)
+                    if raw_path.is_dir():
+                        fem_data = femio.FEMData.read_directory(
+                            conversion_setting.file_type, raw_path,
+                            read_npy=self.read_npy, save=False,
+                            read_res=self.read_res,
+                            time_series=conversion_setting.time_series)
+                    else:
+                        fem_data = femio.FEMData.read_files(
+                            conversion_setting.file_type, raw_path,
+                            time_series=conversion_setting.time_series)
                 except ValueError:
                     print(f"femio read failed. Skipped.")
                     output_directory.mkdir(parents=True, exist_ok=True)
@@ -183,23 +204,25 @@ class RawConverter():
 
         if self.conversion_function is not None:
             dict_data.update(
-                self.conversion_function(fem_data, raw_directory))
+                self.conversion_function(fem_data, raw_path))
 
         if self.load_function is not None:
             data_files = util.collect_files(
-                raw_directory, conversion_setting.required_file_names)
+                raw_path, conversion_setting.required_file_names)
             loaded_dict_data, fem_data = self.load_function(
-                data_files, raw_directory)
+                data_files, raw_path)
             dict_data.update(loaded_dict_data)
 
         if self.filter_function is not None and not self.filter_function(
-                fem_data, raw_directory, dict_data):
+                fem_data, raw_path, dict_data):
             return
 
         # Save data
         output_directory.mkdir(parents=True, exist_ok=True)
         if fem_data is not None:
-            fem_data.save(output_directory)
+            if self.setting.conversion.save_femio:
+                fem_data.save(output_directory)
+
             if self.to_first_order:
                 fem_data_to_save = fem_data.to_first_order()
             else:
@@ -210,7 +233,9 @@ class RawConverter():
                     'ucd', output_directory / 'mesh.inp',
                     overwrite=self.force_renew)
 
-        save_dict_data(output_directory, dict_data)
+        save_dict_data(
+            output_directory, dict_data,
+            encrypt_key=self.setting.data.encrypt_key)
         (output_directory / conversion_setting.finished_file).touch()
 
         return
@@ -386,10 +411,6 @@ class Preprocessor:
         self.str_replace = str_replace
         self.max_process = util.determine_max_process(max_process)
         self.allow_missing = allow_missing
-        if self.setting.data.pad:
-            self.max_n_element = self._determine_max_n_element(
-                self.interim_directories,
-                list(self.setting.preprocess.keys())[0])
         if len(self.interim_directories) == 0:
             raise ValueError(
                 'No converted data found. Perform conversion first.')
@@ -587,13 +608,6 @@ class Preprocessor:
 
         return reference_dict
 
-    def _determine_max_n_element(self, data_directories, variable_name):
-        max_n_element = 0
-        for data_directory in data_directories:
-            data = util.load_variable(data_directory, variable_name)
-            max_n_element = max(max_n_element, data.shape[0])
-        return max_n_element
-
     def prepare_preprocess_converter(self, variable_name, preprocess_setting):
         """Prepare preprocess converter for single variable.
 
@@ -628,8 +642,16 @@ class Preprocessor:
         # Prepare preprocessor
         if (self.interim_directories[0] / (variable_name + '.npy')).exists():
             ext = '.npy'
+        elif (
+                self.interim_directories[0]
+                / (variable_name + '.npy.enc')).exists():
+            ext = '.npy.enc'
         elif (self.interim_directories[0] / (variable_name + '.npz')).exists():
             ext = '.npz'
+        elif (
+                self.interim_directories[0]
+                / (variable_name + '.npz.enc')).exists():
+            ext = '.npz.enc'
         else:
             raise ValueError(
                 f"Unknown extension or file not found for {variable_name}")
@@ -639,7 +661,8 @@ class Preprocessor:
                 preprocess_converter = util.PreprocessConverter(
                     preprocess_setting['method'],
                     componentwise=preprocess_setting['componentwise'],
-                    power=preprocess_setting['power'])
+                    power=preprocess_setting['power'],
+                    key=self.setting.data.encrypt_key)
             else:
                 data_files = [
                     data_directory / (variable_name + ext)
@@ -647,7 +670,8 @@ class Preprocessor:
                 preprocess_converter = util.PreprocessConverter(
                     preprocess_setting['method'], data_files=data_files,
                     componentwise=preprocess_setting['componentwise'],
-                    power=preprocess_setting['power'])
+                    power=preprocess_setting['power'],
+                    key=self.setting.data.encrypt_key)
         else:
             # same_as is set so no need to prepare preprocessor
             preprocess_converter = None
@@ -670,6 +694,23 @@ class Preprocessor:
 
         return dict_preprocessor_setting
 
+    def _file_exists(self, output_directory, variable_name):
+        npy_file = output_directory / (variable_name + '.npy')
+        npy_enc_file = output_directory / (
+            variable_name + '.npy.enc')
+        npz_file = output_directory / (variable_name + '.npz')
+        npz_enc_file = output_directory / (
+            variable_name + '.npz.enc')
+        if npy_file.is_file():
+            return True
+        if npy_enc_file.is_file():
+            return True
+        if npz_file.is_file():
+            return True
+        if npz_enc_file.is_file():
+            return True
+        return False
+
     def transform_single_variable(self, variable_name, preprocess_converter):
         """Transform single variable with the created preprocess_converter.
 
@@ -691,15 +732,12 @@ class Preprocessor:
                 output_directory = determine_output_directory(
                     data_directory, self.setting.data.preprocessed_root,
                     self.str_replace)
-                if not self.force_renew:
-                    npy_file = output_directory / (variable_name + '.npy')
-                    if npy_file.is_file():
-                        print(f"{npy_file} already exists. Skipped")
-                        continue
-                    npz_file = output_directory / (variable_name + '.npz')
-                    if npz_file.is_file():
-                        print(f"{npz_file} already exists. Skipped")
-                        continue
+                if not self.force_renew \
+                        and self._file_exists(output_directory, variable_name):
+                    print(
+                        f"{output_directory} / {variable_name} "
+                        'already exists. Skipped.')
+                    continue
 
                 util.copy_variable_file(
                     data_directory, variable_name, output_directory,
@@ -710,19 +748,17 @@ class Preprocessor:
             output_directory = determine_output_directory(
                 data_directory, self.setting.data.preprocessed_root,
                 self.str_replace)
-            if not self.force_renew:
-                npy_file = output_directory / (variable_name + '.npy')
-                if npy_file.is_file():
-                    print(f"{npy_file} already exists. Skipped")
-                    continue
-                npz_file = output_directory / (variable_name + '.npz')
-                if npz_file.is_file():
-                    print(f"{npz_file} already exists. Skipped")
-                    continue
+            if not self.force_renew \
+                    and self._file_exists(output_directory, variable_name):
+                print(
+                    f"{output_directory} / {variable_name} "
+                    'already exists. Skipped.')
+                continue
 
             loaded_data = util.load_variable(
                 data_directory, variable_name,
-                allow_missing=self.allow_missing)
+                allow_missing=self.allow_missing,
+                decrypt_key=self.setting.data.encrypt_key)
             if loaded_data is None:
                 continue
             else:
@@ -730,7 +766,8 @@ class Preprocessor:
 
             if self.save_func is None:
                 util.save_variable(
-                    output_directory, variable_name, transformed_data)
+                    output_directory, variable_name, transformed_data,
+                    encrypt_key=self.setting.data.encrypt_key)
             else:
                 self.save_func(
                     output_directory, variable_name, transformed_data)
@@ -995,7 +1032,8 @@ def _extract_single_variable(
             return None
 
 
-def save_dict_data(output_directory, dict_data, *, dtype=np.float32):
+def save_dict_data(
+        output_directory, dict_data, *, dtype=np.float32, encrypt_key=None):
     """Save dict_data.
 
     Parameters
@@ -1006,12 +1044,15 @@ def save_dict_data(output_directory, dict_data, *, dtype=np.float32):
             Data dictionary to be saved.
         dtype: type, optional [np.float32]
             Data type to be saved.
+        encrypt_key: bytes, optional [None]
+            Data for encryption.
     Returns
     --------
         None
     """
     for key, value in dict_data.items():
-        util.save_variable(output_directory, key, value, dtype=dtype)
+        util.save_variable(
+            output_directory, key, value, dtype=dtype, encrypt_key=encrypt_key)
     return
 
 

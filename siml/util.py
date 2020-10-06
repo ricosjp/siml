@@ -9,6 +9,8 @@ import re
 import shutil
 import subprocess
 
+from Cryptodome.Cipher import AES
+
 from femio import FEMData, FEMAttribute
 import networkx as nx
 import numpy as np
@@ -65,7 +67,8 @@ def load_yaml(source):
 
 
 def save_variable(
-        output_directory, file_basename, data, *, dtype=np.float32):
+        output_directory, file_basename, data,
+        *, dtype=np.float32, encrypt_key=None):
     """Save variable data.
 
     Parameters
@@ -78,6 +81,8 @@ def save_variable(
             Data to be saved.
         dtype: type, optional [np.float32]
             Data type to be saved.
+        encrypt_key: bytes, optional [None]
+            Data for encryption.
     Returns
     --------
         None
@@ -85,12 +90,24 @@ def save_variable(
     if not output_directory.exists():
         output_directory.mkdir(parents=True, exist_ok=True)
     if isinstance(data, np.ndarray):
-        save_file_path = output_directory / (file_basename + '.npy')
-        np.save(
-            output_directory / (file_basename + '.npy'), data.astype(dtype))
+        if encrypt_key is None:
+            save_file_path = output_directory / (file_basename + '.npy')
+            np.save(save_file_path, data.astype(dtype))
+        else:
+            save_file_path = output_directory / (file_basename + '.npy.enc')
+            bytesio = io.BytesIO()
+            np.save(bytesio, data.astype(dtype))
+            encrypt_file(encrypt_key, save_file_path, bytesio)
+
     elif isinstance(data, (sp.coo_matrix, sp.csr_matrix)):
-        save_file_path = output_directory / (file_basename + '.npz')
-        sp.save_npz(save_file_path, data.tocoo().astype(dtype))
+        if encrypt_key is None:
+            save_file_path = output_directory / (file_basename + '.npz')
+            sp.save_npz(save_file_path, data.tocoo().astype(dtype))
+        else:
+            save_file_path = output_directory / (file_basename + '.npz.enc')
+            bytesio = io.BytesIO()
+            sp.save_npz(bytesio, data.tocoo().astype(dtype))
+            encrypt_file(encrypt_key, save_file_path, bytesio)
     else:
         raise ValueError(f"{file_basename} has unknown type: {data.__class__}")
 
@@ -100,7 +117,7 @@ def save_variable(
 
 def load_variable(
         data_directory, file_basename, *, allow_missing=False,
-        check_nan=True, retry=True):
+        check_nan=True, retry=True, decrypt_key=None):
     """Load variable data.
 
     Parameters
@@ -112,6 +129,8 @@ def load_variable(
         allow_missing: bool, optional [False]
             If True, return None when the corresponding file is missing.
             Otherwise, raise ValueError.
+        decrypt_key: bytes, optional [None]
+            If fed, it is used to decrypt the file.
     Returns
     --------
         data: numpy.ndarray or scipy.sparse.coo_matrix
@@ -120,10 +139,24 @@ def load_variable(
         loaded_data = np.load(data_directory / (file_basename + '.npy'))
         data_for_check_nan = loaded_data
         ext = '.npy'
+    elif (data_directory / (file_basename + '.npy.enc')).exists():
+        if decrypt_key is None:
+            raise ValueError('Feed decrypt key')
+        loaded_data = np.load(decrypt_file(
+            decrypt_key, data_directory / (file_basename + '.npy.enc')))
+        data_for_check_nan = loaded_data
+        ext = '.npy.enc'
     elif (data_directory / (file_basename + '.npz')).exists():
         loaded_data = sp.load_npz(data_directory / (file_basename + '.npz'))
         data_for_check_nan = loaded_data.data
         ext = '.npz'
+    elif (data_directory / (file_basename + '.npz.enc')).exists():
+        if decrypt_key is None:
+            raise ValueError('Feed decrypt key')
+        loaded_data = sp.load_npz(decrypt_file(
+            decrypt_key, data_directory / (file_basename + '.npz.enc')))
+        data_for_check_nan = loaded_data.data
+        ext = '.npz.enc'
     else:
         if allow_missing:
             return None
@@ -170,8 +203,12 @@ def copy_variable_file(
     """
     if (input_directory / (file_basename + '.npy')).exists():
         ext = '.npy'
+    elif (input_directory / (file_basename + '.npy.enc')).exists():
+        ext = '.npy.enc'
     elif (input_directory / (file_basename + '.npz')).exists():
         ext = '.npz'
+    elif (input_directory / (file_basename + '.npz.enc')).exists():
+        ext = '.npz.enc'
     else:
         if allow_missing:
             return
@@ -355,10 +392,11 @@ class PreprocessConverter():
 
     def __init__(
             self, setting_data, *,
-            data_files=None, componentwise=True, power=1.):
+            data_files=None, componentwise=True, power=1., key=None):
         self.is_erroneous = None
         self.setting_data = setting_data
         self.power = power
+        self.key = key
 
         self._init_converter()
 
@@ -532,15 +570,22 @@ class PreprocessConverter():
         return
 
     def load_file(self, data_file):
-        data = np.load(data_file)
-        if isinstance(data, np.ndarray):
-            return data
-        else:
+        str_data_file = str(data_file)
+        if str_data_file.endswith('.npy'):
+            data = np.load(data_file)
+        elif str_data_file.endswith('.npy.enc'):
+            data = np.load(decrypt_file(self.key, data_file))
+        elif str_data_file.endswith('.npz'):
             data = sp.load_npz(data_file)
-            if sp.issparse(data):
-                return data
-            else:
+            if not sp.issparse(data):
                 raise ValueError(f"Data type not understood for: {data_file}")
+        elif str_data_file.endswith('.npz.enc'):
+            data = sp.load_npz(decrypt_file(self.key, data_file))
+            if not sp.issparse(data):
+                raise ValueError(f"Data type not understood for: {data_file}")
+        else:
+            raise ValueError(f"Data type not understood for: {data_file}")
+        return data
 
     def transform(self, data):
         return self.apply_data_with_rehspe_if_needed(
@@ -1306,3 +1351,41 @@ def split_data(list_directories, *, validation=.1, test=.1, shuffle=True):
     train_directories = list_directories[validation_length+test_length:]
 
     return train_directories, validation_directories, test_directories
+
+
+def encrypt_file(key, file_path, binary):
+    """Encrypt data and then save to a file.
+
+    Parameters
+    ----------
+    key: bytes
+        Key for encription.
+    file_path: str or pathlib.Path
+        File path to save.
+    binary: io.BytesIO
+        Data content.
+    """
+    cipher = AES.new(key, AES.MODE_EAX)
+    ciphertext, tag = cipher.encrypt_and_digest(binary.getvalue())
+    with open(file_path, "wb") as f:
+        [f.write(x) for x in (cipher.nonce, tag, ciphertext)]
+
+
+def decrypt_file(key, file_name):
+    """Decrypt data file.
+
+    Parameters
+    ----------
+    key: bytes
+        Key for decryption.
+    file_path: str or pathlib.Path
+        File path of the encrypted data.
+
+    Returns
+    -------
+    decrypted_data: io.BytesIO
+    """
+    with open(file_name, "rb") as f:
+        nonce, tag, ciphertext = [f.read(x) for x in (16, 16, -1)]
+    cipher = AES.new(key, AES.MODE_EAX, nonce)
+    return io.BytesIO(cipher.decrypt_and_verify(ciphertext, tag))

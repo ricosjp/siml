@@ -408,7 +408,8 @@ class Trainer():
             develop_dataset = datasets.LazyDataset(
                 self.setting.trainer.input_names,
                 self.setting.trainer.output_names,
-                self.setting.data.develop)
+                self.setting.data.develop,
+                decrypt_key=self.setting.data.encrypt_key)
 
             train, validation, test = util.split_data(
                 develop_dataset.data_directories,
@@ -430,18 +431,21 @@ class Trainer():
         if self.setting.trainer.lazy:
             self.train_loader, self.validation_loader, self.test_loader = \
                 self._get_data_loaders(
-                    datasets.LazyDataset, batch_size, validation_batch_size)
+                    datasets.LazyDataset, batch_size, validation_batch_size,
+                    decrypt_key=self.setting.data.encrypt_key)
         else:
             if self.element_wise:
                 self.train_loader, self.validation_loader, self.test_loader = \
                     self._get_data_loaders(
                         datasets.ElementWiseDataset, batch_size,
-                        validation_batch_size)
+                        validation_batch_size,
+                        decrypt_key=self.setting.data.encrypt_key)
             else:
                 self.train_loader, self.validation_loader, self.test_loader = \
                     self._get_data_loaders(
                         datasets.OnMemoryDataset, batch_size,
-                        validation_batch_size)
+                        validation_batch_size,
+                        decrypt_key=self.setting.data.encrypt_key)
         self._check_data_dimension(self.setting.trainer.input_names)
         self._check_data_dimension(self.setting.trainer.output_names)
 
@@ -644,7 +648,8 @@ class Trainer():
         return evaluator_engine
 
     def _get_data_loaders(
-            self, dataset_generator, batch_size, validation_batch_size=None):
+            self, dataset_generator, batch_size, validation_batch_size=None,
+            decrypt_key=None):
         if validation_batch_size is None:
             validation_batch_size = batch_size
 
@@ -658,15 +663,16 @@ class Trainer():
 
         train_dataset = dataset_generator(
             x_variable_names, y_variable_names,
-            train_directories, supports=supports, num_workers=num_workers)
+            train_directories, supports=supports, num_workers=num_workers,
+            decrypt_key=decrypt_key)
         validation_dataset = dataset_generator(
             x_variable_names, y_variable_names,
             validation_directories, supports=supports, num_workers=num_workers,
-            allow_no_data=True)
+            allow_no_data=True, decrypt_key=decrypt_key)
         test_dataset = dataset_generator(
             x_variable_names, y_variable_names,
             test_directories, supports=supports, num_workers=num_workers,
-            allow_no_data=True)
+            allow_no_data=True, decrypt_key=decrypt_key)
 
         print(f"num_workers for data_loader: {num_workers}")
         train_loader = torch.utils.data.DataLoader(
@@ -751,7 +757,9 @@ class Trainer():
             raise ValueError(f"Unexpected variable_names: {variable_names}")
 
     def _check_single_variable_dimension(self, data_directory, variable_name):
-        loaded_variable = util.load_variable(data_directory, variable_name)
+        loaded_variable = util.load_variable(
+            data_directory, variable_name,
+            decrypt_key=self.setting.data.encrypt_key)
         shape = loaded_variable.shape
         variable_information = self.setting.trainer.variable_information[
             variable_name]

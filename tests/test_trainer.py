@@ -2,6 +2,7 @@ from pathlib import Path
 import shutil
 import unittest
 
+from Cryptodome import Random
 import numpy as np
 import pandas as pd
 import torch
@@ -366,3 +367,63 @@ class TestTrainer(unittest.TestCase):
             shutil.rmtree(tr_w_pretrain.setting.trainer.output_directory)
         loss_w_pretrain = tr_w_pretrain.train()
         self.assertLess(loss_w_pretrain, loss_wo_pretrain)
+
+    def test_whole_process_encryption(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/deform/whole.yml'))
+        main_setting.data.interim = [Path(
+            'tests/data/deform/test_prepost/encrypt/interim')]
+        main_setting.data.preprocessed = [Path(
+            'tests/data/deform/test_prepost/encrypt/preprocessed')]
+
+        main_setting.data.train = [Path(
+            'tests/data/deform/test_prepost/encrypt/preprocessed/train')]
+        main_setting.data.validation = [Path(
+            'tests/data/deform/test_prepost/encrypt/preprocessed/validation')]
+        main_setting.data.test = [Path(
+            'tests/data/deform/test_prepost/encrypt/preprocessed/test')]
+
+        main_setting.data.encrypt_key = Random.get_random_bytes(16)
+
+        shutil.rmtree(main_setting.data.interim_root, ignore_errors=True)
+        shutil.rmtree(main_setting.data.preprocessed_root, ignore_errors=True)
+
+        raw_converter = prepost.RawConverter(
+            main_setting, conversion_function=conversion_function)
+        raw_converter.convert()
+        p = prepost.Preprocessor(main_setting)
+        p.preprocess_interim_data()
+
+        with self.assertRaises(ValueError):
+            np.load(
+                main_setting.data.interim[0]
+                / 'train/tet2_3_modulusx0.9000/elemental_strain.npy.enc')
+        with self.assertRaises(OSError):
+            np.load(
+                main_setting.data.interim[0]
+                / 'train/tet2_3_modulusx0.9000/elemental_strain.npy.enc',
+                allow_pickle=True)
+
+        with self.assertRaises(ValueError):
+            np.load(
+                main_setting.data.preprocessed[0]
+                / 'train/tet2_3_modulusx0.9000/elemental_strain.npy.enc')
+        with self.assertRaises(OSError):
+            np.load(
+                main_setting.data.preprocessed[0]
+                / 'train/tet2_3_modulusx0.9000/elemental_strain.npy.enc',
+                allow_pickle=True)
+
+        shutil.rmtree(
+            main_setting.trainer.output_directory, ignore_errors=True)
+        tr = trainer.Trainer(main_setting)
+        loss = tr.train()
+
+        ir = inferer.Inferer(main_setting)
+        results = ir.infer(
+            model=main_setting.trainer.output_directory,
+            preprocessed_data_directory=main_setting.data.preprocessed[0]
+            / 'train/tet2_3_modulusx0.9000',
+            converter_parameters_pkl=main_setting.data.preprocessed[0]
+            / 'preprocessors.pkl', save=False)
+        self.assertLess(results[0]['loss'], loss * 5)
