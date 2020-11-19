@@ -430,17 +430,16 @@ class Inferer(trainer.Trainer):
             inferred_y = inferred_y[accomodate_length:]
             x = x[accomodate_length:]
 
-        x = x.cpu()
-        inferred_y = inferred_y.cpu()
         if isinstance(x, dict):
-            x = {key: value.numpy() for key, value in x.items()}
+            x = {key: value.cpu().numpy() for key, value in x.items()}
         else:
-            x = x.numpy()
+            x = x.cpu().numpy()
+
         if isinstance(inferred_y, dict):
             np_inferred_y = {
-                key: value.numpy() for key, value in inferred_y.items()}
+                key: value.cpu().numpy() for key, value in inferred_y.items()}
         else:
-            np_inferred_y = inferred_y.numpy()
+            np_inferred_y = inferred_y.cpu().numpy()
 
         dict_var_x = self._separate_data(
             x, self.setting.trainer.inputs)
