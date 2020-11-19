@@ -167,6 +167,9 @@ class DataDict(dict):
         devices = [v.device for v in self.values()]
         return devices[0]
 
+    def to(self, device):
+        return DataDict({k: v.to(device) for k, v in self.items()})
+
 
 class CollateFunctionGenerator():
 

@@ -178,7 +178,6 @@ class Inferer(trainer.Trainer):
     def _prepare_inference(
             self, model,
             *, model_directory=None, converter_parameters_pkl=None):
-        self.device = 'cpu'
 
         # Define model
         if model is None:
@@ -207,6 +206,7 @@ class Inferer(trainer.Trainer):
 
         self.model = networks.Network(
             self.setting.model, self.setting.trainer)
+        self._select_device()
         self._load_pretrained_model_if_needed(model_file=model_file)
 
         self.element_wise = self._determine_element_wise()
@@ -394,7 +394,7 @@ class Inferer(trainer.Trainer):
         if supports is not None:
             converted_supports = [
                 datasets.merge_sparse_tensors(
-                    [datasets.pad_sparse(s)], return_coo=True)
+                    [datasets.pad_sparse(s)], return_coo=True).to(self.device)
                 for s in supports[0]]
         else:
             converted_supports = None
@@ -417,6 +417,7 @@ class Inferer(trainer.Trainer):
         # Inference
         if isinstance(x, np.ndarray):
             x = torch.from_numpy(x)
+        x = x.to(self.device)
         self.model.eval()
         with torch.no_grad():
             start_time = time.time()
@@ -430,14 +431,15 @@ class Inferer(trainer.Trainer):
             x = x[accomodate_length:]
 
         if isinstance(x, dict):
-            x = {key: value.numpy() for key, value in x.items()}
+            x = {key: value.cpu().numpy() for key, value in x.items()}
         else:
-            x = x.numpy()
+            x = x.cpu().numpy()
+
         if isinstance(inferred_y, dict):
             np_inferred_y = {
-                key: value.numpy() for key, value in inferred_y.items()}
+                key: value.cpu().numpy() for key, value in inferred_y.items()}
         else:
-            np_inferred_y = inferred_y.numpy()
+            np_inferred_y = inferred_y.cpu().numpy()
 
         dict_var_x = self._separate_data(
             x, self.setting.trainer.inputs)
@@ -446,13 +448,17 @@ class Inferer(trainer.Trainer):
         if answer_y is not None:
             if isinstance(answer_y, np.ndarray):
                 np_answer_y = answer_y
-                answer_y = torch.from_numpy(answer_y)
+                answer_y = torch.from_numpy(answer_y).to(self.device)
             else:
                 if isinstance(answer_y, dict):
                     np_answer_y = {
                         key: value.numpy() for key, value in answer_y.items()}
+                    answer_y = {
+                        key: value.to(self.device)
+                        for key, value in answer_y.items()}
                 else:
                     np_answer_y = answer_y.numpy()
+                    answer_y = answer_y.to(self.device)
 
             dict_var_answer_y = self._separate_data(
                 np_answer_y, self.setting.trainer.outputs)
@@ -483,7 +489,7 @@ class Inferer(trainer.Trainer):
         # Compute loss
         if answer_y is not None:
             with torch.no_grad():
-                loss = self.loss(inferred_y, answer_y).numpy()
+                loss = self.loss(inferred_y, answer_y).cpu().numpy()
         else:
             # Answer data does not exist
             loss = None
