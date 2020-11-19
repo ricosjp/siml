@@ -156,6 +156,22 @@ class Trainer():
             self.setting.trainer.prune = False
             print('No optuna.trial fed. Set prune = False.')
 
+        self._select_device()
+        self._generate_trainer()
+
+        # Manage restart and pretrain
+        self._load_pretrained_model_if_needed()
+        self._load_restart_model_if_needed()
+
+        # Expand data directories
+        self.setting.data.train = self.train_loader.dataset.data_directories
+        self.setting.data.validation \
+            = self.validation_loader.dataset.data_directories
+        self.setting.data.test = self.test_loader.dataset.data_directories
+
+        return
+
+    def _select_device(self):
         if self._is_gpu_supporting():
             if self.setting.trainer.data_parallel:
                 if self.setting.trainer.time_series:
@@ -193,20 +209,6 @@ class Trainer():
             self.setting.trainer.gpu_id = -1
             self.device = 'cpu'
             self.output_device = self.device
-
-        self._generate_trainer()
-
-        # Manage restart and pretrain
-        self._load_pretrained_model_if_needed()
-        self._load_restart_model_if_needed()
-
-        # Expand data directories
-        self.setting.data.train = self.train_loader.dataset.data_directories
-        self.setting.data.validation \
-            = self.validation_loader.dataset.data_directories
-        self.setting.data.test = self.test_loader.dataset.data_directories
-
-        return
 
     def _determine_element_wise(self):
         if self.setting.trainer.time_series:

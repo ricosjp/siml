@@ -178,7 +178,6 @@ class Inferer(trainer.Trainer):
     def _prepare_inference(
             self, model,
             *, model_directory=None, converter_parameters_pkl=None):
-        self.device = 'cpu'
 
         # Define model
         if model is None:
@@ -207,6 +206,7 @@ class Inferer(trainer.Trainer):
 
         self.model = networks.Network(
             self.setting.model, self.setting.trainer)
+        self._select_device()
         self._load_pretrained_model_if_needed(model_file=model_file)
 
         self.element_wise = self._determine_element_wise()
@@ -394,7 +394,7 @@ class Inferer(trainer.Trainer):
         if supports is not None:
             converted_supports = [
                 datasets.merge_sparse_tensors(
-                    [datasets.pad_sparse(s)], return_coo=True)
+                    [datasets.pad_sparse(s)], return_coo=True).to(self.device)
                 for s in supports[0]]
         else:
             converted_supports = None
@@ -417,6 +417,7 @@ class Inferer(trainer.Trainer):
         # Inference
         if isinstance(x, np.ndarray):
             x = torch.from_numpy(x)
+        x = x.to(self.device)
         self.model.eval()
         with torch.no_grad():
             start_time = time.time()
@@ -429,6 +430,8 @@ class Inferer(trainer.Trainer):
             inferred_y = inferred_y[accomodate_length:]
             x = x[accomodate_length:]
 
+        x = x.cpu()
+        inferred_y = inferred_y.cpu()
         if isinstance(x, dict):
             x = {key: value.numpy() for key, value in x.items()}
         else:
