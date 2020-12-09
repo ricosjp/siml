@@ -23,6 +23,7 @@ from . import mlp
 from . import nri
 from . import reducer
 from . import reshape
+from . import siml_module
 from . import symmat2array
 from . import tcn
 from . import tensor_operations
@@ -32,14 +33,17 @@ from . import time_norm
 class BlockInformation():
 
     def __init__(self, block, use_support=False, trainable=True):
+        if not issubclass(block, siml_module.SimlModule):
+            raise ValueError(f"{block} should be a subclass of SimlModule")
         self.block = block
         self.use_support = use_support
         self.trainable = trainable
+        return
 
 
 class Network(torch.nn.Module):
 
-    DICT_BLOCKS = {
+    dict_block_info = {
         # Layers without weights
         'activation': BlockInformation(activation.Activation, trainable=False),
         'array2diagmat': BlockInformation(
@@ -103,7 +107,7 @@ class Network(torch.nn.Module):
 
         self._update_dict_block_setting()
         self.dict_block_information = {
-            block_name: self.DICT_BLOCKS[block_setting.type]
+            block_name: self.dict_block_info[block_setting.type]
             for block_name, block_setting in self.dict_block_setting.items()}
         self.dict_block = self._create_dict_block()
 
@@ -245,7 +249,7 @@ class Network(torch.nn.Module):
                 first_node = len(np.arange(max_first_node)[
                     block_setting.input_selection])
 
-                if self.DICT_BLOCKS[block_type].trainable:
+                if self.dict_block_info[block_type].trainable:
                     last_node = self.trainer_setting.output_length
                 else:
                     last_node = first_node
@@ -379,3 +383,21 @@ class Network(torch.nn.Module):
         d.write_pdf(output_file_name)
         plt.close(figure)
         return
+
+
+def add_block(name, block, *, trainable=True):
+    """Add block definition to siml.
+
+    Parameters
+    ----------
+    name: str
+        Name of the block.
+    block: siml.network.SimlModule-like
+        User defined block.
+    trainable: bool, optional
+        If True, the block is considered as a trainable block. The default is
+        True.
+    """
+    Network.dict_block_info.update(
+        {name: BlockInformation(block, trainable=trainable)})
+    return
