@@ -8,6 +8,7 @@ import scipy.sparse as sp
 import torch
 
 import siml.inferer as inferer
+import siml.networks as networks
 import siml.networks.activations as activations
 import siml.networks.array2diagmat as array2diagmat
 import siml.networks.array2symmat as array2symmat
@@ -562,3 +563,49 @@ class TestNetwork(unittest.TestCase):
         np.testing.assert_almost_equal(
             contraction(torch.from_numpy(b), torch.from_numpy(a)).numpy(),
             desired)
+
+    def test_user_defined_block(self):
+
+        class CutOffBlock(networks.SimlModule):
+            def __init__(self, block_setting):
+                super().__init__(block_setting)
+                self.upper = block_setting.optional.get('upper', .1)
+                self.lower = block_setting.optional.get('lower', 0.)
+
+            def _forward_core(self, x, supports=None, original_shapes=None):
+                h = x
+                for linear, dropout_ratio, activation in zip(
+                        self.linears, self.dropout_ratios, self.activations):
+                    h = linear(h)
+                    h = activation(h)
+                    h[h > self.upper] = self.upper
+                    h[h < self.lower] = self.lower
+                return h
+
+        networks.add_block(
+            name='cutoff', block=CutOffBlock, trainable=True)
+
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/deform/cutoff.yml'))
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, 1.)
+        x = torch.from_numpy(np.random.rand(2000, 100).astype(np.float32))
+
+        out_cutoff1 = tr.model.dict_block['CUTOFF1'](x).detach().numpy()
+        np.testing.assert_almost_equal(
+            np.max(out_cutoff1),
+            main_setting.model.blocks[1].optional['upper'])
+        np.testing.assert_almost_equal(
+            np.min(out_cutoff1),
+            main_setting.model.blocks[1].optional['lower'])
+
+        out_cutoff2 = tr.model.dict_block['CUTOFF2'](x).detach().numpy()
+        np.testing.assert_almost_equal(
+            np.max(out_cutoff2),
+            main_setting.model.blocks[2].optional['upper'])
+        np.testing.assert_almost_equal(
+            np.min(out_cutoff2),
+            main_setting.model.blocks[2].optional['lower'])
