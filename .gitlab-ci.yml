@@ -130,7 +130,7 @@ test_trainer:
 test_trainer_wo_pyg:
   extends: .test
   script:
-    - python3.7 -m pip uninstall torch-geometric
+    - python3.7 -m pip uninstall torch-geometric -y
     - python3.7 -m pytest tests/test_trainer.py --capture=no -k test_whole_process
 
 test_trainer_long:
