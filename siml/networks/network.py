@@ -402,7 +402,8 @@ def add_block(name, block, *, trainable=True, use_support=False):
 
 
 # Load torch_geometric blocks when torch_geometric is installed
-if 'torch_geometric' in [p.key for p in pkg_resources.working_set]:
+if 'torch_geometric' in [
+        p.key for p in pkg_resources.working_set]:  # pylint: disable=E1133
     from . import pyg
     add_block(
         name='cluster_gcn', block=pyg.ClusterGCN, trainable=True,
