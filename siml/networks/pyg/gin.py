@@ -2,13 +2,13 @@
 import torch
 import torch_geometric
 
-from .. import abstract_gcn
+from . import abstract_pyg_gcn
 from .. import identity
 from .. import mlp
 from ... import setting
 
 
-class GIN(abstract_gcn.AbstractGCN):
+class GIN(abstract_pyg_gcn.AbstractPyGGCN):
     """Graph Isomorphism Network based on https://arxiv.org/abs/1810.00826 ."""
 
     def __init__(self, block_setting):
