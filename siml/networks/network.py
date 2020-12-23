@@ -1,3 +1,4 @@
+import pkg_resources
 import warnings
 
 import matplotlib.pyplot as plt
@@ -12,7 +13,6 @@ from . import array2diagmat
 from . import array2symmat
 from . import deepsets
 from . import gcn
-from . import geo
 from . import grad_gcn
 from . import identity
 from . import integration
@@ -77,11 +77,6 @@ class Network(torch.nn.Module):
         'mlp': BlockInformation(mlp.MLP),
         'nri': BlockInformation(nri.NRI, use_support=True),
         'tcn': BlockInformation(tcn.TCN),
-
-        # Layers wrapped from torch_geometric
-        'cluster_gcn': BlockInformation(geo.ClusterGCN, use_support=True),
-        'gin': BlockInformation(geo.GIN, use_support=True),
-        'gcnii': BlockInformation(geo.GCNII, use_support=True),
     }
     INPUT_LAYER_NAME = 'Input'
     OUTPUT_LAYER_NAME = 'Output'
@@ -385,7 +380,7 @@ class Network(torch.nn.Module):
         return
 
 
-def add_block(name, block, *, trainable=True):
+def add_block(name, block, *, trainable=True, use_support=False):
     """Add block definition to siml.
 
     Parameters
@@ -397,7 +392,23 @@ def add_block(name, block, *, trainable=True):
     trainable: bool, optional
         If True, the block is considered as a trainable block. The default is
         True.
+    use_support: bool, optional
+        If True, use sparse matrix for the second input. The default is False.
     """
     Network.dict_block_info.update(
-        {name: BlockInformation(block, trainable=trainable)})
+        {name: BlockInformation(
+            block, trainable=trainable, use_support=use_support)})
     return
+
+
+# Load torch_geometric blocks when torch_geometric is installed
+if 'torch-geometric' in [
+        p.key for p in pkg_resources.working_set]:  # pylint: disable=E1133
+    from . import pyg
+    add_block(
+        name='cluster_gcn', block=pyg.ClusterGCN, trainable=True,
+        use_support=True)
+    add_block(
+        name='gin', block=pyg.GIN, trainable=True, use_support=True)
+    add_block(
+        name='gcnii', block=pyg.GCNII, trainable=True, use_support=True)
