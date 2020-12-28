@@ -16,10 +16,10 @@ include = ["pyproject.toml"]
 python = "^3.7"
 
 PyYAML       = "^5.2"
-femio        = {version = ">=0.2.0", source = "ricos", allow-prereleases = true}
+femio        = {version = ">=0.2.0", allow-prereleases = true}
 einops       = "^0.2"
 joblib       = "^0.14.1"
-llvmlite     = "^0.34.0"
+llvmlite     = "^0.35.0"
 matplotlib   = "^3.1"
 networkx     = "^2.4"
 numpy        = "^1.17"
@@ -51,11 +51,6 @@ pylint = "^2.4"
 autopep8 = "^1.4"
 sphinx = "^2.3"
 sphinx_rtd_theme = "^0.4.3"
-
-[[tool.poetry.source]]
-name = "ricos"
-url = "https://pypi.ritc.jp/simple"
-default = true
 
 [tool.poetry.extras]
 cupy = ["cupy"]
