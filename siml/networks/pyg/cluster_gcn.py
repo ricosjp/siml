@@ -2,10 +2,10 @@
 import torch
 import torch_geometric
 
-from .. import abstract_gcn
+from . import abstract_pyg_gcn
 
 
-class ClusterGCN(abstract_gcn.AbstractGCN):
+class ClusterGCN(abstract_pyg_gcn.AbstractPyGGCN):
     """Cluster-GCN based on https://arxiv.org/abs/1905.07953 ."""
 
     def __init__(self, block_setting):

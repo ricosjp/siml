@@ -6,7 +6,7 @@ default:
     - poetry config repositories.ricos https://pypi.ritc.jp
     - poetry config http-basic.ricos ricos ${RICOS_PYPI_KEY}
     - poetry build
-    - python3.7 -m pip install dist/siml-*.whl  # Only install root project, not dependencies
+    - python3.7 -m pip install dist/pysiml-*.whl  # Only install root project, not dependencies
     # - poetry install
 
 stages:
@@ -14,6 +14,7 @@ stages:
   - preprocess
   - test
   - deploy
+  - commit
 
 # docker:
 #   image: docker:latest
@@ -65,11 +66,15 @@ pylint:
 pages:
   stage: deploy
   script:
-    - make -C doc html
-    - mv doc/_build/html public
+    - poetry run sphinx-apidoc -f -o ./sphinx siml
+    - poetry run sphinx-build ./sphinx ./docs
+    - cp -r docs public
+    - poetry build
+    - mv dist/*.whl public/
   artifacts:
     paths:
       - public
+      - docs
   only:
     - master
 
@@ -127,6 +132,12 @@ test_trainer:
   extends: .test
   script: python3.7 -m pytest tests/test_trainer.py --capture=no
 
+test_trainer_wo_pyg:
+  extends: .test
+  script:
+    - python3.7 -m pip uninstall torch-geometric -y
+    - python3.7 -m pytest tests/test_trainer.py --capture=no -k test_whole_process
+
 test_trainer_long:
   extends: .test
   script: python3.7 -m pytest tests/test_trainer_long.py --capture=no
@@ -144,12 +155,13 @@ test_other:
     - poetry config repositories.ricos https://pypi.ritc.jp
     - poetry build -f wheel
     - poetry publish --username ricos --password ${RICOS_PYPI_KEY} -r ricos --no-ansi -n -v
+    - poetry publish --username __token__ --password ${PYPI_ORG_TOKEN} --no-ansi -n -v
   retry: 2
 
 deploy:wheel:master:
   extends: .deploy:wheel
   before_script:
-    - export VERSION=0.2.4.dev$(date +"%Y%m%d%H%M")
+    - export VERSION=$(grep "^version" pyproject.toml | grep -o "[0-9]\.[0-9]\.[0-9]").dev$(date +"%Y%m%d%H%M")
   only:
     - master
 
@@ -159,3 +171,20 @@ deploy:wheel:tag:
     - export VERSION=$CI_COMMIT_REF_NAME
   only:
     - tags
+
+commit:
+  stage: commit
+  script:
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - ssh-keyscan -H "$CI_SERVER_HOST" >> ~/.ssh/known_hosts
+    - eval "$(ssh-agent -s)"
+    - echo "$SSH_PRIVATE_KEY" | ssh-add - > /dev/null
+    - git config --global user.name "runner@gitlab.ritc.jp"
+    - git config --global user.email "runner@gitlab.ritc.jp"
+    - git remote set-url --push origin git@$CI_SERVER_HOST:$CI_PROJECT_PATH.git
+    - git add docs
+    - git commit -m '[ci skip] push document by GitLab runner'
+    - git push origin --force HEAD:gh-pages
+  only:
+    - master

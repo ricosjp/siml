@@ -2,11 +2,11 @@
 import numpy as np
 import torch
 
-from .. import abstract_gcn
+from . import abstract_pyg_gcn
 from .gcnii_pytorch_geometric import GCN2Conv
 
 
-class GCNII(abstract_gcn.AbstractGCN):
+class GCNII(abstract_pyg_gcn.AbstractPyGGCN):
     """GCNII based on https://arxiv.org/abs/2007.02133 ."""
 
     def __init__(self, block_setting):
