@@ -1,18 +1,14 @@
 # SiML
-Simulation ML library.
+A Simulation ML library.
+
+- Documentation: https://ricosjp.github.io/siml/
 
 
-# Installation
-## Python
-Python version >= Python 3.7.3
-
-## Clone
-```
-git clone --recursive git@gitlab.com:ricos/siml.git
-```
-
-## Install requirements
+## How to install
 ```bash
-pip3 install -r requirements.txt
+pip install pysiml  # To use, `import siml`
 ```
 
+## License
+
+[Apache License 2.0](./LICENSE).
