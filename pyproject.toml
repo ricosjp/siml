@@ -19,7 +19,6 @@ PyYAML       = "^5.2"
 femio        = {version = ">=0.2.0", allow-prereleases = true}
 einops       = "^0.2"
 joblib       = "^0.14.1"
-llvmlite     = "^0.35.0"
 matplotlib   = "^3.1"
 networkx     = "^2.4"
 numpy        = "^1.17"

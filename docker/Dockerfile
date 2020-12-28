@@ -43,6 +43,7 @@ RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-
   && poetry config http-basic.ricos ricos $ricos_pypi_key \
   && poetry update \
   && python3.7 -m pip install torch==1.6.0+cu101 torchvision==0.7.0+cu101 -f https://download.pytorch.org/whl/torch_stable.html \
+  && python3.7 -m pip install llvmlite==0.35.0 \
   && python3.7 -m pip install torch-scatter -f https://pytorch-geometric.com/whl/torch-1.6.0+cu101.html \
   && python3.7 -m pip install torch-sparse -f https://pytorch-geometric.com/whl/torch-1.6.0+cu101.html \
   && python3.7 -m pip install torch-cluster -f https://pytorch-geometric.com/whl/torch-1.6.0+cu101.html \
