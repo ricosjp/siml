@@ -10,6 +10,7 @@ documentation = "https://ricosjp.github.io/pysiml/"
 packages = [
     { include = "siml"},
 ]
+include = ["pyproject.toml"]
 
 [tool.poetry.dependencies]
 python = "^3.7"
