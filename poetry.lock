@@ -6,11 +6,6 @@ optional = false
 python-versions = "*"
 version = "0.7.12"
 
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
-
 [[package]]
 category = "main"
 description = "A database migration tool for SQLAlchemy."
@@ -24,11 +19,6 @@ Mako = "*"
 SQLAlchemy = ">=1.1.0"
 python-dateutil = "*"
 python-editor = ">=0.3"
-
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
 
 [[package]]
 category = "dev"
@@ -47,11 +37,6 @@ wrapt = ">=1.11,<2.0"
 python = "<3.8"
 version = ">=1.4.0,<1.5"
 
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
-
 [[package]]
 category = "dev"
 description = "Atomic file writes."
@@ -60,11 +45,6 @@ name = "atomicwrites"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 version = "1.4.0"
-
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
 
 [[package]]
 category = "main"
@@ -80,11 +60,6 @@ docs = ["sphinx", "sphinx-rtd-theme", "zope.interface"]
 tests = ["coverage (>=5.0.2)", "hypothesis", "pympler", "pytest (>=4.3.0)", "six", "zope.interface"]
 tests_no_zope = ["coverage (>=5.0.2)", "hypothesis", "pympler", "pytest (>=4.3.0)", "six"]
 
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
-
 [[package]]
 category = "dev"
 description = "A tool that automatically formats Python code to conform to the PEP 8 style guide"
@@ -97,11 +72,6 @@ version = "1.5.4"
 pycodestyle = ">=2.6.0"
 toml = "*"
 
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
-
 [[package]]
 category = "dev"
 description = "Internationalization utilities"
@@ -113,11 +83,6 @@ version = "2.8.0"
 [package.dependencies]
 pytz = ">=2015.7"
 
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
-
 [[package]]
 category = "main"
 description = "Python package for providing Mozilla's CA Bundle."
@@ -125,11 +90,6 @@ name = "certifi"
 optional = false
 python-versions = "*"
 version = "2020.6.20"
-
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
 
 [[package]]
 category = "dev"
@@ -155,11 +115,6 @@ jenkins = ["pytest (<4.2.0)", "attrs (<19.2.0)", "mock", "pytest-timeout (<1.3.0
 stylecheck = ["autopep8 (>=1.4.1,<1.5)", "flake8 (>=3.7,<3.8)", "pycodestyle (>=2.5,<2.6)"]
 test = ["pytest (<4.2.0)", "attrs (<19.2.0)", "mock"]
 
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
-
 [[package]]
 category = "dev"
 description = "Universal encoding detector for Python 2 and 3"
@@ -167,11 +122,6 @@ name = "chardet"
 optional = false
 python-versions = "*"
 version = "3.0.4"
-
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
 
 [[package]]
 category = "main"
@@ -190,11 +140,6 @@ pyparsing = ">=2.1.0"
 six = ">=1.10.0"
 stevedore = ">=2.0.1"
 
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
-
 [[package]]
 category = "main"
 description = "Lightweight Covariance Matrix Adaptation Evolution Strategy (CMA-ES) implementation for Python 3."
@@ -211,11 +156,6 @@ benchmark = ["kurobako", "cma", "optuna"]
 lint = ["mypy", "flake8", "black"]
 release = ["wheel", "twine"]
 visualization = ["matplotlib", "scipy"]
-
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
 
 [[package]]
 category = "main"
@@ -241,11 +181,6 @@ version = ">=1.6.0"
 dev = ["pytest (>=4.6)", "codecov", "pytest-cov", "pytest-mock", "flake8", "sphinx", "sphinx-rtd-theme", "sphinx-autobuild", "doc8", "invoke", "twine (>=1.11)", "mock", "nox (2019.11.9)", "nox"]
 test = ["codecov", "coverage", "pytest (>=4.6)", "pytest-cov", "pytest-mock", "mock", "gnureadline"]
 
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
-
 [[package]]
 category = "main"
 description = "Cross-platform colored terminal text."
@@ -253,11 +188,6 @@ name = "colorama"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 version = "0.4.3"
-
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
 
 [[package]]
 category = "main"
@@ -270,11 +200,6 @@ version = "4.2.1"
 [package.dependencies]
 colorama = "*"
 
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
-
 [[package]]
 category = "main"
 description = "Composable style cycles"
@@ -286,11 +211,6 @@ version = "0.10.0"
 [package.dependencies]
 six = "*"
 
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
-
 [[package]]
 category = "main"
 description = "Decorators for Humans"
@@ -298,11 +218,6 @@ name = "decorator"
 optional = false
 python-versions = ">=2.6, !=3.0.*, !=3.1.*"
 version = "4.4.2"
-
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
 
 [[package]]
 category = "dev"
@@ -312,11 +227,6 @@ optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 version = "0.16"
 
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
-
 [[package]]
 category = "main"
 description = "A new flavour of deep learning operations"
@@ -325,18 +235,13 @@ optional = false
 python-versions = "*"
 version = "0.2.0"
 
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
-
 [[package]]
 category = "main"
 description = "FEM I/O Tool"
 name = "femio"
 optional = false
 python-versions = ">=3.6.1,<4.0.0"
-version = "0.2.1.dev202009300152"
+version = "0.3.2.dev202012281546"
 
 [package.dependencies]
 matplotlib = ">=3.1,<4.0"
@@ -351,11 +256,6 @@ scipy = ">=1.4,<2.0"
 [package.extras]
 PyQt5 = ["PyQt5 (>=5.14.0,<6.0.0)"]
 
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
-
 [[package]]
 category = "dev"
 description = "A platform independent file lock."
@@ -363,11 +263,6 @@ name = "filelock"
 optional = false
 python-versions = "*"
 version = "3.0.12"
-
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
 
 [[package]]
 category = "main"
@@ -377,11 +272,6 @@ optional = false
 python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*"
 version = "0.18.2"
 
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
-
 [[package]]
 category = "dev"
 description = "Internationalized Domain Names in Applications (IDNA)"
@@ -390,11 +280,6 @@ optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 version = "2.10"
 
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
-
 [[package]]
 category = "dev"
 description = "Getting image size from png/jpeg/jpeg2000/gif file"
@@ -402,11 +287,6 @@ name = "imagesize"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 version = "1.2.0"
-
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
 
 [[package]]
 category = "main"
@@ -424,11 +304,6 @@ zipp = ">=0.5"
 docs = ["sphinx", "rst.linker"]
 testing = ["packaging", "pep517", "importlib-resources (>=1.3)"]
 
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
-
 [[package]]
 category = "dev"
 description = "A Python utility / library to sort Python imports."
@@ -440,12 +315,7 @@ version = "5.5.4"
 [package.extras]
 colors = ["colorama (>=0.4.3,<0.5.0)"]
 pipfile_deprecated_finder = ["pipreqs", "requirementslib"]
-requirements_deprecated_finder = ["pip-api", "pipreqs"]
-
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
+requirements_deprecated_finder = ["pipreqs", "pip-api"]
 
 [[package]]
 category = "dev"
@@ -461,11 +331,6 @@ MarkupSafe = ">=0.23"
 [package.extras]
 i18n = ["Babel (>=0.8)"]
 
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
-
 [[package]]
 category = "main"
 description = "Lightweight pipelining: using Python functions as pipeline jobs."
@@ -473,11 +338,6 @@ name = "joblib"
 optional = false
 python-versions = "*"
 version = "0.14.1"
-
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
 
 [[package]]
 category = "main"
@@ -487,11 +347,6 @@ optional = false
 python-versions = ">=3.6"
 version = "1.2.0"
 
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
-
 [[package]]
 category = "dev"
 description = "A fast and thorough lazy object proxy."
@@ -499,24 +354,6 @@ name = "lazy-object-proxy"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 version = "1.4.3"
-
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
-
-[[package]]
-category = "main"
-description = "lightweight wrapper around basic LLVM functionality"
-name = "llvmlite"
-optional = false
-python-versions = ">=3.6"
-version = "0.34.0"
-
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
 
 [[package]]
 category = "main"
@@ -533,11 +370,6 @@ MarkupSafe = ">=0.9.2"
 babel = ["babel"]
 lingua = ["lingua"]
 
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
-
 [[package]]
 category = "main"
 description = "Safely add untrusted strings to HTML/XML markup."
@@ -545,11 +377,6 @@ name = "markupsafe"
 optional = false
 python-versions = ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*"
 version = "1.1.1"
-
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
 
 [[package]]
 category = "main"
@@ -568,11 +395,6 @@ pillow = ">=6.2.0"
 pyparsing = ">=2.0.3,<2.0.4 || >2.0.4,<2.1.2 || >2.1.2,<2.1.6 || >2.1.6"
 python-dateutil = ">=2.1"
 
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
-
 [[package]]
 category = "dev"
 description = "McCabe checker, plugin for flake8"
@@ -580,11 +402,6 @@ name = "mccabe"
 optional = false
 python-versions = "*"
 version = "0.6.1"
-
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
 
 [[package]]
 category = "main"
@@ -603,11 +420,6 @@ exodus = ["netcdf4"]
 hdf5 = ["h5py"]
 xml = ["lxml"]
 
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
-
 [[package]]
 category = "dev"
 description = "More routines for operating on iterables, beyond itertools"
@@ -615,11 +427,6 @@ name = "more-itertools"
 optional = false
 python-versions = ">=3.5"
 version = "8.5.0"
-
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
 
 [[package]]
 category = "main"
@@ -645,11 +452,6 @@ pytest = ["pytest"]
 pyyaml = ["pyyaml"]
 scipy = ["scipy"]
 
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
-
 [[package]]
 category = "main"
 description = "NumPy is the fundamental package for array computing with Python."
@@ -657,11 +459,6 @@ name = "numpy"
 optional = false
 python-versions = ">=3.6"
 version = "1.19.2"
-
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
 
 [[package]]
 category = "main"
@@ -674,11 +471,6 @@ version = "2.11.2"
 [package.dependencies]
 numpy = "*"
 python-utils = ">=1.6.2"
-
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
 
 [[package]]
 category = "main"
@@ -708,11 +500,6 @@ example = ["catboost", "chainer", "lightgbm", "mlflow", "mpi4py", "mxnet", "nbva
 experimental = ["redis"]
 testing = ["bokeh (<2.0.0)", "chainer (>=5.0.0)", "cma", "fakeredis", "fanova", "lightgbm", "mlflow", "mpi4py", "mxnet", "pandas", "plotly (>=4.0.0)", "pytest", "pytorch-ignite", "scikit-learn (>=0.19.0,<0.23.0)", "scikit-optimize", "torch (1.4.0+cpu)", "torchvision (0.5.0+cpu)", "xgboost", "allennlp (<1)", "fastai (<2)", "pytorch-lightning (>=0.7.1)", "keras", "tensorflow", "tensorflow-datasets"]
 
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
-
 [[package]]
 category = "dev"
 description = "Core utilities for Python packages"
@@ -724,11 +511,6 @@ version = "20.4"
 [package.dependencies]
 pyparsing = ">=2.0.2"
 six = "*"
-
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
 
 [[package]]
 category = "main"
@@ -746,11 +528,6 @@ pytz = ">=2017.2"
 [package.extras]
 test = ["pytest (>=4.0.2)", "pytest-xdist", "hypothesis (>=3.58)"]
 
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
-
 [[package]]
 category = "main"
 description = "Python Build Reasonableness"
@@ -759,11 +536,6 @@ optional = false
 python-versions = ">=2.6"
 version = "5.5.0"
 
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
-
 [[package]]
 category = "main"
 description = "Python Imaging Library (Fork)"
@@ -771,11 +543,6 @@ name = "pillow"
 optional = false
 python-versions = ">=3.5"
 version = "7.2.0"
-
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
 
 [[package]]
 category = "dev"
@@ -793,23 +560,13 @@ version = ">=0.12"
 [package.extras]
 dev = ["pre-commit", "tox"]
 
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
-
 [[package]]
 category = "main"
-description = "A simple Python library for easily displaying tabular data in a visually appealing ASCII table format"
+description = "A simple Python library for easily displaying tabular data in a visually appealing ASCII table format."
 name = "prettytable"
 optional = false
 python-versions = "*"
 version = "0.7.2"
-
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
 
 [[package]]
 category = "dev"
@@ -823,11 +580,6 @@ version = "3.13.0"
 setuptools = "*"
 six = ">=1.9"
 
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
-
 [[package]]
 category = "dev"
 description = "library with cross-python path, ini-parsing, io, code, log facilities"
@@ -835,11 +587,6 @@ name = "py"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 version = "1.9.0"
-
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
 
 [[package]]
 category = "dev"
@@ -849,11 +596,6 @@ optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 version = "2.6.0"
 
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
-
 [[package]]
 category = "main"
 description = "Cryptographic library for Python"
@@ -861,11 +603,6 @@ name = "pycryptodomex"
 optional = false
 python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 version = "3.9.8"
-
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
 
 [[package]]
 category = "main"
@@ -878,11 +615,6 @@ version = "1.4.1"
 [package.dependencies]
 pyparsing = ">=2.1.4"
 
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
-
 [[package]]
 category = "dev"
 description = "Pygments is a syntax highlighting package written in Python."
@@ -890,11 +622,6 @@ name = "pygments"
 optional = false
 python-versions = ">=3.5"
 version = "2.7.1"
-
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
 
 [[package]]
 category = "dev"
@@ -911,11 +638,6 @@ isort = ">=4.2.5,<6"
 mccabe = ">=0.6,<0.7"
 toml = ">=0.7.1"
 
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
-
 [[package]]
 category = "main"
 description = "Python parsing module"
@@ -924,11 +646,6 @@ optional = false
 python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*"
 version = "2.4.7"
 
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
-
 [[package]]
 category = "main"
 description = "A cross-platform clipboard module for Python. (Only handles plain text for now.)"
@@ -936,11 +653,6 @@ name = "pyperclip"
 optional = false
 python-versions = "*"
 version = "1.8.0"
-
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
 
 [[package]]
 category = "main"
@@ -953,11 +665,6 @@ version = "5.15.1"
 [package.dependencies]
 PyQt5-sip = ">=12.8,<13"
 
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
-
 [[package]]
 category = "main"
 description = "The sip module support for PyQt5"
@@ -965,11 +672,6 @@ name = "pyqt5-sip"
 optional = true
 python-versions = ">=3.5"
 version = "12.8.1"
-
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
 
 [[package]]
 category = "main"
@@ -979,11 +681,6 @@ name = "pyreadline"
 optional = false
 python-versions = "*"
 version = "2.1"
-
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
 
 [[package]]
 category = "dev"
@@ -1011,11 +708,6 @@ version = ">=0.12"
 checkqa-mypy = ["mypy (v0.761)"]
 testing = ["argcomplete", "hypothesis (>=3.56)", "mock", "nose", "requests", "xmlschema"]
 
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
-
 [[package]]
 category = "main"
 description = "Extensions to the standard Python datetime module"
@@ -1027,11 +719,6 @@ version = "2.8.1"
 [package.dependencies]
 six = ">=1.5"
 
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
-
 [[package]]
 category = "main"
 description = "Programmatically open an editor, capture the result."
@@ -1039,11 +726,6 @@ name = "python-editor"
 optional = false
 python-versions = "*"
 version = "1.0.4"
-
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
 
 [[package]]
 category = "main"
@@ -1056,11 +738,6 @@ version = "2.4.0"
 [package.dependencies]
 six = "*"
 
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
-
 [[package]]
 category = "main"
 description = "A lightweight library to help with training neural networks in PyTorch."
@@ -1072,11 +749,6 @@ version = "0.3.0"
 [package.dependencies]
 torch = "*"
 
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
-
 [[package]]
 category = "main"
 description = "World timezone definitions, modern and historical"
@@ -1085,11 +757,6 @@ optional = false
 python-versions = "*"
 version = "2020.1"
 
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
-
 [[package]]
 category = "main"
 description = "YAML parser and emitter for Python"
@@ -1097,11 +764,6 @@ name = "pyyaml"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 version = "5.3.1"
-
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
 
 [[package]]
 category = "dev"
@@ -1121,23 +783,21 @@ urllib3 = ">=1.21.1,<1.25.0 || >1.25.0,<1.25.1 || >1.25.1,<1.26"
 security = ["pyOpenSSL (>=0.14)", "cryptography (>=1.3.4)"]
 socks = ["PySocks (>=1.5.6,<1.5.7 || >1.5.7)", "win-inet-pton"]
 
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
-
 [[package]]
 category = "main"
 description = "A set of python modules for machine learning and data mining"
 name = "scikit-learn"
 optional = false
-python-versions = "*"
+python-versions = ">=3.5"
 version = "0.22.2.post1"
 
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
+[package.dependencies]
+joblib = ">=0.11"
+numpy = ">=1.11.0"
+scipy = ">=0.17.0"
+
+[package.extras]
+alldeps = ["numpy (>=1.11.0)", "scipy (>=0.17.0)"]
 
 [[package]]
 category = "main"
@@ -1147,10 +807,8 @@ optional = false
 python-versions = ">=3.6"
 version = "1.5.2"
 
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
+[package.dependencies]
+numpy = ">=1.14.5"
 
 [[package]]
 category = "main"
@@ -1160,11 +818,6 @@ optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*"
 version = "1.15.0"
 
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
-
 [[package]]
 category = "dev"
 description = "This package provides 26 stemmers for 25 languages generated from Snowball algorithms."
@@ -1172,11 +825,6 @@ name = "snowballstemmer"
 optional = false
 python-versions = "*"
 version = "2.0.0"
-
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
 
 [[package]]
 category = "dev"
@@ -1209,11 +857,6 @@ sphinxcontrib-serializinghtml = "*"
 docs = ["sphinxcontrib-websupport"]
 test = ["pytest (<5.3.3)", "pytest-cov", "html5lib", "flake8 (>=3.5.0)", "flake8-import-order", "mypy (>=0.761)", "docutils-stubs"]
 
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
-
 [[package]]
 category = "dev"
 description = "Read the Docs theme for Sphinx"
@@ -1224,11 +867,6 @@ version = "0.4.3"
 
 [package.dependencies]
 sphinx = "*"
-
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
 
 [[package]]
 category = "dev"
@@ -1242,11 +880,6 @@ version = "1.0.2"
 lint = ["flake8", "mypy", "docutils-stubs"]
 test = ["pytest"]
 
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
-
 [[package]]
 category = "dev"
 description = "sphinxcontrib-devhelp is a sphinx extension which outputs Devhelp document."
@@ -1258,11 +891,6 @@ version = "1.0.2"
 [package.extras]
 lint = ["flake8", "mypy", "docutils-stubs"]
 test = ["pytest"]
-
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
 
 [[package]]
 category = "dev"
@@ -1276,11 +904,6 @@ version = "1.0.3"
 lint = ["flake8", "mypy", "docutils-stubs"]
 test = ["pytest", "html5lib"]
 
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
-
 [[package]]
 category = "dev"
 description = "A sphinx extension which renders display math in HTML via JavaScript"
@@ -1291,11 +914,6 @@ version = "1.0.1"
 
 [package.extras]
 test = ["pytest", "flake8", "mypy"]
-
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
 
 [[package]]
 category = "dev"
@@ -1309,11 +927,6 @@ version = "1.0.3"
 lint = ["flake8", "mypy", "docutils-stubs"]
 test = ["pytest"]
 
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
-
 [[package]]
 category = "dev"
 description = "sphinxcontrib-serializinghtml is a sphinx extension which outputs \"serialized\" HTML files (json and pickle)."
@@ -1325,11 +938,6 @@ version = "1.1.4"
 [package.extras]
 lint = ["flake8", "mypy", "docutils-stubs"]
 test = ["pytest"]
-
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
 
 [[package]]
 category = "main"
@@ -1351,11 +959,6 @@ postgresql_psycopg2binary = ["psycopg2-binary"]
 postgresql_psycopg2cffi = ["psycopg2cffi"]
 pymysql = ["pymysql"]
 
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
-
 [[package]]
 category = "main"
 description = "Manage dynamic plugins for Python applications"
@@ -1371,23 +974,13 @@ pbr = ">=2.0.0,<2.1.0 || >2.1.0"
 python = "<3.8"
 version = ">=1.7.0"
 
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
-
 [[package]]
-category = "dev"
+category = "main"
 description = "Python Library for Tom's Obvious, Minimal Language"
 name = "toml"
 optional = false
-python-versions = "*"
-version = "0.10.1"
-
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
+python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*"
+version = "0.10.2"
 
 [[package]]
 category = "main"
@@ -1401,11 +994,6 @@ version = "1.6.0"
 future = "*"
 numpy = "*"
 
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
-
 [[package]]
 category = "main"
 description = "Fast, Extensible Progress Meter"
@@ -1417,11 +1005,6 @@ version = "4.50.0"
 [package.extras]
 dev = ["py-make (>=0.1.0)", "twine", "argopt", "pydoc-markdown"]
 
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
-
 [[package]]
 category = "dev"
 description = "a fork of Python 2 and 3 ast modules with type comment support"
@@ -1431,11 +1014,6 @@ optional = false
 python-versions = "*"
 version = "1.4.1"
 
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
-
 [[package]]
 category = "dev"
 description = "Backported and Experimental Type Hints for Python 3.5+"
@@ -1443,11 +1021,6 @@ name = "typing-extensions"
 optional = false
 python-versions = "*"
 version = "3.7.4.3"
-
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
 
 [[package]]
 category = "dev"
@@ -1462,11 +1035,6 @@ brotli = ["brotlipy (>=0.6.0)"]
 secure = ["certifi", "cryptography (>=1.3.4)", "idna (>=2.0.0)", "pyOpenSSL (>=0.14)", "ipaddress"]
 socks = ["PySocks (>=1.5.6,<1.5.7 || >1.5.7,<2.0)"]
 
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
-
 [[package]]
 category = "main"
 description = "Measures the displayed width of unicode strings in a terminal"
@@ -1475,11 +1043,6 @@ optional = false
 python-versions = "*"
 version = "0.2.5"
 
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
-
 [[package]]
 category = "dev"
 description = "Module for decorators, wrappers and monkey patching."
@@ -1487,11 +1050,6 @@ name = "wrapt"
 optional = false
 python-versions = "*"
 version = "1.12.1"
-
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
 
 [[package]]
 category = "main"
@@ -1506,17 +1064,12 @@ version = "3.3.0"
 docs = ["sphinx", "jaraco.packaging (>=3.2)", "rst.linker (>=1.9)"]
 testing = ["pytest (>=3.5,<3.7.3 || >3.7.3)", "pytest-checkdocs (>=1.2.3)", "pytest-flake8", "pytest-cov", "jaraco.test (>=3.2.0)", "jaraco.itertools", "func-timeout", "pytest-black (>=0.3.7)", "pytest-mypy"]
 
-[package.source]
-reference = "ricos"
-type = "legacy"
-url = "https://pypi.ritc.jp/simple"
-
 [extras]
 PyQt5 = ["PyQt5"]
 cupy = []
 
 [metadata]
-content-hash = "1c6a5f038113bb57200cbadd783c2c545258604104e782eb561d6723009e28e6"
+content-hash = "835bca1e9c2e4838cddbf30a3e81b3ff484064a9cf510a09d742529c207c2dfd"
 lock-version = "1.0"
 python-versions = "^3.7"
 
@@ -1596,7 +1149,7 @@ einops = [
     {file = "einops-0.2.0.tar.gz", hash = "sha256:165ee28bcb60e5c2cbb801b5c78e181548ff8daa7c8fcabae5b251e55f7fe614"},
 ]
 femio = [
-    {file = "femio-0.2.1.dev202009300152-py3-none-any.whl", hash = "md5:a0c75bc733b0e81d6c6a73e175f3acfe"},
+    {file = "femio-0.3.2.dev202012281546-py3-none-any.whl", hash = "sha256:6872e04d188db27261c2ec7b654da66da81c5be8d61efc02409dcaef5d19c0d1"},
 ]
 filelock = [
     {file = "filelock-3.0.12-py3-none-any.whl", hash = "sha256:929b7d63ec5b7d6b71b0fa5ac14e030b3f70b75747cef1b10da9b879fef15836"},
@@ -1672,24 +1225,6 @@ lazy-object-proxy = [
     {file = "lazy_object_proxy-1.4.3-cp38-cp38-manylinux1_x86_64.whl", hash = "sha256:a6ae12d08c0bf9909ce12385803a543bfe99b95fe01e752536a60af2b7797c62"},
     {file = "lazy_object_proxy-1.4.3-cp38-cp38-win32.whl", hash = "sha256:5541cada25cd173702dbd99f8e22434105456314462326f06dba3e180f203dfd"},
     {file = "lazy_object_proxy-1.4.3-cp38-cp38-win_amd64.whl", hash = "sha256:59f79fef100b09564bc2df42ea2d8d21a64fdcda64979c0fa3db7bdaabaf6239"},
-]
-llvmlite = [
-    {file = "llvmlite-0.34.0-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:11342e5ac320c953590bdd9d0dec8c52f4b5252c4c6335ba25f1e7b9f91f9325"},
-    {file = "llvmlite-0.34.0-cp36-cp36m-manylinux2010_i686.whl", hash = "sha256:5bdf0ce430adfaf938ced5844d12f80616eb8321b5b9edfc45ef84ada5c5242c"},
-    {file = "llvmlite-0.34.0-cp36-cp36m-manylinux2010_x86_64.whl", hash = "sha256:e08d9d2dc5a31636bfc6b516d2d7daba95632afa3419eb8730dc76a7951e9558"},
-    {file = "llvmlite-0.34.0-cp36-cp36m-win32.whl", hash = "sha256:9ff1dcdad03be0cf953aca5fc8cffdca25ccee2ec9e8ec7e95571722cdc02d55"},
-    {file = "llvmlite-0.34.0-cp36-cp36m-win_amd64.whl", hash = "sha256:5acdc3c3c7ea0ef7a1a6b442272e05d695bc8492e5b07666135ed1cfbf4ab9d2"},
-    {file = "llvmlite-0.34.0-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:bb96989bc57a1ccb131e7a0e061d07b68139b6f81a98912345d53d9239e231e1"},
-    {file = "llvmlite-0.34.0-cp37-cp37m-manylinux2010_i686.whl", hash = "sha256:6d3f81992f52a94077e7b9b16497029daf5b5eebb2cce56f3c8345bbc9c6308e"},
-    {file = "llvmlite-0.34.0-cp37-cp37m-manylinux2010_x86_64.whl", hash = "sha256:d841248d1c630426c93e3eb3f8c45bca0dab77c09faeb7553b1a500220e362ce"},
-    {file = "llvmlite-0.34.0-cp37-cp37m-win32.whl", hash = "sha256:408b15ffec30696406e821c89da010f1bb1eb0aa572be4561c98eb2536d610ab"},
-    {file = "llvmlite-0.34.0-cp37-cp37m-win_amd64.whl", hash = "sha256:5d1f370bf150db7239204f09cf6a0603292ea28bac984e69b167e16fe160d803"},
-    {file = "llvmlite-0.34.0-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:132322bc084abf336c80dd106f9357978c8c085911fb656898d3be0d9ff057ea"},
-    {file = "llvmlite-0.34.0-cp38-cp38-manylinux2010_i686.whl", hash = "sha256:8f344102745fceba6eb5bf03c228bb290e9bc79157e9506a4a72878d636f9b3c"},
-    {file = "llvmlite-0.34.0-cp38-cp38-manylinux2010_x86_64.whl", hash = "sha256:05253f3f44fab0148276335b2c1b2c4a78143dfa78e6bafd7f937d6248f297cc"},
-    {file = "llvmlite-0.34.0-cp38-cp38-win32.whl", hash = "sha256:28264f9e2b3df4135cbcfca5a91c5b0b31dd3fc02fa623b4bb13327f0cd4fc80"},
-    {file = "llvmlite-0.34.0-cp38-cp38-win_amd64.whl", hash = "sha256:964f8f7a2184963cb3617d057c2382575953e488b7bb061b632ee014cfef110a"},
-    {file = "llvmlite-0.34.0.tar.gz", hash = "sha256:f03ee0d19bca8f2fe922bb424a909d05c28411983b0c2bc58b020032a0d11f63"},
 ]
 mako = [
     {file = "Mako-1.1.3-py2.py3-none-any.whl", hash = "sha256:93729a258e4ff0747c876bd9e20df1b9758028946e976324ccd2d68245c7b6a9"},
@@ -1988,6 +1523,8 @@ pyqt5-sip = [
     {file = "PyQt5_sip-12.8.1.tar.gz", hash = "sha256:30e944db9abee9cc757aea16906d4198129558533eb7fadbe48c5da2bd18e0bd"},
 ]
 pyreadline = [
+    {file = "pyreadline-2.1.win-amd64.exe", hash = "sha256:9ce5fa65b8992dfa373bddc5b6e0864ead8f291c94fbfec05fbd5c836162e67b"},
+    {file = "pyreadline-2.1.win32.exe", hash = "sha256:65540c21bfe14405a3a77e4c085ecfce88724743a4ead47c66b84defcf82c32e"},
     {file = "pyreadline-2.1.zip", hash = "sha256:4530592fc2e85b25b1a9f79664433da09237c1a270e4d78ea5aa3a2c7229e2d1"},
 ]
 pytest = [
@@ -2001,7 +1538,9 @@ python-dateutil = [
 python-editor = [
     {file = "python-editor-1.0.4.tar.gz", hash = "sha256:51fda6bcc5ddbbb7063b2af7509e43bd84bfc32a4ff71349ec7847713882327b"},
     {file = "python_editor-1.0.4-py2-none-any.whl", hash = "sha256:5f98b069316ea1c2ed3f67e7f5df6c0d8f10b689964a4a811ff64f0106819ec8"},
+    {file = "python_editor-1.0.4-py2.7.egg", hash = "sha256:ea87e17f6ec459e780e4221f295411462e0d0810858e055fc514684350a2f522"},
     {file = "python_editor-1.0.4-py3-none-any.whl", hash = "sha256:1bf6e860a8ad52a14c3ee1252d5dc25b2030618ed80c022598f00176adc8367d"},
+    {file = "python_editor-1.0.4-py3.5.egg", hash = "sha256:c3da2053dbab6b29c94e43c486ff67206eafbe7eb52dbec7390b5e2fb05aac77"},
 ]
 python-utils = [
     {file = "python-utils-2.4.0.tar.gz", hash = "sha256:f21fc09ff58ea5ebd1fd2e8ef7f63e39d456336900f26bdc9334a03a3f7d8089"},
@@ -2010,6 +1549,7 @@ python-utils = [
 pytorch-ignite = [
     {file = "pytorch-ignite-0.3.0.tar.gz", hash = "sha256:d39ec25cf592308d6c30bb10f1bc5038fc68ad20c8639750ac504d9e8b25074c"},
     {file = "pytorch_ignite-0.3.0-py2.py3-none-any.whl", hash = "sha256:bea739029fa96059ee36ab3376a99fdd3930d7ad94151c6eef04d2b91bd217bd"},
+    {file = "pytorch_ignite-0.3.0-py3.6.egg", hash = "sha256:bd815dc57d81c860363faa74bbd574a3ac55aa5c5bdeadf58bbd50fd74c1a5ac"},
 ]
 pytz = [
     {file = "pytz-2020.1-py2.py3-none-any.whl", hash = "sha256:a494d53b6d39c3c6e44c3bec237336e14305e4f29bbf800b599253057fbb79ed"},
@@ -2123,8 +1663,8 @@ stevedore = [
     {file = "stevedore-3.2.2.tar.gz", hash = "sha256:f845868b3a3a77a2489d226568abe7328b5c2d4f6a011cc759dfa99144a521f0"},
 ]
 toml = [
-    {file = "toml-0.10.1-py2.py3-none-any.whl", hash = "sha256:bda89d5935c2eac546d648028b9901107a595863cb36bae0c73ac804a9b4ce88"},
-    {file = "toml-0.10.1.tar.gz", hash = "sha256:926b612be1e5ce0634a2ca03470f95169cf16f939018233a670519cb4ac58b0f"},
+    {file = "toml-0.10.2-py2.py3-none-any.whl", hash = "sha256:806143ae5bfb6a3c6e736a764057db0e6a0e05e338b5630894a5f779cabb4f9b"},
+    {file = "toml-0.10.2.tar.gz", hash = "sha256:b3bda1d108d5dd99f4a20d24d9c348e91c4db7ab1b749200bded2f839ccbe68f"},
 ]
 torch = [
     {file = "torch-1.6.0-cp36-cp36m-manylinux1_x86_64.whl", hash = "sha256:7669f4d923b5758e28b521ea749c795ed67ff24b45ba20296bc8cff706d08df8"},
