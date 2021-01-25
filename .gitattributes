@@ -1,2 +1,3 @@
 tests/data/* linguist-generated
 docs/* linguist-documentation
+sphinx/* linguist-documentation
