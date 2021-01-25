@@ -1,2 +1,2 @@
-tests/data linguist-generated
-docs linguist-documentation
+tests/data/* linguist-generated
+docs/* linguist-documentation
