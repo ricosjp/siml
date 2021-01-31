@@ -334,11 +334,12 @@ class TestTrainer(unittest.TestCase):
             len(trained_setting.data.test), 0)
 
         ir = inferer.Inferer(main_setting)
+        data_directory = main_setting.data.develop[0]  # pylint: disable=E1136
         results = ir.infer(
             model=main_setting.trainer.output_directory,
-            preprocessed_data_directory=main_setting.data.develop[0],
-            converter_parameters_pkl=main_setting.data.develop[0].parent
-            / 'preprocessors.pkl', save=False)  # pylint: disable=E1136
+            preprocessed_data_directory=data_directory,
+            converter_parameters_pkl=data_directory.parent
+            / 'preprocessors.pkl', save=False)
         np.testing.assert_almost_equal(results[0]['loss'], train_loss)
 
     def test_trainer_train_dict_input(self):
