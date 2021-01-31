@@ -326,7 +326,7 @@ class TestNetwork(unittest.TestCase):
             shutil.rmtree(main_setting.trainer.output_directory)
         tr = trainer.Trainer(main_setting)
         loss = tr.train()
-        self.assertLess(loss, 3.e-1)
+        self.assertLess(loss, 5.e-1)
 
         ir = inferer.Inferer(main_setting)
         results = ir.infer(
