@@ -1,0 +1,45 @@
+data:
+  develop:
+    - tests/data/split/preprocessed/tet2_3_modulusx0.9000
+conversion:
+  mandatory:
+    - elemental_strain
+    - modulus
+    - poisson_ratio
+  optional:
+    - elemental_stress
+trainer:
+  lazy: false
+  split_ratio:
+    validation: .3
+    test: .2
+  num_workers: 0
+  output_directory: tests/data/split/mlp
+  inputs:
+    - name: elemental_strain
+      dim: 6
+    - name: modulus
+      dim: 1
+  outputs:
+    - name: elemental_stress
+      dim: 6
+  prune: true
+  batch_size: 2
+  n_epoch: 10
+  log_trigger_epoch: 1
+  stop_trigger_epoch: 10
+  seed: 0
+model:
+  blocks:
+    - name: MLP
+      type: adjustable_mlp
+      nodes:
+        - -1
+        - 10
+        - -1
+      activations:
+        - relu
+        - identity
+      dropouts:
+        - 0.0
+        - 0.0

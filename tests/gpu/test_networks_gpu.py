@@ -210,4 +210,4 @@ class TestNetworksGPU(unittest.TestCase):
         if tr.setting.trainer.output_directory.exists():
             shutil.rmtree(tr.setting.trainer.output_directory)
         loss = tr.train()
-        np.testing.assert_array_less(loss, 1.)
+        np.testing.assert_array_less(loss, 1.5)

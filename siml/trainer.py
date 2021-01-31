@@ -119,7 +119,10 @@ class Trainer():
                 = self.setting.trainer.output_directory
             self._load_pretrained_model_if_needed()
         train_state = self.evaluator.run(self.train_loader)
-        validation_state = self.evaluator.run(self.validation_loader)
+        if len(self.validation_loader) > 0:
+            validation_state = self.evaluator.run(self.validation_loader)
+        else:
+            validation_state = None
 
         if evaluate_test:
             test_state = self.evaluator.run(self.test_loader)
@@ -362,6 +365,8 @@ class Trainer():
                 df = pd.read_csv(
                     path / 'log.csv', header=0, index_col=None,
                     skipinitialspace=True)
+                if np.any(np.isnan(df['validation_loss'])):
+                    return self._select_snapshot(path, method='train_best')
                 best_epoch = df['epoch'].iloc[
                     df['validation_loss'].idxmin()]
                 return path / f"snapshot_epoch_{best_epoch}.pth"
@@ -494,8 +499,11 @@ class Trainer():
             self.evaluator.run(self.train_loader)
             train_loss = self.evaluator.state.metrics['loss']
 
-            self.evaluator.run(self.validation_loader)
-            validation_loss = self.evaluator.state.metrics['loss']
+            if len(self.validation_loader) > 0:
+                self.evaluator.run(self.validation_loader)
+                validation_loss = self.evaluator.state.metrics['loss']
+            else:
+                validation_loss = np.nan
             self.evaluation_pbar.close()
 
             elapsed_time = time.time() - self.start_time

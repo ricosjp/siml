@@ -55,6 +55,7 @@ autopep8:
   stage: preprocess
   script:
     - python3.7 -m autopep8 --diff --exit-code $(find siml tests -name "*.py")
+  allow_failure: true
 
 pylint:
   stage: preprocess
@@ -62,6 +63,7 @@ pylint:
     - python3.7 -m pip install pycodestyle
     - find siml -name '*.py' -exec python3.7 -m pycodestyle {} +
     - python3.7 -m pylint --ignore-patterns=setting.py __main__ -E $(find siml tests -name "*.py" | grep -v __main__) --init-hook="import sys; sys.setrecursionlimit(2000)"
+  allow_failure: true
 
 pages:
   stage: deploy

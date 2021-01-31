@@ -20,7 +20,7 @@ class TestNetwork(unittest.TestCase):
         if tr.setting.trainer.output_directory.exists():
             shutil.rmtree(tr.setting.trainer.output_directory)
         loss = tr.train()
-        np.testing.assert_array_less(loss, 1.)
+        np.testing.assert_array_less(loss, 1.5)
 
     def test_gcnii(self):
         main_setting = setting.MainSetting.read_settings_yaml(
