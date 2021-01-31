@@ -338,7 +338,7 @@ class TestTrainer(unittest.TestCase):
             model=main_setting.trainer.output_directory,
             preprocessed_data_directory=main_setting.data.develop[0],
             converter_parameters_pkl=main_setting.data.develop[0].parent
-            / 'preprocessors.pkl', save=False)
+            / 'preprocessors.pkl', save=False)  # pylint: disable=E1136
         np.testing.assert_almost_equal(results[0]['loss'], train_loss)
 
     def test_trainer_train_dict_input(self):
