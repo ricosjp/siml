@@ -1338,12 +1338,12 @@ def split_data(list_directories, *, validation=.1, test=.1, shuffle=True):
     if validation < 1e-5:
         validation_length = 0
     else:
-        validation_length = int(np.ceil(data_length * validation))
+        validation_length = int(np.floor(data_length * validation))
 
     if test < 1e-5:
         test_length = 0
     else:
-        test_length = int(np.ceil(data_length * test))
+        test_length = int(np.floor(data_length * test))
 
     validation_directories = list_directories[:validation_length]
     test_directories = list_directories[

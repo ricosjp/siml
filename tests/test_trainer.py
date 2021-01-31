@@ -314,6 +314,33 @@ class TestTrainer(unittest.TestCase):
         self.assertEqual(
             len(trained_setting.data.test), 0)
 
+    def test_trainer_train_test_split_sample1(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/split/mlp_sample1.yml'))
+        shutil.rmtree(
+            main_setting.trainer.output_directory, ignore_errors=True)
+        tr = trainer.Trainer(main_setting)
+        tr.train()
+        train_state, _ = tr.evaluate()
+        train_loss = train_state.metrics['loss']
+
+        trained_setting = setting.MainSetting.read_settings_yaml(
+            tr.setting.trainer.output_directory / 'settings.yml')
+        self.assertEqual(
+            len(trained_setting.data.train), 1)
+        self.assertEqual(
+            len(trained_setting.data.validation), 0)
+        self.assertEqual(
+            len(trained_setting.data.test), 0)
+
+        ir = inferer.Inferer(main_setting)
+        results = ir.infer(
+            model=main_setting.trainer.output_directory,
+            preprocessed_data_directory=main_setting.data.develop[0],
+            converter_parameters_pkl=main_setting.data.develop[0].parent
+            / 'preprocessors.pkl', save=False)
+        np.testing.assert_almost_equal(results[0]['loss'], train_loss)
+
     def test_trainer_train_dict_input(self):
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/deform/dict_input.yml'))
