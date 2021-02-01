@@ -323,7 +323,7 @@ class TestPrepost(unittest.TestCase):
                 'std_scale': np.load(preprocessed_path / 'std_scale.npy')}
             dict_data_y = {
                 'standardize': np.load(preprocessed_path / 'standardize.npy')}
-            inv_dict_data_x, inv_dict_data_y = postprocessor.postprocess(
+            inv_dict_data_x, inv_dict_data_y, _ = postprocessor.postprocess(
                 dict_data_x, dict_data_y)
             for k, v in inv_dict_data_x.items():
                 interim_data = np.load(interim_path / (k + '.npy'))
@@ -457,7 +457,7 @@ class TestPrepost(unittest.TestCase):
             'a': np.load(
                 main_setting.data.interim_root / 'train/0/a.npy')}
         preprocessed_dict_x = c.preprocess(original_dict_x)
-        postprocessed_dict_x, _ = c.postprocess(preprocessed_dict_x, {})
+        postprocessed_dict_x, _, _ = c.postprocess(preprocessed_dict_x, {})
         np.testing.assert_almost_equal(
             preprocessed_dict_x['a'],
             np.load(

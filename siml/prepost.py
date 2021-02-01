@@ -861,6 +861,8 @@ class Converter:
                 Inversed input data.
             inversed_dict_data_y: dict
                 Inversed output data.
+            fem_data: femio.FEMData
+                FEMData object with input and output data.
         """
         if not perform_inverse:
             print('Postprocess skipped')
