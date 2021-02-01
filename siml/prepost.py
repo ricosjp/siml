@@ -861,6 +861,8 @@ class Converter:
                 Inversed input data.
             inversed_dict_data_y: dict
                 Inversed output data.
+            fem_data: femio.FEMData
+                FEMData object with input and output data.
         """
         if not perform_inverse:
             print('Postprocess skipped')
@@ -911,6 +913,18 @@ class Converter:
             inversed_dict_data_y = {}
 
         # Save data
+        if write_simulation_base is None:
+            fem_data = None
+        else:
+            fem_data = self._create_fem_data(
+                inversed_dict_data_x, inversed_dict_data_y,
+                write_simulation_base=write_simulation_base,
+                write_simulation_stem=write_simulation_stem,
+                read_simulation_type=read_simulation_type,
+                data_addition_function=data_addition_function,
+                skip_femio=skip_femio, load_function=load_function,
+                convert_to_order1=convert_to_order1,
+                required_file_names=required_file_names)
         if output_directory is not None:
             if write_npy:
                 if save_x:
@@ -920,27 +934,16 @@ class Converter:
                 if write_simulation_base is None:
                     raise ValueError('No write_simulation_base fed.')
                 self.write_simulation(
-                    inversed_dict_data_x, inversed_dict_data_y,
-                    output_directory,
-                    overwrite=overwrite,
-                    write_simulation_base=write_simulation_base,
-                    write_simulation_stem=write_simulation_stem,
-                    read_simulation_type=read_simulation_type,
-                    write_simulation_type=write_simulation_type,
-                    data_addition_function=data_addition_function,
-                    skip_femio=skip_femio, load_function=load_function,
-                    convert_to_order1=convert_to_order1,
-                    required_file_names=required_file_names)
+                    output_directory, fem_data, overwrite=overwrite,
+                    write_simulation_type=write_simulation_type)
 
-        return inversed_dict_data_x, inversed_dict_data_y
+        return inversed_dict_data_x, inversed_dict_data_y, fem_data
 
-    def write_simulation(
-            self, dict_data_x, dict_data_y, output_directory,
-            write_simulation_base, *,
+    def _create_fem_data(
+            self, dict_data_x, dict_data_y, write_simulation_base, *,
             write_simulation_stem=None,
             read_simulation_type='fistr', data_addition_function=None,
-            write_simulation_type='fistr',
-            overwrite=False, skip_femio=False, load_function=None,
+            skip_femio=False, load_function=None,
             required_file_names=[], convert_to_order1=False):
         if not skip_femio:
             fem_data = femio.FEMData.read_directory(
@@ -970,6 +973,11 @@ class Converter:
         if data_addition_function is not None:
             fem_data = data_addition_function(fem_data)
 
+        return fem_data
+
+    def write_simulation(
+            self, output_directory, fem_data, *,
+            write_simulation_type='fistr', overwrite=False):
         if write_simulation_type == 'fistr':
             ext = ''
         elif write_simulation_type == 'ucd':
