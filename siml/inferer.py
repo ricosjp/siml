@@ -317,7 +317,7 @@ class Inferer(trainer.Trainer):
         else:
             answer_y = None
 
-        _, inversed_dict_y, loss, _ = self._infer_single_data(
+        _, inversed_dict_y, _, loss, _ = self._infer_single_data(
             self.prepost_converter, x, answer_y=answer_y,
             accomodate_length=accomodate_length)
         return inversed_dict_y, loss
@@ -472,7 +472,7 @@ class Inferer(trainer.Trainer):
         # Postprocess
         if not hasattr(self, 'perform_postprocess'):
             self.perform_postprocess = True
-        inversed_dict_x, inversed_dict_y = postprocessor.postprocess(
+        inversed_dict_x, inversed_dict_y, fem_data = postprocessor.postprocess(
             dict_var_x, dict_var_inferred_y,
             output_directory=output_directory, overwrite=overwrite,
             write_simulation=write_simulation, write_npy=write_npy,
@@ -494,7 +494,7 @@ class Inferer(trainer.Trainer):
             # Answer data does not exist
             loss = None
 
-        return inversed_dict_x, inversed_dict_y, loss, elapsed_time
+        return inversed_dict_x, inversed_dict_y, fem_data, loss, elapsed_time
 
     def _infer_single_directory(
             self, postprocessor, directory, x, dict_dir_y, *, save=True,
@@ -534,7 +534,7 @@ class Inferer(trainer.Trainer):
         else:
             output_directory = None
 
-        inversed_dict_x, inversed_dict_y, loss, inference_time = \
+        inversed_dict_x, inversed_dict_y, fem_data, loss, inference_time = \
             self._infer_single_data(
                 postprocessor, x, answer_y=answer_y, overwrite=overwrite,
                 output_directory=output_directory, supports=supports,
@@ -566,7 +566,8 @@ class Inferer(trainer.Trainer):
             print(f"Inferred data saved in: {output_directory}")
 
         return {
-            'dict_x': inversed_dict_x, 'dict_y': inversed_dict_y, 'loss': loss,
+            'dict_x': inversed_dict_x, 'dict_y': inversed_dict_y,
+            'fem_data': fem_data, 'loss': loss,
             'output_directory': output_directory, 'data_directory': directory,
             'inference_time': inference_time}
 
