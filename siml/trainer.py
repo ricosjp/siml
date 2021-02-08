@@ -1,9 +1,4 @@
-from collections import OrderedDict
 import enum
-import io
-import pathlib
-import random
-import re
 import time
 
 import ignite
@@ -16,58 +11,14 @@ import torch.nn.functional as functional
 from tqdm import tqdm
 import yaml
 
-from . import data_parallel
 from . import datasets
 from . import networks
 from . import setting
+from . import siml_manager
 from . import util
 
 
-class Trainer():
-
-    @classmethod
-    def read_settings(cls, settings_yaml):
-        """Read settings.yaml to generate Trainer object.
-
-        Parameters
-        ----------
-            settings_yaml: str or pathlib.Path
-                setting.yaml file name.
-        Returns
-        --------
-            trainer: siml.Trainer
-                Generater Trainer object.
-        """
-        main_setting = setting.MainSetting.read_settings_yaml(settings_yaml)
-        return cls(main_setting)
-
-    def __init__(self, settings, *, optuna_trial=None):
-        """Initialize Trainer object.
-
-        Parameters
-        ----------
-            settings: siml.setting.MainSetting object or pathlib.Path
-                Setting descriptions.
-            model: siml.networks.Network object
-                Model to be trained.
-            optuna_trial: optuna.Trial
-                Optuna trial object. Used for pruning.
-        Returns
-        --------
-            None
-        """
-        if isinstance(settings, pathlib.Path) or isinstance(
-                settings, io.TextIOBase):
-            self.setting = setting.MainSetting.read_settings_yaml(
-                settings)
-        elif isinstance(settings, setting.MainSetting):
-            self.setting = settings
-        else:
-            raise ValueError(
-                f"Unknown type for settings: {settings.__class__}")
-
-        self._update_setting_if_needed()
-        self.optuna_trial = optuna_trial
+class Trainer(siml_manager.SimlManager):
 
     def train(self):
         """Perform training.
@@ -174,62 +125,6 @@ class Trainer():
 
         return
 
-    def _select_device(self):
-        if self._is_gpu_supporting():
-            if self.setting.trainer.data_parallel:
-                if self.setting.trainer.time_series:
-                    raise ValueError(
-                        'So far both data_parallel and time_series cannot be '
-                        'True')
-                self.device = 'cuda:0'
-                self.output_device = self.device
-                gpu_count = torch.cuda.device_count()
-                # TODO: Use DistributedDataParallel
-                # torch.distributed.init_process_group(backend='nccl')
-                # self.model = torch.nn.parallel.DistributedDataParallel(
-                #     self.model)
-                self.model = data_parallel.DataParallel(self.model)
-                self.model.to(self.device)
-                print(f"Data parallel enabled with {gpu_count} GPUs.")
-            elif self.setting.trainer.model_parallel:
-                self.device = 'cuda:0'
-                gpu_count = torch.cuda.device_count()
-                self.output_device = f"cuda:{gpu_count-1}"
-                print(f"Model parallel enabled with {gpu_count} GPUs.")
-            elif self.setting.trainer.gpu_id != -1:
-                self.device = f"cuda:{self.setting.trainer.gpu_id}"
-                self.output_device = self.device
-                self.model.to(self.device)
-                print(f"GPU device: {self.setting.trainer.gpu_id}")
-            else:
-                self.device = 'cpu'
-                self.output_device = self.device
-        else:
-            if self.setting.trainer.gpu_id != -1 \
-                    or self.setting.trainer.data_parallel \
-                    or self.setting.trainer.model_parallel:
-                raise ValueError('No GPU found.')
-            self.setting.trainer.gpu_id = -1
-            self.device = 'cpu'
-            self.output_device = self.device
-
-    def _determine_element_wise(self):
-        if self.setting.trainer.time_series:
-            return False
-        else:
-            if self.setting.trainer.element_wise \
-                    or self.setting.trainer.simplified_model:
-                return True
-            else:
-                return False
-
-    def set_seed(self):
-        seed = self.setting.trainer.seed
-        random.seed(seed)
-        np.random.seed(seed)
-        torch.manual_seed(seed)
-        return
-
     def output_stats(self):
         dict_stats = {
             name: self._calculate_stats(parameter)
@@ -266,125 +161,6 @@ class Trainer():
             f"{prefix}absmax": float(np.max(abs_numpy_tensor)),
             f"{prefix}absmin": float(np.min(abs_numpy_tensor)),
         }
-
-    def _update_setting(self, path, *, only_model=False):
-        if path.is_file():
-            yaml_file = path
-        elif path.is_dir():
-            yamls = list(path.glob('*.y*ml'))
-            if len(yamls) != 1:
-                raise ValueError(f"{len(yamls)} yaml files found in {path}")
-            yaml_file = yamls[0]
-        if only_model:
-            self.setting.model = setting.MainSetting.read_settings_yaml(
-                yaml_file).model
-        else:
-            self.setting = setting.MainSetting.read_settings_yaml(yaml_file)
-        if self.setting.trainer.output_directory.exists():
-            print(
-                f"{self.setting.trainer.output_directory} exists "
-                'so reset output directory.')
-            self.setting.trainer.output_directory = \
-                setting.TrainerSetting([], []).output_directory
-        return
-
-    def _update_setting_if_needed(self):
-        if self.setting.trainer.restart_directory is not None:
-            restart_directory = self.setting.trainer.restart_directory
-            self._update_setting(self.setting.trainer.restart_directory)
-            self.setting.trainer.restart_directory = restart_directory
-        elif self.setting.trainer.pretrain_directory is not None:
-            pretrain_directory = self.setting.trainer.pretrain_directory
-            self._update_setting(
-                self.setting.trainer.pretrain_directory, only_model=True)
-            self.setting.trainer.pretrain_directory = pretrain_directory
-        elif self.setting.trainer.restart_directory is not None \
-                and self.setting.trainer.pretrain_directory is not None:
-            raise ValueError(
-                'Restart directory and pretrain directory cannot be specified '
-                'at the same time.')
-        return
-
-    def _load_pretrained_model_if_needed(self, *, model_file=None):
-        if self.setting.trainer.pretrain_directory is None \
-                and model_file is None:
-            return
-        if model_file:
-            snapshot = model_file
-        else:
-            snapshot = self._select_snapshot(
-                self.setting.trainer.pretrain_directory,
-                method=self.setting.trainer.snapshot_choise_method)
-
-        checkpoint = torch.load(snapshot, map_location=self.device)
-
-        if len(self.model.state_dict()) != len(checkpoint['model_state_dict']):
-            raise ValueError('Model parameter length invalid')
-        # Convert new state_dict in case DataParallel wraps model
-        model_state_dict = OrderedDict({
-            key: value for key, value in zip(
-                self.model.state_dict().keys(),
-                checkpoint['model_state_dict'].values())})
-        self.model.load_state_dict(model_state_dict)
-        print(f"{snapshot} loaded as a pretrain model.")
-        return
-
-    def _load_restart_model_if_needed(self):
-        if self.setting.trainer.restart_directory is None:
-            return
-        snapshot = self._select_snapshot(
-            self.setting.trainer.restart_directory, method='latest')
-        checkpoint = torch.load(snapshot)
-        self.model.load_state_dict(checkpoint['model_state_dict'])
-        self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-        self.trainer.load_state_dict({
-            'epoch': checkpoint['epoch'],
-            'validation_loss': checkpoint['validation_loss'],
-            'seed': self.setting.trainer.seed,
-            'max_epochs': self.setting.trainer.n_epoch,
-            'epoch_length': len(self.train_loader),
-        })
-        self.trainer.state.epoch = checkpoint['epoch']
-        # self.loss = checkpoint['loss']
-        print(f"{snapshot} loaded for restart.")
-        return
-
-    def _select_snapshot(self, path, method='best'):
-        if not path.exists():
-            raise ValueError(f"{path} doesn't exist")
-
-        if path.is_file():
-            return path
-        elif path.is_dir():
-            snapshots = path.glob('snapshot_epoch_*')
-            if method == 'latest':
-                return max(
-                    snapshots, key=lambda p: int(re.search(
-                        r'snapshot_epoch_(\d+)', str(p)).groups()[0]))
-            elif method == 'best':
-                df = pd.read_csv(
-                    path / 'log.csv', header=0, index_col=None,
-                    skipinitialspace=True)
-                if np.any(np.isnan(df['validation_loss'])):
-                    return self._select_snapshot(path, method='train_best')
-                best_epoch = df['epoch'].iloc[
-                    df['validation_loss'].idxmin()]
-                return path / f"snapshot_epoch_{best_epoch}.pth"
-            elif method == 'train_best':
-                df = pd.read_csv(
-                    path / 'log.csv', header=0, index_col=None,
-                    skipinitialspace=True)
-                best_epoch = df['epoch'].iloc[
-                    df['train_loss'].idxmin()]
-                return path / f"snapshot_epoch_{best_epoch}.pth"
-            else:
-                raise ValueError(f"Unknown snapshot choise method: {method}")
-
-        else:
-            raise ValueError(f"{path} had unknown property.")
-
-    def _is_gpu_supporting(self):
-        return torch.cuda.is_available()
 
     def _generate_trainer(self):
 

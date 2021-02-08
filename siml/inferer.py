@@ -10,11 +10,11 @@ from . import datasets
 from . import networks
 from . import prepost
 from . import setting
-from . import trainer
+from . import siml_manager
 from . import util
 
 
-class Inferer(trainer.Trainer):
+class Inferer(siml_manager.SimlManager):
 
     def infer(
             self, model=None, *,
