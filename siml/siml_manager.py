@@ -7,6 +7,7 @@ import re
 import numpy as np
 import pandas as pd
 import torch
+import torch.nn.functional as functional
 
 from . import data_parallel
 from . import setting
@@ -177,26 +178,6 @@ class SimlManager():
         print(f"{snapshot} loaded as a pretrain model.")
         return
 
-    def _load_restart_model_if_needed(self):
-        if self.setting.trainer.restart_directory is None:
-            return
-        snapshot = self._select_snapshot(
-            self.setting.trainer.restart_directory, method='latest')
-        checkpoint = torch.load(snapshot)
-        self.model.load_state_dict(checkpoint['model_state_dict'])
-        self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-        self.trainer.load_state_dict({
-            'epoch': checkpoint['epoch'],
-            'validation_loss': checkpoint['validation_loss'],
-            'seed': self.setting.trainer.seed,
-            'max_epochs': self.setting.trainer.n_epoch,
-            'epoch_length': len(self.train_loader),
-        })
-        self.trainer.state.epoch = checkpoint['epoch']
-        # self.loss = checkpoint['loss']
-        print(f"{snapshot} loaded for restart.")
-        return
-
     def _select_snapshot(self, path, method='best'):
         if not path.exists():
             raise ValueError(f"{path} doesn't exist")
@@ -233,3 +214,44 @@ class SimlManager():
 
     def _is_gpu_supporting(self):
         return torch.cuda.is_available()
+
+    def _create_loss_function(self, pad=None):
+        loss_name = self.setting.trainer.loss_function.lower()
+        if loss_name == 'mse':
+            loss_core = functional.mse_loss
+        else:
+            raise ValueError(f"Unknown loss function name: {loss_name}")
+
+        def loss_function_dict(y_pred, y, original_shapes=None):
+            return torch.mean(torch.stack([
+                loss_core(y_pred[key].view(y[key].shape), y[key])
+                for key in y.keys()]))
+
+        def loss_function_without_padding(y_pred, y, original_shapes=None):
+            return loss_core(y_pred.view(y.shape), y)
+
+        def loss_function_time_with_padding(y_pred, y, original_shapes):
+            split_y_pred = torch.split(
+                y_pred, list(original_shapes[:, 1]), dim=1)
+            concatenated_y_pred = torch.cat([
+                sy[:s].reshape(-1)
+                for s, sy in zip(original_shapes[:, 0], split_y_pred)])
+            split_y = torch.split(
+                y, list(original_shapes[:, 1]), dim=1)
+            concatenated_y = torch.cat([
+                sy[:s].reshape(-1)
+                for s, sy in zip(original_shapes[:, 0], split_y)])
+            return loss_core(concatenated_y_pred, concatenated_y)
+
+        output_is_dict = isinstance(self.setting.trainer.outputs, dict)
+
+        if self.setting.trainer.time_series:
+            if pad is False:
+                return loss_function_without_padding
+            else:
+                return loss_function_time_with_padding
+        else:
+            if output_is_dict:
+                return loss_function_dict
+            else:
+                return loss_function_without_padding
