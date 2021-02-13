@@ -79,7 +79,7 @@ class TestInferer(unittest.TestCase):
         ir = inferer.Inferer(
             main_setting, conversion_function=conversion_function)
         ir.setting.inferer.converter_parameters_pkl = Path(
-                'tests/data/deform/preprocessed/preprocessors.pkl')
+            'tests/data/deform/preprocessed/preprocessors.pkl')
         ir.setting.inferer.save = False
         ir.setting.inferer.perform_preprocess = True
         if ir.setting.trainer.output_directory.exists():
@@ -115,7 +115,7 @@ class TestInferer(unittest.TestCase):
             shutil.rmtree(ir.setting.trainer.output_directory)
 
         ir.setting.inferer.converter_parameters_pkl = Path(
-                'tests/data/deform/preprocessed/preprocessors.pkl')
+            'tests/data/deform/preprocessed/preprocessors.pkl')
         ir.setting.inferer.save = False
 
         ir.setting.inferer.perform_preprocess = True
@@ -149,7 +149,7 @@ class TestInferer(unittest.TestCase):
             'tests/data/deform/preprocessed/preprocessors.pkl')
         ir.setting.inferer.output_directory = output_directory
         ir.setting.inferer.write_simulation_base = Path(
-                'tests/data/deform/raw')
+            'tests/data/deform/raw')
         ir.setting.inferer.write_simulation = True
         ir.setting.inferer.write_simulation_type = 'ucd'
 
@@ -223,7 +223,7 @@ class TestInferer(unittest.TestCase):
         if ir.setting.trainer.output_directory.exists():
             shutil.rmtree(ir.setting.trainer.output_directory)
         ir.setting.inferer.converter_parameters_pkl = Path(
-                'tests/data/deform/preprocessed/preprocessors.pkl')
+            'tests/data/deform/preprocessed/preprocessors.pkl')
         preprocessed_data_directory = Path(
             'tests/data/deform/preprocessed/train/tet2_3_modulusx1.0000')
         res = ir.infer(
