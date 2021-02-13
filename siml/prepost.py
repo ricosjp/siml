@@ -813,13 +813,14 @@ class Converter:
 
     def postprocess(
             self, dict_data_x, dict_data_y, output_directory=None, *,
+            dict_data_y_answer=None,
             overwrite=False, save_x=False, write_simulation=False,
             write_npy=True, write_simulation_stem=None,
             write_simulation_base=None, read_simulation_type='fistr',
             write_simulation_type='fistr', skip_femio=False,
             load_function=None, convert_to_order1=False,
             data_addition_function=None, required_file_names=[],
-            perform_inverse=True):
+            perform_inverse=True, **kwargs):
         """Postprocess data with inversely converting them.
 
         Parameters
@@ -830,6 +831,8 @@ class Converter:
                 Dict of output data.
             output_directory: pathlib.Path, optional [None]
                 Output directory path.
+            dict_data_y_answer: dict
+                Dict of expected output data.
             overwrite: bool, optional [False]
                 If True, overwrite data.
             save_x: bool, optional [False]
@@ -875,6 +878,16 @@ class Converter:
             else:
                 return_dict_data_x = dict_data_x
 
+            if dict_data_y_answer is not None:
+                if isinstance(list(dict_data_y_answer.values())[0], dict):
+                    return_dict_data_x.update({
+                        variable_name:
+                        data
+                        for value in dict_data_x.values()
+                        for variable_name, data in value.items()})
+                else:
+                    return_dict_data_x.update(dict_data_x)
+
             if isinstance(list(dict_data_y.values())[0], dict):
                 return_dict_data_y = {
                     variable_name:
@@ -896,6 +909,19 @@ class Converter:
                 variable_name:
                 self.converters[variable_name].inverse(data)
                 for variable_name, data in dict_data_x.items()}
+
+        if dict_data_y_answer is not None:
+            if isinstance(list(dict_data_y_answer.values())[0], dict):
+                inversed_dict_data_x.update({
+                    variable_name:
+                    self.converters[variable_name].inverse(data)
+                    for value in dict_data_y_answer.values()
+                    for variable_name, data in value.items()})
+            else:
+                inversed_dict_data_x.update({
+                    variable_name:
+                    self.converters[variable_name].inverse(data)
+                    for variable_name, data in dict_data_y_answer.items()})
 
         if len(dict_data_y) > 0:
             if isinstance(list(dict_data_y.values())[0], dict):

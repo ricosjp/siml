@@ -21,12 +21,12 @@ class SimlManager():
 
         Parameters
         ----------
-            settings_yaml: str or pathlib.Path
-                setting.yaml file name.
+        settings_yaml: str or pathlib.Path
+            setting.yaml file name.
+
         Returns
         --------
-            trainer: siml.SimlManager
-                Generater SimlManager object.
+            siml.SimlManager
         """
         main_setting = setting.MainSetting.read_settings_yaml(settings_yaml)
         return cls(main_setting)
@@ -36,15 +36,16 @@ class SimlManager():
 
         Parameters
         ----------
-            settings: siml.setting.MainSetting object or pathlib.Path
-                Setting descriptions.
-            model: siml.networks.Network object
-                Model to be trained.
-            optuna_trial: optuna.Trial
-                Optuna trial object. Used for pruning.
+        settings: siml.setting.MainSetting object or pathlib.Path
+            Setting descriptions.
+        model: siml.networks.Network object
+            Model to be trained.
+        optuna_trial: optuna.Trial
+            Optuna trial object. Used for pruning.
+
         Returns
         --------
-            None
+        None
         """
         if isinstance(settings, pathlib.Path) or isinstance(
                 settings, io.TextIOBase):
@@ -215,7 +216,20 @@ class SimlManager():
     def _is_gpu_supporting(self):
         return torch.cuda.is_available()
 
-    def _create_loss_function(self, pad=None):
+    def _create_loss_function(self, pad=False, allow_no_answer=False):
+        if pad:
+            raise ValueError(f"pad = True is no longer supported")
+        if allow_no_answer:
+            loss_with_answer = self._create_loss_function()
+            def loss_function_with_allowing_no_answer(
+                    y_pred, y, original_shapes=None, **kwargs):
+                if y is None:
+                    return None
+                else:
+                    return loss_with_answer(
+                        y_pred, y, original_shapes=original_shapes)
+            return loss_function_with_allowing_no_answer
+
         loss_name = self.setting.trainer.loss_function.lower()
         if loss_name == 'mse':
             loss_core = functional.mse_loss
@@ -246,10 +260,7 @@ class SimlManager():
         output_is_dict = isinstance(self.setting.trainer.outputs, dict)
 
         if self.setting.trainer.time_series:
-            if pad is False:
-                return loss_function_without_padding
-            else:
-                return loss_function_time_with_padding
+            return loss_function_without_padding
         else:
             if output_is_dict:
                 return loss_function_dict

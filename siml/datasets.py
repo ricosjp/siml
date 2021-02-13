@@ -99,14 +99,16 @@ class BaseDataset(torch.utils.data.Dataset):
         if pbar:
             pbar.update()
         if self.supports is None:
-            return {'x': x_data, 't': y_data}
+            return {'x': x_data, 't': y_data, 'data_directory': data_directory}
         else:
             # TODO: use appropreate sparse data class
             support_data = [
                 util.load_variable(
                     data_directory, support, decrypt_key=self.decrypt_key)
                 for support in self.supports]
-            return {'x': x_data, 't': y_data, 'supports': support_data}
+            return {
+                'x': x_data, 't': y_data, 'supports': support_data,
+                'data_directory': data_directory}
 
 
 class LazyDataset(BaseDataset):
@@ -325,9 +327,11 @@ class CollateFunctionGenerator():
         t = self.convert_output_dense(batch, 't')
         supports = self.convert_sparse(batch, 'supports')
         original_shapes = self.extract_original_shapes(batch)
+        data_directories = [b['data_directory'] for b in batch]
         return {
             'x': x, 't': t, 'supports': supports,
-            'original_shapes': original_shapes}
+            'original_shapes': original_shapes,
+            'data_directories': data_directories}
 
     def _prepare_batch_without_support(
             self, batch, device=None, output_device=None, non_blocking=False):

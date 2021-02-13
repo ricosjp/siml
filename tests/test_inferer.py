@@ -15,15 +15,16 @@ class TestInferer(unittest.TestCase):
     def test_infer_with_preprocessed_data(self):
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/linear/pretrained/settings.yml'))
+        main_setting.inferer.converter_parameters_pkl = Path(
+            'tests/data/linear/preprocessed/preprocessors.pkl')
+        main_setting.inferer.output_directory_root = Path(
+            'tests/data/linear/inferred')
         ir = inferer.Inferer(main_setting)
         if ir.setting.trainer.output_directory.exists():
             shutil.rmtree(ir.setting.trainer.output_directory)
         res = ir.infer(
             model=Path('tests/data/linear/pretrained'),
-            preprocessed_data_directory=Path(
-                'tests/data/linear/preprocessed/validation'),
-            converter_parameters_pkl=Path(
-                'tests/data/linear/preprocessed/preprocessors.pkl'))
+            data_directories=Path('tests/data/linear/preprocessed/validation'))
         np.testing.assert_almost_equal(
             res[0]['dict_y']['y'],
             np.load('tests/data/linear/interim/validation/0/y.npy'), decimal=3)

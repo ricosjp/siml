@@ -1,11 +1,12 @@
-import io
 import pathlib
 import time
 
 import femio
+import ignite
 import numpy as np
 import torch
 
+from . import collect_results
 from . import datasets
 from . import networks
 from . import prepost
@@ -16,56 +17,30 @@ from . import util
 
 class Inferer(siml_manager.SimlManager):
 
-    def infer(
-            self, model=None, *,
-            save=True, overwrite=False, output_directory=None,
-            preprocessed_data_directory=None, raw_data_directory=None,
-            raw_data_basename=None, raw_data_file=None,
-            write_simulation=False, write_npy=True, write_yaml=True,
-            write_simulation_base=None, write_simulation_stem=None,
-            read_simulation_type='fistr', write_simulation_type='fistr',
-            converter_parameters_pkl=None, conversion_function=None,
-            load_function=None, convert_to_order1=False,
-            data_addition_function=None, accomodate_length=None,
-            required_file_names=[], perform_postprocess=True):
-        """Perform inference.
+    def read_settings(cls, settings_yaml, **kwargs):
+        """Read settings.yaml to generate Inferer object.
 
         Parameters
         ----------
-        model: pathlib.Path or io.BufferedIOBase, optional [None]
-            Model directory, file path, or buffer. If not fed,
-            TrainerSetting.pretrain_directory will be used.
-        save: bool, optional [False]
-            If True, save inference results.
-        output_directory: pathlib.Path, optional [None]
-            Output directory name. If not fed, data/inferred will be the
-            default output directory base.
-        preprocessed_data_directory: pathlib.Path, optional [None]
-            Preprocessed data directories. If not fed, DataSetting.test
-            will be used.
-        raw_data_directory: pathlib.Path, optional [None]
-            Raw data directories. If not fed, DataSetting.test
-            will be used.
-        raw_data_basename: pathlib.Path, optional [None]
-            Raw data basename (without extention).
-        raw_data_file: pathlib.Path, optional [None]
-            Raw data file name.
-        write_simulation: bool, optional [False]
-            If True, write simulation data file(s) based on the inference.
-        write_npy: bool, optional [True]
-            If True, write npy files of inferences.
-        write_yaml: bool, optional [True]
-            If True, write yaml file used to make inference.
-        write_simulation_base: pathlib.Path, optional [None]
-            Base of simulation data to be used for write_simulation option.
-            If not fed, try to find from the input directories.
-        read_simulation_type: str, optional ['fistr']
-            Simulation file type to read.
-        write_simulation_type: str, optional ['fistr']
-            Simulation file type to write.
-        converter_parameters_pkl: pathlib.Path, optional [None]
-            Pickel file of converter parameters. IF not fed,
-            DataSetting.preprocessed_root is used.
+        settings_yaml: str or pathlib.Path
+            setting.yaml file name.
+
+        Returns
+        --------
+        siml.Inferer
+        """
+        main_setting = setting.MainSetting.read_settings_yaml(settings_yaml)
+        return cls(main_setting, **kwargs)
+
+    def __init__(
+            self, settings, *,
+            conversion_function=None, load_function=None,
+            data_addition_function=None, postprocess_function=None):
+        """Initialize Inferer object.
+
+        Parameters
+        ----------
+        settings: siml.MainSetting
         conversion_function: function, optional [None]
             Conversion function to preprocess raw data. It should receive
             two parameters, fem_data and raw_directory. If not fed,
@@ -74,135 +49,71 @@ class Inferer(siml_manager.SimlManager):
             Function to load data, which take list of pathlib.Path objects
             (as required files) and pathlib.Path object (as data directory)
             and returns data_dictionary and fem_data (can be None) to be saved.
-        required_file_names: List[str], optional [[]]
-            Required file names for load_function.
         data_addition_function: function, optional [None]
             Function to add some data at simulation data writing phase.
             If not fed, no data addition occurs.
-        accomodate_length: int
-            If specified, duplicate initial state to initialize RNN state.
+        postprocess_function: function, optional [None]
+            Function to make postprocess of the inference data.
+            If not fed, no additional postprocess will be performed.
+        """
+        self.setting = settings
+        self.conversion_function = conversion_function
+        self.load_function = load_function
+        self.data_addition_function = data_addition_function
+        self.postprocess_function = postprocess_function
+        return
+
+    def infer(self, *, data_directories=None, model=None):
+        """Perform infererence.
+
         Returns
-        --------
+        -------
         inference_results: list
             Inference results contains:
                 - input variables
                 - output variables
                 - loss
+        data_directories: List[pathlib.Path] or pathlib.Path
+            Data directories to infer.
+        model: pathlib.Path
+            Model directory or file path.
         """
-        self.perform_postprocess = perform_postprocess
-        self._prepare_inference(
-            model,
-            converter_parameters_pkl=converter_parameters_pkl)
+        if data_directories is not None:
+            if isinstance(data_directories, pathlib.Path):
+                data_directories = [data_directories]
+            self.setting.inferer.data_directories = data_directories
+        if model is not None:
+            self.setting.inferer.model = model
 
-        # Load data
-        if raw_data_directory is None and raw_data_basename is None:
-            # Inference based on preprocessed data
-            if preprocessed_data_directory is None:
-                input_directories = self.setting.data.test
-            else:
-                if isinstance(preprocessed_data_directory, str) \
-                        or isinstance(
-                            preprocessed_data_directory, pathlib.Path):
-                    input_directories = [preprocessed_data_directory]
-                elif isinstance(preprocessed_data_directory, list) \
-                        or isinstance(preprocessed_data_directory, set):
-                    input_directories = preprocessed_data_directory
-
-            if isinstance(self.setting.trainer.input_names, dict):
-                input_names = []
-                for value in self.setting.trainer.input_names.values():
-                    input_names = input_names + value
-            else:
-                input_names = self.setting.trainer.input_names
-            dict_dir_x = self._load_data(
-                self.setting.trainer.input_names, input_directories,
-                return_dict=True, supports=self.setting.trainer.support_inputs)
-            dict_dir_y = self._load_data(
-                self.setting.trainer.output_names, input_directories,
-                return_dict=True, allow_missing=True)
-            if dict_dir_y is None:
-                dict_dir_y = {}
-
+        self._prepare_inference()
+        inference_state = self.inferer.run(self.inference_loader)
+        if 'results' in inference_state.metrics:
+            return inference_state.metrics['results']
         else:
-            # Inference based on raw data
-            if preprocessed_data_directory is not None:
-                raise ValueError(
-                    'Both preprocessed_data_directory and raw_data_directory '
-                    'cannot be specified at the same time')
-            if raw_data_basename is not None:
-                if raw_data_directory is not None:
-                    raise ValueError(
-                        'Both raw_data_basename and raw_data_directory cannot'
-                        'be fed at the same time')
-                raw_data_directory = raw_data_basename.parent
-                raw_data_stem = raw_data_basename.stem
-            else:
-                raw_data_stem = None
+            return None
 
-            if write_simulation_base is None:
-                write_simulation_base = raw_data_directory
-            if write_simulation_stem is None:
-                write_simulation_stem = raw_data_stem
-            x, y = self._preprocess_data(
-                read_simulation_type,
-                raw_data_directory=raw_data_directory,
-                raw_data_stem=raw_data_stem,
-                prepost_converter=self.prepost_converter,
-                conversion_function=conversion_function,
-                load_function=load_function)
-            dict_dir_x = {raw_data_directory: x}
-            if y is None:
-                dict_dir_y = {}
-            else:
-                dict_dir_y = {raw_data_directory: y}
-
-        # Perform inference
-        inference_results = [
-            self._infer_single_directory(
-                self.prepost_converter, directory, x, dict_dir_y,
-                save=save, convert_to_order1=convert_to_order1,
-                overwrite=overwrite, output_directory=output_directory,
-                write_simulation=write_simulation, write_npy=write_npy,
-                write_yaml=write_yaml,
-                write_simulation_base=write_simulation_base,
-                write_simulation_stem=write_simulation_stem,
-                write_simulation_type=write_simulation_type,
-                read_simulation_type=read_simulation_type,
-                data_addition_function=data_addition_function,
-                accomodate_length=accomodate_length,
-                load_function=load_function,
-                required_file_names=required_file_names)
-            for directory, x in dict_dir_x.items()]
-        return inference_results
-
-    def _prepare_inference(
-            self, model,
-            *, model_directory=None, converter_parameters_pkl=None):
+    def _prepare_inference(self):
 
         # Define model
-        if model is None:
+        if self.setting.inferer.model is None:
             if self.setting.trainer.pretrain_directory is None:
                 raise ValueError(
                     f'No pretrain directory is specified for inference.')
             else:
-                model = self.setting.trainer.pretrain_directory
-
-        self.setting.trainer.restart_directory = None
-        if isinstance(model, io.BufferedIOBase):
-            model_file = model
-        elif isinstance(model, str) or isinstance(model, pathlib.Path):
-            model = pathlib.Path(model)
-            if model.is_dir():
-                self.setting.trainer.pretrain_directory = model
-                self._update_setting_if_needed()
-                model_file = None
-            elif model.is_file():
-                model_file = model
-            else:
-                raise ValueError(f"Model does not exist: {model}")
+                model = pathlib.Path(self.setting.trainer.pretrain_directory)
         else:
-            raise ValueError(
-                f"{model} is neither file, directory, nor buffer.")
+            model = pathlib.Path(self.setting.inferer.model)
+        self.setting.trainer.restart_directory = None
+
+        model = pathlib.Path(model)
+        if model.is_dir():
+            self.setting.trainer.pretrain_directory = model
+            self._update_setting_if_needed()
+            model_file = None
+        elif model.is_file():
+            model_file = model
+        else:
+            raise ValueError(f"Model does not exist: {model}")
 
         self.model = networks.Network(
             self.setting.model, self.setting.trainer)
@@ -210,12 +121,81 @@ class Inferer(siml_manager.SimlManager):
         self._load_pretrained_model_if_needed(model_file=model_file)
 
         self.element_wise = self._determine_element_wise()
-        self.loss = self._create_loss_function(pad=False)
-        self.model.eval()
-        if converter_parameters_pkl is None:
-            converter_parameters_pkl = self.setting.data.preprocessed_root \
-                / 'preprocessors.pkl'
-        self.prepost_converter = prepost.Converter(converter_parameters_pkl)
+        self.loss = self._create_loss_function(allow_no_answer=True)
+        if self.setting.inferer.converter_parameters_pkl is None:
+            self.setting.inferer.converter_parameters_pkl \
+                = self.setting.data.preprocessed_root / 'preprocessors.pkl'
+        self.prepost_converter = prepost.Converter(
+            self.setting.inferer.converter_parameters_pkl)
+
+        self.inference_loader = self._get_inferernce_loader()
+        self.inferer = self._create_inferer()
+        return
+
+    def _get_inferernce_loader(self):
+        input_is_dict = isinstance(self.setting.trainer.inputs, dict)
+        output_is_dict = isinstance(self.setting.trainer.outputs, dict)
+        self.collate_fn = datasets.CollateFunctionGenerator(
+            time_series=self.setting.trainer.time_series,
+            dict_input=input_is_dict, dict_output=output_is_dict,
+            use_support=self.setting.trainer.support_inputs,
+            element_wise=self.element_wise,
+            data_parallel=self.setting.trainer.data_parallel)
+        self.prepare_batch = self.collate_fn.prepare_batch
+        inference_dataset = datasets.LazyDataset(
+            self.setting.trainer.input_names,
+            self.setting.trainer.output_names,
+            self.setting.inferer.data_directories,
+            supports=self.setting.trainer.support_inputs,
+            num_workers=0,
+            decrypt_key=self.setting.data.encrypt_key)
+        inference_loader = torch.utils.data.DataLoader(
+            inference_dataset, collate_fn=self.collate_fn,
+            batch_size=1, shuffle=False, num_workers=0)
+        return inference_loader
+
+    def _create_inferer(self):
+
+        def _inference(engine, batch):
+            self.model.eval()
+            x, y = self.prepare_batch(
+                batch, device=self.device,
+                output_device=self.output_device,
+                non_blocking=self.setting.trainer.non_blocking)
+            with torch.no_grad():
+                start_time = time.time()
+                y_pred = self.model(x)
+                end_time = time.time()
+                elapsed_time = end_time - start_time
+
+            assert len(batch['data_directories']) == 1
+            data_directory = batch['data_directories'][0]
+            loss = self.loss(y_pred, y)
+            print('--')
+            print(f"              Data: {data_directory}")
+            print(f"Inference time [s]: {elapsed_time:.5e}")
+            print(f"              Loss: {loss}")
+
+            return y_pred, y, {
+                'x': x, 'original_shapes': x['original_shapes'],
+                'data_directory': data_directory,
+                'inference_time': elapsed_time}
+
+        evaluator_engine = ignite.engine.Engine(_inference)
+
+        if self.setting.inferer.return_all_results:
+            metrics = {
+                'loss': ignite.metrics.Loss(self.loss),
+                'results': collect_results.CollectResults(inferer=self),
+            }
+        else:
+            metrics = {
+                'loss': ignite.metrics.Loss(self.loss)
+            }
+
+        for name, metric in metrics.items():
+            metric.attach(evaluator_engine, name)
+        return evaluator_engine
 
     def _preprocess_data(
             self, simulation_type, prepost_converter, raw_data_directory,
