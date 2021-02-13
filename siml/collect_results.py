@@ -25,6 +25,7 @@ class CollectResults(Metric):
         x = data[2]['x']
         data_directory = data[2]['data_directory']
         inference_time = data[2]['inference_time']
+        loss = self.inferer.loss(y_pred, y)
 
         dict_var_x = self.inferer._separate_data(
             x['x'].numpy(), self.inferer.setting.trainer.inputs)
@@ -54,9 +55,9 @@ class CollectResults(Metric):
                 read_simulation_type=setting.inferer.read_simulation_type,
                 write_simulation_type=setting.inferer.write_simulation_type,
                 convert_to_order1=setting.inferer.convert_to_order1,
-                required_file_names=setting.inferer.required_file_names,
+                required_file_names=setting.conversion.required_file_names,
                 perform_inverse=setting.inferer.perform_inverse)
-        loss = self._compute_raw_loss(inversed_dict_x, inversed_dict_y)
+        raw_loss = self._compute_raw_loss(inversed_dict_x, inversed_dict_y)
 
         if self.inferer.postprocess_function is not None:
             inversed_dict_x, inversed_dict_y, fem_data \
@@ -67,6 +68,7 @@ class CollectResults(Metric):
             'dict_x': inversed_dict_x, 'dict_y': inversed_dict_y,
             'fem_data': fem_data,
             'loss': loss,
+            'raw_loss': raw_loss,
             'output_directory': output_directory,
             'data_directory': data_directory,
             'inference_time': inference_time})
@@ -123,5 +125,9 @@ class CollectResults(Metric):
             return None  # No answer
         y_raw_pred = np.concatenate([dict_y[k] for k in dict_y.keys()])
         y_raw_answer = np.concatenate([dict_x[k] for k in dict_y.keys()])
-        return self.inferer.loss(
+        raw_loss = self.inferer.loss(
             torch.from_numpy(y_raw_pred), torch.from_numpy(y_raw_answer))
+        if raw_loss is None:
+            return None
+        else:
+            return raw_loss.numpy()

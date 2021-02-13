@@ -502,8 +502,8 @@ class InfererSetting(TypedDataClass):
     converter_parameters_pkl: pathlib.Path, optional [None]
         Pickel file of converter parameters. IF not fed,
         DataSetting.preprocessed_root is used.
-    required_file_names: List[str], optional [[]]
-        Required file names for load_function.
+    perform_preprocess: bool, optional [False]
+        If True, perform preprocess.
     accomodate_length: int
         If specified, duplicate initial state to initialize RNN state.
     overwrite: bool
@@ -535,8 +535,7 @@ class InfererSetting(TypedDataClass):
         default=None, metadata={'allow_none': True})
     convert_to_order1: bool = False
     accomodate_length: int = 0
-    required_file_names: typing.List[str] = dc.field(
-        default_factory=list)
+    perform_preprocess: bool = False
     perform_inverse: bool = True
     return_all_results: bool = True
 

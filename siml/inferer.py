@@ -1,7 +1,6 @@
 import pathlib
 import time
 
-import femio
 import ignite
 import numpy as np
 import torch
@@ -142,13 +141,30 @@ class Inferer(siml_manager.SimlManager):
             element_wise=self.element_wise,
             data_parallel=self.setting.trainer.data_parallel)
         self.prepare_batch = self.collate_fn.prepare_batch
-        inference_dataset = datasets.LazyDataset(
-            self.setting.trainer.input_names,
-            self.setting.trainer.output_names,
-            self.setting.inferer.data_directories,
-            supports=self.setting.trainer.support_inputs,
-            num_workers=0,
-            decrypt_key=self.setting.data.encrypt_key)
+
+        setting = self.setting
+        if setting.inferer.perform_preprocess:
+            inference_dataset = datasets.PreprocessDataset(
+                setting.trainer.input_names,
+                setting.trainer.output_names,
+                setting.inferer.data_directories,
+                supports=setting.trainer.support_inputs,
+                num_workers=0,
+                required_file_names=setting.conversion.required_file_names,
+                decrypt_key=setting.data.encrypt_key,
+                prepost_converter=self.prepost_converter,
+                conversion_setting=setting.conversion,
+                conversion_function=self.conversion_function,
+                load_function=self.load_function)
+        else:
+            inference_dataset = datasets.LazyDataset(
+                setting.trainer.input_names,
+                setting.trainer.output_names,
+                setting.inferer.data_directories,
+                supports=setting.trainer.support_inputs,
+                num_workers=0,
+                decrypt_key=setting.data.encrypt_key)
+
         inference_loader = torch.utils.data.DataLoader(
             inference_dataset, collate_fn=self.collate_fn,
             batch_size=1, shuffle=False, num_workers=0)
@@ -185,7 +201,6 @@ class Inferer(siml_manager.SimlManager):
 
         if self.setting.inferer.return_all_results:
             metrics = {
-                'loss': ignite.metrics.Loss(self.loss),
                 'results': collect_results.CollectResults(inferer=self),
             }
         else:
@@ -196,61 +211,6 @@ class Inferer(siml_manager.SimlManager):
         for name, metric in metrics.items():
             metric.attach(evaluator_engine, name)
         return evaluator_engine
-
-    def _preprocess_data(
-            self, simulation_type, prepost_converter, raw_data_directory,
-            *, raw_data_stem=None, conversion_function=None,
-            load_function=None):
-        if self.setting.conversion.skip_femio:
-            dict_data = {}
-        else:
-            fem_data = femio.FEMData.read_directory(
-                simulation_type, raw_data_directory, stem=raw_data_stem,
-                save=False)
-            dict_data = prepost.extract_variables(
-                fem_data, self.setting.conversion.mandatory,
-                optional_variables=self.setting.conversion.optional)
-
-        if conversion_function is not None:
-            dict_data.update(conversion_function(fem_data, raw_data_directory))
-
-        if load_function is not None:
-            data_files = util.collect_files(
-                raw_data_directory,
-                self.setting.conversion.required_file_names)
-            loaded_dict_data, _ = load_function(
-                data_files, raw_data_directory)
-            dict_data.update(loaded_dict_data)
-
-        converted_dict_data = prepost_converter.preprocess(dict_data)
-        input_data = np.concatenate([
-            converted_dict_data[input_info['name']].astype(np.float32)
-            for input_info in self.setting.trainer.inputs], axis=1).astype(
-            np.float32)
-        if self.setting.trainer.support_inputs:
-            support_input_data = [[
-                converted_dict_data[support_input_name].astype(np.float32)
-                for support_input_name in self.setting.trainer.support_inputs]]
-        else:
-            support_input_data = None
-
-        if np.all([
-                output_info['name'] in dict_data
-                for output_info in self.setting.trainer.outputs]):
-            output_data = np.concatenate(
-                [
-                    converted_dict_data[output_info['name']]
-                    for output_info in self.setting.trainer.outputs
-                ], axis=1).astype(np.float32)
-        else:
-            output_data = None
-
-        if self.setting.trainer.element_wise \
-                or self.setting.trainer.simplified_model:
-            return [input_data, support_input_data], output_data
-        else:
-            return [input_data, support_input_data], \
-                output_data
 
     def infer_simplified_model(
             self, model_path, raw_dict_x, *,

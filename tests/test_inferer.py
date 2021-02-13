@@ -30,33 +30,34 @@ class TestInferer(unittest.TestCase):
             np.load('tests/data/linear/interim/validation/0/y.npy'), decimal=3)
         np.testing.assert_array_less(res[0]['loss'], 1e-7)
 
-    def test_infer_with_raw_data(self):
+    def test_infer_with_raw_data_deform(self):
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/deform/pretrained/settings.yml'))
-        ir = inferer.Inferer(main_setting)
-        if ir.setting.trainer.output_directory.exists():
-            shutil.rmtree(ir.setting.trainer.output_directory)
 
         def conversion_function(fem_data, raw_directory=None):
             adj = fem_data.calculate_adjacency_matrix_element()
             nadj = prepost.normalize_adjacency_matrix(adj)
             return {'adj': adj, 'nadj': nadj}
 
+        ir = inferer.Inferer(
+            main_setting, conversion_function=conversion_function)
+        if ir.setting.trainer.output_directory.exists():
+            shutil.rmtree(ir.setting.trainer.output_directory)
+        ir.setting.inferer.converter_parameters_pkl = Path(
+            'tests/data/deform/preprocessed/preprocessors.pkl')
+        ir.setting.inferer.save = False
+        ir.setting.inferer.perform_preprocess = True
+
         res_from_raw = ir.infer(
             model=Path('tests/data/deform/pretrained'),
-            raw_data_directory=Path(
-                'tests/data/deform/raw/test/tet2_4_modulusx0.9500'),
-            converter_parameters_pkl=Path(
-                'tests/data/deform/preprocessed/preprocessors.pkl'),
-            conversion_function=conversion_function, save=False)
+            data_directories=Path(
+                'tests/data/deform/raw/test/tet2_4_modulusx0.9500'))
 
+        ir.setting.inferer.perform_preprocess = False
         res_from_preprocessed = ir.infer(
             model=Path('tests/data/deform/pretrained'),
-            preprocessed_data_directory=Path(
-                'tests/data/deform/preprocessed/test/'
-                'tet2_4_modulusx0.9500'),
-            converter_parameters_pkl=Path(
-                'tests/data/deform/preprocessed/preprocessors.pkl'))
+            data_directories=Path(
+                'tests/data/deform/preprocessed/test/tet2_4_modulusx0.9500'))
 
         np.testing.assert_almost_equal(
             res_from_raw[0]['dict_y']['elemental_stress'],
@@ -66,32 +67,34 @@ class TestInferer(unittest.TestCase):
             res_from_raw[0]['loss'], res_from_preprocessed[0]['loss'])
         np.testing.assert_array_less(res_from_raw[0]['loss'], 1e-2)
 
-    def test_infer_with_raw_data_wo_answer(self):
+    def test_infer_with_raw_data_wo_answer_w_model_directory(self):
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/deform/pretrained/settings.yml'))
-        ir = inferer.Inferer(main_setting)
-        if ir.setting.trainer.output_directory.exists():
-            shutil.rmtree(ir.setting.trainer.output_directory)
 
         def conversion_function(fem_data, raw_directory=None):
             adj = fem_data.calculate_adjacency_matrix_element()
             nadj = prepost.normalize_adjacency_matrix(adj)
             return {'adj': adj, 'nadj': nadj}
 
+        ir = inferer.Inferer(
+            main_setting, conversion_function=conversion_function)
+        ir.setting.inferer.converter_parameters_pkl = Path(
+                'tests/data/deform/preprocessed/preprocessors.pkl')
+        ir.setting.inferer.save = False
+        ir.setting.inferer.perform_preprocess = True
+        if ir.setting.trainer.output_directory.exists():
+            shutil.rmtree(ir.setting.trainer.output_directory)
+
         res_from_raw = ir.infer(
             model=Path('tests/data/deform/pretrained'),
-            raw_data_directory=Path(
-                'tests/data/deform/external/tet2_4_modulusx0.9500'),
-            converter_parameters_pkl=Path(
-                'tests/data/deform/preprocessed/preprocessors.pkl'),
-            conversion_function=conversion_function, save=False)
+            data_directories=Path(
+                'tests/data/deform/external/tet2_4_modulusx0.9500'))
+
+        ir.setting.inferer.perform_preprocess = False
         res_from_preprocessed = ir.infer(
             model=Path('tests/data/deform/pretrained'),
-            preprocessed_data_directory=Path(
-                'tests/data/deform/preprocessed/test/'
-                'tet2_4_modulusx0.9500'),
-            converter_parameters_pkl=Path(
-                'tests/data/deform/preprocessed/preprocessors.pkl'))
+            data_directories=Path(
+                'tests/data/deform/preprocessed/test/tet2_4_modulusx0.9500'))
         np.testing.assert_almost_equal(
             res_from_raw[0]['dict_y']['elemental_stress'],
             res_from_preprocessed[0]['dict_y']['elemental_stress'],
