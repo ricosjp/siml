@@ -42,6 +42,7 @@ class CollectResults(Metric):
         inversed_dict_x, inversed_dict_y, fem_data \
             = self.inferer.prepost_converter.postprocess(
                 dict_var_x, dict_var_y_pred,
+                output_directory=output_directory,
                 dict_data_y_answer=dict_var_y,
                 skip_femio=setting.conversion.skip_femio,
                 load_function=self.inferer.load_function,
@@ -75,24 +76,27 @@ class CollectResults(Metric):
         return
 
     def _determine_output_directory(self, data_directory):
+        if self.inferer.setting.inferer.output_directory is not None:
+            return self.inferer.setting.inferer.output_directory
+
         if 'preprocessed' in str(data_directory):
             output_directory = prepost.determine_output_directory(
                 data_directory,
-                self.inferer.setting.inferer.output_directory_root,
+                self.inferer.setting.inferer.output_directory_base,
                 'preprocessed')
         elif 'interim' in str(data_directory):
             output_directory = prepost.determine_output_directory(
                 data_directory,
-                self.inferer.setting.inferer.output_directory_root,
+                self.inferer.setting.inferer.output_directory_base,
                 'interim')
         elif 'raw' in str(data_directory):
             output_directory = prepost.determine_output_directory(
                 data_directory,
-                self.inferer.setting.inferer.output_directory_root,
+                self.inferer.setting.inferer.output_directory_base,
                 'raw')
         else:
             output_directory \
-                = self.inferer.setting.inferer.output_directory_root
+                = self.inferer.setting.inferer.output_directory_base
         return output_directory
 
     def _determine_write_simulation_base(self, data_directory):
@@ -104,6 +108,7 @@ class CollectResults(Metric):
                 data_directory,
                 self.inferer.setting.inferer.write_simulation_base,
                 'preprocessed')
+
         elif 'interim' in str(data_directory):
             write_simulation_base = prepost.determine_output_directory(
                 data_directory,

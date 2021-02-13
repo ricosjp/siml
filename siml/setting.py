@@ -481,8 +481,11 @@ class InfererSetting(TypedDataClass):
         TrainerSetting.pretrain_directory will be used.
     save: bool, optional [False]
         If True, save inference results.
-    output_directory_root: pathlib.Path, optional [None]
-        Output directory name. If not fed, data/inferred will be the
+    output_directory: pathlib.Path, optional [None]
+        Output directory path. If fed, output the data in the specified
+        directory. When this is fed, output_directory_base has no effect.
+    output_directory_base: pathlib.Path, optional [None]
+        Output directory base name. If not fed, data/inferred will be the
         default output directory base.
     data_directories: List[pathlib.Path], optional [None]
         Data directories to infer.
@@ -518,7 +521,7 @@ class InfererSetting(TypedDataClass):
     overwrite: bool = False
     output_directory: Path = dc.field(
         default=None, metadata={'allow_none': True})
-    output_directory_root: Path = Path('data/inferred')
+    output_directory_base: Path = Path('data/inferred')
     overwrite: bool = False
     data_directories: typing.List[Path] = dc.field(
         default_factory=list)

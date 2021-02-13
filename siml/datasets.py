@@ -115,6 +115,21 @@ class BaseDataset(torch.utils.data.Dataset):
                 'x': x_data, 't': y_data, 'supports': support_data,
                 'data_directory': data_directory}
 
+    def _merge_data(self, converted_dict_data, variable_names):
+        if isinstance(variable_names, dict):
+            return DataDict({
+                key: torch.from_numpy(util.concatenate_variable([
+                    converted_dict_data[variable_name]
+                    for variable_name in value]).astype(np.float32))
+                for key, value in variable_names.items()})
+        elif isinstance(variable_names, list):
+            return torch.from_numpy(util.concatenate_variable([
+                converted_dict_data[variable_name].astype(np.float32)
+                for variable_name in variable_names]).astype(
+                np.float32))
+        else:
+            raise ValueError(f"Unexpected variable names: {variable_names}")
+
 
 class LazyDataset(BaseDataset):
 
@@ -184,21 +199,6 @@ class PreprocessDataset(BaseDataset):
                 'x': x_data, 't': y_data, 'supports': support_data,
                 'data_directory': raw_data_directory}
 
-    def _merge_data(self, converted_dict_data, variable_names):
-        if isinstance(variable_names, dict):
-            return DataDict({
-                key: torch.from_numpy(util.concatenate_variable([
-                    converted_dict_data[variable_name]
-                    for variable_name in value]).astype(np.float32))
-                for key, value in variable_names.items()})
-        elif isinstance(variable_names, list):
-            return torch.from_numpy(util.concatenate_variable([
-                converted_dict_data[variable_name].astype(np.float32)
-                for variable_name in variable_names]).astype(
-                np.float32))
-        else:
-            raise ValueError(f"Unexpected variable names: {variable_names}")
-
 
 class ElementWiseDataset(BaseDataset):
 
@@ -242,6 +242,49 @@ class OnMemoryDataset(BaseDataset):
 
     def __getitem__(self, i):
         return self.data[i]
+
+
+class SimplifiedDataset(BaseDataset):
+
+    def __init__(
+            self, x_variable_names, y_variable_names, raw_dict_x,
+            prepost_converter,
+            *, answer_raw_dict_y=None, num_workers=0):
+        self.x_variable_names = x_variable_names
+        self.y_variable_names = y_variable_names
+        self.raw_dict_x = raw_dict_x
+        self.answer_raw_dict_y = answer_raw_dict_y
+        self.num_workers = num_workers
+        self.prepost_converter = prepost_converter
+
+        self.x_dict_mode = isinstance(self.x_variable_names, dict)
+        self.y_dict_mode = isinstance(self.y_variable_names, dict)
+
+        if self.x_dict_mode:
+            self.first_variable_name = list(
+                self.x_variable_names.values())[0][0]
+        else:
+            self.first_variable_name = self.x_variable_names[0]
+        return
+
+    def __len__(self):
+        return 1
+
+    def __getitem__(self, i):
+        converted_dict_data = self.prepost_converter.preprocess(
+            self.raw_dict_x)
+        x_data = self._merge_data(
+            converted_dict_data, self.x_variable_names)
+        if self.answer_raw_dict_y is not None:
+            converted_dict_data.update(self.prepost_converter.preprocess(
+                self.answer_raw_dict_y))
+            y_data = self._merge_data(
+                converted_dict_data, self.y_variable_names)
+        else:
+            y_data = None
+
+        return {
+            'x': x_data, 't': y_data, 'data_directory': None}
 
 
 class DataDict(dict):

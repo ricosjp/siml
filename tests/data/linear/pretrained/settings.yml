@@ -38,7 +38,6 @@ inferer:
   converter_parameters_pkl: null
   data_directories: []
   model: null
-  output_directory: null
   overwrite: false
   perform_inverse: true
   read_simulation_type: fistr

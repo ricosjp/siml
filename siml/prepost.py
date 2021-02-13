@@ -959,7 +959,7 @@ class Converter:
             if write_simulation:
                 if write_simulation_base is None:
                     raise ValueError('No write_simulation_base fed.')
-                self.write_simulation(
+                self._write_simulation(
                     output_directory, fem_data, overwrite=overwrite,
                     write_simulation_type=write_simulation_type)
 
@@ -1001,7 +1001,7 @@ class Converter:
 
         return fem_data
 
-    def write_simulation(
+    def _write_simulation(
             self, output_directory, fem_data, *,
             write_simulation_type='fistr', overwrite=False):
         if write_simulation_type == 'fistr':
