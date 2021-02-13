@@ -42,7 +42,6 @@ inferer:
   overwrite: false
   perform_inverse: true
   read_simulation_type: fistr
-  required_file_names: []
   return_all_results: true
   save: true
   write_npy: true
