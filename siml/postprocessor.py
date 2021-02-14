@@ -4,10 +4,9 @@ import numpy as np
 import torch
 
 from . import datasets
-from . import prepost
 
 
-class CollectResults(Metric):
+class Postprocessor(Metric):
 
     def __init__(self, inferer):
         super().__init__()
@@ -26,7 +25,8 @@ class CollectResults(Metric):
         x = data[2]['x']
         data_directory = data[2]['data_directory']
         inference_time = data[2]['inference_time']
-        loss = self.inferer.loss(y_pred, y, x['original_shapes'])
+        loss = self.inferer.loss(
+            y_pred, y, x['original_shapes']).cpu().detach().numpy()
 
         dict_var_x = self.inferer._separate_data(
             self._to_numpy(x['x']), self.inferer.setting.trainer.inputs)
@@ -35,8 +35,9 @@ class CollectResults(Metric):
         dict_var_y_pred = self.inferer._separate_data(
             self._to_numpy(y_pred), self.inferer.setting.trainer.outputs)
 
-        output_directory = self._determine_output_directory(data_directory)
-        write_simulation_base = self._determine_write_simulation_base(
+        output_directory = self.inferer._determine_output_directory(
+            data_directory)
+        write_simulation_base = self.inferer._determine_write_simulation_base(
             data_directory)
 
         setting = self.inferer.setting
@@ -67,14 +68,23 @@ class CollectResults(Metric):
                 = self.inferer.postprocess_function(
                     inversed_dict_x, inversed_dict_y, fem_data)
 
-        self._results.append({
-            'dict_x': inversed_dict_x, 'dict_y': inversed_dict_y,
-            'fem_data': fem_data,
-            'loss': loss,
-            'raw_loss': raw_loss,
-            'output_directory': output_directory,
-            'data_directory': data_directory,
-            'inference_time': inference_time})
+        if self.inferer.setting.inferer.return_all_results:
+            self._results.append({
+                'dict_x': inversed_dict_x, 'dict_y': inversed_dict_y,
+                'fem_data': fem_data,
+                'loss': loss,
+                'raw_loss': raw_loss,
+                'output_directory': output_directory,
+                'data_directory': data_directory,
+                'inference_time': inference_time})
+        else:
+            # Keep only small data to save memory
+            self._results.append({
+                'loss': loss,
+                'raw_loss': raw_loss,
+                'output_directory': output_directory,
+                'data_directory': data_directory,
+                'inference_time': inference_time})
         return
 
     def _to_numpy(self, x):
@@ -83,52 +93,6 @@ class CollectResults(Metric):
                 key: value.cpu().detach().numpy() for key, value in x.items()}
         else:
             return x.cpu().detach().numpy()
-
-    def _determine_output_directory(self, data_directory):
-        if self.inferer.setting.inferer.output_directory is not None:
-            return self.inferer.setting.inferer.output_directory
-
-        if 'preprocessed' in str(data_directory):
-            output_directory = prepost.determine_output_directory(
-                data_directory,
-                self.inferer.setting.inferer.output_directory_base,
-                'preprocessed')
-        elif 'interim' in str(data_directory):
-            output_directory = prepost.determine_output_directory(
-                data_directory,
-                self.inferer.setting.inferer.output_directory_base,
-                'interim')
-        elif 'raw' in str(data_directory):
-            output_directory = prepost.determine_output_directory(
-                data_directory,
-                self.inferer.setting.inferer.output_directory_base,
-                'raw')
-        else:
-            output_directory \
-                = self.inferer.setting.inferer.output_directory_base
-        return output_directory
-
-    def _determine_write_simulation_base(self, data_directory):
-        if self.inferer.setting.inferer.write_simulation_base is None:
-            return None
-
-        if 'preprocessed' in str(data_directory):
-            write_simulation_base = prepost.determine_output_directory(
-                data_directory,
-                self.inferer.setting.inferer.write_simulation_base,
-                'preprocessed')
-
-        elif 'interim' in str(data_directory):
-            write_simulation_base = prepost.determine_output_directory(
-                data_directory,
-                self.inferer.setting.inferer.write_simulation_base,
-                'interim')
-        elif 'raw' in str(data_directory):
-            write_simulation_base = data_directory
-        else:
-            write_simulation_base \
-                = self.inferer.setting.inferer.write_simulation_base
-        return write_simulation_base
 
     def compute(self):
         return self._results

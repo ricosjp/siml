@@ -1,3 +1,4 @@
+import glob
 from pathlib import Path
 import shutil
 import unittest
@@ -275,3 +276,59 @@ class TestInferer(unittest.TestCase):
 
         np.testing.assert_almost_equal(
             res_wo_encrypt[0]['dict_y']['y'], res_w_encrypt[0]['dict_y']['y'])
+
+    def test_infer_multiple_data(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/deform/pretrained/settings.yml'))
+
+        def conversion_function(fem_data, raw_directory=None):
+            adj = fem_data.calculate_adjacency_matrix_element()
+            nadj = prepost.normalize_adjacency_matrix(adj)
+            return {'adj': adj, 'nadj': nadj}
+
+        ir = inferer.Inferer(
+            main_setting, conversion_function=conversion_function,
+            converter_parameters_pkl=Path(
+                'tests/data/deform/preprocessed/preprocessors.pkl'))
+        ir.setting.inferer.save = True
+        ir.setting.inferer.perform_preprocess = False
+        ir.setting.inferer.write_simulation = True
+        ir.setting.inferer.write_simulation_base = Path(
+            'tests/data/deform/raw')
+        ir.setting.inferer.write_simulation_type = 'ucd'
+
+        output_directory_base = Path('tests/data/deform/inferred/multiple')
+        if output_directory_base.exists():
+            shutil.rmtree(output_directory_base)
+        res_from_raw = ir.infer(
+            model=Path('tests/data/deform/pretrained'),
+            data_directories=Path('tests/data/deform/preprocessed/test'),
+            output_directory_base=output_directory_base)
+
+        raw_directory_base = Path('tests/data/deform/raw/test')
+        for i_data, data_basename in enumerate([
+                'tet2_3_modulusx1.0500', 'tet2_4_modulusx0.9500']):
+            raw_directory = glob.glob(
+                str(raw_directory_base / f"**/{data_basename}"),
+                recursive=True)[0]
+            raw_fem_data = femio.FEMData.read_directory(
+                'fistr', raw_directory)
+            inferred_directory = glob.glob(
+                str(output_directory_base / f"**/{data_basename}"),
+                recursive=True)[0]
+            inferred_fem_data = femio.FEMData.read_directory(
+                'ucd', inferred_directory)
+            np.testing.assert_almost_equal(
+                inferred_fem_data.elemental_data.get_attribute_data(
+                    'inferred_elemental_stress'),
+                res_from_raw[i_data]['dict_y']['elemental_stress'])
+            np.testing.assert_almost_equal(
+                res_from_raw[i_data]['dict_x']['elemental_stress'],
+                raw_fem_data.elemental_data.get_attribute_data(
+                    'ElementalSTRESS'), decimal=2)
+            np.testing.assert_almost_equal(
+                inferred_fem_data.elemental_data.get_attribute_data(
+                    'inferred_elemental_stress'),
+                raw_fem_data.elemental_data.get_attribute_data(
+                    'ElementalSTRESS'), decimal=-1)
+        return

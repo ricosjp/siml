@@ -5,11 +5,12 @@ import time
 
 import ignite
 import numpy as np
+import pandas as pd
 import torch
 
-from . import collect_results
 from . import datasets
 from . import networks
+from . import postprocessor
 from . import prepost
 from . import setting
 from . import siml_manager
@@ -172,11 +173,12 @@ class Inferer(siml_manager.SimlManager):
             self.setting.inferer.output_directory_base = output_directory_base
 
         self._prepare_inference()
+        self.date_string = util.date_string()
         inference_state = self.inferer.run(self.inference_loader)
-        if 'results' in inference_state.metrics:
-            return inference_state.metrics['results']
-        else:
-            return None
+
+        if self.setting.inferer.save:
+            self.save(inference_state.metrics['results'])
+        return inference_state.metrics['results']
 
     def infer_simplified_model(
             self, model_path, raw_dict_x, *, answer_raw_dict_y=None):
@@ -207,13 +209,15 @@ class Inferer(siml_manager.SimlManager):
         """
         if model_path is not None:
             self.setting.inferer.model = model_path
+
         self._prepare_inference(
             raw_dict_x=raw_dict_x, answer_raw_dict_y=answer_raw_dict_y)
+        self.date_string = util.date_string()
         inference_state = self.inferer.run(self.inference_loader)
-        if 'results' in inference_state.metrics:
-            return inference_state.metrics['results'][0]
-        else:
-            return None
+
+        if self.setting.inferer.save:
+            self.save(inference_state.metrics['results'])
+        return inference_state.metrics['results'][0]
 
     def infer_parameter_study(
             self, model, data_directories, *, n_interpolation=100,
@@ -273,6 +277,32 @@ class Inferer(siml_manager.SimlManager):
             model, interpolated_input_dict,
             converter_parameters_pkl=converter_parameters_pkl)[0]
         return interpolated_input_dict, output_dict
+
+    def save(self, results):
+        """Save inference results information.
+
+        Parameters
+        ----------
+        results: Dict
+            Inference results.
+        """
+        output_directory = self._determine_output_directory()
+        output_directory.mkdir(parents=True, exist_ok=True)
+        setting.write_yaml(self.setting, output_directory / 'settings.yml')
+        self._write_log(output_directory, results)
+        return
+
+    def _write_log(self, output_directory, results):
+        column_names = [
+            'loss', 'raw_loss', 'output_directory', 'data_directory',
+            'inference_time']
+
+        log_dict = {}
+        for column_name in column_names:
+            log_dict.update({column_name: [r[column_name] for r in results]})
+
+        pd.DataFrame(log_dict).to_csv(output_directory / 'log.csv', index=None)
+        return
 
     def deploy(self, output_directory, *, model=None, encrypt_key=None):
         """Deploy model information.
@@ -471,14 +501,7 @@ class Inferer(siml_manager.SimlManager):
 
         evaluator_engine = ignite.engine.Engine(_inference)
 
-        if self.setting.inferer.return_all_results:
-            metrics = {
-                'results': collect_results.CollectResults(inferer=self),
-            }
-        else:
-            metrics = {
-                'loss': ignite.metrics.Loss(self.loss)
-            }
+        metrics = {'results': postprocessor.Postprocessor(inferer=self)}
 
         for name, metric in metrics.items():
             metric.attach(evaluator_engine, name)
@@ -501,3 +524,59 @@ class Inferer(siml_manager.SimlManager):
                 np.swapaxes(data[index:index+dim], 0, axis)})
             index += dim
         return data_dict
+
+    def _determine_output_directory(self, data_directory=None):
+        if data_directory is None:
+            data_directory = ''
+        if self.setting.inferer.output_directory is not None:
+            return self.setting.inferer.output_directory
+
+        subdirectory = self._determine_subdirectory()
+        base = self.setting.inferer.output_directory_base / subdirectory
+        if 'preprocessed' in str(data_directory):
+            output_directory = prepost.determine_output_directory(
+                data_directory, base, 'preprocessed')
+        elif 'interim' in str(data_directory):
+            output_directory = prepost.determine_output_directory(
+                data_directory, base, 'interim')
+        elif 'raw' in str(data_directory):
+            output_directory = prepost.determine_output_directory(
+                data_directory, base, 'raw')
+        else:
+            output_directory = base
+        return output_directory
+
+    def _determine_subdirectory(self):
+        if self.setting.inferer.model is not None:
+            model = self.setting.inferer.model
+            if model.is_dir():
+                model_name = model.name
+            else:
+                model_name = model.parent.name
+        elif self.setting.trainer.name is not None:
+            model_name = self.setting.trainer.name
+        else:
+            model_name = 'unknown'
+        return f"{model_name}_{self.date_string}"
+
+    def _determine_write_simulation_base(self, data_directory):
+        if self.setting.inferer.write_simulation_base is None:
+            return None
+
+        if 'preprocessed' in str(data_directory):
+            write_simulation_base = prepost.determine_output_directory(
+                data_directory,
+                self.setting.inferer.write_simulation_base,
+                'preprocessed')
+
+        elif 'interim' in str(data_directory):
+            write_simulation_base = prepost.determine_output_directory(
+                data_directory,
+                self.setting.inferer.write_simulation_base,
+                'interim')
+        elif 'raw' in str(data_directory):
+            write_simulation_base = data_directory
+        else:
+            write_simulation_base \
+                = self.setting.inferer.write_simulation_base
+        return write_simulation_base
