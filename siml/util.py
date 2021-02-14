@@ -359,11 +359,14 @@ def files_match(file_names, required_file_names):
         files_match: bool
             True if all files match. Otherwise False.
     """
+    replaced_required_file_names = [
+        required_file_name.replace('.', r'\.').replace('*', '.*')
+        for required_file_name in required_file_names]
     return np.all([
         np.any([
-            required_file_name.lstrip('*') in file_name
+            re.search(replaced_required_file_name, file_name)
             for file_name in file_names])
-        for required_file_name in required_file_names])
+        for replaced_required_file_name in replaced_required_file_names])
 
 
 def files_exist(directory, file_names):

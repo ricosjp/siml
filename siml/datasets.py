@@ -455,7 +455,7 @@ class CollateFunctionGenerator():
             t = self.convert_output_dense(batch, 't')
         supports = self.convert_sparse(batch, 'supports')
         original_shapes = self.extract_original_shapes(batch)
-        data_directories = [b['data_directory'] for b in batch]
+        data_directories = [b.pop('data_directory', None) for b in batch]
         return {
             'x': x, 't': t, 'supports': supports,
             'original_shapes': original_shapes,

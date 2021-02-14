@@ -85,6 +85,7 @@ class Inferer(siml_manager.SimlManager):
 
     def __init__(
             self, settings, *,
+            model=None, converter_parameters_pkl=None, save=None,
             conversion_function=None, load_function=None,
             data_addition_function=None, postprocess_function=None):
         """Initialize Inferer object.
@@ -92,6 +93,12 @@ class Inferer(siml_manager.SimlManager):
         Parameters
         ----------
         settings: siml.MainSetting
+        model: pathlib.Path, optional
+            If fed, overwrite self.setting.inferer.model.
+        converter_parameters_pkl: pathlib.Path, optional
+            If fed, overwrite self.setting.inferer.converter_parameters_pkl
+        save: bool, optional
+            If fed, overwrite self.setting.inferer.save
         conversion_function: function, optional [None]
             Conversion function to preprocess raw data. It should receive
             two parameters, fem_data and raw_directory. If not fed,
@@ -112,9 +119,20 @@ class Inferer(siml_manager.SimlManager):
         self.load_function = load_function
         self.data_addition_function = data_addition_function
         self.postprocess_function = postprocess_function
+
+        if model is not None:
+            self.setting.inferer.model = model
+        if converter_parameters_pkl is not None:
+            self.setting.inferer.converter_parameters_pkl \
+                = converter_parameters_pkl
+        if save is not None:
+            self.setting.inferer.save = save
+
         return
 
-    def infer(self, *, data_directories=None, model=None):
+    def infer(
+            self, *, data_directories=None, model=None,
+            perform_preprocess=None):
         """Perform infererence.
 
         Parameters
@@ -124,6 +142,8 @@ class Inferer(siml_manager.SimlManager):
             The default is an empty list.
         model: pathlib.Path, optional
             If fed, overwrite self.setting.inferer.model.
+        perform_preprocess: bool, optional
+            If fed, overwrite self.setting.inferer.perform_preprocess
 
         Returns
         -------
@@ -144,6 +164,8 @@ class Inferer(siml_manager.SimlManager):
             self.setting.inferer.data_directories = data_directories
         if model is not None:
             self.setting.inferer.model = model
+        if perform_preprocess is not None:
+            self.setting.inferer.perform_preprocess = perform_preprocess
 
         self._prepare_inference()
         inference_state = self.inferer.run(self.inference_loader)

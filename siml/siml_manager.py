@@ -266,7 +266,7 @@ class SimlManager():
         output_is_dict = isinstance(self.setting.trainer.outputs, dict)
 
         if self.setting.trainer.time_series:
-            return loss_function_without_padding
+            return loss_function_time_with_padding
         else:
             if output_is_dict:
                 return loss_function_dict
