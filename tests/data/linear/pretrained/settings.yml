@@ -38,8 +38,11 @@ inferer:
   converter_parameters_pkl: null
   data_directories: []
   model: null
+  output_directory: null
+  output_directory_base: data/inferred
   overwrite: false
   perform_inverse: true
+  perform_preprocess: false
   read_simulation_type: fistr
   return_all_results: true
   save: true
