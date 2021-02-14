@@ -454,7 +454,7 @@ class Inferer(siml_manager.SimlManager):
 
             assert len(batch['data_directories']) == 1
             data_directory = batch['data_directories'][0]
-            loss = self.loss(y_pred, y)
+            loss = self.loss(y_pred, y, original_shapes=x['original_shapes'])
             print('--')
             print(f"              Data: {data_directory}")
             print(f"Inference time [s]: {elapsed_time:.5e}")

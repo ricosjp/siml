@@ -328,13 +328,14 @@ class TestNetwork(unittest.TestCase):
         loss = tr.train()
         self.assertLess(loss, 5.e-1)
 
-        ir = inferer.Inferer(main_setting)
-        results = ir.infer(
-            model=main_setting.trainer.output_directory,
-            preprocessed_data_directory=main_setting.data.preprocessed_root
-            / 'test',
+        ir = inferer.Inferer(
+            main_setting,
             converter_parameters_pkl=main_setting.data.preprocessed_root
             / 'preprocessors.pkl')
+        results = ir.infer(
+            model=main_setting.trainer.output_directory,
+            data_directories=main_setting.data.preprocessed_root
+            / 'test')
         self.assertLess(results[0]['loss'], 1.)
 
     def test_grad_gcn(self):
@@ -361,20 +362,20 @@ class TestNetwork(unittest.TestCase):
 
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/deform/grad_res_gcn/settings.yml'))
-        ir = inferer.Inferer(main_setting)
-        inference_outpout_directory = \
+        ir = inferer.Inferer(
+            main_setting,
+            converter_parameters_pkl=Path(
+                'tests/data/deform/preprocessed/preprocessors.pkl'))
+        ir.setting.inferer.output_directory = \
             main_setting.trainer.output_directory / 'inferred'
-        if inference_outpout_directory.exists():
-            shutil.rmtree(inference_outpout_directory)
+        if ir.setting.inferer.output_directory.exists():
+            shutil.rmtree(ir.setting.inferer.output_directory)
 
         res = ir.infer(
             model=Path('tests/data/deform/grad_res_gcn'),
-            preprocessed_data_directory=Path(
+            data_directories=Path(
                 'tests/data/deform/preprocessed/validation/'
-                'tet2_3_modulusx0.9500'),
-            converter_parameters_pkl=Path(
-                'tests/data/deform/preprocessed/preprocessors.pkl'),
-            output_directory=inference_outpout_directory)
+                'tet2_3_modulusx0.9500'))
         np.testing.assert_array_less(res[0]['loss'], 1e-2)
 
     def test_laplace_net(self):
@@ -400,24 +401,23 @@ class TestNetwork(unittest.TestCase):
         self.assertEqual(len(tr.model.dict_block['LAPLACE_NET2'].subchains), 1)
 
         # Confirm results does not change under rigid body transformation
-        grad_grad_ir = inferer.Inferer(main_setting)
-        inference_outpout_directory = \
+        grad_grad_ir = inferer.Inferer(
+            main_setting,
+            converter_parameters_pkl=Path(
+                'tests/data/rotation/preprocessed/preprocessors.pkl'))
+        grad_grad_ir.setting.inferer.output_directory = \
             main_setting.trainer.output_directory / 'inferred'
-        if inference_outpout_directory.exists():
-            shutil.rmtree(inference_outpout_directory)
+        if grad_grad_ir.setting.inferer.output_directory.exists():
+            shutil.rmtree(grad_grad_ir.setting.inferer.output_directory)
         results = grad_grad_ir.infer(
             model=main_setting.trainer.output_directory,
-            preprocessed_data_directory=[
+            data_directories=[
                 Path(
                     'tests/data/rotation/preprocessed/cube/clscale1.0/'
                     'original'),
                 Path(
                     'tests/data/rotation/preprocessed/cube/clscale1.0/'
-                    'rotated')],
-            converter_parameters_pkl=Path(
-                'tests/data/rotation/preprocessed/preprocessors.pkl'),
-            output_directory=inference_outpout_directory,
-            overwrite=True)
+                    'rotated')])
         np.testing.assert_almost_equal(
             results[0]['dict_y']['t_100'],
             results[1]['dict_y']['t_100'], decimal=5)

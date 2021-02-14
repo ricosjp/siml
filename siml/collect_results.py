@@ -25,7 +25,7 @@ class CollectResults(Metric):
         x = data[2]['x']
         data_directory = data[2]['data_directory']
         inference_time = data[2]['inference_time']
-        loss = self.inferer.loss(y_pred, y)
+        loss = self.inferer.loss(y_pred, y, x['original_shapes'])
 
         dict_var_x = self.inferer._separate_data(
             x['x'].numpy(), self.inferer.setting.trainer.inputs)
@@ -58,7 +58,8 @@ class CollectResults(Metric):
                 convert_to_order1=setting.inferer.convert_to_order1,
                 required_file_names=setting.conversion.required_file_names,
                 perform_inverse=setting.inferer.perform_inverse)
-        raw_loss = self._compute_raw_loss(inversed_dict_x, inversed_dict_y)
+        raw_loss = self._compute_raw_loss(
+            inversed_dict_x, inversed_dict_y, x['original_shapes'])
 
         if self.inferer.postprocess_function is not None:
             inversed_dict_x, inversed_dict_y, fem_data \
@@ -124,14 +125,15 @@ class CollectResults(Metric):
     def compute(self):
         return self._results
 
-    def _compute_raw_loss(self, dict_x, dict_y):
+    def _compute_raw_loss(self, dict_x, dict_y, original_shapes=None):
         y_keys = dict_y.keys()
         if not np.all([y_key in dict_x for y_key in y_keys]):
             return None  # No answer
         y_raw_pred = np.concatenate([dict_y[k] for k in dict_y.keys()])
         y_raw_answer = np.concatenate([dict_x[k] for k in dict_y.keys()])
         raw_loss = self.inferer.loss(
-            torch.from_numpy(y_raw_pred), torch.from_numpy(y_raw_answer))
+            torch.from_numpy(y_raw_pred), torch.from_numpy(y_raw_answer),
+            original_shapes=original_shapes)
         if raw_loss is None:
             return None
         else:

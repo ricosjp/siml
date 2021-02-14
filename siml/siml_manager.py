@@ -228,7 +228,7 @@ class SimlManager():
         if allow_no_answer:
             loss_with_answer = self._create_loss_function()
             def loss_function_with_allowing_no_answer(
-                    y_pred, y, original_shapes=None, **kwargs):
+                    y_pred, y, original_shapes, **kwargs):
                 if y is None or len(y) == 0:
                     return None
                 else:
