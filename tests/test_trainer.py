@@ -405,6 +405,16 @@ class TestTrainer(unittest.TestCase):
         self.assertEqual(len(restart_df.values), 8)
 
     def test_pretrain(self):
+        # Complete training for reference
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/linear/linear_short.yml'))
+        complete_tr = trainer.Trainer(main_setting)
+        complete_tr.setting.trainer.output_directory = Path(
+            'tests/data/linear/linear_short_completed')
+        if complete_tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(complete_tr.setting.trainer.output_directory)
+        complete_tr.train()
+
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/linear/linear_short.yml'))
         tr_wo_pretrain = trainer.Trainer(main_setting)
