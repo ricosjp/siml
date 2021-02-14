@@ -2,6 +2,7 @@ from pathlib import Path
 import shutil
 import unittest
 
+from Cryptodome import Random
 import femio
 import numpy as np
 
@@ -237,29 +238,40 @@ class TestInferer(unittest.TestCase):
             decimal=3)
         np.testing.assert_array_less(res[0]['loss'], 1e-3)
 
-    # def test_infer_bufferio(self):
-    #     yaml_path = ('tests/data/deform/pretrained/settings.yml')
-    #     with open(yaml_path) as yaml_content:
-    #         ir = inferer.Inferer(yaml_content)
-    #
-    #     if ir.setting.trainer.output_directory.exists():
-    #         shutil.rmtree(ir.setting.trainer.output_directory)
-    #
-    #     def conversion_function(fem_data, raw_directory=None):
-    #         adj = fem_data.calculate_adjacency_matrix_element()
-    #         nadj = prepost.normalize_adjacency_matrix(adj)
-    #         return {'adj': adj, 'nadj': nadj}
-    #     with open(
-    #         'tests/data/deform/pretrained/snapshot_epoch_5000.pth', 'rb'
-    #     ) as model_content:
-    #         with open(
-    #             'tests/data/deform/preprocessed/preprocessors.pkl', 'rb'
-    #         ) as pkl_content:
-    #             res_from_raw = ir.infer(
-    #                 model=model_content,
-    #                 data_directories=Path(
-    #                     'tests/data/deform/raw/test/tet2_4_modulusx0.9500'),
-    #                 converter_parameters_pkl=pkl_content,
-    #                 conversion_function=conversion_function, save=False)
-    #
-    #     np.testing.assert_array_less(res_from_raw[0]['loss'], 1e-2)
+    def test_infer_encrypted_data(self):
+        encrypt_key = Random.get_random_bytes(16)
+        deploy_wo_encrypt_directory = Path(
+            'tests/data/linear/deploy_wo_encrypt')
+        deploy_w_encrypt_directory = Path('tests/data/linear/deploy_w_encrypt')
+
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/linear/pretrained/settings.yml'))
+        main_setting.inferer.converter_parameters_pkl = Path(
+            'tests/data/linear/preprocessed/preprocessors.pkl')
+        ir = inferer.Inferer(main_setting)
+
+        if deploy_wo_encrypt_directory.exists():
+            shutil.rmtree(deploy_wo_encrypt_directory)
+        ir.deploy(
+            output_directory=deploy_wo_encrypt_directory,
+            model=Path('tests/data/linear/pretrained'))
+
+        if deploy_w_encrypt_directory.exists():
+            shutil.rmtree(deploy_w_encrypt_directory)
+        ir.deploy(
+            output_directory=deploy_w_encrypt_directory,
+            model=Path('tests/data/linear/pretrained'),
+            encrypt_key=encrypt_key)
+
+        ir_wo_encrypt = inferer.Inferer.from_model_directory(
+            deploy_wo_encrypt_directory)
+        res_wo_encrypt = ir_wo_encrypt.infer(
+            data_directories=Path('tests/data/linear/preprocessed/validation'))
+
+        ir_w_encrypt = inferer.Inferer.from_model_directory(
+            deploy_w_encrypt_directory, decrypt_key=encrypt_key)
+        res_w_encrypt = ir_w_encrypt.infer(
+            data_directories=Path('tests/data/linear/preprocessed/validation'))
+
+        np.testing.assert_almost_equal(
+            res_wo_encrypt[0]['dict_y']['y'], res_w_encrypt[0]['dict_y']['y'])

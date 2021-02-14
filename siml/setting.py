@@ -514,6 +514,8 @@ class InfererSetting(TypedDataClass):
     return_all_results: bool
         If True, return all inference results. Set False if the inference data
         is too large to fit into the memory available.
+    model_key: bytes
+        If fed, decrypt model file with the key.
     """
     model: Path = dc.field(
         default=None, metadata={'allow_none': True})
@@ -541,6 +543,8 @@ class InfererSetting(TypedDataClass):
     perform_preprocess: bool = False
     perform_inverse: bool = True
     return_all_results: bool = True
+    model_key: bytes = dc.field(
+        default=None, metadata={'allow_none': True})
 
 
 @dc.dataclass
@@ -917,17 +921,39 @@ def write_yaml(data_class, file_name, *, overwrite=False):
     if file_name.exists() and not overwrite:
         raise ValueError(f"{file_name} already exists")
 
+    with open(file_name, 'w') as f:
+        dump_yaml(data_class, f)
+    return
+
+
+def dump_yaml(data_class, stream):
+    """Write YAML file of the specified dataclass object.
+
+    Parameters
+    -----------
+        data_class: dataclasses.dataclass
+            DataClass object to write.
+        stream: File or stream
+            Stream to write.
+    """
     dict_data = dc.asdict(data_class)
     standardized_dict_data = _standardize_data(dict_data)
     if 'encrypt_key' in standardized_dict_data:
         standardized_dict_data.pop('encrypt_key')
+    if 'decrypt_key' in standardized_dict_data:
+        standardized_dict_data.pop('decrypt_key')
+    if 'model_key' in standardized_dict_data:
+        standardized_dict_data.pop('model_key')
     if 'data' in standardized_dict_data:
         if 'encrypt_key' in standardized_dict_data['data']:
             standardized_dict_data['data'].pop('encrypt_key')
+        if 'decrypt_key' in standardized_dict_data['data']:
+            standardized_dict_data['data'].pop('decrypt_key')
+    if 'inferer' in standardized_dict_data:
+        if 'model_key' in standardized_dict_data['inferer']:
+            standardized_dict_data['inferer'].pop('model_key')
 
-    with open(file_name, 'w') as f:
-        yaml.dump(standardized_dict_data, f)
-    return
+    return yaml.dump(standardized_dict_data, stream)
 
 
 def _standardize_data(data):

@@ -1371,7 +1371,7 @@ def encrypt_file(key, file_path, binary):
         [f.write(x) for x in (cipher.nonce, tag, ciphertext)]
 
 
-def decrypt_file(key, file_name):
+def decrypt_file(key, file_name, return_stringio=False):
     """Decrypt data file.
 
     Parameters
@@ -1380,6 +1380,8 @@ def decrypt_file(key, file_name):
         Key for decryption.
     file_path: str or pathlib.Path
         File path of the encrypted data.
+    return_stringio: bool, optional
+        If True, return io.StrintIO instead of io.BytesIO.
 
     Returns
     -------
@@ -1388,4 +1390,7 @@ def decrypt_file(key, file_name):
     with open(file_name, "rb") as f:
         nonce, tag, ciphertext = [f.read(x) for x in (16, 16, -1)]
     cipher = AES.new(key, AES.MODE_EAX, nonce)
-    return io.BytesIO(cipher.decrypt_and_verify(ciphertext, tag))
+    if return_stringio:
+        return cipher.decrypt_and_verify(ciphertext, tag).decode('utf-8')
+    else:
+        return io.BytesIO(cipher.decrypt_and_verify(ciphertext, tag))

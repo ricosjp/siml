@@ -1,4 +1,6 @@
+import io
 import pathlib
+import shutil
 import time
 
 import ignite
@@ -11,6 +13,7 @@ from . import networks
 from . import prepost
 from . import setting
 from . import siml_manager
+from . import util
 
 
 class Inferer(siml_manager.SimlManager):
@@ -30,6 +33,55 @@ class Inferer(siml_manager.SimlManager):
         """
         main_setting = setting.MainSetting.read_settings_yaml(settings_yaml)
         return cls(main_setting, **kwargs)
+
+    @classmethod
+    def from_model_directory(cls, model_directory, decrypt_key=None, **kwargs):
+        """Load model data from a deployed directory.
+
+        Parameters
+        ----------
+        model_directory: str or pathlib.Path
+            Model directory created with Inferer.deploy().
+        decrypt_key: bytes, optional
+            Key to decrypt model data. If not fed, and the data is encrypted,
+            ValueError is raised.
+
+        Returns
+        --------
+        siml.Inferer
+        """
+        model_directory = pathlib.Path(model_directory)
+        if (model_directory / 'settings.yml').is_file():
+            main_setting = setting.MainSetting.read_settings_yaml(
+                model_directory / 'settings.yml')
+        elif (model_directory / 'settings.yml.enc').is_file():
+            main_setting = setting.MainSetting.read_settings_yaml(
+                util.decrypt_file(
+                    decrypt_key, model_directory / 'settings.yml.enc',
+                    return_stringio=True))
+        else:
+            raise ValueError(f"No setting yaml file found")
+
+        obj = cls(main_setting, **kwargs)
+        obj.setting.inferer.model_key = decrypt_key
+
+        if (model_directory / 'model').is_file():
+            obj.setting.inferer.model = model_directory / 'model'
+        elif (model_directory / 'model.enc').is_file():
+            obj.setting.inferer.model = model_directory / 'model.enc'
+        else:
+            raise ValueError(f"No model file found")
+
+        if (model_directory / 'preprocessors.pkl').is_file():
+            obj.setting.inferer.converter_parameters_pkl \
+                = model_directory / 'preprocessors.pkl'
+        elif (model_directory / 'preprocessors.pkl.enc').is_file():
+            obj.setting.inferer.converter_parameters_pkl \
+                = model_directory / 'preprocessors.pkl.enc'
+        else:
+            raise ValueError(f"No preprocessor pickle file found")
+
+        return obj
 
     def __init__(
             self, settings, *,
@@ -71,7 +123,7 @@ class Inferer(siml_manager.SimlManager):
             List of data directories. Data is searched recursively.
             The default is an empty list.
         model: pathlib.Path, optional
-            If fed, overwrite self.setting.trainer.pretrain_directory.
+            If fed, overwrite self.setting.inferer.model.
 
         Returns
         -------
@@ -196,7 +248,82 @@ class Inferer(siml_manager.SimlManager):
             converter_parameters_pkl=converter_parameters_pkl)[0]
         return interpolated_input_dict, output_dict
 
-    def _prepare_inference(self, *, raw_dict_x=None, answer_raw_dict_y=None):
+    def deploy(self, output_directory, *, model=None, encrypt_key=None):
+        """Deploy model information.
+
+        Parameters
+        ----------
+        output_directory: pathlib.Path
+            Output directory path.
+        model: pathlib.Path, optional
+            If fed, overwrite self.setting.inferer.model.
+        encrypt_key: bytes, optional
+            Key to encrypt model data. If not fed, the model data will not be
+            encrypted.
+        """
+        if model is not None:
+            self.setting.inferer.model = model
+        if model.is_dir():
+            snapshot = self._select_snapshot(
+                self.setting.inferer.model,
+                method=self.setting.trainer.snapshot_choise_method)
+        else:
+            snapshot = model
+
+        output_directory.mkdir(parents=True, exist_ok=True)
+
+        if encrypt_key is None:
+            output_model = output_directory / 'model'
+            if output_model.exists():
+                raise ValueError(f"{output_model} already exists")
+            shutil.copyfile(snapshot, output_model)
+
+            output_pkl = output_directory / 'preprocessors.pkl'
+            if output_pkl.exists():
+                raise ValueError(f"{output_pkl} already exists")
+            shutil.copyfile(
+                self.setting.inferer.converter_parameters_pkl,
+                output_pkl)
+
+            output_setting = output_directory / 'settings.yml'
+            if output_setting.exists():
+                raise ValueError(f"{output_setting} already exists")
+            setting.write_yaml(self.setting, output_setting)
+
+        else:
+
+            output_model = output_directory / 'model.enc'
+            if output_model.exists():
+                raise ValueError(f"{output_model} already exists")
+            self._encrypt_file(
+                encrypt_key, snapshot, output_directory / 'model.enc')
+
+            output_pkl = output_directory / 'preprocessors.pkl.enc'
+            if output_pkl.exists():
+                raise ValueError(f"{output_pkl} already exists")
+            self._encrypt_file(
+                encrypt_key, self.setting.inferer.converter_parameters_pkl,
+                output_pkl)
+
+            output_setting = output_directory / 'settings.yml.enc'
+            if output_setting.exists():
+                raise ValueError(f"{output_setting} already exists")
+            string = setting.dump_yaml(self.setting, None)
+            bio = io.BytesIO(string.encode('utf8'))
+            util.encrypt_file(encrypt_key, output_setting, bio)
+
+        return
+
+    def _encrypt_file(self, key, input_file_name, output_file_name):
+        with open(input_file_name, "rb") as f:
+            data = f.read()
+            binary = io.BytesIO(data)
+            util.encrypt_file(key, output_file_name, binary)
+        return
+
+    def _prepare_inference(
+            self, *,
+            raw_dict_x=None, answer_raw_dict_y=None, allow_no_data=False):
 
         # Define model
         if self.setting.inferer.model is None:
@@ -230,14 +357,17 @@ class Inferer(siml_manager.SimlManager):
             self.setting.inferer.converter_parameters_pkl \
                 = self.setting.data.preprocessed_root / 'preprocessors.pkl'
         self.prepost_converter = prepost.Converter(
-            self.setting.inferer.converter_parameters_pkl)
+            self.setting.inferer.converter_parameters_pkl,
+            key=self.setting.inferer.model_key)
 
         self.inference_loader = self._get_inferernce_loader(
-            raw_dict_x, answer_raw_dict_y)
+            raw_dict_x, answer_raw_dict_y, allow_no_data=allow_no_data)
         self.inferer = self._create_inferer()
         return
 
-    def _get_inferernce_loader(self, raw_dict_x=None, answer_raw_dict_y=None):
+    def _get_inferernce_loader(
+            self, raw_dict_x=None, answer_raw_dict_y=None,
+            allow_no_data=False):
         input_is_dict = isinstance(self.setting.trainer.inputs, dict)
         output_is_dict = isinstance(self.setting.trainer.outputs, dict)
         self.collate_fn = datasets.CollateFunctionGenerator(
@@ -255,6 +385,7 @@ class Inferer(siml_manager.SimlManager):
                 setting.trainer.output_names,
                 raw_dict_x=raw_dict_x, answer_raw_dict_y=answer_raw_dict_y,
                 prepost_converter=self.prepost_converter,
+                allow_no_data=allow_no_data,
                 num_workers=0)
         elif setting.inferer.perform_preprocess:
             inference_dataset = datasets.PreprocessDataset(
@@ -268,6 +399,7 @@ class Inferer(siml_manager.SimlManager):
                 prepost_converter=self.prepost_converter,
                 conversion_setting=setting.conversion,
                 conversion_function=self.conversion_function,
+                allow_no_data=allow_no_data,
                 load_function=self.load_function)
         else:
             inference_dataset = datasets.LazyDataset(
@@ -276,6 +408,7 @@ class Inferer(siml_manager.SimlManager):
                 setting.inferer.data_directories,
                 supports=setting.trainer.support_inputs,
                 num_workers=0,
+                allow_no_data=allow_no_data,
                 decrypt_key=setting.data.encrypt_key)
 
         inference_loader = torch.utils.data.DataLoader(

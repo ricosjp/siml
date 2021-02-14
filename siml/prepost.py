@@ -779,10 +779,16 @@ class Preprocessor:
 
 class Converter:
 
-    def __init__(self, converter_parameters_pkl):
-        self.converters = self._generate_converters(converter_parameters_pkl)
+    def __init__(self, converter_parameters_pkl, key=None):
+        self.converters = self._generate_converters(
+            converter_parameters_pkl, key=key)
+        return
 
-    def _generate_converters(self, converter_parameters_pkl):
+    def _generate_converters(self, converter_parameters_pkl, key=None):
+        if key is not None:
+            return self._generate_converters(
+                util.decrypt_file(key, converter_parameters_pkl))
+
         if isinstance(converter_parameters_pkl, io.BufferedIOBase):
             converter_parameters = pickle.load(converter_parameters_pkl)
         elif isinstance(converter_parameters_pkl, Path):

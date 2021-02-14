@@ -11,6 +11,7 @@ import torch.nn.functional as functional
 
 from . import data_parallel
 from . import setting
+from . import util
 
 
 class SimlManager():
@@ -166,7 +167,12 @@ class SimlManager():
                 self.setting.trainer.pretrain_directory,
                 method=self.setting.trainer.snapshot_choise_method)
 
-        checkpoint = torch.load(snapshot, map_location=self.device)
+        key = self.setting.inferer.model_key
+        if key is None:
+            checkpoint = torch.load(snapshot, map_location=self.device)
+        else:
+            checkpoint = torch.load(
+                util.decrypt_file(key, snapshot), map_location=self.device)
 
         if len(self.model.state_dict()) != len(checkpoint['model_state_dict']):
             raise ValueError('Model parameter length invalid')
