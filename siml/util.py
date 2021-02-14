@@ -359,11 +359,14 @@ def files_match(file_names, required_file_names):
         files_match: bool
             True if all files match. Otherwise False.
     """
+    replaced_required_file_names = [
+        required_file_name.replace('.', r'\.').replace('*', '.*')
+        for required_file_name in required_file_names]
     return np.all([
         np.any([
-            required_file_name.lstrip('*') in file_name
+            re.search(replaced_required_file_name, file_name)
             for file_name in file_names])
-        for required_file_name in required_file_names])
+        for replaced_required_file_name in replaced_required_file_names])
 
 
 def files_exist(directory, file_names):
@@ -1371,7 +1374,7 @@ def encrypt_file(key, file_path, binary):
         [f.write(x) for x in (cipher.nonce, tag, ciphertext)]
 
 
-def decrypt_file(key, file_name):
+def decrypt_file(key, file_name, return_stringio=False):
     """Decrypt data file.
 
     Parameters
@@ -1380,6 +1383,8 @@ def decrypt_file(key, file_name):
         Key for decryption.
     file_path: str or pathlib.Path
         File path of the encrypted data.
+    return_stringio: bool, optional
+        If True, return io.StrintIO instead of io.BytesIO.
 
     Returns
     -------
@@ -1388,4 +1393,7 @@ def decrypt_file(key, file_name):
     with open(file_name, "rb") as f:
         nonce, tag, ciphertext = [f.read(x) for x in (16, 16, -1)]
     cipher = AES.new(key, AES.MODE_EAX, nonce)
-    return io.BytesIO(cipher.decrypt_and_verify(ciphertext, tag))
+    if return_stringio:
+        return cipher.decrypt_and_verify(ciphertext, tag).decode('utf-8')
+    else:
+        return io.BytesIO(cipher.decrypt_and_verify(ciphertext, tag))

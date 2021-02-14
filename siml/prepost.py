@@ -779,10 +779,16 @@ class Preprocessor:
 
 class Converter:
 
-    def __init__(self, converter_parameters_pkl):
-        self.converters = self._generate_converters(converter_parameters_pkl)
+    def __init__(self, converter_parameters_pkl, key=None):
+        self.converters = self._generate_converters(
+            converter_parameters_pkl, key=key)
+        return
 
-    def _generate_converters(self, converter_parameters_pkl):
+    def _generate_converters(self, converter_parameters_pkl, key=None):
+        if key is not None:
+            return self._generate_converters(
+                util.decrypt_file(key, converter_parameters_pkl))
+
         if isinstance(converter_parameters_pkl, io.BufferedIOBase):
             converter_parameters = pickle.load(converter_parameters_pkl)
         elif isinstance(converter_parameters_pkl, Path):
@@ -813,13 +819,14 @@ class Converter:
 
     def postprocess(
             self, dict_data_x, dict_data_y, output_directory=None, *,
+            dict_data_y_answer=None,
             overwrite=False, save_x=False, write_simulation=False,
             write_npy=True, write_simulation_stem=None,
             write_simulation_base=None, read_simulation_type='fistr',
             write_simulation_type='fistr', skip_femio=False,
             load_function=None, convert_to_order1=False,
             data_addition_function=None, required_file_names=[],
-            perform_inverse=True):
+            perform_inverse=True, **kwargs):
         """Postprocess data with inversely converting them.
 
         Parameters
@@ -830,6 +837,8 @@ class Converter:
                 Dict of output data.
             output_directory: pathlib.Path, optional [None]
                 Output directory path.
+            dict_data_y_answer: dict
+                Dict of expected output data.
             overwrite: bool, optional [False]
                 If True, overwrite data.
             save_x: bool, optional [False]
@@ -875,6 +884,16 @@ class Converter:
             else:
                 return_dict_data_x = dict_data_x
 
+            if dict_data_y_answer is not None:
+                if isinstance(list(dict_data_y_answer.values())[0], dict):
+                    return_dict_data_x.update({
+                        variable_name:
+                        data
+                        for value in dict_data_x.values()
+                        for variable_name, data in value.items()})
+                else:
+                    return_dict_data_x.update(dict_data_x)
+
             if isinstance(list(dict_data_y.values())[0], dict):
                 return_dict_data_y = {
                     variable_name:
@@ -896,6 +915,19 @@ class Converter:
                 variable_name:
                 self.converters[variable_name].inverse(data)
                 for variable_name, data in dict_data_x.items()}
+
+        if dict_data_y_answer is not None:
+            if isinstance(list(dict_data_y_answer.values())[0], dict):
+                inversed_dict_data_x.update({
+                    variable_name:
+                    self.converters[variable_name].inverse(data)
+                    for value in dict_data_y_answer.values()
+                    for variable_name, data in value.items()})
+            else:
+                inversed_dict_data_x.update({
+                    variable_name:
+                    self.converters[variable_name].inverse(data)
+                    for variable_name, data in dict_data_y_answer.items()})
 
         if len(dict_data_y) > 0:
             if isinstance(list(dict_data_y.values())[0], dict):
@@ -933,7 +965,7 @@ class Converter:
             if write_simulation:
                 if write_simulation_base is None:
                     raise ValueError('No write_simulation_base fed.')
-                self.write_simulation(
+                self._write_simulation(
                     output_directory, fem_data, overwrite=overwrite,
                     write_simulation_type=write_simulation_type)
 
@@ -975,7 +1007,7 @@ class Converter:
 
         return fem_data
 
-    def write_simulation(
+    def _write_simulation(
             self, output_directory, fem_data, *,
             write_simulation_type='fistr', overwrite=False):
         if write_simulation_type == 'fistr':

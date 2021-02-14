@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pysiml"
-version = "0.2.6"
+version = "0.2.7"
 description = "SiML - a Simulation ML library"
 license = "Apache-2.0"
 authors = ["RICOS Co. Ltd."]
@@ -46,7 +46,6 @@ visualize_graph = "siml.__main__.visualize_graph:main"
 [tool.poetry.dev-dependencies]
 chainer = "^7.0"
 pytest = "^5.3"
-pylint = "^2.4"
 autopep8 = "^1.4"
 sphinx = "^2.3"
 sphinx_rtd_theme = "^0.4.3"
