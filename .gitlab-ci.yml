@@ -70,6 +70,7 @@ pages:
       - docs
   only:
     - master
+    - develop
 
 .test:
   stage: test
@@ -156,6 +157,7 @@ deploy:wheel:master:
   before_script:
     - export VERSION=$(grep "^version" pyproject.toml | grep -o "[0-9]\.[0-9]\.[0-9]").dev$(date +"%Y%m%d%H%M")
   only:
+    - master
     - develop
 
 deploy:wheel:tag:
