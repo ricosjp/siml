@@ -41,7 +41,8 @@ class TestTrainerGPU(unittest.TestCase):
             Path('tests/data/linear/linear.yml'))
         main_setting.data.train = [Path('tests/data/linear/preprocessed')]
         main_setting.trainer.gpu_id = 0
-        main_setting.trainer.n_epoch = 1000
+        main_setting.trainer.log_trigger_epoch = 100
+        main_setting.trainer.n_epoch = 500
         tr_wo_parallel = trainer.Trainer(main_setting)
         if main_setting.trainer.output_directory.exists():
             shutil.rmtree(main_setting.trainer.output_directory)
@@ -54,7 +55,7 @@ class TestTrainerGPU(unittest.TestCase):
             shutil.rmtree(main_setting.trainer.output_directory)
         loss_w_parallel = tr_w_parallel.train()
         np.testing.assert_almost_equal(
-            loss_w_parallel / loss_wo_parallel, 1., decimal=5)
+            loss_w_parallel, loss_wo_parallel)
 
     @testing.attr.multi_gpu(2)
     def test_train_data_parallel_general_block(self):
