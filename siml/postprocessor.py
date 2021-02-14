@@ -26,7 +26,9 @@ class Postprocessor(Metric):
         data_directory = data[2]['data_directory']
         inference_time = data[2]['inference_time']
         loss = self.inferer.loss(
-            y_pred, y, x['original_shapes']).cpu().detach().numpy()
+            y_pred, y, x['original_shapes'])
+        if loss is not None:
+            loss = loss.cpu().detach().numpy()
 
         dict_var_x = self.inferer._separate_data(
             self._to_numpy(x['x']), self.inferer.setting.trainer.inputs)
