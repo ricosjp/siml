@@ -548,7 +548,7 @@ class Inferer(siml_manager.SimlManager):
 
     def _determine_subdirectory(self):
         if self.setting.inferer.model is not None:
-            model = self.setting.inferer.model
+            model = pathlib.Path(self.setting.inferer.model)
             if model.is_dir():
                 model_name = model.name
             else:
