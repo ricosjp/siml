@@ -37,7 +37,7 @@ preprocess:
   script: python3.7 tests/preprocess.py
   artifacts:
     paths:
-      - tests/data/linear/preprocessed
+      - tests/data/linear
       - tests/data/deform/interim
       - tests/data/deform/preprocessed
       - tests/data/deform_timeseries/preprocessed
