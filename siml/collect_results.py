@@ -79,9 +79,10 @@ class CollectResults(Metric):
 
     def _to_numpy(self, x):
         if isinstance(x, (datasets.DataDict, dict)):
-            return {key: value.detach().numpy() for key, value in x.items()}
+            return {
+                key: value.cpu().detach().numpy() for key, value in x.items()}
         else:
-            return x.detach().numpy()
+            return x.cpu().detach().numpy()
 
     def _determine_output_directory(self, data_directory):
         if self.inferer.setting.inferer.output_directory is not None:
