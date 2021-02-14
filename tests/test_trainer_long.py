@@ -12,7 +12,7 @@ import siml.trainer as trainer
 PLOT = False
 
 
-class TestTrainer(unittest.TestCase):
+class TestTrainerLong(unittest.TestCase):
 
     def test_train_cpu(self):
         main_setting = setting.MainSetting.read_settings_yaml(

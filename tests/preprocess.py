@@ -476,5 +476,5 @@ if __name__ == '__main__':
     preprocess_deform()
     preprocess_deform_timeseries()
     preprocess_rotation()
-    generate_linear()
+    # generate_linear()
     generate_large()
