@@ -3,6 +3,7 @@ from ignite.metrics.metric import Metric, reinit__is_reduced
 import numpy as np
 import torch
 
+from . import datasets
 from . import prepost
 
 
@@ -21,18 +22,18 @@ class CollectResults(Metric):
     @reinit__is_reduced
     def update(self, data):
 
-        y_pred, y = data[0].detach(), data[1].detach()
+        y_pred, y = data[0], data[1]
         x = data[2]['x']
         data_directory = data[2]['data_directory']
         inference_time = data[2]['inference_time']
         loss = self.inferer.loss(y_pred, y, x['original_shapes'])
 
         dict_var_x = self.inferer._separate_data(
-            x['x'].numpy(), self.inferer.setting.trainer.inputs)
+            self._to_numpy(x['x']), self.inferer.setting.trainer.inputs)
         dict_var_y = self.inferer._separate_data(
-            y.numpy(), self.inferer.setting.trainer.outputs)
+            self._to_numpy(y), self.inferer.setting.trainer.outputs)
         dict_var_y_pred = self.inferer._separate_data(
-            y_pred.numpy(), self.inferer.setting.trainer.outputs)
+            self._to_numpy(y_pred), self.inferer.setting.trainer.outputs)
 
         output_directory = self._determine_output_directory(data_directory)
         write_simulation_base = self._determine_write_simulation_base(
@@ -75,6 +76,12 @@ class CollectResults(Metric):
             'data_directory': data_directory,
             'inference_time': inference_time})
         return
+
+    def _to_numpy(self, x):
+        if isinstance(x, (datasets.DataDict, dict)):
+            return {key: value.detach().numpy() for key, value in x.items()}
+        else:
+            return x.detach().numpy()
 
     def _determine_output_directory(self, data_directory):
         if self.inferer.setting.inferer.output_directory is not None:
@@ -129,12 +136,27 @@ class CollectResults(Metric):
         y_keys = dict_y.keys()
         if not np.all([y_key in dict_x for y_key in y_keys]):
             return None  # No answer
-        y_raw_pred = np.concatenate([dict_y[k] for k in dict_y.keys()])
-        y_raw_answer = np.concatenate([dict_x[k] for k in dict_y.keys()])
+
+        if isinstance(self.inferer.setting.trainer.output_names, dict):
+            output_names = self.inferer.setting.trainer.output_names
+            y_raw_pred = self._reshape_dict(output_names, dict_y)
+            y_raw_answer = self._reshape_dict(output_names, dict_x)
+        else:
+            y_raw_pred = torch.from_numpy(
+                np.concatenate([dict_y[k] for k in dict_y.keys()]))
+            y_raw_answer = torch.from_numpy(
+                np.concatenate([dict_x[k] for k in dict_y.keys()]))
+
         raw_loss = self.inferer.loss(
-            torch.from_numpy(y_raw_pred), torch.from_numpy(y_raw_answer),
-            original_shapes=original_shapes)
+            y_raw_pred, y_raw_answer, original_shapes=original_shapes)
         if raw_loss is None:
             return None
         else:
             return raw_loss.numpy()
+
+    def _reshape_dict(self, dict_names, data_dict):
+        return {
+            key:
+            torch.from_numpy(np.concatenate([
+                data_dict[variable_name] for variable_name in value]))
+            for key, value in dict_names.items()}

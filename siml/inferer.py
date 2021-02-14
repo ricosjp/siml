@@ -132,7 +132,7 @@ class Inferer(siml_manager.SimlManager):
 
     def infer(
             self, *, data_directories=None, model=None,
-            perform_preprocess=None):
+            perform_preprocess=None, output_directory_base=None):
         """Perform infererence.
 
         Parameters
@@ -144,6 +144,8 @@ class Inferer(siml_manager.SimlManager):
             If fed, overwrite self.setting.inferer.model.
         perform_preprocess: bool, optional
             If fed, overwrite self.setting.inferer.perform_preprocess
+        output_directory_base: pathlib.Path, optional
+            If fed, overwrite self.setting.inferer.output_directory_base
 
         Returns
         -------
@@ -166,6 +168,8 @@ class Inferer(siml_manager.SimlManager):
             self.setting.inferer.model = model
         if perform_preprocess is not None:
             self.setting.inferer.perform_preprocess = perform_preprocess
+        if output_directory_base is not None:
+            self.setting.inferer.output_directory_base = output_directory_base
 
         self._prepare_inference()
         inference_state = self.inferer.run(self.inference_loader)
