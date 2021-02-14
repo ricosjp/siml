@@ -1,3 +1,0 @@
-epoch, train_loss, validation_loss, elapsed_time
-10, 2.14709e+00, 2.14709e+00, 0.12
-20, 2.02460e+00, 2.02460e+00, 0.72
