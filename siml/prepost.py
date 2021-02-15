@@ -227,7 +227,8 @@ class RawConverter():
                 fem_data_to_save = fem_data.to_first_order()
             else:
                 fem_data_to_save = fem_data
-            fem_data_to_save = update_fem_data(fem_data_to_save, dict_data)
+            fem_data_to_save = update_fem_data(
+                fem_data_to_save, dict_data, allow_overwrite=True)
             if self.write_ucd:
                 fem_data_to_save.to_first_order().write(
                     'ucd', output_directory / 'mesh.inp',
@@ -241,7 +242,7 @@ class RawConverter():
         return
 
 
-def update_fem_data(fem_data, dict_data, prefix=''):
+def update_fem_data(fem_data, dict_data, prefix='', *, allow_overwrite=False):
     for key, value in dict_data.items():
 
         variable_name = prefix + key
@@ -255,22 +256,24 @@ def update_fem_data(fem_data, dict_data, prefix=''):
                             value[..., 0])
                 else:
                     reshaped_value = value[..., 0]
+                dict_data_to_update = {
+                    variable_name: value,
+                    variable_name + '_reshaped': reshaped_value}
             else:
-                reshaped_value = value
+                dict_data_to_update = {
+                    variable_name: value}
             len_data = len(value)
 
             if len_data == len(fem_data.nodes.ids):
                 # Nodal data
                 fem_data.nodal_data.update_data(
-                    fem_data.nodes.ids, {
-                        variable_name: value,
-                        variable_name + '_reshaped': reshaped_value})
+                    fem_data.nodes.ids, dict_data_to_update,
+                    allow_overwrite=allow_overwrite)
             elif len_data == len(fem_data.elements.ids):
                 # Elemental data
                 fem_data.elemental_data.update_data(
-                    fem_data.elements.ids, {
-                        variable_name: value,
-                        variable_name + '_reshaped': reshaped_value})
+                    fem_data.elements.ids, dict_data_to_update,
+                    allow_overwrite=allow_overwrite)
             else:
                 print(f"{variable_name} is skipped to include in fem_data")
                 continue
