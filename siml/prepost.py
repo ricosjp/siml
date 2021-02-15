@@ -785,7 +785,7 @@ class Converter:
         return
 
     def _generate_converters(self, converter_parameters_pkl, key=None):
-        if key is not None:
+        if key is not None and converter_parameters_pkl.suffix == '.enc':
             return self._generate_converters(
                 util.decrypt_file(key, converter_parameters_pkl))
 
@@ -916,7 +916,7 @@ class Converter:
                 self.converters[variable_name].inverse(data)
                 for variable_name, data in dict_data_x.items()}
 
-        if dict_data_y_answer is not None:
+        if dict_data_y_answer is not None and len(dict_data_y_answer) > 0:
             if isinstance(list(dict_data_y_answer.values())[0], dict):
                 inversed_dict_data_x.update({
                     variable_name:

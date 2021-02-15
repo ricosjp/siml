@@ -492,7 +492,9 @@ class Inferer(siml_manager.SimlManager):
             print('--')
             print(f"              Data: {data_directory}")
             print(f"Inference time [s]: {elapsed_time:.5e}")
-            print(f"              Loss: {loss}")
+            if loss is not None:
+                print(f"              Loss: {loss}")
+            print('--')
 
             return y_pred, y, {
                 'x': x, 'original_shapes': x['original_shapes'],
@@ -513,6 +515,8 @@ class Inferer(siml_manager.SimlManager):
                 key:
                 self._separate_data(data[key], descriptions[key], axis=axis)
                 for key in data.keys()}
+        if len(data) == 0:
+            return {}
 
         data_dict = {}
         index = 0
@@ -561,7 +565,11 @@ class Inferer(siml_manager.SimlManager):
 
     def _determine_write_simulation_base(self, data_directory):
         if self.setting.inferer.write_simulation_base is None:
-            return None
+            if self.setting.inferer.perform_preprocess:
+                # Assume the given data is raw data
+                return data_directory
+            else:
+                return None
 
         if 'preprocessed' in str(data_directory):
             write_simulation_base = prepost.determine_output_directory(

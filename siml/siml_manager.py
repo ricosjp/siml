@@ -168,11 +168,11 @@ class SimlManager():
                 method=self.setting.trainer.snapshot_choise_method)
 
         key = self.setting.inferer.model_key
-        if key is None:
-            checkpoint = torch.load(snapshot, map_location=self.device)
-        else:
+        if key is not None and snapshot.suffix == '.enc':
             checkpoint = torch.load(
                 util.decrypt_file(key, snapshot), map_location=self.device)
+        else:
+            checkpoint = torch.load(snapshot, map_location=self.device)
 
         if len(self.model.state_dict()) != len(checkpoint['model_state_dict']):
             raise ValueError('Model parameter length invalid')
