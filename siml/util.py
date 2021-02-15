@@ -1272,11 +1272,14 @@ def pad_array(array, n):
 
 
 def concatenate_variable(variables):
-    concatenatable_variables = np.concatenate(
-        [
-            variable for variable in variables
-            if isinstance(variable, np.ndarray)],
-        axis=-1)
+    try:
+        concatenatable_variables = np.concatenate(
+            [
+                _to_atleast_2d(variable) for variable in variables
+                if isinstance(variable, np.ndarray)],
+            axis=-1)
+    except:
+        raise ValueError([v.shape for v in variables])
     unconcatenatable_variables = [
         variable for variable in variables
         if not isinstance(variable, np.ndarray)]
@@ -1284,6 +1287,14 @@ def concatenate_variable(variables):
         return concatenatable_variables
     else:
         return concatenatable_variables, unconcatenatable_variables
+
+
+def _to_atleast_2d(array):
+    shape = array.shape
+    if len(shape) == 1:
+        return array[:, None]
+    else:
+        return array
 
 
 def determine_max_process(max_process=None):
