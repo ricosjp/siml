@@ -1120,8 +1120,6 @@ def determine_output_directory(
 
     replace_indices = np.where(
         np.array(relative_input_path.parts) == str_replace)[0]
-    raise ValueError(input_directory, output_base_directory, str_replace)
-    print(input_directory, output_base_directory, relative_input_path, str_replace)
     if len(replace_indices) == 0:
         pass
     elif len(replace_indices) == 1:
