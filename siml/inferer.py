@@ -89,7 +89,7 @@ class Inferer(siml_manager.SimlManager):
             model=None, converter_parameters_pkl=None, save=None,
             conversion_function=None, load_function=None,
             data_addition_function=None, postprocess_function=None,
-            write_simulation_function=None):
+            save_function=None):
         """Initialize Inferer object.
 
         Parameters
@@ -115,8 +115,8 @@ class Inferer(siml_manager.SimlManager):
         postprocess_function: function, optional [None]
             Function to make postprocess of the inference data.
             If not fed, no additional postprocess will be performed.
-        write_simulation_function: function, optional [None]
-            Function to save simulation. If not fed the default save function
+        save_function: function, optional [None]
+            Function to save results. If not fed the default save function
             will be used.
         """
         self.setting = settings
@@ -124,7 +124,7 @@ class Inferer(siml_manager.SimlManager):
         self.load_function = load_function
         self.data_addition_function = data_addition_function
         self.postprocess_function = postprocess_function
-        self.write_simulation_function = write_simulation_function
+        self.save_function = save_function
 
         if model is not None:
             self.setting.inferer.model = model
@@ -574,7 +574,15 @@ class Inferer(siml_manager.SimlManager):
                 # Assume the given data is raw data
                 return data_directory
             else:
-                return None
+                if 'preprocessed' in str(data_directory):
+                    candidate = pathlib.Path(
+                        str(data_directory).replace('preprocessed', 'raw'))
+                    if candidate.is_dir():
+                        return candidate
+                    else:
+                        return None
+                else:
+                    return None
 
         if 'preprocessed' in str(data_directory):
             write_simulation_base = prepost.determine_output_directory(

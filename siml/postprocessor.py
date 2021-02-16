@@ -59,8 +59,7 @@ class Postprocessor(Metric):
                 write_simulation_base=write_simulation_base,
                 read_simulation_type=setting.inferer.read_simulation_type,
                 write_simulation_type=setting.inferer.write_simulation_type,
-                write_simulation_function=self.inferer
-                .write_simulation_function,
+                save_function=self.inferer.save_function,
                 convert_to_order1=setting.inferer.convert_to_order1,
                 required_file_names=setting.conversion.required_file_names,
                 perform_inverse=setting.inferer.perform_inverse)

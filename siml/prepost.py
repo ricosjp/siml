@@ -815,7 +815,7 @@ class Converter:
             overwrite=False, save_x=False, write_simulation=False,
             write_npy=True, write_simulation_stem=None,
             write_simulation_base=None, read_simulation_type='fistr',
-            write_simulation_function=None,
+            save_function=None,
             write_simulation_type='fistr', skip_femio=False,
             load_function=None, convert_to_order1=False,
             data_addition_function=None, required_file_names=[],
@@ -958,14 +958,13 @@ class Converter:
             if write_simulation:
                 if write_simulation_base is None:
                     raise ValueError('No write_simulation_base fed.')
-                if write_simulation_function is None:
-                    self._write_simulation(
-                        output_directory, fem_data, overwrite=overwrite,
-                        write_simulation_type=write_simulation_type)
-                else:
-                    write_simulation_function(
-                        output_directory, fem_data, overwrite=overwrite,
-                        write_simulation_type=write_simulation_type)
+                self._write_simulation(
+                    output_directory, fem_data, overwrite=overwrite,
+                    write_simulation_type=write_simulation_type)
+            if save_function is not None:
+                save_function(
+                    output_directory, fem_data, overwrite=overwrite,
+                    write_simulation_type=write_simulation_type)
 
         return inversed_dict_data_x, inversed_dict_data_y, fem_data
 
@@ -1001,7 +1000,7 @@ class Converter:
         fem_data = add_difference(
             fem_data, dict_data_y, dict_data_x, prefix='difference_')
         if data_addition_function is not None:
-            fem_data = data_addition_function(fem_data)
+            fem_data = data_addition_function(fem_data, write_simulation_base)
 
         return fem_data
 
@@ -1121,6 +1120,8 @@ def determine_output_directory(
 
     replace_indices = np.where(
         np.array(relative_input_path.parts) == str_replace)[0]
+    raise ValueError(input_directory, output_base_directory, str_replace)
+    print(input_directory, output_base_directory, relative_input_path, str_replace)
     if len(replace_indices) == 0:
         pass
     elif len(replace_indices) == 1:
