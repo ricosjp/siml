@@ -227,7 +227,8 @@ class RawConverter():
                 fem_data_to_save = fem_data.to_first_order()
             else:
                 fem_data_to_save = fem_data
-            fem_data_to_save = update_fem_data(fem_data_to_save, dict_data)
+            fem_data_to_save = update_fem_data(
+                fem_data_to_save, dict_data, allow_overwrite=True)
             if self.write_ucd:
                 fem_data_to_save.to_first_order().write(
                     'ucd', output_directory / 'mesh.inp',
@@ -241,7 +242,7 @@ class RawConverter():
         return
 
 
-def update_fem_data(fem_data, dict_data, prefix=''):
+def update_fem_data(fem_data, dict_data, prefix='', *, allow_overwrite=False):
     for key, value in dict_data.items():
 
         variable_name = prefix + key
@@ -250,38 +251,29 @@ def update_fem_data(fem_data, dict_data, prefix=''):
                 if len(value.shape) == 4 and value.shape[1] == 3 \
                         and value.shape[2] == 3:
                     # NOTE: Assume this is symmetric matrix
-                    value_for_fem_data \
+                    reshaped_value \
                         = fem_data.convert_symmetric_matrix2array(
                             value[..., 0])
                 else:
-                    value_for_fem_data = value[..., 0]
+                    reshaped_value = value[..., 0]
+                dict_data_to_update = {
+                    variable_name: value,
+                    variable_name + '_reshaped': reshaped_value}
             else:
-                value_for_fem_data = value
-
-            len_data = len(value_for_fem_data)
+                dict_data_to_update = {
+                    variable_name: value}
+            len_data = len(value)
 
             if len_data == len(fem_data.nodes.ids):
                 # Nodal data
-                try:
-                    fem_data.nodal_data.update({
-                        variable_name: femio.FEMAttribute(
-                            variable_name, fem_data.nodes.ids,
-                            value_for_fem_data)})
-                except ValueError:
-                    print(
-                        f"{variable_name} is skipped to include in fem_data "
-                        f"because the shape is {value_for_fem_data.shape}")
+                fem_data.nodal_data.update_data(
+                    fem_data.nodes.ids, dict_data_to_update,
+                    allow_overwrite=allow_overwrite)
             elif len_data == len(fem_data.elements.ids):
                 # Elemental data
-                try:
-                    fem_data.elemental_data.update({
-                        variable_name: femio.FEMAttribute(
-                            variable_name, fem_data.elements.ids,
-                            value_for_fem_data)})
-                except ValueError:
-                    print(
-                        f"{variable_name} is skipped to include in fem_data "
-                        f"because the shape is {value_for_fem_data.shape}")
+                fem_data.elemental_data.update_data(
+                    fem_data.elements.ids, dict_data_to_update,
+                    allow_overwrite=allow_overwrite)
             else:
                 print(f"{variable_name} is skipped to include in fem_data")
                 continue
@@ -785,7 +777,7 @@ class Converter:
         return
 
     def _generate_converters(self, converter_parameters_pkl, key=None):
-        if key is not None:
+        if key is not None and converter_parameters_pkl.suffix == '.enc':
             return self._generate_converters(
                 util.decrypt_file(key, converter_parameters_pkl))
 
@@ -823,6 +815,7 @@ class Converter:
             overwrite=False, save_x=False, write_simulation=False,
             write_npy=True, write_simulation_stem=None,
             write_simulation_base=None, read_simulation_type='fistr',
+            write_simulation_function=None,
             write_simulation_type='fistr', skip_femio=False,
             load_function=None, convert_to_order1=False,
             data_addition_function=None, required_file_names=[],
@@ -916,7 +909,7 @@ class Converter:
                 self.converters[variable_name].inverse(data)
                 for variable_name, data in dict_data_x.items()}
 
-        if dict_data_y_answer is not None:
+        if dict_data_y_answer is not None and len(dict_data_y_answer) > 0:
             if isinstance(list(dict_data_y_answer.values())[0], dict):
                 inversed_dict_data_x.update({
                     variable_name:
@@ -965,9 +958,14 @@ class Converter:
             if write_simulation:
                 if write_simulation_base is None:
                     raise ValueError('No write_simulation_base fed.')
-                self._write_simulation(
-                    output_directory, fem_data, overwrite=overwrite,
-                    write_simulation_type=write_simulation_type)
+                if write_simulation_function is None:
+                    self._write_simulation(
+                        output_directory, fem_data, overwrite=overwrite,
+                        write_simulation_type=write_simulation_type)
+                else:
+                    write_simulation_function(
+                        output_directory, fem_data, overwrite=overwrite,
+                        write_simulation_type=write_simulation_type)
 
         return inversed_dict_data_x, inversed_dict_data_y, fem_data
 

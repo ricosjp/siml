@@ -88,7 +88,8 @@ class Inferer(siml_manager.SimlManager):
             self, settings, *,
             model=None, converter_parameters_pkl=None, save=None,
             conversion_function=None, load_function=None,
-            data_addition_function=None, postprocess_function=None):
+            data_addition_function=None, postprocess_function=None,
+            write_simulation_function=None):
         """Initialize Inferer object.
 
         Parameters
@@ -114,12 +115,16 @@ class Inferer(siml_manager.SimlManager):
         postprocess_function: function, optional [None]
             Function to make postprocess of the inference data.
             If not fed, no additional postprocess will be performed.
+        write_simulation_function: function, optional [None]
+            Function to save simulation. If not fed the default save function
+            will be used.
         """
         self.setting = settings
         self.conversion_function = conversion_function
         self.load_function = load_function
         self.data_addition_function = data_addition_function
         self.postprocess_function = postprocess_function
+        self.write_simulation_function = write_simulation_function
 
         if model is not None:
             self.setting.inferer.model = model
@@ -492,7 +497,9 @@ class Inferer(siml_manager.SimlManager):
             print('--')
             print(f"              Data: {data_directory}")
             print(f"Inference time [s]: {elapsed_time:.5e}")
-            print(f"              Loss: {loss}")
+            if loss is not None:
+                print(f"              Loss: {loss}")
+            print('--')
 
             return y_pred, y, {
                 'x': x, 'original_shapes': x['original_shapes'],
@@ -513,6 +520,8 @@ class Inferer(siml_manager.SimlManager):
                 key:
                 self._separate_data(data[key], descriptions[key], axis=axis)
                 for key in data.keys()}
+        if len(data) == 0:
+            return {}
 
         data_dict = {}
         index = 0
@@ -561,7 +570,11 @@ class Inferer(siml_manager.SimlManager):
 
     def _determine_write_simulation_base(self, data_directory):
         if self.setting.inferer.write_simulation_base is None:
-            return None
+            if self.setting.inferer.perform_preprocess:
+                # Assume the given data is raw data
+                return data_directory
+            else:
+                return None
 
         if 'preprocessed' in str(data_directory):
             write_simulation_base = prepost.determine_output_directory(
