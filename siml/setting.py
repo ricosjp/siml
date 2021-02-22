@@ -853,6 +853,7 @@ class MainSetting:
         else:
             preprocess_setting = PreprocessSetting().preprocess
         if 'trainer' in dict_settings:
+            dict_settings = cls._pop_train_setting(dict_settings['trainer'])
             trainer_setting = TrainerSetting(**dict_settings['trainer'])
         else:
             trainer_setting = TrainerSetting
@@ -876,6 +877,17 @@ class MainSetting:
             inferer=inferer_setting,
             optuna=optuna_setting, study=study_setting,
             replace_preprocessed=replace_preprocessed)
+
+    @classmethod
+    def _pop_train_setting(cls, train_dict_settings):
+        # Pop unnecessary settings for backward compatibility
+        train_dict_settings.pop('input_names', None)
+        train_dict_settings.pop('input_dims', None)
+        train_dict_settings.pop('input_length', None)
+        train_dict_settings.pop('output_names', None)
+        train_dict_settings.pop('output_dims', None)
+        train_dict_settings.pop('output_length', None)
+        return train_dict_settings
 
     def __post_init__(self):
 
