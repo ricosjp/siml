@@ -595,7 +595,7 @@ class BlockSetting(TypedDataClass):
     hidden_activation: str = 'relu'
     output_activation: str = 'identity'
     input_dropout: float = 0.0
-    hidden_dropout: float = 0.5
+    hidden_dropout: float = 0.0
     output_dropout: float = 0.0
 
     def __post_init__(self):
@@ -651,10 +651,10 @@ class ModelSetting(TypedDataClass):
         else:
             self.blocks = [
                 BlockSetting(**block) for block in setting['blocks']]
-        if np.all(b.is_first is False for b in self.blocks):
-            self.blocks[0].is_first = True
-        if np.all(b.is_last is False for b in self.blocks):
-            self.blocks[-1].is_last = True
+        # if np.all(b.is_first is False for b in self.blocks):
+        #     self.blocks[0].is_first = True
+        # if np.all(b.is_last is False for b in self.blocks):
+        #     self.blocks[-1].is_last = True
 
 
 @dc.dataclass

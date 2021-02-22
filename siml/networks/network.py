@@ -93,12 +93,12 @@ class Network(torch.nn.Module):
                     'distributor type is deprecated. Use reducer',
                     DeprecationWarning)
 
+        self.call_graph = self._create_call_graph()
+        self.sorted_graph_nodes = list(nx.topological_sort(self.call_graph))
+
         self.dict_block_setting = {
             block_setting.name: block_setting
             for block_setting in self.model_setting.blocks}
-
-        self.call_graph = self._create_call_graph()
-        self.sorted_graph_nodes = list(nx.topological_sort(self.call_graph))
 
         self._update_dict_block_setting()
         self.dict_block_information = {
@@ -135,9 +135,14 @@ class Network(torch.nn.Module):
                 if destination not in block_names:
                     raise ValueError(f"{destination} does not exist")
                 call_graph.add_edge(block_setting.name, destination)
-            if block_setting.is_first:
+
+        for block_setting in self.model_setting.blocks:
+            if len(list(call_graph.predecessors(block_setting.name))) == 0:
+                block_setting.is_first = True
                 call_graph.add_edge(self.INPUT_LAYER_NAME, block_setting.name)
-            if block_setting.is_last:
+
+            if len(list(call_graph.successors(block_setting.name))) == 0:
+                block_setting.is_last = True
                 call_graph.add_edge(block_setting.name, self.OUTPUT_LAYER_NAME)
 
         # Validate call graph
@@ -165,6 +170,7 @@ class Network(torch.nn.Module):
             predecessors = tuple(self.call_graph.predecessors(graph_node))
             block_setting = self.dict_block_setting[graph_node]
             block_type = block_setting.type
+            is_trainable = False
 
             if graph_node == self.INPUT_LAYER_NAME:
                 first_node = self.trainer_setting.input_length
@@ -173,6 +179,14 @@ class Network(torch.nn.Module):
             elif graph_node == self.OUTPUT_LAYER_NAME:
                 first_node = self.trainer_setting.output_length
                 last_node = self.trainer_setting.output_length
+
+            elif block_type in ['identity', 'activation']:
+                max_first_node = np.sum([
+                    self.dict_block_setting[predecessor].nodes[-1]
+                    for predecessor in predecessors])
+                first_node = max(len(np.arange(max_first_node)[
+                    block_setting.input_selection]), 1)
+                last_node = first_node
 
             elif block_type == 'array2symmat':
                 first_node == 6
@@ -220,6 +234,9 @@ class Network(torch.nn.Module):
                 last_node = first_node - 1
 
             else:
+                # Trainable block
+                is_trainable = True
+
                 if len(predecessors) != 1:
                     raise ValueError(
                         f"{graph_node} has {len(predecessors)} "
@@ -257,23 +274,26 @@ class Network(torch.nn.Module):
             if graph_node not in [
                     self.INPUT_LAYER_NAME, self.OUTPUT_LAYER_NAME] \
                     and block_setting.nodes[-1] == -1:
-                output_key = block_setting.output_key
-                if output_key is None:
-                    if isinstance(last_node, dict):
-                        raise ValueError(
-                            'Output is dict. Plese specify output_key to the '
-                            f"last nodes: {block_setting}")
-                    block_setting.nodes[-1] = int(
-                        last_node)
-                else:
+                if self.y_dict_mode:
                     if block_setting.is_last:
+                        output_key = block_setting.output_key
+                        if output_key is None:
+                            raise ValueError(
+                                'Output is dict. Plese specify output_key to '
+                                f"the last nodes: {block_setting}")
                         output_length = self.trainer_setting.output_length
                         block_setting.nodes[-1] = int(
                             output_length[output_key])
                     else:
-                        raise ValueError(
-                            'Cannot put output_key when is_last is False: '
-                            f"{block_setting}")
+                        if is_trainable:
+                            raise ValueError(
+                                'When output is dict, please explicitly '
+                                'specify the number of the last node instead '
+                                f"of -1 unless is_last for: {block_setting}")
+                        else:
+                            block_setting.nodes[-1] = int(last_node)
+                else:
+                    block_setting.nodes[-1] = int(last_node)
 
         return
 
@@ -347,8 +367,11 @@ class Network(torch.nn.Module):
 
         if self.y_dict_mode:
             return_dict = {}
-            for h in dict_hidden[self.OUTPUT_LAYER_NAME]:
-                return_dict.update(h)
+            if isinstance(dict_hidden[self.OUTPUT_LAYER_NAME], dict):
+                return_dict.update(dict_hidden[self.OUTPUT_LAYER_NAME])
+            else:
+                for h in dict_hidden[self.OUTPUT_LAYER_NAME]:
+                    return_dict.update(h)
             return return_dict
         else:
             return dict_hidden[self.OUTPUT_LAYER_NAME]
