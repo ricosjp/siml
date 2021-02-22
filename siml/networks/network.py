@@ -312,7 +312,7 @@ class Network(torch.nn.Module):
                         torch.cat([
                             dict_hidden[predecessor][input_key][
                                 ..., block_setting.input_selection].to(device)
-                            for input_key in block_setting.input_keys], dim=1)
+                            for input_key in block_setting.input_keys], dim=-1)
                         for predecessor
                         in self.call_graph.predecessors(graph_node)]
 
