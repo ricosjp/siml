@@ -480,3 +480,95 @@ class TestTrainer(unittest.TestCase):
             data_directories=main_setting.data.preprocessed[0]
             / 'train/tet2_3_modulusx0.9000')
         self.assertLess(results[0]['loss'], loss * 5)
+
+    def test_trainer_skip_dict_output(self):
+        main_setting = setting.MainSetting.read_settings_yaml(Path(
+            'tests/data/rotation_thermal_stress/iso_gcn_skip_dict_output.yml'))
+        shutil.rmtree(
+            main_setting.trainer.output_directory, ignore_errors=True)
+        tr = trainer.Trainer(main_setting)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, 1.)
+
+        ir = inferer.Inferer(
+            main_setting,
+            model=main_setting.trainer.output_directory,
+            converter_parameters_pkl=main_setting.data.preprocessed[0]
+            / 'preprocessed/preprocessors.pkl', save=False)
+        ir.setting.inferer.perform_inverse = False
+        results = ir.infer(
+            data_directories=Path(
+                'tests/data/rotation_thermal_stress/preprocessed/'
+                'cube/original'))
+
+        t_mse_w_skip = np.mean((
+            results[0]['dict_y']['cnt_temperature']
+            - results[0]['dict_x']['cnt_temperature'])**2)
+
+        # Traiing without skip
+        main_setting.trainer.outputs['out_rank0'][0]['skip'] = False
+        tr = trainer.Trainer(main_setting)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, 1.)
+
+        ir = inferer.Inferer(
+            main_setting,
+            model=main_setting.trainer.output_directory,
+            converter_parameters_pkl=main_setting.data.preprocessed[0]
+            / 'preprocessed/preprocessors.pkl', save=False)
+        ir.setting.inferer.perform_inverse = False
+        results = ir.infer(
+            data_directories=Path(
+                'tests/data/rotation_thermal_stress/preprocessed/'
+                'cube/original'))
+        t_mse_wo_skip = np.mean((
+            results[0]['dict_y']['cnt_temperature']
+            - results[0]['dict_x']['cnt_temperature'])**2)
+
+        print(t_mse_wo_skip, t_mse_w_skip)
+        self.assertLess(t_mse_wo_skip, t_mse_w_skip)
+
+    def test_trainer_skip_list_output(self):
+        main_setting = setting.MainSetting.read_settings_yaml(Path(
+            'tests/data/rotation_thermal_stress/gcn_skip_list_output.yml'))
+        shutil.rmtree(
+            main_setting.trainer.output_directory, ignore_errors=True)
+        tr = trainer.Trainer(main_setting)
+        tr.train()
+
+        ir = inferer.Inferer(
+            main_setting,
+            model=main_setting.trainer.output_directory,
+            converter_parameters_pkl=main_setting.data.preprocessed[0]
+            / 'preprocessed/preprocessors.pkl', save=False)
+        ir.setting.inferer.perform_inverse = False
+        results = ir.infer(
+            data_directories=Path(
+                'tests/data/rotation_thermal_stress/preprocessed/'
+                'cube/original'))
+
+        t_mse_w_skip = np.mean((
+            results[0]['dict_y']['cnt_temperature']
+            - results[0]['dict_x']['cnt_temperature'])**2)
+
+        # Traiing without skip
+        main_setting.trainer.outputs[0]['skip'] = False
+        tr = trainer.Trainer(main_setting)
+        tr.train()
+
+        ir = inferer.Inferer(
+            main_setting,
+            model=main_setting.trainer.output_directory,
+            converter_parameters_pkl=main_setting.data.preprocessed[0]
+            / 'preprocessed/preprocessors.pkl', save=False)
+        ir.setting.inferer.perform_inverse = False
+        results = ir.infer(
+            data_directories=Path(
+                'tests/data/rotation_thermal_stress/preprocessed/'
+                'cube/original'))
+        t_mse_wo_skip = np.mean((
+            results[0]['dict_y']['cnt_temperature']
+            - results[0]['dict_x']['cnt_temperature'])**2)
+
+        print(t_mse_wo_skip, t_mse_w_skip)
+        self.assertLess(t_mse_wo_skip, t_mse_w_skip)

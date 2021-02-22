@@ -22,7 +22,7 @@ class TypedDataClass:
         return cls(**dict_settings)
 
     def convert(self):
-        """Convert all fields accordingly with their type definitions.  """
+        """Convert all fields accordingly with their type definitions."""
         for field_name, field in self.__dataclass_fields__.items():
             try:
                 self._convert_field(field_name, field)
@@ -65,6 +65,10 @@ class TypedDataClass:
             def type_function(x):
                 x = to_list_if_needed(x)
                 return [int(_x) for _x in x]
+        elif field.type == typing.List[bool]:
+            def type_function(x):
+                x = to_list_if_needed(x)
+                return [bool(_x) for _x in x]
         elif field.type == typing.List[float]:
             def type_function(x):
                 x = to_list_if_needed(x)
@@ -304,15 +308,6 @@ class TrainerSetting(TypedDataClass):
         default=None, metadata={'allow_none': True})
     outputs: typing.Union[typing.List[dict], typing.Dict[str, list]] \
         = dc.field(default_factory=list)
-
-    input_names: typing.Union[typing.List[str], typing.Dict[str, list]] \
-        = dc.field(default=None, metadata={'allow_none': True})
-    input_dims: typing.Union[typing.List[int], typing.Dict[str, list]] \
-        = dc.field(default=None, metadata={'allow_none': True})
-    output_names: typing.Union[typing.List[str], typing.Dict[str, list]] \
-        = dc.field(default=None, metadata={'allow_none': True})
-    output_dims: typing.Union[typing.List[int], typing.Dict[str, list]] \
-        = dc.field(default=None, metadata={'allow_none': True})
     output_directory: Path = None
 
     name: str = 'default'
@@ -376,17 +371,6 @@ class TrainerSetting(TypedDataClass):
         if self.validation_element_batch_size is None:
             self.validation_element_batch_size = self.element_batch_size
 
-        self.input_names = self._collect_values(
-            self.inputs, 'name', asis=True)
-        self.input_dims = self._collect_values(
-            self.inputs, 'dim', default=1, asis=True)
-        self.output_names = self._collect_values(
-            self.outputs, 'name', asis=True)
-        self.output_dims = self._collect_values(
-            self.outputs, 'dim', default=1, asis=True)
-        self.input_length = self._sum_dims(self.input_dims)
-        self.output_length = self._sum_dims(self.output_dims)
-
         self.variable_information = self._generate_variable_information()
 
         if self.output_directory is None:
@@ -419,6 +403,39 @@ class TrainerSetting(TypedDataClass):
                 f"Set stop_trigger_epoch larger than log_trigger_epoch")
 
         super().__post_init__()
+
+    @property
+    def output_skips(self):
+        return self._collect_values(
+            self.outputs, 'skip', default=False, asis=True)
+
+    @property
+    def input_names(self):
+        return self._collect_values(
+            self.inputs, 'name', asis=True)
+
+    @property
+    def input_dims(self):
+        return self._collect_values(
+            self.inputs, 'dim', default=1, asis=True)
+
+    @property
+    def output_names(self):
+        return self._collect_values(
+            self.outputs, 'name', asis=True)
+
+    @property
+    def output_dims(self):
+        return self._collect_values(
+            self.outputs, 'dim', default=1, asis=True)
+
+    @property
+    def input_length(self):
+        return self._sum_dims(self.input_dims)
+
+    @property
+    def output_length(self):
+        return self._sum_dims(self.output_dims)
 
     def update_output_directory(self, *, id_=None, base=None):
         if base is None:

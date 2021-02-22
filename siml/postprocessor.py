@@ -111,9 +111,9 @@ class Postprocessor(Metric):
             y_raw_answer = self._reshape_dict(output_names, dict_x)
         else:
             y_raw_pred = torch.from_numpy(
-                np.concatenate([dict_y[k] for k in dict_y.keys()]))
+                np.concatenate([dict_y[k] for k in dict_y.keys()], axis=-1))
             y_raw_answer = torch.from_numpy(
-                np.concatenate([dict_x[k] for k in dict_y.keys()]))
+                np.concatenate([dict_x[k] for k in dict_y.keys()], axis=-1))
 
         raw_loss = self.inferer.loss(
             y_raw_pred, y_raw_answer, original_shapes=original_shapes)

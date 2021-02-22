@@ -866,83 +866,59 @@ class Converter:
             fem_data: femio.FEMData
                 FEMData object with input and output data.
         """
-        if not perform_inverse:
-            print('Postprocess skipped')
-            if isinstance(list(dict_data_x.values())[0], dict):
-                return_dict_data_x = {
-                    variable_name:
-                    data
-                    for value in dict_data_x.values()
-                    for variable_name, data in value.items()}
-            else:
-                return_dict_data_x = dict_data_x
-
-            if dict_data_y_answer is not None:
-                if isinstance(list(dict_data_y_answer.values())[0], dict):
-                    return_dict_data_x.update({
-                        variable_name:
-                        data
-                        for value in dict_data_x.values()
-                        for variable_name, data in value.items()})
-                else:
-                    return_dict_data_x.update(dict_data_x)
-
-            if isinstance(list(dict_data_y.values())[0], dict):
-                return_dict_data_y = {
-                    variable_name:
-                    data
-                    for value in dict_data_y.values()
-                    for variable_name, data in value.items()}
-            else:
-                return_dict_data_y = dict_data_y
-            return return_dict_data_x, return_dict_data_y
+        if perform_inverse:
+            dict_post_function = {
+                k: v.inverse for k, v in self.converters.items()}
+        else:
+            dict_post_function = {
+                k: lambda x: x for k, v in self.converters.items()}
 
         if isinstance(list(dict_data_x.values())[0], dict):
-            inversed_dict_data_x = {
+            return_dict_data_x = {
                 variable_name:
-                self.converters[variable_name].inverse(data)
+                dict_post_function[variable_name](data)
                 for value in dict_data_x.values()
                 for variable_name, data in value.items()}
         else:
-            inversed_dict_data_x = {
+            return_dict_data_x = {
                 variable_name:
-                self.converters[variable_name].inverse(data)
+                dict_post_function[variable_name](data)
                 for variable_name, data in dict_data_x.items()}
 
         if dict_data_y_answer is not None and len(dict_data_y_answer) > 0:
             if isinstance(list(dict_data_y_answer.values())[0], dict):
-                inversed_dict_data_x.update({
+                return_dict_data_x.update({
                     variable_name:
-                    self.converters[variable_name].inverse(data)
+                    dict_post_function[variable_name](data)
                     for value in dict_data_y_answer.values()
                     for variable_name, data in value.items()})
             else:
-                inversed_dict_data_x.update({
+                return_dict_data_x.update({
                     variable_name:
-                    self.converters[variable_name].inverse(data)
+                    dict_post_function[variable_name](data)
                     for variable_name, data in dict_data_y_answer.items()})
 
         if len(dict_data_y) > 0:
             if isinstance(list(dict_data_y.values())[0], dict):
-                inversed_dict_data_y = {
+                return_dict_data_y = {
                     variable_name:
-                    self.converters[variable_name].inverse(data)
+                    dict_post_function[variable_name](data)
                     for value in dict_data_y.values()
                     for variable_name, data in value.items()}
             else:
-                inversed_dict_data_y = {
+                return_dict_data_y = {
                     variable_name:
-                    self.converters[variable_name].inverse(data)
+                    dict_post_function[variable_name](data)
                     for variable_name, data in dict_data_y.items()}
         else:
-            inversed_dict_data_y = {}
+            return_dict_data_y = {}
 
         # Save data
         if write_simulation_base is None:
             fem_data = None
         else:
             fem_data = self._create_fem_data(
-                inversed_dict_data_x, inversed_dict_data_y,
+                return_dict_data_x, return_dict_data_y,
                 write_simulation_base=write_simulation_base,
                 write_simulation_stem=write_simulation_stem,
                 read_simulation_type=read_simulation_type,
@@ -953,8 +929,8 @@ class Converter:
         if output_directory is not None:
             if write_npy:
                 if save_x:
-                    self.save(inversed_dict_data_x, output_directory)
-                self.save(inversed_dict_data_y, output_directory)
+                    self.save(return_dict_data_x, output_directory)
+                self.save(return_dict_data_y, output_directory)
             if write_simulation:
                 if write_simulation_base is None:
                     raise ValueError('No write_simulation_base fed.')
@@ -966,7 +942,7 @@ class Converter:
                     output_directory, fem_data, overwrite=overwrite,
                     write_simulation_type=write_simulation_type)
 
-        return inversed_dict_data_x, inversed_dict_data_y, fem_data
+        return return_dict_data_x, return_dict_data_y, fem_data
 
     def _create_fem_data(
             self, dict_data_x, dict_data_y, write_simulation_base, *,
