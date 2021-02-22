@@ -347,8 +347,11 @@ class Network(torch.nn.Module):
 
         if self.y_dict_mode:
             return_dict = {}
-            for h in dict_hidden[self.OUTPUT_LAYER_NAME]:
-                return_dict.update(h)
+            if isinstance(dict_hidden[self.OUTPUT_LAYER_NAME], dict):
+                return_dict.update(dict_hidden[self.OUTPUT_LAYER_NAME])
+            else:
+                for h in dict_hidden[self.OUTPUT_LAYER_NAME]:
+                    return_dict.update(h)
             return return_dict
         else:
             return dict_hidden[self.OUTPUT_LAYER_NAME]
