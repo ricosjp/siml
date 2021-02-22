@@ -853,8 +853,8 @@ class MainSetting:
         else:
             preprocess_setting = PreprocessSetting().preprocess
         if 'trainer' in dict_settings:
-            dict_settings = cls._pop_train_setting(dict_settings['trainer'])
-            trainer_setting = TrainerSetting(**dict_settings['trainer'])
+            trainer_settings = cls._pop_train_setting(dict_settings['trainer'])
+            trainer_setting = TrainerSetting(**trainer_settings)
         else:
             trainer_setting = TrainerSetting
         if 'model' in dict_settings:
