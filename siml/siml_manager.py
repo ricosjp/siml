@@ -237,38 +237,98 @@ class SimlManager():
             return loss_function_with_allowing_no_answer
 
         loss_name = self.setting.trainer.loss_function.lower()
+        output_is_dict = isinstance(self.setting.trainer.outputs, dict)
+        return LossFunction(
+            loss_name=loss_name, output_is_dict=output_is_dict,
+            time_series=self.setting.trainer.time_series,
+            output_skips=self.setting.trainer.output_skips,
+            output_dims=self.setting.trainer.output_dims)
+
+
+class LossFunction:
+
+    def __init__(
+            self, *, loss_name='mse', time_series=False,
+            output_is_dict=False, output_skips=None, output_dims=None):
         if loss_name == 'mse':
-            loss_core = functional.mse_loss
+            self.loss_core = functional.mse_loss
         else:
             raise ValueError(f"Unknown loss function name: {loss_name}")
+        self.output_is_dict = output_is_dict
+        self.output_dims = output_dims
 
-        def loss_function_dict(y_pred, y, original_shapes=None):
-            return torch.mean(torch.stack([
-                loss_core(y_pred[key].view(y[key].shape), y[key])
-                for key in y.keys()]))
+        self.mask_function = self._generate_mask_function(output_skips)
 
-        def loss_function_without_padding(y_pred, y, original_shapes=None):
-            return loss_core(y_pred.view(y.shape), y)
-
-        def loss_function_time_with_padding(y_pred, y, original_shapes):
-            split_y_pred = torch.split(
-                y_pred, list(original_shapes[:, 1]), dim=1)
-            concatenated_y_pred = torch.cat([
-                sy[:s].reshape(-1)
-                for s, sy in zip(original_shapes[:, 0], split_y_pred)])
-            split_y = torch.split(
-                y, list(original_shapes[:, 1]), dim=1)
-            concatenated_y = torch.cat([
-                sy[:s].reshape(-1)
-                for s, sy in zip(original_shapes[:, 0], split_y)])
-            return loss_core(concatenated_y_pred, concatenated_y)
-
-        output_is_dict = isinstance(self.setting.trainer.outputs, dict)
-
-        if self.setting.trainer.time_series:
-            return loss_function_time_with_padding
+        if time_series:
+            self.loss = self.loss_function_time_with_padding
         else:
-            if output_is_dict:
-                return loss_function_dict
+            if self.output_is_dict:
+                self.loss = self.loss_function_dict
             else:
-                return loss_function_without_padding
+                self.loss = self.loss_function_without_padding
+
+        return
+
+    def __call__(self, y_pred, y, original_shapes=None):
+        return self.loss(y_pred, y, original_shapes)
+
+    def loss_function_dict(self, y_pred, y, original_shapes=None):
+        return torch.mean(torch.stack([
+            self.loss_core(*self.mask_function(
+                y_pred[key].view(y[key].shape), y[key], key))
+            for key in y.keys()]))
+
+    def loss_function_without_padding(self, y_pred, y, original_shapes=None):
+        return self.loss_core(*self.mask_function(y_pred.view(y.shape), y))
+
+    def loss_function_time_with_padding(self, y_pred, y, original_shapes):
+        split_y_pred = torch.split(
+            y_pred, list(original_shapes[:, 1]), dim=1)
+        concatenated_y_pred = torch.cat([
+            sy[:s].reshape(-1)
+            for s, sy in zip(original_shapes[:, 0], split_y_pred)])
+        split_y = torch.split(
+            y, list(original_shapes[:, 1]), dim=1)
+        concatenated_y = torch.cat([
+            sy[:s].reshape(-1)
+            for s, sy in zip(original_shapes[:, 0], split_y)])
+        return self.loss_core(
+            *self.mask_function(concatenated_y_pred, concatenated_y))
+
+    def _generate_mask_function(self, output_skips):
+        if isinstance(output_skips, list):
+            if not np.any(output_skips):
+                return self._identity_mask
+        elif isinstance(output_skips, dict):
+            if np.all([not np.any(v) for v in output_skips.values()]):
+                return self._identity_mask
+        else:
+            raise NotImplementedError
+
+        print(f"output_skips: {output_skips}")
+        if self.output_is_dict:
+            self.mask = {
+                key: self._generate_mask(skip_value, self.output_dims[key])
+                for key, skip_value in output_skips.items()}
+            return self._dict_mask
+        else:
+            self.mask = self._generate_mask(output_skips, self.output_dims)
+            return self._array_mask
+
+    def _generate_mask(self, skips, dims):
+        return ~np.array(np.concatenate([
+            [skip] * dim for skip, dim in zip(skips, dims)]))
+
+    def _identity_mask(self, y_pred, y, key=None):
+        return y_pred, y
+
+    def _dict_mask(self, y_pred, y, key):
+        masked_y_pred = y_pred[..., self.mask[key]]
+        masked_y = y[..., self.mask[key]]
+        if torch.numel(masked_y) == 0:
+            return torch.zeros(1), torch.zeros(1)
+        else:
+            return masked_y_pred, masked_y
+
+    def _array_mask(self, y_pred, y, key=None):
+        return y_pred[..., self.mask], y[..., self.mask]

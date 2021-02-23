@@ -103,6 +103,10 @@ test_gpu_parallel:
     - multi-gpu
     - avx
 
+test_network:
+  extends: .test
+  script: python3.7 -m pytest tests/test_network.py --capture=no
+
 test_networks:
   extends: .test
   script: python3.7 -m pytest tests/test_networks.py --capture=no
