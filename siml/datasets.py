@@ -494,12 +494,20 @@ class CollateFunctionGenerator():
             batch['t'], device=output_device, non_blocking=non_blocking)
 
     def _convert_dict_tensor(self, dict_tensor, device, non_blocking):
-        return DataDict({
-            k: convert_tensor(v, device=device, non_blocking=non_blocking)
-            for k, v in dict_tensor.items()})
+        if len(dict_tensor) == 0:
+            return convert_tensor(
+                dict_tensor, device=device, non_blocking=non_blocking)
+        else:
+            return DataDict({
+                k: convert_tensor(v, device=device, non_blocking=non_blocking)
+                for k, v in dict_tensor.items()})
 
     def _convert_dict_list(self, dict_list, device, non_blocking):
-        return DataDict({k: v for k, v in dict_list.items()})
+        if len(dict_list) == 0:
+            return convert_tensor(
+                dict_list, device=device, non_blocking=non_blocking)
+        else:
+            return DataDict({k: v for k, v in dict_list.items()})
 
 
 def pad_sparse(sparse, length=None):

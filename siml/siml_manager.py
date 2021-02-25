@@ -326,7 +326,7 @@ class LossFunction:
         masked_y_pred = y_pred[..., self.mask[key]]
         masked_y = y[..., self.mask[key]]
         if torch.numel(masked_y) == 0:
-            return torch.zeros(1), torch.zeros(1)
+            return torch.zeros(1).to(y.device), torch.zeros(1).to(y.device)
         else:
             return masked_y_pred, masked_y
 
