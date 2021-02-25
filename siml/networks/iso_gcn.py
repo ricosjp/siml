@@ -137,6 +137,10 @@ class IsoGCN(abstract_gcn.AbstractGCN):
             # (A H) W
             h = self.subchains[0][0](h)
 
+        if self.symmetric:
+            h = (h + einops.rearrange(
+                h, 'element x1 x2 feature -> element x2 x1 feature')) / 2
+
         h = torch.nn.functional.dropout(
             h, p=self.dropout_ratios[0], training=self.training)
         return h
@@ -206,14 +210,10 @@ class IsoGCN(abstract_gcn.AbstractGCN):
             h = self._convolution_without_merge(x, supports)
         elif tensor_rank > 0:
             h = torch.stack([
-                self._convolution_without_merge(x[:, i_dim], supports)
+                self._tensor_product_without_merge(x[:, i_dim], supports)
                 for i_dim in range(dim)], dim=-2)
         else:
             raise ValueError(f"Tensor shape invalid: {shape}")
-
-        if self.symmetric:
-            h = (h + einops.rearrange(
-                h, 'element x1 x2 feature -> element x2 x1 feature')) / 2
 
         return h
 
