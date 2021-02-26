@@ -188,7 +188,7 @@ class RawConverter():
                             conversion_setting.file_type, raw_path,
                             time_series=conversion_setting.time_series)
                 except ValueError:
-                    print(f"femio read failed. Skipped.")
+                    print("femio read failed. Skipped.")
                     output_directory.mkdir(parents=True, exist_ok=True)
                     (output_directory / 'failed').touch()
                     return
