@@ -188,7 +188,7 @@ class RawConverter():
                             conversion_setting.file_type, raw_path,
                             time_series=conversion_setting.time_series)
                 except ValueError:
-                    print(f"femio read failed. Skipped.")
+                    print("femio read failed. Skipped.")
                     output_directory.mkdir(parents=True, exist_ok=True)
                     (output_directory / 'failed').touch()
                     return
@@ -227,7 +227,8 @@ class RawConverter():
                 fem_data_to_save = fem_data.to_first_order()
             else:
                 fem_data_to_save = fem_data
-            fem_data_to_save = update_fem_data(fem_data_to_save, dict_data)
+            fem_data_to_save = update_fem_data(
+                fem_data_to_save, dict_data, allow_overwrite=True)
             if self.write_ucd:
                 fem_data_to_save.to_first_order().write(
                     'ucd', output_directory / 'mesh.inp',
@@ -241,7 +242,7 @@ class RawConverter():
         return
 
 
-def update_fem_data(fem_data, dict_data, prefix=''):
+def update_fem_data(fem_data, dict_data, prefix='', *, allow_overwrite=False):
     for key, value in dict_data.items():
 
         variable_name = prefix + key
@@ -250,38 +251,29 @@ def update_fem_data(fem_data, dict_data, prefix=''):
                 if len(value.shape) == 4 and value.shape[1] == 3 \
                         and value.shape[2] == 3:
                     # NOTE: Assume this is symmetric matrix
-                    value_for_fem_data \
+                    reshaped_value \
                         = fem_data.convert_symmetric_matrix2array(
                             value[..., 0])
                 else:
-                    value_for_fem_data = value[..., 0]
+                    reshaped_value = value[..., 0]
+                dict_data_to_update = {
+                    variable_name: value,
+                    variable_name + '_reshaped': reshaped_value}
             else:
-                value_for_fem_data = value
-
-            len_data = len(value_for_fem_data)
+                dict_data_to_update = {
+                    variable_name: value}
+            len_data = len(value)
 
             if len_data == len(fem_data.nodes.ids):
                 # Nodal data
-                try:
-                    fem_data.nodal_data.update({
-                        variable_name: femio.FEMAttribute(
-                            variable_name, fem_data.nodes.ids,
-                            value_for_fem_data)})
-                except ValueError:
-                    print(
-                        f"{variable_name} is skipped to include in fem_data "
-                        f"because the shape is {value_for_fem_data.shape}")
+                fem_data.nodal_data.update_data(
+                    fem_data.nodes.ids, dict_data_to_update,
+                    allow_overwrite=allow_overwrite)
             elif len_data == len(fem_data.elements.ids):
                 # Elemental data
-                try:
-                    fem_data.elemental_data.update({
-                        variable_name: femio.FEMAttribute(
-                            variable_name, fem_data.elements.ids,
-                            value_for_fem_data)})
-                except ValueError:
-                    print(
-                        f"{variable_name} is skipped to include in fem_data "
-                        f"because the shape is {value_for_fem_data.shape}")
+                fem_data.elemental_data.update_data(
+                    fem_data.elements.ids, dict_data_to_update,
+                    allow_overwrite=allow_overwrite)
             else:
                 print(f"{variable_name} is skipped to include in fem_data")
                 continue
@@ -779,10 +771,16 @@ class Preprocessor:
 
 class Converter:
 
-    def __init__(self, converter_parameters_pkl):
-        self.converters = self._generate_converters(converter_parameters_pkl)
+    def __init__(self, converter_parameters_pkl, key=None):
+        self.converters = self._generate_converters(
+            converter_parameters_pkl, key=key)
+        return
 
-    def _generate_converters(self, converter_parameters_pkl):
+    def _generate_converters(self, converter_parameters_pkl, key=None):
+        if key is not None and converter_parameters_pkl.suffix == '.enc':
+            return self._generate_converters(
+                util.decrypt_file(key, converter_parameters_pkl))
+
         if isinstance(converter_parameters_pkl, io.BufferedIOBase):
             converter_parameters = pickle.load(converter_parameters_pkl)
         elif isinstance(converter_parameters_pkl, Path):
@@ -813,13 +811,15 @@ class Converter:
 
     def postprocess(
             self, dict_data_x, dict_data_y, output_directory=None, *,
+            dict_data_y_answer=None,
             overwrite=False, save_x=False, write_simulation=False,
             write_npy=True, write_simulation_stem=None,
             write_simulation_base=None, read_simulation_type='fistr',
+            save_function=None,
             write_simulation_type='fistr', skip_femio=False,
             load_function=None, convert_to_order1=False,
             data_addition_function=None, required_file_names=[],
-            perform_inverse=True):
+            perform_inverse=True, **kwargs):
         """Postprocess data with inversely converting them.
 
         Parameters
@@ -830,6 +830,8 @@ class Converter:
                 Dict of output data.
             output_directory: pathlib.Path, optional [None]
                 Output directory path.
+            dict_data_y_answer: dict
+                Dict of expected output data.
             overwrite: bool, optional [False]
                 If True, overwrite data.
             save_x: bool, optional [False]
@@ -864,60 +866,59 @@ class Converter:
             fem_data: femio.FEMData
                 FEMData object with input and output data.
         """
-        if not perform_inverse:
-            print('Postprocess skipped')
-            if isinstance(list(dict_data_x.values())[0], dict):
-                return_dict_data_x = {
-                    variable_name:
-                    data
-                    for value in dict_data_x.values()
-                    for variable_name, data in value.items()}
-            else:
-                return_dict_data_x = dict_data_x
-
-            if isinstance(list(dict_data_y.values())[0], dict):
-                return_dict_data_y = {
-                    variable_name:
-                    data
-                    for value in dict_data_y.values()
-                    for variable_name, data in value.items()}
-            else:
-                return_dict_data_y = dict_data_y
-            return return_dict_data_x, return_dict_data_y
+        if perform_inverse:
+            dict_post_function = {
+                k: v.inverse for k, v in self.converters.items()}
+        else:
+            dict_post_function = {
+                k: lambda x: x for k, v in self.converters.items()}
 
         if isinstance(list(dict_data_x.values())[0], dict):
-            inversed_dict_data_x = {
+            return_dict_data_x = {
                 variable_name:
-                self.converters[variable_name].inverse(data)
+                dict_post_function[variable_name](data)
                 for value in dict_data_x.values()
                 for variable_name, data in value.items()}
         else:
-            inversed_dict_data_x = {
+            return_dict_data_x = {
                 variable_name:
-                self.converters[variable_name].inverse(data)
+                dict_post_function[variable_name](data)
                 for variable_name, data in dict_data_x.items()}
+
+        if dict_data_y_answer is not None and len(dict_data_y_answer) > 0:
+            if isinstance(list(dict_data_y_answer.values())[0], dict):
+                return_dict_data_x.update({
+                    variable_name:
+                    dict_post_function[variable_name](data)
+                    for value in dict_data_y_answer.values()
+                    for variable_name, data in value.items()})
+            else:
+                return_dict_data_x.update({
+                    variable_name:
+                    dict_post_function[variable_name](data)
+                    for variable_name, data in dict_data_y_answer.items()})
 
         if len(dict_data_y) > 0:
             if isinstance(list(dict_data_y.values())[0], dict):
-                inversed_dict_data_y = {
+                return_dict_data_y = {
                     variable_name:
-                    self.converters[variable_name].inverse(data)
+                    dict_post_function[variable_name](data)
                     for value in dict_data_y.values()
                     for variable_name, data in value.items()}
             else:
-                inversed_dict_data_y = {
+                return_dict_data_y = {
                     variable_name:
-                    self.converters[variable_name].inverse(data)
+                    dict_post_function[variable_name](data)
                     for variable_name, data in dict_data_y.items()}
         else:
-            inversed_dict_data_y = {}
+            return_dict_data_y = {}
 
         # Save data
         if write_simulation_base is None:
             fem_data = None
         else:
             fem_data = self._create_fem_data(
-                inversed_dict_data_x, inversed_dict_data_y,
+                return_dict_data_x, return_dict_data_y,
                 write_simulation_base=write_simulation_base,
                 write_simulation_stem=write_simulation_stem,
                 read_simulation_type=read_simulation_type,
@@ -928,16 +929,20 @@ class Converter:
         if output_directory is not None:
             if write_npy:
                 if save_x:
-                    self.save(inversed_dict_data_x, output_directory)
-                self.save(inversed_dict_data_y, output_directory)
+                    self.save(return_dict_data_x, output_directory)
+                self.save(return_dict_data_y, output_directory)
             if write_simulation:
                 if write_simulation_base is None:
                     raise ValueError('No write_simulation_base fed.')
-                self.write_simulation(
+                self._write_simulation(
+                    output_directory, fem_data, overwrite=overwrite,
+                    write_simulation_type=write_simulation_type)
+            if save_function is not None:
+                save_function(
                     output_directory, fem_data, overwrite=overwrite,
                     write_simulation_type=write_simulation_type)
 
-        return inversed_dict_data_x, inversed_dict_data_y, fem_data
+        return return_dict_data_x, return_dict_data_y, fem_data
 
     def _create_fem_data(
             self, dict_data_x, dict_data_y, write_simulation_base, *,
@@ -971,11 +976,11 @@ class Converter:
         fem_data = add_difference(
             fem_data, dict_data_y, dict_data_x, prefix='difference_')
         if data_addition_function is not None:
-            fem_data = data_addition_function(fem_data)
+            fem_data = data_addition_function(fem_data, write_simulation_base)
 
         return fem_data
 
-    def write_simulation(
+    def _write_simulation(
             self, output_directory, fem_data, *,
             write_simulation_type='fistr', overwrite=False):
         if write_simulation_type == 'fistr':

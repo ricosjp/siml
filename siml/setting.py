@@ -22,7 +22,7 @@ class TypedDataClass:
         return cls(**dict_settings)
 
     def convert(self):
-        """Convert all fields accordingly with their type definitions.  """
+        """Convert all fields accordingly with their type definitions."""
         for field_name, field in self.__dataclass_fields__.items():
             try:
                 self._convert_field(field_name, field)
@@ -65,6 +65,10 @@ class TypedDataClass:
             def type_function(x):
                 x = to_list_if_needed(x)
                 return [int(_x) for _x in x]
+        elif field.type == typing.List[bool]:
+            def type_function(x):
+                x = to_list_if_needed(x)
+                return [bool(_x) for _x in x]
         elif field.type == typing.List[float]:
             def type_function(x):
                 x = to_list_if_needed(x)
@@ -121,6 +125,12 @@ class TypedDataClass:
     def __post_init__(self):
         self.convert()
         # self.validate()
+        return
+
+    def to_dict(self):
+        dict_data = dc.asdict(self)
+        standardized_dict_data = _standardize_data(dict_data)
+        return standardized_dict_data
 
 
 @dc.dataclass
@@ -298,15 +308,6 @@ class TrainerSetting(TypedDataClass):
         default=None, metadata={'allow_none': True})
     outputs: typing.Union[typing.List[dict], typing.Dict[str, list]] \
         = dc.field(default_factory=list)
-
-    input_names: typing.Union[typing.List[str], typing.Dict[str, list]] \
-        = dc.field(default=None, metadata={'allow_none': True})
-    input_dims: typing.Union[typing.List[int], typing.Dict[str, list]] \
-        = dc.field(default=None, metadata={'allow_none': True})
-    output_names: typing.Union[typing.List[str], typing.Dict[str, list]] \
-        = dc.field(default=None, metadata={'allow_none': True})
-    output_dims: typing.Union[typing.List[int], typing.Dict[str, list]] \
-        = dc.field(default=None, metadata={'allow_none': True})
     output_directory: Path = None
 
     name: str = 'default'
@@ -370,17 +371,6 @@ class TrainerSetting(TypedDataClass):
         if self.validation_element_batch_size is None:
             self.validation_element_batch_size = self.element_batch_size
 
-        self.input_names = self._collect_values(
-            self.inputs, 'name', asis=True)
-        self.input_dims = self._collect_values(
-            self.inputs, 'dim', default=1, asis=True)
-        self.output_names = self._collect_values(
-            self.outputs, 'name', asis=True)
-        self.output_dims = self._collect_values(
-            self.outputs, 'dim', default=1, asis=True)
-        self.input_length = self._sum_dims(self.input_dims)
-        self.output_length = self._sum_dims(self.output_dims)
-
         self.variable_information = self._generate_variable_information()
 
         if self.output_directory is None:
@@ -413,6 +403,39 @@ class TrainerSetting(TypedDataClass):
                 f"Set stop_trigger_epoch larger than log_trigger_epoch")
 
         super().__post_init__()
+
+    @property
+    def output_skips(self):
+        return self._collect_values(
+            self.outputs, 'skip', default=False, asis=True)
+
+    @property
+    def input_names(self):
+        return self._collect_values(
+            self.inputs, 'name', asis=True)
+
+    @property
+    def input_dims(self):
+        return self._collect_values(
+            self.inputs, 'dim', default=1, asis=True)
+
+    @property
+    def output_names(self):
+        return self._collect_values(
+            self.outputs, 'name', asis=True)
+
+    @property
+    def output_dims(self):
+        return self._collect_values(
+            self.outputs, 'dim', default=1, asis=True)
+
+    @property
+    def input_length(self):
+        return self._sum_dims(self.input_dims)
+
+    @property
+    def output_length(self):
+        return self._sum_dims(self.output_dims)
 
     def update_output_directory(self, *, id_=None, base=None):
         if base is None:
@@ -465,6 +488,80 @@ class TrainerSetting(TypedDataClass):
             return {key: np.sum(value) for key, value in dim_data.items()}
         else:
             return np.sum(dim_data)
+
+
+@dc.dataclass
+class InfererSetting(TypedDataClass):
+    """
+    model: pathlib.Path optional [None]
+        Model directory, file path, or buffer. If not fed,
+        TrainerSetting.pretrain_directory will be used.
+    save: bool, optional [False]
+        If True, save inference results.
+    output_directory: pathlib.Path, optional [None]
+        Output directory path. If fed, output the data in the specified
+        directory. When this is fed, output_directory_base has no effect.
+    output_directory_base: pathlib.Path, optional [None]
+        Output directory base name. If not fed, data/inferred will be the
+        default output directory base.
+    data_directories: List[pathlib.Path], optional [None]
+        Data directories to infer.
+    write_simulation: bool, optional [False]
+        If True, write simulation data file(s) based on the inference.
+    write_npy: bool, optional [True]
+        If True, write npy files of inferences.
+    write_yaml: bool, optional [True]
+        If True, write yaml file used to make inference.
+    write_simulation_base: pathlib.Path, optional [None]
+        Base of simulation data to be used for write_simulation option.
+        If not fed, try to find from the input directories.
+    read_simulation_type: str, optional ['fistr']
+        Simulation file type to read.
+    write_simulation_type: str, optional ['fistr']
+        Simulation file type to write.
+    converter_parameters_pkl: pathlib.Path, optional [None]
+        Pickel file of converter parameters. IF not fed,
+        DataSetting.preprocessed_root is used.
+    perform_preprocess: bool, optional [False]
+        If True, perform preprocess.
+    accomodate_length: int
+        If specified, duplicate initial state to initialize RNN state.
+    overwrite: bool
+        If True, overwrite output.
+    return_all_results: bool
+        If True, return all inference results. Set False if the inference data
+        is too large to fit into the memory available.
+    model_key: bytes
+        If fed, decrypt model file with the key.
+    """
+    model: Path = dc.field(
+        default=None, metadata={'allow_none': True})
+    save: bool = True
+    overwrite: bool = False
+    output_directory: Path = dc.field(
+        default=None, metadata={'allow_none': True})
+    output_directory_base: Path = Path('data/inferred')
+    overwrite: bool = False
+    data_directories: typing.List[Path] = dc.field(
+        default_factory=list)
+    write_simulation: bool = False
+    write_npy: bool = True
+    write_yaml: bool = True
+    write_simulation_base: Path = dc.field(
+        default=None, metadata={'allow_none': True})
+    write_simulation_stem: Path = dc.field(
+        default=None, metadata={'allow_none': True})
+    read_simulation_type: str = 'fistr'
+    write_simulation_type: str = 'fistr'
+    converter_parameters_pkl: Path = dc.field(
+        default=None, metadata={'allow_none': True})
+    convert_to_order1: bool = False
+    accomodate_length: int = 0
+    perform_preprocess: bool = False
+    perform_inverse: bool = True
+    return_all_results: bool = True
+    model_key: bytes = dc.field(
+        default=None, metadata={'allow_none': True})
 
 
 @dc.dataclass
@@ -615,10 +712,6 @@ class ConversionSetting(TypedDataClass):
         'data/interim' is the output base directory, so
         'data/interim/aaa/bbb' directory is the output directory for
         'data/raw/aaa/bbb' directory.
-    conversion_function: function, optional [None]
-        Conversion function which takes femio.FEMData object and
-        pathlib.Path (data directory) as only arguments and returns data
-        dict to be saved.
     finished_file: str, optional ['converted']
         File name to indicate that the conversion is finished.
     file_type: str, optional ['fistr']
@@ -715,6 +808,7 @@ class MainSetting:
     conversion: ConversionSetting = ConversionSetting()
     preprocess: dict = dc.field(default_factory=dict)
     trainer: TrainerSetting = TrainerSetting()
+    inferer: InfererSetting = InfererSetting()
     model: ModelSetting = ModelSetting()
     optuna: OptunaSetting = OptunaSetting()
     study: StudySetting = StudySetting()
@@ -740,6 +834,10 @@ class MainSetting:
                 dict_settings['trainer']['name'] = 'unnamed'
             else:
                 dict_settings['trainer']['name'] = name
+        if 'inferer' in dict_settings:
+            inferer_setting = InfererSetting(**dict_settings['inferer'])
+        else:
+            inferer_setting = InfererSetting()
         if 'data' in dict_settings:
             data_setting = DataSetting(**dict_settings['data'])
         else:
@@ -755,7 +853,8 @@ class MainSetting:
         else:
             preprocess_setting = PreprocessSetting().preprocess
         if 'trainer' in dict_settings:
-            trainer_setting = TrainerSetting(**dict_settings['trainer'])
+            trainer_settings = cls._pop_train_setting(dict_settings['trainer'])
+            trainer_setting = TrainerSetting(**trainer_settings)
         else:
             trainer_setting = TrainerSetting
         if 'model' in dict_settings:
@@ -775,8 +874,20 @@ class MainSetting:
             data=data_setting, conversion=conversion_setting,
             preprocess=preprocess_setting,
             trainer=trainer_setting, model=model_setting,
+            inferer=inferer_setting,
             optuna=optuna_setting, study=study_setting,
             replace_preprocessed=replace_preprocessed)
+
+    @classmethod
+    def _pop_train_setting(cls, train_dict_settings):
+        # Pop unnecessary settings for backward compatibility
+        train_dict_settings.pop('input_names', None)
+        train_dict_settings.pop('input_dims', None)
+        train_dict_settings.pop('input_length', None)
+        train_dict_settings.pop('output_names', None)
+        train_dict_settings.pop('output_dims', None)
+        train_dict_settings.pop('output_length', None)
+        return train_dict_settings
 
     def __post_init__(self):
 
@@ -839,17 +950,39 @@ def write_yaml(data_class, file_name, *, overwrite=False):
     if file_name.exists() and not overwrite:
         raise ValueError(f"{file_name} already exists")
 
+    with open(file_name, 'w') as f:
+        dump_yaml(data_class, f)
+    return
+
+
+def dump_yaml(data_class, stream):
+    """Write YAML file of the specified dataclass object.
+
+    Parameters
+    -----------
+        data_class: dataclasses.dataclass
+            DataClass object to write.
+        stream: File or stream
+            Stream to write.
+    """
     dict_data = dc.asdict(data_class)
     standardized_dict_data = _standardize_data(dict_data)
     if 'encrypt_key' in standardized_dict_data:
         standardized_dict_data.pop('encrypt_key')
+    if 'decrypt_key' in standardized_dict_data:
+        standardized_dict_data.pop('decrypt_key')
+    if 'model_key' in standardized_dict_data:
+        standardized_dict_data.pop('model_key')
     if 'data' in standardized_dict_data:
         if 'encrypt_key' in standardized_dict_data['data']:
             standardized_dict_data['data'].pop('encrypt_key')
+        if 'decrypt_key' in standardized_dict_data['data']:
+            standardized_dict_data['data'].pop('decrypt_key')
+    if 'inferer' in standardized_dict_data:
+        if 'model_key' in standardized_dict_data['inferer']:
+            standardized_dict_data['inferer'].pop('model_key')
 
-    with open(file_name, 'w') as f:
-        yaml.dump(standardized_dict_data, f)
-    return
+    return yaml.dump(standardized_dict_data, stream)
 
 
 def _standardize_data(data):

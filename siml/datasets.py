@@ -1,10 +1,12 @@
 import multiprocessing as multi
 
+import femio
 from ignite.utils import convert_tensor
 import numpy as np
 import torch
 from tqdm import tqdm
 
+from . import prepost
 from . import util
 
 
@@ -13,7 +15,7 @@ class BaseDataset(torch.utils.data.Dataset):
     def __init__(
             self, x_variable_names, y_variable_names, directories, *,
             supports=None, num_workers=0, allow_no_data=False,
-            decrypt_key=None):
+            decrypt_key=None, required_file_names=None, **kwargs):
         self.x_variable_names = x_variable_names
         self.y_variable_names = y_variable_names
         self.supports = supports
@@ -28,10 +30,13 @@ class BaseDataset(torch.utils.data.Dataset):
         else:
             first_variable_name = self.x_variable_names[0]
 
+        if required_file_names is None:
+            required_file_names = [f"{first_variable_name}.npy"]
+
         data_directories = []
         for directory in directories:
             data_directories += util.collect_data_directories(
-                directory, required_file_names=[f"{first_variable_name}.npy"],
+                directory, required_file_names=required_file_names,
                 allow_no_data=allow_no_data)
         self.data_directories = np.unique(data_directories)
 
@@ -99,14 +104,31 @@ class BaseDataset(torch.utils.data.Dataset):
         if pbar:
             pbar.update()
         if self.supports is None:
-            return {'x': x_data, 't': y_data}
+            return {'x': x_data, 't': y_data, 'data_directory': data_directory}
         else:
             # TODO: use appropreate sparse data class
             support_data = [
                 util.load_variable(
                     data_directory, support, decrypt_key=self.decrypt_key)
                 for support in self.supports]
-            return {'x': x_data, 't': y_data, 'supports': support_data}
+            return {
+                'x': x_data, 't': y_data, 'supports': support_data,
+                'data_directory': data_directory}
+
+    def _merge_data(self, converted_dict_data, variable_names):
+        if isinstance(variable_names, dict):
+            return DataDict({
+                key: torch.from_numpy(util.concatenate_variable([
+                    converted_dict_data[variable_name]
+                    for variable_name in value]).astype(np.float32))
+                for key, value in variable_names.items()})
+        elif isinstance(variable_names, list):
+            return torch.from_numpy(util.concatenate_variable([
+                converted_dict_data[variable_name].astype(np.float32)
+                for variable_name in variable_names]).astype(
+                np.float32))
+        else:
+            raise ValueError(f"Unexpected variable names: {variable_names}")
 
 
 class LazyDataset(BaseDataset):
@@ -114,6 +136,68 @@ class LazyDataset(BaseDataset):
     def __getitem__(self, i):
         data_directory = self.data_directories[i]
         return self._load_data(data_directory)
+
+
+class PreprocessDataset(BaseDataset):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.prepost_converter = kwargs.pop('prepost_converter')
+        self.raw_data_stem = kwargs.pop('raw_data_stem', None)
+        self.conversion_function = kwargs.pop('conversion_function', None)
+        self.load_function = kwargs.pop('load_function', None)
+        self.conversion_setting = kwargs.pop('conversion_setting', None)
+        return
+
+    def __getitem__(self, i):
+        data_directory = self.data_directories[i]
+        return self._preprocess_data(data_directory)
+
+    def _preprocess_data(self, raw_data_directory):
+        if self.conversion_setting.skip_femio:
+            dict_data = {}
+        else:
+            fem_data = femio.FEMData.read_directory(
+                self.conversion_setting.file_type, raw_data_directory,
+                save=False)
+            dict_data = prepost.extract_variables(
+                fem_data, self.conversion_setting.mandatory,
+                optional_variables=self.conversion_setting.optional)
+
+        if self.conversion_function is not None:
+            dict_data.update(self.conversion_function(
+                fem_data, raw_data_directory))
+
+        if self.load_function is not None:
+            data_files = util.collect_files(
+                raw_data_directory,
+                self.conversion_setting.required_file_names)
+            loaded_dict_data, _ = self.load_function(
+                data_files, raw_data_directory)
+            dict_data.update(loaded_dict_data)
+
+        converted_dict_data = self.prepost_converter.preprocess(dict_data)
+        x_data = self._merge_data(
+            converted_dict_data, self.x_variable_names)
+
+        if np.all([
+                y_variable_names in converted_dict_data
+                for y_variable_names in self.y_variable_names]):
+            y_data = self._merge_data(
+                converted_dict_data, self.y_variable_names)
+        else:
+            y_data = None
+
+        if self.supports is None:
+            return {
+                'x': x_data, 't': y_data, 'data_directory': raw_data_directory}
+        else:
+            support_data = [
+                converted_dict_data[support_input_name].astype(np.float32)
+                for support_input_name in self.supports]
+            return {
+                'x': x_data, 't': y_data, 'supports': support_data,
+                'data_directory': raw_data_directory}
 
 
 class ElementWiseDataset(BaseDataset):
@@ -158,6 +242,49 @@ class OnMemoryDataset(BaseDataset):
 
     def __getitem__(self, i):
         return self.data[i]
+
+
+class SimplifiedDataset(BaseDataset):
+
+    def __init__(
+            self, x_variable_names, y_variable_names, raw_dict_x,
+            prepost_converter,
+            *, answer_raw_dict_y=None, num_workers=0, **kwargs):
+        self.x_variable_names = x_variable_names
+        self.y_variable_names = y_variable_names
+        self.raw_dict_x = raw_dict_x
+        self.answer_raw_dict_y = answer_raw_dict_y
+        self.num_workers = num_workers
+        self.prepost_converter = prepost_converter
+
+        self.x_dict_mode = isinstance(self.x_variable_names, dict)
+        self.y_dict_mode = isinstance(self.y_variable_names, dict)
+
+        if self.x_dict_mode:
+            self.first_variable_name = list(
+                self.x_variable_names.values())[0][0]
+        else:
+            self.first_variable_name = self.x_variable_names[0]
+        return
+
+    def __len__(self):
+        return 1
+
+    def __getitem__(self, i):
+        converted_dict_data = self.prepost_converter.preprocess(
+            self.raw_dict_x)
+        x_data = self._merge_data(
+            converted_dict_data, self.x_variable_names)
+        if self.answer_raw_dict_y is not None:
+            converted_dict_data.update(self.prepost_converter.preprocess(
+                self.answer_raw_dict_y))
+            y_data = self._merge_data(
+                converted_dict_data, self.y_variable_names)
+        else:
+            y_data = None
+
+        return {
+            'x': x_data, 't': y_data, 'data_directory': None}
 
 
 class DataDict(dict):
@@ -322,12 +449,17 @@ class CollateFunctionGenerator():
 
     def __call__(self, batch):
         x = self.convert_input_dense(batch, 'x')
-        t = self.convert_output_dense(batch, 't')
+        if batch[0]['t'] is None:
+            t = torch.tensor([])
+        else:
+            t = self.convert_output_dense(batch, 't')
         supports = self.convert_sparse(batch, 'supports')
         original_shapes = self.extract_original_shapes(batch)
+        data_directories = [b.pop('data_directory', None) for b in batch]
         return {
             'x': x, 't': t, 'supports': supports,
-            'original_shapes': original_shapes}
+            'original_shapes': original_shapes,
+            'data_directories': data_directories}
 
     def _prepare_batch_without_support(
             self, batch, device=None, output_device=None, non_blocking=False):
@@ -362,12 +494,20 @@ class CollateFunctionGenerator():
             batch['t'], device=output_device, non_blocking=non_blocking)
 
     def _convert_dict_tensor(self, dict_tensor, device, non_blocking):
-        return DataDict({
-            k: convert_tensor(v, device=device, non_blocking=non_blocking)
-            for k, v in dict_tensor.items()})
+        if len(dict_tensor) == 0:
+            return convert_tensor(
+                dict_tensor, device=device, non_blocking=non_blocking)
+        else:
+            return DataDict({
+                k: convert_tensor(v, device=device, non_blocking=non_blocking)
+                for k, v in dict_tensor.items()})
 
     def _convert_dict_list(self, dict_list, device, non_blocking):
-        return DataDict({k: v for k, v in dict_list.items()})
+        if len(dict_list) == 0:
+            return convert_tensor(
+                dict_list, device=device, non_blocking=non_blocking)
+        else:
+            return DataDict({k: v for k, v in dict_list.items()})
 
 
 def pad_sparse(sparse, length=None):

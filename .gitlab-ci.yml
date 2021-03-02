@@ -1,4 +1,4 @@
-image: registry.ritc.jp/ricos/machine_learning/siml:0.2.5
+image: registry.ritc.jp/ricos/machine_learning/siml:0.2.7
 
 default:
   before_script:
@@ -6,6 +6,7 @@ default:
     - poetry config repositories.ricos https://pypi.ritc.jp
     - poetry config http-basic.ricos ricos ${RICOS_PYPI_KEY}
     - poetry build
+    - python3.7 -m pip install -U femio --pre --index=https://ricos:${RICOS_PYPI_KEY}@pypi.ritc.jp
     - python3.7 -m pip install dist/pysiml-*.whl  # Only install root project, not dependencies
     # - poetry install
 
@@ -37,7 +38,6 @@ preprocess:
   script: python3.7 tests/preprocess.py
   artifacts:
     paths:
-      - tests/data/linear/preprocessed
       - tests/data/deform/interim
       - tests/data/deform/preprocessed
       - tests/data/deform_timeseries/preprocessed
@@ -57,14 +57,6 @@ autopep8:
     - python3.7 -m autopep8 --diff --exit-code $(find siml tests -name "*.py")
   allow_failure: true
 
-pylint:
-  stage: preprocess
-  script:
-    - python3.7 -m pip install pycodestyle
-    - find siml -name '*.py' -exec python3.7 -m pycodestyle {} +
-    - python3.7 -m pylint --ignore-patterns=setting.py __main__ -E $(find siml tests -name "*.py" | grep -v __main__) --init-hook="import sys; sys.setrecursionlimit(2000)"
-  allow_failure: true
-
 pages:
   stage: deploy
   script:
@@ -79,6 +71,7 @@ pages:
       - docs
   only:
     - master
+    - develop
 
 .test:
   stage: test
@@ -109,6 +102,10 @@ test_gpu_parallel:
   tags:
     - multi-gpu
     - avx
+
+test_network:
+  extends: .test
+  script: python3.7 -m pytest tests/test_network.py --capture=no
 
 test_networks:
   extends: .test
@@ -166,6 +163,7 @@ deploy:wheel:master:
     - export VERSION=$(grep "^version" pyproject.toml | grep -o "[0-9]\.[0-9]\.[0-9]").dev$(date +"%Y%m%d%H%M")
   only:
     - master
+    - develop
 
 deploy:wheel:tag:
   extends: .deploy:wheel

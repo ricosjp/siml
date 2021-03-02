@@ -5,6 +5,8 @@ data:
     - tests/data/linear/preprocessed/train
   validation:
     - tests/data/linear/preprocessed/validation
+  test:
+    - tests/data/linear/preprocessed/test
 preprocess:
   x1:
     componentwise: true

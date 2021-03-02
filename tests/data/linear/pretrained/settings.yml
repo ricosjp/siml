@@ -5,41 +5,79 @@ conversion:
   mandatory_variables: []
   optional: []
   optional_variables: []
-  required_file_names:
-  - '*.msh'
-  - '*.cnt'
-  - '*.res.0.1'
+  required_file_names: []
+  save_femio: false
   skip_femio: false
+  time_series: false
 data:
-  inferred: data/inferred
-  interim: tests/data/linear/interim
+  develop: []
+  inferred:
+  - data/inferred
+  interim:
+  - tests/data/linear/interim
   pad: false
-  preprocessed: tests/data/linear/preprocessed
-  raw: data/raw
+  preprocessed:
+  - tests/data/linear/preprocessed
+  raw:
+  - data/raw
   test:
-  - data/preprocessed/test
+  - tests/data/linear/preprocessed/test/0
+  - tests/data/linear/preprocessed/test/1
   train:
-  - tests/data/linear/preprocessed/train
+  - tests/data/linear/preprocessed/train/0
+  - tests/data/linear/preprocessed/train/1
+  - tests/data/linear/preprocessed/train/2
+  - tests/data/linear/preprocessed/train/3
+  - tests/data/linear/preprocessed/train/4
   validation:
-  - tests/data/linear/preprocessed/validation
+  - tests/data/linear/preprocessed/validation/0
+  - tests/data/linear/preprocessed/validation/1
+inferer:
+  accomodate_length: 0
+  convert_to_order1: false
+  converter_parameters_pkl: null
+  data_directories: []
+  model: null
+  output_directory: null
+  output_directory_base: data/inferred
+  overwrite: false
+  perform_inverse: true
+  perform_preprocess: false
+  read_simulation_type: fistr
+  return_all_results: true
+  save: true
+  write_npy: true
+  write_simulation: false
+  write_simulation_base: null
+  write_simulation_stem: null
+  write_simulation_type: fistr
+  write_yaml: true
 model:
   blocks:
-  - activations:
+  - activation_after_residual: true
+    activations:
     - identity
-    destinations:
-    - Output
+    allow_linear_residual: false
+    bias: true
+    coeff: null
+    destinations: []
+    device: null
     dropouts:
     - 0.0
-    hidden_activation: rely
+    hidden_activation: relu
     hidden_dropout: 0.5
     hidden_layers: null
     hidden_nodes: null
     input_dropout: 0.0
     input_indices: null
+    input_keys: null
     input_slice:
     - 0
     - null
     - 1
+    is_first: true
+    is_last: true
+    kernel_sizes: null
     name: Block
     nodes:
     - 3
@@ -47,7 +85,12 @@ model:
     optional: {}
     output_activation: identity
     output_dropout: 0.0
-    support_input_index: 0
+    output_key: null
+    residual: false
+    support_input_index: null
+    support_input_indices:
+    - 0
+    time_series: false
     type: adjustable_mlp
 optuna:
   hyperparameters: []
@@ -57,17 +100,44 @@ optuna:
 preprocess:
   x1:
     componentwise: true
+    group_id: 0
     method: standardize
+    power: 1.0
+    same_as: null
   x2:
     componentwise: true
+    group_id: 0
     method: std_scale
+    power: 1.0
+    same_as: null
   y:
     componentwise: true
+    group_id: 0
     method: standardize
+    power: 1.0
+    same_as: null
+replace_preprocessed: true
+study:
+  n_fold: 10
+  plot_validation: false
+  relative_develop_size_linspace:
+  - 0.2
+  - 1.0
+  - 5
+  root_directory: null
+  scale_loss: false
+  type: learning_curve
+  unit_error: '-'
+  x_from_zero: false
+  x_logscale: false
+  y_from_zero: false
+  y_logscale: false
 trainer:
-  batch_size: 100
+  batch_size: 2
   compute_accuracy: false
+  data_parallel: false
   display_mergin: 5
+  draw_network: true
   element_batch_size: -1
   element_wise: false
   gpu_id: -1
@@ -83,12 +153,14 @@ trainer:
   - dim: 1
     name: x2
   iterator: serial
-  lazy: true
+  lazy: false
   log_trigger_epoch: 500
   loss_function: mse
+  model_parallel: false
   n_epoch: 3000
   name: linear
-  num_workers: 4
+  non_blocking: true
+  num_workers: 0
   optimizer: adam
   optimizer_setting:
     betas:
@@ -103,17 +175,23 @@ trainer:
   output_directory: tests/data/linear/long
   output_names:
   - y
+  output_stats: false
   outputs:
   - dim: 2
     name: y
+  patience: 3
   pretrain_directory: null
   prune: false
   restart_directory: null
   seed: 0
   simplified_model: false
   snapshot_choise_method: best
+  split_ratio: {}
   stop_trigger_epoch: 3000
   support_input: null
   support_inputs: null
+  time_series: false
   use_siml_updater: true
+  validation_batch_size: 2
   validation_directories: []
+  validation_element_batch_size: -1

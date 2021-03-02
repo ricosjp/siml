@@ -414,7 +414,11 @@ class TestPrepost(unittest.TestCase):
             actual = np.load(concatenated_directory / f"train/{name}.npy")
             answer = np.concatenate([
                 np.load(preprocessed_base_directory / f"0/{name}.npy"),
-                np.load(preprocessed_base_directory / f"1/{name}.npy")])
+                np.load(preprocessed_base_directory / f"1/{name}.npy"),
+                np.load(preprocessed_base_directory / f"2/{name}.npy"),
+                np.load(preprocessed_base_directory / f"3/{name}.npy"),
+                np.load(preprocessed_base_directory / f"4/{name}.npy"),
+            ])
             np.testing.assert_almost_equal(
                 np.max(actual), np.max(answer), decimal=5)
             np.testing.assert_almost_equal(

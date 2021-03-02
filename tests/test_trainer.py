@@ -92,8 +92,8 @@ class TestTrainer(unittest.TestCase):
             shutil.rmtree(tr.setting.trainer.output_directory)
         loss = tr.train()
         np.testing.assert_array_less(loss, 10.)
-        self.assertEqual(len(tr.train_loader.dataset), 400)
-        self.assertEqual(tr.trainer.state.iteration, 400 // 10 * 100)
+        self.assertEqual(len(tr.train_loader.dataset), 1000)
+        self.assertEqual(tr.trainer.state.iteration, 1000 // 10 * 100)
 
     def test_train_element_batch(self):
         main_setting = setting.MainSetting.read_settings_yaml(
@@ -246,14 +246,15 @@ class TestTrainer(unittest.TestCase):
         tr = trainer.Trainer(main_setting)
         loss = tr.train()
 
-        ir = inferer.Inferer(main_setting)
-        results = ir.infer(
+        ir = inferer.Inferer(
+            main_setting,
             model=Path('tests/data/deform/pretrained'),
-            raw_data_directory=main_setting.data.raw_root
-            / 'train/tet2_3_modulusx0.9000',
             converter_parameters_pkl=main_setting.data.preprocessed_root
             / 'preprocessors.pkl',
             conversion_function=conversion_function, save=False)
+        results = ir.infer(
+            data_directories=main_setting.data.raw_root
+            / 'train/tet2_3_modulusx0.9000', perform_preprocess=True)
         self.assertLess(results[0]['loss'], loss)
 
     def test_output_stats(self):
@@ -333,13 +334,13 @@ class TestTrainer(unittest.TestCase):
         self.assertEqual(
             len(trained_setting.data.test), 0)
 
-        ir = inferer.Inferer(main_setting)
         data_directory = main_setting.data.develop[0]  # pylint: disable=E1136
-        results = ir.infer(
+        ir = inferer.Inferer(
+            main_setting,
             model=main_setting.trainer.output_directory,
-            preprocessed_data_directory=data_directory,
             converter_parameters_pkl=data_directory.parent
             / 'preprocessors.pkl', save=False)
+        results = ir.infer(data_directories=data_directory)
         np.testing.assert_almost_equal(results[0]['loss'], train_loss)
 
     def test_trainer_train_dict_input(self):
@@ -363,20 +364,43 @@ class TestTrainer(unittest.TestCase):
     def test_restart(self):
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/linear/linear_short.yml'))
-        main_setting.trainer.restart_directory = Path(
+
+        # Complete training for reference
+        complete_tr = trainer.Trainer(main_setting)
+        complete_tr.setting.trainer.output_directory = Path(
+            'tests/data/linear/linear_short_completed')
+        if complete_tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(complete_tr.setting.trainer.output_directory)
+        complete_tr.train()
+
+        # Incomplete training
+        incomplete_tr = trainer.Trainer(main_setting)
+        incomplete_tr.setting.trainer.n_epoch = 20
+        incomplete_tr.setting.trainer.output_directory = Path(
+            'tests/data/linear/linear_short_incomplete')
+        if incomplete_tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(incomplete_tr.setting.trainer.output_directory)
+        incomplete_tr.train()
+
+        # Restart training
+        main_setting.trainer.restart_directory \
+            = incomplete_tr.setting.trainer.output_directory
+        restart_tr = trainer.Trainer(main_setting)
+        restart_tr.setting.trainer.n_epoch = 100
+        restart_tr.setting.trainer.output_directory = Path(
             'tests/data/linear/linear_short_restart')
-        tr = trainer.Trainer(main_setting)
-        if tr.setting.trainer.output_directory.exists():
-            shutil.rmtree(tr.setting.trainer.output_directory)
-        loss = tr.train()
+        if restart_tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(restart_tr.setting.trainer.output_directory)
+        loss = restart_tr.train()
+
         df = pd.read_csv(
             'tests/data/linear/linear_short_completed/log.csv',
             header=0, index_col=None, skipinitialspace=True)
         np.testing.assert_almost_equal(
-            loss, df['validation_loss'].values[-1], decimal=5)
+            loss, df['validation_loss'].values[-1], decimal=3)
 
         restart_df = pd.read_csv(
-            tr.setting.trainer.output_directory / 'log.csv',
+            restart_tr.setting.trainer.output_directory / 'log.csv',
             header=0, index_col=None, skipinitialspace=True)
         self.assertEqual(len(restart_df.values), 8)
 
@@ -388,8 +412,8 @@ class TestTrainer(unittest.TestCase):
             shutil.rmtree(tr_wo_pretrain.setting.trainer.output_directory)
         loss_wo_pretrain = tr_wo_pretrain.train()
 
-        main_setting.trainer.pretrain_directory = Path(
-            'tests/data/linear/linear_short_completed')
+        main_setting.trainer.pretrain_directory \
+            = tr_wo_pretrain.setting.trainer.output_directory
         tr_w_pretrain = trainer.Trainer(main_setting)
         if tr_w_pretrain.setting.trainer.output_directory.exists():
             shutil.rmtree(tr_w_pretrain.setting.trainer.output_directory)
@@ -447,11 +471,104 @@ class TestTrainer(unittest.TestCase):
         tr = trainer.Trainer(main_setting)
         loss = tr.train()
 
-        ir = inferer.Inferer(main_setting)
-        results = ir.infer(
+        ir = inferer.Inferer(
+            main_setting,
             model=main_setting.trainer.output_directory,
-            preprocessed_data_directory=main_setting.data.preprocessed[0]
-            / 'train/tet2_3_modulusx0.9000',
             converter_parameters_pkl=main_setting.data.preprocessed[0]
             / 'preprocessors.pkl', save=False)
+        results = ir.infer(
+            data_directories=main_setting.data.preprocessed[0]
+            / 'train/tet2_3_modulusx0.9000')
         self.assertLess(results[0]['loss'], loss * 5)
+
+    def test_trainer_skip_dict_output(self):
+        main_setting = setting.MainSetting.read_settings_yaml(Path(
+            'tests/data/rotation_thermal_stress/iso_gcn_skip_dict_output.yml'))
+        shutil.rmtree(
+            main_setting.trainer.output_directory, ignore_errors=True)
+        tr = trainer.Trainer(main_setting)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, 1.)
+
+        ir = inferer.Inferer(
+            main_setting,
+            model=main_setting.trainer.output_directory,
+            converter_parameters_pkl=main_setting.data.preprocessed[0]
+            / 'preprocessed/preprocessors.pkl', save=False)
+        ir.setting.inferer.perform_inverse = False
+        results = ir.infer(
+            data_directories=Path(
+                'tests/data/rotation_thermal_stress/preprocessed/'
+                'cube/original'))
+
+        t_mse_w_skip = np.mean((
+            results[0]['dict_y']['cnt_temperature']
+            - results[0]['dict_x']['cnt_temperature'])**2)
+
+        # Traiing without skip
+        main_setting.trainer.outputs['out_rank0'][0]['skip'] = False
+        tr = trainer.Trainer(main_setting)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, 1.)
+
+        ir = inferer.Inferer(
+            main_setting,
+            model=main_setting.trainer.output_directory,
+            converter_parameters_pkl=main_setting.data.preprocessed[0]
+            / 'preprocessed/preprocessors.pkl', save=False)
+        ir.setting.inferer.perform_inverse = False
+        results = ir.infer(
+            data_directories=Path(
+                'tests/data/rotation_thermal_stress/preprocessed/'
+                'cube/original'))
+        t_mse_wo_skip = np.mean((
+            results[0]['dict_y']['cnt_temperature']
+            - results[0]['dict_x']['cnt_temperature'])**2)
+
+        print(t_mse_wo_skip, t_mse_w_skip)
+        self.assertLess(t_mse_wo_skip, t_mse_w_skip)
+
+    def test_trainer_skip_list_output(self):
+        main_setting = setting.MainSetting.read_settings_yaml(Path(
+            'tests/data/rotation_thermal_stress/gcn_skip_list_output.yml'))
+        shutil.rmtree(
+            main_setting.trainer.output_directory, ignore_errors=True)
+        tr = trainer.Trainer(main_setting)
+        tr.train()
+
+        ir = inferer.Inferer(
+            main_setting,
+            model=main_setting.trainer.output_directory,
+            converter_parameters_pkl=main_setting.data.preprocessed[0]
+            / 'preprocessed/preprocessors.pkl', save=False)
+        ir.setting.inferer.perform_inverse = False
+        results = ir.infer(
+            data_directories=Path(
+                'tests/data/rotation_thermal_stress/preprocessed/'
+                'cube/original'))
+
+        t_mse_w_skip = np.mean((
+            results[0]['dict_y']['cnt_temperature']
+            - results[0]['dict_x']['cnt_temperature'])**2)
+
+        # Traiing without skip
+        main_setting.trainer.outputs[0]['skip'] = False
+        tr = trainer.Trainer(main_setting)
+        tr.train()
+
+        ir = inferer.Inferer(
+            main_setting,
+            model=main_setting.trainer.output_directory,
+            converter_parameters_pkl=main_setting.data.preprocessed[0]
+            / 'preprocessed/preprocessors.pkl', save=False)
+        ir.setting.inferer.perform_inverse = False
+        results = ir.infer(
+            data_directories=Path(
+                'tests/data/rotation_thermal_stress/preprocessed/'
+                'cube/original'))
+        t_mse_wo_skip = np.mean((
+            results[0]['dict_y']['cnt_temperature']
+            - results[0]['dict_x']['cnt_temperature'])**2)
+
+        print(t_mse_wo_skip, t_mse_w_skip)
+        self.assertLess(t_mse_wo_skip, t_mse_w_skip)

@@ -1,7 +1,9 @@
+import glob
 from pathlib import Path
 import shutil
 import unittest
 
+from Cryptodome import Random
 import femio
 import numpy as np
 
@@ -15,47 +17,49 @@ class TestInferer(unittest.TestCase):
     def test_infer_with_preprocessed_data(self):
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/linear/pretrained/settings.yml'))
+        main_setting.inferer.converter_parameters_pkl = Path(
+            'tests/data/linear/preprocessed/preprocessors.pkl')
+        main_setting.inferer.output_directory_root = Path(
+            'tests/data/linear/inferred')
         ir = inferer.Inferer(main_setting)
         if ir.setting.trainer.output_directory.exists():
             shutil.rmtree(ir.setting.trainer.output_directory)
         res = ir.infer(
             model=Path('tests/data/linear/pretrained'),
-            preprocessed_data_directory=Path(
-                'tests/data/linear/preprocessed/validation'),
-            converter_parameters_pkl=Path(
-                'tests/data/linear/preprocessed/preprocessors.pkl'))
+            data_directories=Path('tests/data/linear/preprocessed/validation'))
         np.testing.assert_almost_equal(
             res[0]['dict_y']['y'],
             np.load('tests/data/linear/interim/validation/0/y.npy'), decimal=3)
         np.testing.assert_array_less(res[0]['loss'], 1e-7)
 
-    def test_infer_with_raw_data(self):
+    def test_infer_with_raw_data_deform(self):
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/deform/pretrained/settings.yml'))
-        ir = inferer.Inferer(main_setting)
-        if ir.setting.trainer.output_directory.exists():
-            shutil.rmtree(ir.setting.trainer.output_directory)
 
         def conversion_function(fem_data, raw_directory=None):
             adj = fem_data.calculate_adjacency_matrix_element()
             nadj = prepost.normalize_adjacency_matrix(adj)
             return {'adj': adj, 'nadj': nadj}
 
+        ir = inferer.Inferer(
+            main_setting, conversion_function=conversion_function)
+        if ir.setting.trainer.output_directory.exists():
+            shutil.rmtree(ir.setting.trainer.output_directory)
+        ir.setting.inferer.converter_parameters_pkl = Path(
+            'tests/data/deform/preprocessed/preprocessors.pkl')
+        ir.setting.inferer.save = False
+        ir.setting.inferer.perform_preprocess = True
+
         res_from_raw = ir.infer(
             model=Path('tests/data/deform/pretrained'),
-            raw_data_directory=Path(
-                'tests/data/deform/raw/test/tet2_4_modulusx0.9500'),
-            converter_parameters_pkl=Path(
-                'tests/data/deform/preprocessed/preprocessors.pkl'),
-            conversion_function=conversion_function, save=False)
+            data_directories=Path(
+                'tests/data/deform/raw/test/tet2_4_modulusx0.9500'))
 
+        ir.setting.inferer.perform_preprocess = False
         res_from_preprocessed = ir.infer(
             model=Path('tests/data/deform/pretrained'),
-            preprocessed_data_directory=Path(
-                'tests/data/deform/preprocessed/test/'
-                'tet2_4_modulusx0.9500'),
-            converter_parameters_pkl=Path(
-                'tests/data/deform/preprocessed/preprocessors.pkl'))
+            data_directories=Path(
+                'tests/data/deform/preprocessed/test/tet2_4_modulusx0.9500'))
 
         np.testing.assert_almost_equal(
             res_from_raw[0]['dict_y']['elemental_stress'],
@@ -65,32 +69,34 @@ class TestInferer(unittest.TestCase):
             res_from_raw[0]['loss'], res_from_preprocessed[0]['loss'])
         np.testing.assert_array_less(res_from_raw[0]['loss'], 1e-2)
 
-    def test_infer_with_raw_data_wo_answer(self):
+    def test_infer_with_raw_data_wo_answer_w_model_directory(self):
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/deform/pretrained/settings.yml'))
-        ir = inferer.Inferer(main_setting)
-        if ir.setting.trainer.output_directory.exists():
-            shutil.rmtree(ir.setting.trainer.output_directory)
 
         def conversion_function(fem_data, raw_directory=None):
             adj = fem_data.calculate_adjacency_matrix_element()
             nadj = prepost.normalize_adjacency_matrix(adj)
             return {'adj': adj, 'nadj': nadj}
 
+        ir = inferer.Inferer(
+            main_setting, conversion_function=conversion_function)
+        ir.setting.inferer.converter_parameters_pkl = Path(
+            'tests/data/deform/preprocessed/preprocessors.pkl')
+        ir.setting.inferer.save = False
+        ir.setting.inferer.perform_preprocess = True
+        if ir.setting.trainer.output_directory.exists():
+            shutil.rmtree(ir.setting.trainer.output_directory)
+
         res_from_raw = ir.infer(
             model=Path('tests/data/deform/pretrained'),
-            raw_data_directory=Path(
-                'tests/data/deform/external/tet2_4_modulusx0.9500'),
-            converter_parameters_pkl=Path(
-                'tests/data/deform/preprocessed/preprocessors.pkl'),
-            conversion_function=conversion_function, save=False)
+            data_directories=Path(
+                'tests/data/deform/external/tet2_4_modulusx0.9500'))
+
+        ir.setting.inferer.perform_preprocess = False
         res_from_preprocessed = ir.infer(
             model=Path('tests/data/deform/pretrained'),
-            preprocessed_data_directory=Path(
-                'tests/data/deform/preprocessed/test/'
-                'tet2_4_modulusx0.9500'),
-            converter_parameters_pkl=Path(
-                'tests/data/deform/preprocessed/preprocessors.pkl'))
+            data_directories=Path(
+                'tests/data/deform/preprocessed/test/tet2_4_modulusx0.9500'))
         np.testing.assert_almost_equal(
             res_from_raw[0]['dict_y']['elemental_stress'],
             res_from_preprocessed[0]['dict_y']['elemental_stress'],
@@ -99,31 +105,35 @@ class TestInferer(unittest.TestCase):
     def test_infer_with_raw_data_wo_answer_with_model_file(self):
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/deform/incomplete_pretrained/settings.yml'))
-        ir = inferer.Inferer(main_setting)
-        if ir.setting.trainer.output_directory.exists():
-            shutil.rmtree(ir.setting.trainer.output_directory)
 
         def conversion_function(fem_data, raw_directory=None):
             adj = fem_data.calculate_adjacency_matrix_element()
             nadj = prepost.normalize_adjacency_matrix(adj)
             return {'adj': adj, 'nadj': nadj}
 
+        ir = inferer.Inferer(
+            main_setting, conversion_function=conversion_function)
+        if ir.setting.trainer.output_directory.exists():
+            shutil.rmtree(ir.setting.trainer.output_directory)
+
+        ir.setting.inferer.converter_parameters_pkl = Path(
+            'tests/data/deform/preprocessed/preprocessors.pkl')
+        ir.setting.inferer.save = False
+
+        ir.setting.inferer.perform_preprocess = True
         res_from_raw = ir.infer(
             model=Path(
                 'tests/data/deform/incomplete_pretrained/'
                 'snapshot_epoch_5000.pth'),
-            raw_data_directory=Path(
-                'tests/data/deform/external/tet2_4_modulusx0.9500'),
-            converter_parameters_pkl=Path(
-                'tests/data/deform/preprocessed/preprocessors.pkl'),
-            conversion_function=conversion_function, save=False)
+            data_directories=Path(
+                'tests/data/deform/external/tet2_4_modulusx0.9500'))
+
+        ir.setting.inferer.perform_preprocess = False
         res_from_preprocessed = ir.infer(
             model=Path('tests/data/deform/pretrained'),
-            preprocessed_data_directory=Path(
+            data_directories=Path(
                 'tests/data/deform/preprocessed/test/'
-                'tet2_4_modulusx0.9500'),
-            converter_parameters_pkl=Path(
-                'tests/data/deform/preprocessed/preprocessors.pkl'))
+                'tet2_4_modulusx0.9500'))
         np.testing.assert_almost_equal(
             res_from_raw[0]['dict_y']['elemental_stress'],
             res_from_preprocessed[0]['dict_y']['elemental_stress'],
@@ -137,18 +147,19 @@ class TestInferer(unittest.TestCase):
         ir = inferer.Inferer(main_setting)
         if output_directory.exists():
             shutil.rmtree(output_directory)
+        ir.setting.inferer.converter_parameters_pkl = Path(
+            'tests/data/deform/preprocessed/preprocessors.pkl')
+        ir.setting.inferer.output_directory = output_directory
+        ir.setting.inferer.write_simulation_base = Path(
+            'tests/data/deform/raw')
+        ir.setting.inferer.write_simulation = True
+        ir.setting.inferer.write_simulation_type = 'ucd'
 
         res_from_preprocessed = ir.infer(
             model=Path('tests/data/deform/pretrained'),
-            output_directory=output_directory,
-            preprocessed_data_directory=Path(
+            data_directories=Path(
                 'tests/data/deform/preprocessed/test/'
-                'tet2_4_modulusx0.9500'),
-            converter_parameters_pkl=Path(
-                'tests/data/deform/preprocessed/preprocessors.pkl'),
-            write_simulation_base=Path(
-                'tests/data/deform/raw/test/tet2_4_modulusx0.9500'),
-            write_simulation=True, write_simulation_type='ucd')
+                'tet2_4_modulusx0.9500'))
         fem_data = femio.FEMData.read_files(
             'ucd', [output_directory / 'mesh.inp'])
         np.testing.assert_almost_equal(
@@ -169,18 +180,20 @@ class TestInferer(unittest.TestCase):
         converter_parameters_pkl = Path(
             'tests/data/simplified/pretrained/preprocessors.pkl')
         ir = inferer.Inferer.read_settings(setting_yaml)
+        ir.setting.inferer.converter_parameters_pkl = converter_parameters_pkl
+
         seed_a = np.random.rand(10, 1)
         raw_dict_x = {
             'a': np.concatenate([seed_a, seed_a * 2, seed_a * 3], axis=1),
             'b': np.random.rand(10, 1) * 100.}
 
         answer_raw_dict_y = {'c': raw_dict_x['a'] * raw_dict_x['b']}
-        inversed_dict_y, loss = ir.infer_simplified_model(
-            model_file, raw_dict_x, answer_raw_dict_y=answer_raw_dict_y,
-            converter_parameters_pkl=converter_parameters_pkl)
-        rmse = np.mean((inversed_dict_y['c'] - answer_raw_dict_y['c'])**2)**.5
+        result = ir.infer_simplified_model(
+            model_file, raw_dict_x, answer_raw_dict_y=answer_raw_dict_y)
+        rmse = np.mean(
+            (result['dict_y']['c'] - answer_raw_dict_y['c'])**2)**.5
         self.assertLess(rmse, 5.)
-        self.assertLess(loss, 3e-3)
+        self.assertLess(result['loss'], 3e-3)
 
     def test_infer_timeseries(self):
         main_setting = setting.MainSetting.read_settings_yaml(
@@ -188,14 +201,15 @@ class TestInferer(unittest.TestCase):
         ir = inferer.Inferer(main_setting)
         if ir.setting.trainer.output_directory.exists():
             shutil.rmtree(ir.setting.trainer.output_directory)
+        ir.setting.inferer.converter_parameters_pkl = Path(
+            'tests/data/deform_timeseries/preprocessed/preprocessors.pkl')
+
         preprocessed_data_directory = Path(
             'tests/data/deform_timeseries/preprocessed/train'
             '/tet2_3_modulusx1.0000')
         res = ir.infer(
             model=Path('tests/data/deform_timeseries/pretrained'),
-            preprocessed_data_directory=preprocessed_data_directory,
-            converter_parameters_pkl=Path(
-                'tests/data/deform_timeseries/preprocessed/preprocessors.pkl'))
+            data_directories=preprocessed_data_directory)
         np.testing.assert_almost_equal(
             res[0]['dict_y']['stress'] * 1e-5,
             np.load(
@@ -210,13 +224,13 @@ class TestInferer(unittest.TestCase):
         ir = inferer.Inferer(main_setting)
         if ir.setting.trainer.output_directory.exists():
             shutil.rmtree(ir.setting.trainer.output_directory)
+        ir.setting.inferer.converter_parameters_pkl = Path(
+            'tests/data/deform/preprocessed/preprocessors.pkl')
         preprocessed_data_directory = Path(
             'tests/data/deform/preprocessed/train/tet2_3_modulusx1.0000')
         res = ir.infer(
             model=Path('tests/data/deform/pretrained_res_gcn'),
-            preprocessed_data_directory=preprocessed_data_directory,
-            converter_parameters_pkl=Path(
-                'tests/data/deform/preprocessed/preprocessors.pkl'))
+            data_directories=preprocessed_data_directory)
         np.testing.assert_almost_equal(
             res[0]['dict_y']['elemental_stress'] * 1e-5,
             np.load(
@@ -225,29 +239,96 @@ class TestInferer(unittest.TestCase):
             decimal=3)
         np.testing.assert_array_less(res[0]['loss'], 1e-3)
 
-    def test_infer_bufferio(self):
-        yaml_path = ('tests/data/deform/pretrained/settings.yml')
-        with open(yaml_path) as yaml_content:
-            ir = inferer.Inferer(yaml_content)
+    def test_infer_encrypted_data(self):
+        encrypt_key = Random.get_random_bytes(16)
+        deploy_wo_encrypt_directory = Path(
+            'tests/data/linear/deploy_wo_encrypt')
+        deploy_w_encrypt_directory = Path('tests/data/linear/deploy_w_encrypt')
 
-        if ir.setting.trainer.output_directory.exists():
-            shutil.rmtree(ir.setting.trainer.output_directory)
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/linear/pretrained/settings.yml'))
+        main_setting.inferer.converter_parameters_pkl = Path(
+            'tests/data/linear/preprocessed/preprocessors.pkl')
+        ir = inferer.Inferer(main_setting)
+
+        if deploy_wo_encrypt_directory.exists():
+            shutil.rmtree(deploy_wo_encrypt_directory)
+        ir.deploy(
+            output_directory=deploy_wo_encrypt_directory,
+            model=Path('tests/data/linear/pretrained'))
+
+        if deploy_w_encrypt_directory.exists():
+            shutil.rmtree(deploy_w_encrypt_directory)
+        ir.deploy(
+            output_directory=deploy_w_encrypt_directory,
+            model=Path('tests/data/linear/pretrained'),
+            encrypt_key=encrypt_key)
+
+        ir_wo_encrypt = inferer.Inferer.from_model_directory(
+            deploy_wo_encrypt_directory)
+        res_wo_encrypt = ir_wo_encrypt.infer(
+            data_directories=Path('tests/data/linear/preprocessed/validation'))
+
+        ir_w_encrypt = inferer.Inferer.from_model_directory(
+            deploy_w_encrypt_directory, decrypt_key=encrypt_key)
+        res_w_encrypt = ir_w_encrypt.infer(
+            data_directories=Path('tests/data/linear/preprocessed/validation'))
+
+        np.testing.assert_almost_equal(
+            res_wo_encrypt[0]['dict_y']['y'], res_w_encrypt[0]['dict_y']['y'])
+
+    def test_infer_multiple_data(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/deform/pretrained/settings.yml'))
 
         def conversion_function(fem_data, raw_directory=None):
             adj = fem_data.calculate_adjacency_matrix_element()
             nadj = prepost.normalize_adjacency_matrix(adj)
             return {'adj': adj, 'nadj': nadj}
-        with open(
-            'tests/data/deform/pretrained/snapshot_epoch_5000.pth', 'rb'
-        ) as model_content:
-            with open(
-                'tests/data/deform/preprocessed/preprocessors.pkl', 'rb'
-            ) as pkl_content:
-                res_from_raw = ir.infer(
-                    model=model_content,
-                    raw_data_directory=Path(
-                        'tests/data/deform/raw/test/tet2_4_modulusx0.9500'),
-                    converter_parameters_pkl=pkl_content,
-                    conversion_function=conversion_function, save=False)
 
-        np.testing.assert_array_less(res_from_raw[0]['loss'], 1e-2)
+        ir = inferer.Inferer(
+            main_setting, conversion_function=conversion_function,
+            converter_parameters_pkl=Path(
+                'tests/data/deform/preprocessed/preprocessors.pkl'))
+        ir.setting.inferer.save = True
+        ir.setting.inferer.perform_preprocess = False
+        ir.setting.inferer.write_simulation = True
+        ir.setting.inferer.write_simulation_base = Path(
+            'tests/data/deform/raw')
+        ir.setting.inferer.write_simulation_type = 'ucd'
+
+        output_directory_base = Path('tests/data/deform/inferred/multiple')
+        if output_directory_base.exists():
+            shutil.rmtree(output_directory_base)
+        res_from_raw = ir.infer(
+            model=Path('tests/data/deform/pretrained'),
+            data_directories=Path('tests/data/deform/preprocessed/test'),
+            output_directory_base=output_directory_base)
+
+        raw_directory_base = Path('tests/data/deform/raw/test')
+        for i_data, data_basename in enumerate([
+                'tet2_3_modulusx1.0500', 'tet2_4_modulusx0.9500']):
+            raw_directory = glob.glob(
+                str(raw_directory_base / f"**/{data_basename}"),
+                recursive=True)[0]
+            raw_fem_data = femio.FEMData.read_directory(
+                'fistr', raw_directory)
+            inferred_directory = glob.glob(
+                str(output_directory_base / f"**/{data_basename}"),
+                recursive=True)[0]
+            inferred_fem_data = femio.FEMData.read_directory(
+                'ucd', inferred_directory)
+            np.testing.assert_almost_equal(
+                inferred_fem_data.elemental_data.get_attribute_data(
+                    'inferred_elemental_stress'),
+                res_from_raw[i_data]['dict_y']['elemental_stress'])
+            np.testing.assert_almost_equal(
+                res_from_raw[i_data]['dict_x']['elemental_stress'],
+                raw_fem_data.elemental_data.get_attribute_data(
+                    'ElementalSTRESS'), decimal=2)
+            np.testing.assert_almost_equal(
+                inferred_fem_data.elemental_data.get_attribute_data(
+                    'inferred_elemental_stress'),
+                raw_fem_data.elemental_data.get_attribute_data(
+                    'ElementalSTRESS'), decimal=-1)
+        return

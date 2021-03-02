@@ -8,7 +8,6 @@ import scipy.sparse as sp
 import torch
 
 import siml.inferer as inferer
-import siml.networks as networks
 import siml.networks.activations as activations
 import siml.networks.array2diagmat as array2diagmat
 import siml.networks.array2symmat as array2symmat
@@ -22,7 +21,7 @@ import siml.trainer as trainer
 PLOT = False
 
 
-class TestNetwork(unittest.TestCase):
+class TestNetworks(unittest.TestCase):
 
     def test_deepsets(self):
         main_setting = setting.MainSetting.read_settings_yaml(
@@ -265,59 +264,6 @@ class TestNetwork(unittest.TestCase):
         out = tr.model(input_data)
         np.testing.assert_almost_equal(out.detach().numpy()[0], 0.)
 
-    def test_raise_valueerror_when_network_is_not_dag(self):
-        main_setting = setting.MainSetting.read_settings_yaml(
-            Path('tests/data/deform/not_dag.yml'))
-
-        if main_setting.trainer.output_directory.exists():
-            shutil.rmtree(main_setting.trainer.output_directory)
-        tr = trainer.Trainer(main_setting)
-        with self.assertRaisesRegex(ValueError, 'Cycle found in the network'):
-            tr.train()
-
-    def test_raise_valueerror_when_block_has_no_predecessors(self):
-        main_setting = setting.MainSetting.read_settings_yaml(
-            Path('tests/data/deform/no_predecessors.yml'))
-
-        if main_setting.trainer.output_directory.exists():
-            shutil.rmtree(main_setting.trainer.output_directory)
-        tr = trainer.Trainer(main_setting)
-        with self.assertRaisesRegex(
-                ValueError, 'NO_PREDECESSORS has no predecessors'):
-            tr.train()
-
-    def test_raise_valueerror_when_block_has_no_successors(self):
-        main_setting = setting.MainSetting.read_settings_yaml(
-            Path('tests/data/deform/no_successors.yml'))
-
-        if main_setting.trainer.output_directory.exists():
-            shutil.rmtree(main_setting.trainer.output_directory)
-        tr = trainer.Trainer(main_setting)
-        with self.assertRaisesRegex(
-                ValueError, 'NO_SUCCESSORS has no successors'):
-            tr.train()
-
-    def test_raise_valueerror_when_block_has_missing_destinations(self):
-        main_setting = setting.MainSetting.read_settings_yaml(
-            Path('tests/data/deform/missing_destinations.yml'))
-
-        if main_setting.trainer.output_directory.exists():
-            shutil.rmtree(main_setting.trainer.output_directory)
-        tr = trainer.Trainer(main_setting)
-        with self.assertRaisesRegex(
-                ValueError, 'NOT_EXISTING_BLOCK does not exist'):
-            tr.train()
-
-    def test_node_number_inference(self):
-        main_setting = setting.MainSetting.read_settings_yaml(
-            Path('tests/data/deform/node_number_inference.yml'))
-
-        if main_setting.trainer.output_directory.exists():
-            shutil.rmtree(main_setting.trainer.output_directory)
-        tr = trainer.Trainer(main_setting)
-        loss = tr.train()
-        self.assertLess(loss, 1e-1)
-
     def test_integration_y1(self):
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/ode/integration_y1_short.yml'))
@@ -328,13 +274,14 @@ class TestNetwork(unittest.TestCase):
         loss = tr.train()
         self.assertLess(loss, 5.e-1)
 
-        ir = inferer.Inferer(main_setting)
-        results = ir.infer(
-            model=main_setting.trainer.output_directory,
-            preprocessed_data_directory=main_setting.data.preprocessed_root
-            / 'test',
+        ir = inferer.Inferer(
+            main_setting,
             converter_parameters_pkl=main_setting.data.preprocessed_root
             / 'preprocessors.pkl')
+        results = ir.infer(
+            model=main_setting.trainer.output_directory,
+            data_directories=main_setting.data.preprocessed_root
+            / 'test')
         self.assertLess(results[0]['loss'], 1.)
 
     def test_grad_gcn(self):
@@ -361,20 +308,20 @@ class TestNetwork(unittest.TestCase):
 
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/deform/grad_res_gcn/settings.yml'))
-        ir = inferer.Inferer(main_setting)
-        inference_outpout_directory = \
+        ir = inferer.Inferer(
+            main_setting,
+            converter_parameters_pkl=Path(
+                'tests/data/deform/preprocessed/preprocessors.pkl'))
+        ir.setting.inferer.output_directory = \
             main_setting.trainer.output_directory / 'inferred'
-        if inference_outpout_directory.exists():
-            shutil.rmtree(inference_outpout_directory)
+        if ir.setting.inferer.output_directory.exists():
+            shutil.rmtree(ir.setting.inferer.output_directory)
 
         res = ir.infer(
             model=Path('tests/data/deform/grad_res_gcn'),
-            preprocessed_data_directory=Path(
+            data_directories=Path(
                 'tests/data/deform/preprocessed/validation/'
-                'tet2_3_modulusx0.9500'),
-            converter_parameters_pkl=Path(
-                'tests/data/deform/preprocessed/preprocessors.pkl'),
-            output_directory=inference_outpout_directory)
+                'tet2_3_modulusx0.9500'))
         np.testing.assert_array_less(res[0]['loss'], 1e-2)
 
     def test_laplace_net(self):
@@ -400,24 +347,23 @@ class TestNetwork(unittest.TestCase):
         self.assertEqual(len(tr.model.dict_block['LAPLACE_NET2'].subchains), 1)
 
         # Confirm results does not change under rigid body transformation
-        grad_grad_ir = inferer.Inferer(main_setting)
-        inference_outpout_directory = \
+        grad_grad_ir = inferer.Inferer(
+            main_setting,
+            converter_parameters_pkl=Path(
+                'tests/data/rotation/preprocessed/preprocessors.pkl'))
+        grad_grad_ir.setting.inferer.output_directory = \
             main_setting.trainer.output_directory / 'inferred'
-        if inference_outpout_directory.exists():
-            shutil.rmtree(inference_outpout_directory)
+        if grad_grad_ir.setting.inferer.output_directory.exists():
+            shutil.rmtree(grad_grad_ir.setting.inferer.output_directory)
         results = grad_grad_ir.infer(
             model=main_setting.trainer.output_directory,
-            preprocessed_data_directory=[
+            data_directories=[
                 Path(
                     'tests/data/rotation/preprocessed/cube/clscale1.0/'
                     'original'),
                 Path(
                     'tests/data/rotation/preprocessed/cube/clscale1.0/'
-                    'rotated')],
-            converter_parameters_pkl=Path(
-                'tests/data/rotation/preprocessed/preprocessors.pkl'),
-            output_directory=inference_outpout_directory,
-            overwrite=True)
+                    'rotated')])
         np.testing.assert_almost_equal(
             results[0]['dict_y']['t_100'],
             results[1]['dict_y']['t_100'], decimal=5)
@@ -563,49 +509,3 @@ class TestNetwork(unittest.TestCase):
         np.testing.assert_almost_equal(
             contraction(torch.from_numpy(b), torch.from_numpy(a)).numpy(),
             desired)
-
-    def test_user_defined_block(self):
-
-        class CutOffBlock(networks.SimlModule):
-            def __init__(self, block_setting):
-                super().__init__(block_setting)
-                self.upper = block_setting.optional.get('upper', .1)
-                self.lower = block_setting.optional.get('lower', 0.)
-
-            def _forward_core(self, x, supports=None, original_shapes=None):
-                h = x
-                for linear, dropout_ratio, activation in zip(
-                        self.linears, self.dropout_ratios, self.activations):
-                    h = linear(h)
-                    h = activation(h)
-                    h[h > self.upper] = self.upper
-                    h[h < self.lower] = self.lower
-                return h
-
-        networks.add_block(
-            name='cutoff', block=CutOffBlock, trainable=True)
-
-        main_setting = setting.MainSetting.read_settings_yaml(
-            Path('tests/data/deform/cutoff.yml'))
-        tr = trainer.Trainer(main_setting)
-        if tr.setting.trainer.output_directory.exists():
-            shutil.rmtree(tr.setting.trainer.output_directory)
-        loss = tr.train()
-        np.testing.assert_array_less(loss, 1.)
-        x = torch.from_numpy(np.random.rand(2000, 100).astype(np.float32))
-
-        out_cutoff1 = tr.model.dict_block['CUTOFF1'](x).detach().numpy()
-        np.testing.assert_almost_equal(
-            np.max(out_cutoff1),
-            main_setting.model.blocks[1].optional['upper'])
-        np.testing.assert_almost_equal(
-            np.min(out_cutoff1),
-            main_setting.model.blocks[1].optional['lower'])
-
-        out_cutoff2 = tr.model.dict_block['CUTOFF2'](x).detach().numpy()
-        np.testing.assert_almost_equal(
-            np.max(out_cutoff2),
-            main_setting.model.blocks[2].optional['upper'])
-        np.testing.assert_almost_equal(
-            np.min(out_cutoff2),
-            main_setting.model.blocks[2].optional['lower'])
