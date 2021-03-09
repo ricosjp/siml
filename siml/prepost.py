@@ -35,6 +35,7 @@ class RawConverter():
             self, main_setting, *,
             recursive=True,
             conversion_function=None, filter_function=None, load_function=None,
+            save_function=None,
             force_renew=False, read_npy=False, write_ucd=True, read_res=True,
             max_process=None, to_first_order=False):
         """Initialize converter of raw data and save them in interim directory.
@@ -58,6 +59,10 @@ class RawConverter():
             Function to load data, which take list of pathlib.Path objects
             (as required files) and pathlib.Path object (as data directory)
             and returns data_dictionary and fem_data (can be None) to be saved.
+        save_function: function, optional [None]
+            Function to save data, which take femio.FEMData object,
+            data_dict, pathliub.Path object as output directory,
+            and bool represents force renew.
         force_renew: bool, optional [False]
             If True, renew npy files even if they are alerady exist.
         read_npy: bool, optional [False]
@@ -74,6 +79,7 @@ class RawConverter():
         self.conversion_function = conversion_function
         self.filter_function = filter_function
         self.load_function = load_function
+        self.save_function = save_function
         self.force_renew = force_renew
         self.read_npy = read_npy
         self.write_ucd = write_ucd
@@ -165,7 +171,7 @@ class RawConverter():
             if not self.force_renew:
                 print(
                     f"Already converted. Skipped conversion: {raw_path}")
-            return
+                return
 
         # Main process
         if conversion_setting.skip_femio:
@@ -233,6 +239,9 @@ class RawConverter():
                 fem_data_to_save.to_first_order().write(
                     'ucd', output_directory / 'mesh.inp',
                     overwrite=self.force_renew)
+        if self.save_function is not None:
+            self.save_function(
+                fem_data, dict_data, output_directory, self.force_renew)
 
         save_dict_data(
             output_directory, dict_data,
