@@ -972,7 +972,8 @@ class Converter:
                 write_simulation_base, required_file_names)
             data_dict, fem_data = load_function(
                 data_files, write_simulation_base)
-            fem_data = update_fem_data(fem_data, data_dict)
+            fem_data = update_fem_data(
+                fem_data, data_dict, allow_overwrite=True)
         else:
             raise ValueError(
                 'When skip_femio is True, please feed load_function.')
@@ -996,6 +997,11 @@ class Converter:
             ext = ''
         elif write_simulation_type == 'ucd':
             ext = '.inp'
+        elif write_simulation_type == 'vtk':
+            ext = '.vtk'
+        else:
+            raise ValueError(
+                f"Unexpected write_simulation_type: {write_simulation_type}")
         fem_data.write(
             write_simulation_type, output_directory / ('mesh' + ext),
             overwrite=overwrite)
