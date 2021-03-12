@@ -6,9 +6,8 @@ import torch
 from . import abstract_gcn
 
 
-class NRI(abstract_gcn.AbstractGCN):
-    """Neural Relational Inference layer based on
-    https://arxiv.org/pdf/1802.04687.pdf .
+class MessagePassing(abstract_gcn.AbstractGCN):
+    """Message passing layer based on https://arxiv.org/abs/1704.01212.
     """
 
     def __init__(self, block_setting):
