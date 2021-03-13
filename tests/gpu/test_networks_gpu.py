@@ -30,9 +30,9 @@ class TestNetworksGPU(unittest.TestCase):
         np.testing.assert_array_less(loss, 1.)
 
     @testing.attr.multi_gpu(2)
-    def test_nri_gpu(self):
+    def test_message_passing_gpu(self):
         main_setting = setting.MainSetting.read_settings_yaml(
-            Path('tests/data/deform/nri.yml'))
+            Path('tests/data/deform/message_passing.yml'))
         main_setting.trainer.gpu_id = 1
         main_setting.trainer.num_workers = 0  # Serial
         tr = trainer.Trainer(main_setting)

@@ -20,7 +20,7 @@ from . import iso_gcn
 from . import laplace_net
 from . import lstm
 from . import mlp
-from . import nri
+from . import message_passing
 from . import reducer
 from . import reshape
 from . import siml_module
@@ -75,7 +75,8 @@ class Network(torch.nn.Module):
             laplace_net.LaplaceNet, use_support=True),
         'lstm': BlockInformation(lstm.LSTM),
         'mlp': BlockInformation(mlp.MLP),
-        'nri': BlockInformation(nri.NRI, use_support=True),
+        'message_passing': BlockInformation(
+            message_passing.MessagePassing, use_support=True),
         'tcn': BlockInformation(tcn.TCN),
     }
     INPUT_LAYER_NAME = 'Input'
