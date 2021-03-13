@@ -314,7 +314,7 @@ class Trainer(siml_manager.SimlManager):
                     f"{validation_loss:.5e}, {elapsed_time:.2f}\n")
 
             # Plot
-            fig = plt.figure(figsize=(16, 9))
+            fig = plt.figure(figsize=(16 / 2, 9 / 2))
             df = pd.read_csv(
                 self.log_file, header=0, index_col=None, skipinitialspace=True)
             plt.plot(df['epoch'], df['train_loss'], label='train loss')
