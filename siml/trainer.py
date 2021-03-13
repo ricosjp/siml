@@ -32,7 +32,7 @@ class Trainer(siml_manager.SimlManager):
             Loss value after training.
         """
 
-        print(f"Ouput directory: {self.setting.trainer.output_directory}")
+        print(f"Output directory: {self.setting.trainer.output_directory}")
         self.setting.trainer.output_directory.mkdir(parents=True)
 
         self.prepare_training()
