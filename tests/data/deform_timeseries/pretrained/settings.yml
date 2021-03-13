@@ -224,14 +224,6 @@ trainer:
   element_batch_size: -1
   element_wise: false
   gpu_id: -1
-  input_dims:
-  - 1
-  - 6
-  - 1
-  input_names:
-  - t
-  - strain
-  - modulus
   inputs:
   - dim: 1
     name: t
@@ -241,10 +233,10 @@ trainer:
     name: modulus
   iterator: serial
   lazy: false
-  log_trigger_epoch: 1
+  log_trigger_epoch: 100
   loss_function: mse
   model_parallel: false
-  n_epoch: 10
+  n_epoch: 1000
   name: tcn
   non_blocking: true
   num_workers: 0
@@ -257,11 +249,7 @@ trainer:
     lr: 0.001
     weight_decay: 0
   optuna_trial: null
-  output_dims:
-  - 6
   output_directory: tests/data/deform_timeseries/tcn
-  output_names:
-  - stress
   output_stats: false
   outputs:
   - dim: 6
@@ -274,7 +262,7 @@ trainer:
   simplified_model: false
   snapshot_choise_method: best
   split_ratio: {}
-  stop_trigger_epoch: 10
+  stop_trigger_epoch: 100
   support_input: null
   support_inputs: null
   time_series: true
