@@ -214,6 +214,12 @@ def preprocess_deform():
     np.testing.assert_almost_equal(
         np.mean(scale_x_grad), dict_reference_scale['x_grad'])
 
+    interim_y_grad = sp.load_npz(interim_path / 'y_grad.npz')
+    preprocessed_y_grad = sp.load_npz(preprocessed_path / 'y_grad.npz')
+    scale_y_grad = preprocessed_y_grad.data / interim_y_grad.data
+    np.testing.assert_almost_equal(
+        np.mean(scale_y_grad), np.mean(scale_x_grad))
+
     return
 
 
