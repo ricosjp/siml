@@ -188,3 +188,4 @@ commit:
     - git push origin --force HEAD:gh-pages
   only:
     - master
+  allow_failure: true
