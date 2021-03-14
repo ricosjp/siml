@@ -75,18 +75,18 @@ class TestNetworks(unittest.TestCase):
         loss = tr.train()
         np.testing.assert_array_less(loss, 1.)
 
-    def test_nri(self):
+    def test_message_passing(self):
         main_setting = setting.MainSetting.read_settings_yaml(
-            Path('tests/data/deform/nri.yml'))
+            Path('tests/data/deform/message_passing.yml'))
         tr = trainer.Trainer(main_setting)
         if tr.setting.trainer.output_directory.exists():
             shutil.rmtree(tr.setting.trainer.output_directory)
         loss = tr.train()
         np.testing.assert_array_less(loss, 1.)
 
-    def test_nri_non_concat(self):
+    def test_message_passing_non_concat(self):
         main_setting = setting.MainSetting.read_settings_yaml(
-            Path('tests/data/deform/nri.yml'))
+            Path('tests/data/deform/message_passing.yml'))
         main_setting.model.blocks[0].optional['concat'] = False
         tr = trainer.Trainer(main_setting)
         if tr.setting.trainer.output_directory.exists():
@@ -498,7 +498,7 @@ class TestNetworks(unittest.TestCase):
                     np.diag(diags[i_vertex, :, :, i_feature]),
                     array[i_vertex, i_feature])
 
-    def test_contraction(self):
+    def test_contraction_2(self):
         contraction = tensor_operations.Contraction(setting.BlockSetting())
         a = np.random.rand(10, 3, 3, 3, 3, 5)
         b = np.random.rand(10, 3, 3, 5)
@@ -508,4 +508,13 @@ class TestNetworks(unittest.TestCase):
             desired)
         np.testing.assert_almost_equal(
             contraction(torch.from_numpy(b), torch.from_numpy(a)).numpy(),
+            desired)
+
+    def test_contraction_1(self):
+        contraction = tensor_operations.Contraction(
+            setting.BlockSetting(activations=['sqrt']))
+        a = np.random.rand(10, 3, 3, 3, 3, 5)
+        desired = np.einsum('ijklmf,ijklmf->if', a, a)**.5
+        np.testing.assert_almost_equal(
+            contraction(torch.from_numpy(a)).numpy(),
             desired)

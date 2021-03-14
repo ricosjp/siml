@@ -216,7 +216,7 @@ class TestInferer(unittest.TestCase):
                 'tests/data/deform_timeseries/interim/train'
                 '/tet2_3_modulusx1.0000/stress.npy') * 1e-5,
             decimal=3)
-        np.testing.assert_array_less(res[0]['loss'], 1e-3)
+        np.testing.assert_array_less(res[0]['loss'], 1e-1)
 
     def test_infer_res_gcn(self):
         main_setting = setting.MainSetting.read_settings_yaml(

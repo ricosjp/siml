@@ -1,0 +1,84 @@
+data:
+  inferred: tests/data/deform/inferred
+  interim: tests/data/deform/whole_wildcard/interim
+  pad: false
+  preprocessed: tests/data/deform/whole_wildcard/preprocessed
+  raw: tests/data/deform/raw
+  train:
+  - tests/data/deform/whole_wildcard/preprocessed/**/tet2_3*
+  validation:
+  - tests/data/deform/whole_wildcard/preprocessed/**/tet2_4_modulusx1*
+  test:
+  - tests/data/deform/whole_wildcard/preprocessed/**/tet2_4_modulusx0*
+conversion:
+  required_file_names:
+    - '*.msh'
+    - '*.cnt'
+    - '*.res.*'
+  mandatory_variables:
+    - elemental_strain
+    - modulus
+    - poisson_ratio
+  optional_variables:
+    - elemental_stress
+preprocess:
+  adj:
+    method: identity
+  elemental_strain:
+    method: std_scale
+    componentwise: false
+  elemental_stress:
+    method: std_scale
+    componentwise: false
+  modulus:
+    method: std_scale
+  nadj:
+    method: identity
+  poisson_ratio:
+    method: identity
+  global_modulus:
+    method: standardize
+  x_grad:
+    method: std_scale
+    componentwise: false
+  y_grad:
+    method: max_abs
+    componentwise: false
+  z_grad:
+    method: std_scale
+    componentwise: false
+trainer:
+  lazy: false
+  num_workers: 0
+  output_directory: tests/data/deform/whole_wildcard_model
+  inputs:
+    - name: elemental_strain
+      dim: 6
+    - name: modulus
+      dim: 1
+  outputs:
+    - name: elemental_stress
+      dim: 6
+  prune: true
+  batch_size: 2
+  n_epoch: 100
+  log_trigger_epoch: 10
+  stop_trigger_epoch: 10
+  seed: 0
+model:
+  blocks:
+    - name: MLP
+      type: adjustable_mlp
+      nodes:
+        - -1
+        - 100
+        - 100
+        - -1
+      activations:
+        - relu
+        - relu
+        - identity
+      dropouts:
+        - 0.0
+        - 0.0
+        - 0.0

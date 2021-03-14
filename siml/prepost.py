@@ -35,6 +35,7 @@ class RawConverter():
             self, main_setting, *,
             recursive=True,
             conversion_function=None, filter_function=None, load_function=None,
+            save_function=None,
             force_renew=False, read_npy=False, write_ucd=True, read_res=True,
             max_process=None, to_first_order=False):
         """Initialize converter of raw data and save them in interim directory.
@@ -58,6 +59,10 @@ class RawConverter():
             Function to load data, which take list of pathlib.Path objects
             (as required files) and pathlib.Path object (as data directory)
             and returns data_dictionary and fem_data (can be None) to be saved.
+        save_function: function, optional [None]
+            Function to save data, which take femio.FEMData object,
+            data_dict, pathliub.Path object as output directory,
+            and bool represents force renew.
         force_renew: bool, optional [False]
             If True, renew npy files even if they are alerady exist.
         read_npy: bool, optional [False]
@@ -74,6 +79,7 @@ class RawConverter():
         self.conversion_function = conversion_function
         self.filter_function = filter_function
         self.load_function = load_function
+        self.save_function = save_function
         self.force_renew = force_renew
         self.read_npy = read_npy
         self.write_ucd = write_ucd
@@ -165,7 +171,7 @@ class RawConverter():
             if not self.force_renew:
                 print(
                     f"Already converted. Skipped conversion: {raw_path}")
-            return
+                return
 
         # Main process
         if conversion_setting.skip_femio:
@@ -233,6 +239,9 @@ class RawConverter():
                 fem_data_to_save.to_first_order().write(
                     'ucd', output_directory / 'mesh.inp',
                     overwrite=self.force_renew)
+        if self.save_function is not None:
+            self.save_function(
+                fem_data, dict_data, output_directory, self.force_renew)
 
         save_dict_data(
             output_directory, dict_data,
@@ -333,6 +342,7 @@ def concatenate_preprocessed_data(
             util.load_variable(preprocessed_directory, variable_name)
             for preprocessed_directory in preprocessed_directories])
         for variable_name in variable_names}
+
     data_length = len(dict_data[variable_names[0]])
     indices = np.arange(data_length)
     np.random.shuffle(indices)
@@ -579,7 +589,8 @@ class Preprocessor:
         preprocess_converter = util.PreprocessConverter(
             reference_dict['preprocess_converter'],
             componentwise=reference_dict['componentwise'],
-            power=reference_dict.get('power', 1.))
+            power=reference_dict.get('power', 1.),
+            other_components=reference_dict['other_components'])
         if preprocess_converter is None:
             raise ValueError(f"Reference of {variable_name} is None")
 
@@ -653,18 +664,23 @@ class Preprocessor:
         if preprocess_setting['same_as'] is None:
             if preprocess_setting['method'] == 'identity':
                 preprocess_converter = util.PreprocessConverter(
-                    preprocess_setting['method'],
+                    'identity',
                     componentwise=preprocess_setting['componentwise'],
-                    power=preprocess_setting['power'],
-                    key=self.setting.data.encrypt_key)
+                    other_components=[],
+                    power=1., key=self.setting.data.encrypt_key)
             else:
                 data_files = [
                     data_directory / (variable_name + ext)
                     for data_directory in self.interim_directories]
+                for other_component in preprocess_setting['other_components']:
+                    data_files += [
+                        data_directory / (other_component + ext)
+                        for data_directory in self.interim_directories]
                 preprocess_converter = util.PreprocessConverter(
                     preprocess_setting['method'], data_files=data_files,
                     componentwise=preprocess_setting['componentwise'],
                     power=preprocess_setting['power'],
+                    other_components=preprocess_setting['other_components'],
                     key=self.setting.data.encrypt_key)
         else:
             # same_as is set so no need to prepare preprocessor
@@ -676,6 +692,7 @@ class Preprocessor:
                 'componentwise': preprocess_setting['componentwise'],
                 'preprocess_converter': preprocess_converter,
                 'power': preprocess_setting['power'],
+                'other_components': preprocess_setting['other_components'],
             }}
         if not self.setting.data.preprocessed_root.exists():
             self.setting.data.preprocessed_root.mkdir(
@@ -797,7 +814,8 @@ class Converter:
             variable_name:
             util.PreprocessConverter(
                 value['preprocess_converter'],
-                componentwise=value['componentwise'])
+                componentwise=value['componentwise'],
+                other_components=value['other_components'])
             for variable_name, value in preprocess_setting.preprocess.items()}
         return converters
 
@@ -963,7 +981,8 @@ class Converter:
                 write_simulation_base, required_file_names)
             data_dict, fem_data = load_function(
                 data_files, write_simulation_base)
-            fem_data = update_fem_data(fem_data, data_dict)
+            fem_data = update_fem_data(
+                fem_data, data_dict, allow_overwrite=True)
         else:
             raise ValueError(
                 'When skip_femio is True, please feed load_function.')
@@ -987,6 +1006,11 @@ class Converter:
             ext = ''
         elif write_simulation_type == 'ucd':
             ext = '.inp'
+        elif write_simulation_type == 'vtk':
+            ext = '.vtk'
+        else:
+            raise ValueError(
+                f"Unexpected write_simulation_type: {write_simulation_type}")
         fem_data.write(
             write_simulation_type, output_directory / ('mesh' + ext),
             overwrite=overwrite)

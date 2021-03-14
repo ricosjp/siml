@@ -50,4 +50,5 @@ DICT_ACTIVATIONS = {
     'mean': mean,
     'mish': mish,
     'softplus': torch.nn.functional.softplus,
+    'sqrt': torch.sqrt,
 }

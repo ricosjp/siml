@@ -5,33 +5,68 @@ conversion:
   mandatory_variables: []
   optional: []
   optional_variables: []
-  required_file_names:
-  - '*.msh'
-  - '*.cnt'
-  - '*.res.0.1'
+  required_file_names: []
+  save_femio: false
   skip_femio: false
+  time_series: false
 data:
   develop: []
-  inferred: data/inferred
-  interim: data/interim
+  inferred:
+  - data/inferred
+  interim:
+  - data/interim
   pad: false
-  preprocessed: tests/data/deform_timeseries/preprocessed
-  raw: data/raw
+  preprocessed:
+  - tests/data/deform_timeseries/preprocessed
+  raw:
+  - data/raw
   test: []
   train:
-  - tests/data/deform_timeseries/preprocessed/train
+  - tests/data/deform_timeseries/preprocessed/train/tet2_3_modulusx0.9000
+  - tests/data/deform_timeseries/preprocessed/train/tet2_3_modulusx1.0000
+  - tests/data/deform_timeseries/preprocessed/train/tet2_3_modulusx1.1000
+  - tests/data/deform_timeseries/preprocessed/train/tet2_4_modulusx0.9000
+  - tests/data/deform_timeseries/preprocessed/train/tet2_4_modulusx1.0000
+  - tests/data/deform_timeseries/preprocessed/train/tet2_4_modulusx1.1000
   validation:
-  - tests/data/deform_timeseries/preprocessed/train
+  - tests/data/deform_timeseries/preprocessed/train/tet2_3_modulusx0.9000
+  - tests/data/deform_timeseries/preprocessed/train/tet2_3_modulusx1.0000
+  - tests/data/deform_timeseries/preprocessed/train/tet2_3_modulusx1.1000
+  - tests/data/deform_timeseries/preprocessed/train/tet2_4_modulusx0.9000
+  - tests/data/deform_timeseries/preprocessed/train/tet2_4_modulusx1.0000
+  - tests/data/deform_timeseries/preprocessed/train/tet2_4_modulusx1.1000
+inferer:
+  accomodate_length: 0
+  convert_to_order1: false
+  converter_parameters_pkl: null
+  data_directories: []
+  model: null
+  output_directory: null
+  output_directory_base: data/inferred
+  overwrite: false
+  perform_inverse: true
+  perform_preprocess: false
+  read_simulation_type: fistr
+  return_all_results: true
+  save: true
+  write_npy: true
+  write_simulation: false
+  write_simulation_base: null
+  write_simulation_stem: null
+  write_simulation_type: fistr
+  write_yaml: true
 model:
   blocks:
-  - activations:
-    - identity
-    - identity
+  - activation_after_residual: true
+    activations:
+    - relu
+    allow_linear_residual: false
+    bias: true
+    coeff: null
     destinations:
-    - MLP
+    - TCN
     device: null
     dropouts:
-    - 0.0
     - 0.0
     hidden_activation: relu
     hidden_dropout: 0.5
@@ -39,27 +74,92 @@ model:
     hidden_nodes: null
     input_dropout: 0.0
     input_indices: null
+    input_keys: null
     input_slice:
     - 0
     - null
     - 1
-    name: LSTM
+    is_first: true
+    is_last: false
+    kernel_sizes: null
+    name: IN_MLP
     nodes:
     - 8
-    - 100
     - 100
     optional: {}
     output_activation: identity
     output_dropout: 0.0
+    output_key: null
+    residual: false
     support_input_index: null
     support_input_indices:
     - 0
-    type: lstm
-  - activations:
+    time_series: true
+    type: adjustable_mlp
+  - activation_after_residual: true
+    activations:
+    - relu
+    - relu
+    - relu
+    allow_linear_residual: false
+    bias: true
+    coeff: null
+    destinations:
+    - OUT_MLP
+    device: null
+    dropouts:
+    - 0.0
+    - 0.0
+    - 0.0
+    hidden_activation: relu
+    hidden_dropout: 0.5
+    hidden_layers: null
+    hidden_nodes: null
+    input_dropout: 0.0
+    input_indices: null
+    input_keys: null
+    input_slice:
+    - 0
+    - null
+    - 1
+    is_first: false
+    is_last: false
+    kernel_sizes:
+    - 3
+    - 3
+    - 3
+    name: TCN
+    nodes:
+    - 100
+    - 100
+    - 100
+    - 100
+    optional:
+      dilations:
+      - 1
+      - 2
+      - 4
+      padding_modes:
+      - reflect
+      - replicate
+      - replicate
+    output_activation: identity
+    output_dropout: 0.0
+    output_key: null
+    residual: true
+    support_input_index: null
+    support_input_indices:
+    - 0
+    time_series: true
+    type: tcn
+  - activation_after_residual: true
+    activations:
     - relu
     - identity
-    destinations:
-    - Output
+    allow_linear_residual: false
+    bias: true
+    coeff: null
+    destinations: []
     device: null
     dropouts:
     - 0.0
@@ -70,11 +170,15 @@ model:
     hidden_nodes: null
     input_dropout: 0.0
     input_indices: null
+    input_keys: null
     input_slice:
     - 0
     - null
     - 1
-    name: MLP
+    is_first: false
+    is_last: true
+    kernel_sizes: null
+    name: OUT_MLP
     nodes:
     - 100
     - 10
@@ -82,9 +186,12 @@ model:
     optional: {}
     output_activation: identity
     output_dropout: 0.0
+    output_key: null
+    residual: false
     support_input_index: null
     support_input_indices:
     - 0
+    time_series: true
     type: adjustable_mlp
 optuna:
   hyperparameters: []
@@ -92,6 +199,7 @@ optuna:
   output_base_directory: models/optuna
   setting: {}
 preprocess: {}
+replace_preprocessed: true
 study:
   n_fold: 10
   plot_validation: false
@@ -108,21 +216,14 @@ study:
   y_from_zero: false
   y_logscale: false
 trainer:
-  batch_size: 2
+  batch_size: 6
   compute_accuracy: false
   data_parallel: false
   display_mergin: 5
+  draw_network: true
   element_batch_size: -1
   element_wise: false
   gpu_id: -1
-  input_dims:
-  - 1
-  - 6
-  - 1
-  input_names:
-  - t
-  - strain
-  - modulus
   inputs:
   - dim: 1
     name: t
@@ -132,11 +233,11 @@ trainer:
     name: modulus
   iterator: serial
   lazy: false
-  log_trigger_epoch: 50
+  log_trigger_epoch: 100
   loss_function: mse
   model_parallel: false
-  n_epoch: 200
-  name: lstm_long
+  n_epoch: 1000
+  name: tcn
   non_blocking: true
   num_workers: 0
   optimizer: adam
@@ -148,11 +249,8 @@ trainer:
     lr: 0.001
     weight_decay: 0
   optuna_trial: null
-  output_dims:
-  - 6
-  output_directory: tests/data/deform_timeseries/long
-  output_names:
-  - stress
+  output_directory: tests/data/deform_timeseries/tcn
+  output_stats: false
   outputs:
   - dim: 6
     name: stress
@@ -163,11 +261,12 @@ trainer:
   seed: 0
   simplified_model: false
   snapshot_choise_method: best
-  stop_trigger_epoch: 50
+  split_ratio: {}
+  stop_trigger_epoch: 100
   support_input: null
   support_inputs: null
   time_series: true
   use_siml_updater: true
-  validation_batch_size: 2
+  validation_batch_size: 6
   validation_directories: []
   validation_element_batch_size: -1

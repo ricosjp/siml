@@ -366,10 +366,9 @@ class TestPrepost(unittest.TestCase):
             'tests/data/deform/test_prepost/preprocessed/train/'
             'tet2_3_modulusx1.0000/y_grad.npz')
 
-        ratio_y_grad = interim_y_grad.toarray() \
-            / preprocessed_y_grad.toarray()
-        np.testing.assert_almost_equal(
-            ratio_y_grad - np.mean(ratio_y_grad), 0.)
+        ratio_y_grad = interim_y_grad.data \
+            / preprocessed_y_grad.data
+        np.testing.assert_almost_equal(np.var(ratio_y_grad), 0.)
 
     def test_convert_raw_data_with_filter_function(self):
         main_setting = setting.MainSetting.read_settings_yaml(

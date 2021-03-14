@@ -116,6 +116,12 @@ class TestUtil(unittest.TestCase):
             required_file_names=['*.msh', '*.cnt', '*.res.0.1'])
         self.assertEqual(len(data_directories), 10)
 
+    def test_collect_data_directories_wildcard(self):
+        data_directories = util.collect_data_directories(
+            Path('tests/data/deform/raw/**/tet2_3*'),
+            required_file_names=['*.msh', '*.cnt', '*.res.0.1'])
+        self.assertEqual(len(data_directories), 5)
+
     def test_max_abs_scaler(self):
         x = np.array([
             [1., 10., 100.],
@@ -188,10 +194,104 @@ class TestUtil(unittest.TestCase):
             [.3],
             [0.],
         ]))
-        answer_var = np.var(np.concatenate([x1.toarray(), x2.toarray()]))
+        answer_var = np.mean(np.concatenate([x1.toarray(), x2.toarray()])**2)
         sp_std_scaler = util.SparseStandardScaler()
         sp_std_scaler.partial_fit(x1)
         sp_std_scaler.partial_fit(x2)
+
+        np.testing.assert_array_almost_equal(
+            sp_std_scaler.var_, answer_var)
+
+        self.assertIsInstance(sp_std_scaler.transform(x1), sp.coo_matrix)
+        np.testing.assert_array_almost_equal(
+            sp_std_scaler.transform(x1).toarray(),
+            x1.toarray() / answer_var**.5)
+        np.testing.assert_array_almost_equal(
+            sp_std_scaler.inverse_transform(
+                sp_std_scaler.transform(x1)).toarray(), x1.toarray())
+
+    def test_sparse_standard_scaler_other_components(self):
+        x1 = sp.coo_matrix(np.array([
+            [1.],
+            [0.],
+            [3.],
+            [-4.],
+            [0.],
+            [1.],
+            [0.],
+            [3.],
+            [-4.],
+            [0.],
+        ]))
+        x2 = sp.coo_matrix(np.array([
+            [0.],
+            [1.],
+            [.3],
+            [0.],
+            [0.],
+            [1.],
+            [.3],
+            [0.],
+        ]))
+
+        y1 = sp.coo_matrix(np.array([
+            [1.],
+            [0.],
+            [13.],
+            [-4.],
+            [0.],
+            [11.],
+            [0.],
+            [13.],
+            [-14.],
+            [0.],
+        ]))
+        y2 = sp.coo_matrix(np.array([
+            [0.],
+            [11.],
+            [1.3],
+            [0.],
+            [0.],
+            [11.],
+            [1.3],
+            [0.],
+        ]))
+
+        z1 = sp.coo_matrix(np.array([
+            [21.],
+            [0.],
+            [3.],
+            [-24.],
+            [0.],
+            [21.],
+            [0.],
+            [23.],
+            [-24.],
+            [0.],
+        ]))
+        z2 = sp.coo_matrix(np.array([
+            [0.],
+            [21.],
+            [.3],
+            [0.],
+            [0.],
+            [21.],
+            [.3],
+            [0.],
+        ]))
+
+        answer_var = np.mean(
+            np.concatenate([x1.toarray(), x2.toarray()])**2
+            + np.concatenate([y1.toarray(), y2.toarray()])**2
+            + np.concatenate([z1.toarray(), z2.toarray()])**2
+        )
+        sp_std_scaler = util.SparseStandardScaler(other_components=['y', 'z'])
+        sp_std_scaler.partial_fit(x1)
+        sp_std_scaler.partial_fit(x2)
+        sp_std_scaler.partial_fit(y1)
+        sp_std_scaler.partial_fit(y2)
+        sp_std_scaler.partial_fit(z1)
+        sp_std_scaler.partial_fit(z2)
 
         np.testing.assert_array_almost_equal(
             sp_std_scaler.var_, answer_var)

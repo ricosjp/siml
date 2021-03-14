@@ -159,26 +159,32 @@ class DataSetting(TypedDataClass):
     def __post_init__(self):
         if self.pad:
             raise ValueError(
-                f"pad = True option is deprecated. Set pad = False")
+                "pad = True option is deprecated. Set pad = False")
         super().__post_init__()
 
         return
 
     @property
     def raw_root(self):
-        return Path(os.path.commonprefix(self.raw))
+        return self._find_root(self.raw)
 
     @property
     def interim_root(self):
-        return Path(os.path.commonprefix(self.interim))
+        return self._find_root(self.interim)
 
     @property
     def preprocessed_root(self):
-        return Path(os.path.commonprefix(self.preprocessed))
+        return self._find_root(self.preprocessed)
 
     @property
     def inferred_root(self):
-        return Path(os.path.commonprefix(self.inferred))
+        return self._find_root(self.inferred)
+
+    def _find_root(self, paths):
+        common_path = str(Path(os.path.commonprefix(paths))).rstrip('*')
+        if '*' in common_path:
+            raise ValueError(f"Invalid paths: {paths}")
+        return Path(common_path)
 
 
 @dc.dataclass
@@ -371,8 +377,6 @@ class TrainerSetting(TypedDataClass):
         if self.validation_element_batch_size is None:
             self.validation_element_batch_size = self.element_batch_size
 
-        self.variable_information = self._generate_variable_information()
-
         if self.output_directory is None:
             self.update_output_directory()
         if self.support_input is not None:
@@ -400,7 +404,7 @@ class TrainerSetting(TypedDataClass):
 
         if (self.stop_trigger_epoch // self.log_trigger_epoch) == 0:
             raise ValueError(
-                f"Set stop_trigger_epoch larger than log_trigger_epoch")
+                "Set stop_trigger_epoch larger than log_trigger_epoch")
 
         super().__post_init__()
 
@@ -437,6 +441,19 @@ class TrainerSetting(TypedDataClass):
     def output_length(self):
         return self._sum_dims(self.output_dims)
 
+    @property
+    def variable_information(self):
+        def to_dict(data):
+            if isinstance(data, dict):
+                return {v['name']: v for value in data.values() for v in value}
+            elif isinstance(data, list):
+                return {d['name']: d for d in data}
+            else:
+                raise ValueError(f"Unexpected data: {data}")
+        out_dict = to_dict(self.inputs)
+        out_dict.update(to_dict(self.outputs))
+        return out_dict
+
     def update_output_directory(self, *, id_=None, base=None):
         if base is None:
             base = Path('models')
@@ -470,18 +487,6 @@ class TrainerSetting(TypedDataClass):
                     for dict_value in data.values() for v in dict_value]
         else:
             raise ValueError(f"Unexpected data: {data}")
-
-    def _generate_variable_information(self):
-        def to_dict(data):
-            if isinstance(data, dict):
-                return {v['name']: v for value in data.values() for v in value}
-            elif isinstance(data, list):
-                return {d['name']: d for d in data}
-            else:
-                raise ValueError(f"Unexpected data: {data}")
-        out_dict = to_dict(self.inputs)
-        out_dict.update(to_dict(self.outputs))
-        return out_dict
 
     def _sum_dims(self, dim_data):
         if isinstance(dim_data, dict):
@@ -783,7 +788,7 @@ class PreprocessSetting:
             if isinstance(value, str):
                 self.preprocess.update({key: {
                     'method': value, 'componentwise': False, 'same_as': None,
-                    'group_id': 0, 'power': 1.}})
+                    'group_id': 0, 'power': 1., 'other_components': []}})
             elif isinstance(value, dict):
                 if 'method' not in value:
                     value.update({'method': 'identity'})
@@ -795,6 +800,8 @@ class PreprocessSetting:
                     value.update({'group_id': 0})
                 if 'power' not in value:
                     value.update({'power': 1.})
+                if 'other_components' not in value:
+                    value.update({'other_components': []})
                 self.preprocess.update({key: value})
             else:
                 raise ValueError(
