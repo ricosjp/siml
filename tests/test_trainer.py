@@ -245,17 +245,47 @@ class TestTrainer(unittest.TestCase):
             main_setting.trainer.output_directory, ignore_errors=True)
         tr = trainer.Trainer(main_setting)
         loss = tr.train()
+        self.assertLess(loss, 1e-1)
 
         ir = inferer.Inferer(
             main_setting,
-            model=Path('tests/data/deform/pretrained'),
+            model=main_setting.trainer.output_directory,
             converter_parameters_pkl=main_setting.data.preprocessed_root
             / 'preprocessors.pkl',
             conversion_function=conversion_function, save=False)
         results = ir.infer(
             data_directories=main_setting.data.raw_root
             / 'train/tet2_3_modulusx0.9000', perform_preprocess=True)
-        self.assertLess(results[0]['loss'], loss)
+        self.assertLess(results[0]['loss'], 1e-1)
+
+    def test_whole_wildcard_processs(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/deform/whole_wildcard.yml'))
+        shutil.rmtree(main_setting.data.interim_root, ignore_errors=True)
+        shutil.rmtree(main_setting.data.preprocessed_root, ignore_errors=True)
+
+        raw_converter = prepost.RawConverter(
+            main_setting, conversion_function=conversion_function)
+        raw_converter.convert()
+        p = prepost.Preprocessor(main_setting)
+        p.preprocess_interim_data()
+
+        shutil.rmtree(
+            main_setting.trainer.output_directory, ignore_errors=True)
+        tr = trainer.Trainer(main_setting)
+        loss = tr.train()
+        self.assertLess(loss, 1e-1)
+
+        ir = inferer.Inferer(
+            main_setting,
+            model=main_setting.trainer.output_directory,
+            converter_parameters_pkl=main_setting.data.preprocessed_root
+            / 'preprocessors.pkl',
+            conversion_function=conversion_function, save=False)
+        results = ir.infer(
+            data_directories=main_setting.data.raw_root
+            / 'train/tet2_3_modulusx0.9000', perform_preprocess=True)
+        self.assertLess(results[0]['loss'], 1e-1)
 
     def test_output_stats(self):
         original_setting = setting.MainSetting.read_settings_yaml(

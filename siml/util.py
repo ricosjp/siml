@@ -1,6 +1,6 @@
 import datetime as dt
 import gc
-from glob import glob
+from glob import glob, iglob
 import io
 import itertools as it
 import os
@@ -235,7 +235,7 @@ def copy_variable_file(
 
 def collect_data_directories(
         base_directory, *, required_file_names=None, allow_no_data=False,
-        pattern=None, inverse_pattern=None):
+        pattern=None, inverse_pattern=None, toplevel=True):
     """Collect data directories recursively from the base directory.
 
     Parameters
@@ -254,30 +254,40 @@ def collect_data_directories(
             All found directories.
     """
     if isinstance(base_directory, (list, tuple, set)):
-        return list(np.unique(np.concatenate([
+        found_directories = list(np.unique(np.concatenate([
             collect_data_directories(
                 bd, required_file_names=required_file_names,
                 allow_no_data=allow_no_data, pattern=pattern,
-                inverse_pattern=inverse_pattern)
+                inverse_pattern=inverse_pattern, toplevel=False)
             for bd in base_directory])))
+        found_directories = _validate_found_directories(
+            base_directory, found_directories, pattern, inverse_pattern,
+            allow_no_data)
+        return found_directories
 
-    if not base_directory.exists():
-        if allow_no_data:
-            return []
-        else:
-            raise ValueError(f"{base_directory} not exist")
-
+    str_base_directory = str(base_directory).rstrip('/') + '/**'
+    found_directories = iglob(str_base_directory, recursive=True)
     if required_file_names:
         found_directories = [
-            Path(directory) for directory, _, sub_files
-            in os.walk(base_directory, followlinks=True)
-            if len(sub_files) > 0 and files_match(
-                sub_files, required_file_names)]
+            Path(g) for g in found_directories
+            if Path(g).is_dir()
+            and directory_have_files(Path(g), required_file_names)]
     else:
         found_directories = [
-            Path(directory) for directory, _, sub_files
-            in os.walk(base_directory, followlinks=True)]
+            Path(g) for g in found_directories
+            if Path(g).is_dir()]
 
+    if toplevel:
+        found_directories = _validate_found_directories(
+            base_directory, found_directories, pattern, inverse_pattern,
+            allow_no_data)
+
+    return found_directories
+
+
+def _validate_found_directories(
+        base_directory, found_directories, pattern, inverse_pattern,
+        allow_no_data):
     if pattern is not None:
         found_directories = [
             d for d in found_directories if re.search(pattern, str(d))]
@@ -287,7 +297,16 @@ def collect_data_directories(
             d for d in found_directories
             if not re.search(inverse_pattern, str(d))]
 
+    if not allow_no_data and len(found_directories) == 0:
+        raise ValueError(f"No data found in {base_directory}")
+
     return found_directories
+
+
+def directory_have_files(directory, files):
+    if isinstance(files, str):
+        files = [files]
+    return np.all([len(glob(str(directory / f) + '*')) > 0 for f in files])
 
 
 def collect_files(

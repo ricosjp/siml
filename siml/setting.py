@@ -166,19 +166,25 @@ class DataSetting(TypedDataClass):
 
     @property
     def raw_root(self):
-        return Path(os.path.commonprefix(self.raw))
+        return self._find_root(self.raw)
 
     @property
     def interim_root(self):
-        return Path(os.path.commonprefix(self.interim))
+        return self._find_root(self.interim)
 
     @property
     def preprocessed_root(self):
-        return Path(os.path.commonprefix(self.preprocessed))
+        return self._find_root(self.preprocessed)
 
     @property
     def inferred_root(self):
-        return Path(os.path.commonprefix(self.inferred))
+        return self._find_root(self.inferred)
+
+    def _find_root(self, paths):
+        common_path = str(Path(os.path.commonprefix(paths))).rstrip('*')
+        if '*' in common_path:
+            raise ValueError(f"Invalid paths: {paths}")
+        return Path(common_path)
 
 
 @dc.dataclass
