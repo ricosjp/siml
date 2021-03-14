@@ -235,7 +235,7 @@ def copy_variable_file(
 
 def collect_data_directories(
         base_directory, *, required_file_names=None, allow_no_data=False,
-        pattern=None, inverse_pattern=None):
+        pattern=None, inverse_pattern=None, toplevel=True):
     """Collect data directories recursively from the base directory.
 
     Parameters
@@ -254,12 +254,16 @@ def collect_data_directories(
             All found directories.
     """
     if isinstance(base_directory, (list, tuple, set)):
-        return list(np.unique(np.concatenate([
+        found_directories = list(np.unique(np.concatenate([
             collect_data_directories(
                 bd, required_file_names=required_file_names,
                 allow_no_data=allow_no_data, pattern=pattern,
-                inverse_pattern=inverse_pattern)
+                inverse_pattern=inverse_pattern, toplevel=False)
             for bd in base_directory])))
+        found_directories = _validate_found_directories(
+            base_directory, found_directories, pattern, inverse_pattern,
+            allow_no_data)
+        return found_directories
 
     str_base_directory = str(base_directory).rstrip('/') + '/**'
     found_directories = iglob(str_base_directory, recursive=True)
@@ -273,6 +277,17 @@ def collect_data_directories(
             Path(g) for g in found_directories
             if Path(g).is_dir()]
 
+    if toplevel:
+        found_directories = _validate_found_directories(
+            base_directory, found_directories, pattern, inverse_pattern,
+            allow_no_data)
+
+    return found_directories
+
+
+def _validate_found_directories(
+        base_directory, found_directories, pattern, inverse_pattern,
+        allow_no_data):
     if pattern is not None:
         found_directories = [
             d for d in found_directories if re.search(pattern, str(d))]
@@ -282,10 +297,15 @@ def collect_data_directories(
             d for d in found_directories
             if not re.search(inverse_pattern, str(d))]
 
+    if not allow_no_data and len(found_directories) == 0:
+        raise ValueError(f"No data found in {base_directory}")
+
     return found_directories
 
 
 def directory_have_files(directory, files):
+    if isinstance(files, str):
+        files = [files]
     return np.all([len(glob(str(directory / f) + '*')) > 0 for f in files])
 
 

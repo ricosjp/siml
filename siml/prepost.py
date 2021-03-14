@@ -342,6 +342,7 @@ def concatenate_preprocessed_data(
             util.load_variable(preprocessed_directory, variable_name)
             for preprocessed_directory in preprocessed_directories])
         for variable_name in variable_names}
+
     data_length = len(dict_data[variable_names[0]])
     indices = np.arange(data_length)
     np.random.shuffle(indices)
