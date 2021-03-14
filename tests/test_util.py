@@ -116,6 +116,12 @@ class TestUtil(unittest.TestCase):
             required_file_names=['*.msh', '*.cnt', '*.res.0.1'])
         self.assertEqual(len(data_directories), 10)
 
+    def test_collect_data_directories_wildcard(self):
+        data_directories = util.collect_data_directories(
+            Path('tests/data/deform/raw/**/tet2_3*'),
+            required_file_names=['*.msh', '*.cnt', '*.res.0.1'])
+        self.assertEqual(len(data_directories), 5)
+
     def test_max_abs_scaler(self):
         x = np.array([
             [1., 10., 100.],

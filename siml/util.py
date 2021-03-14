@@ -1,6 +1,6 @@
 import datetime as dt
 import gc
-from glob import glob
+from glob import glob, iglob
 import io
 import itertools as it
 import os
@@ -261,22 +261,17 @@ def collect_data_directories(
                 inverse_pattern=inverse_pattern)
             for bd in base_directory])))
 
-    if not base_directory.exists():
-        if allow_no_data:
-            return []
-        else:
-            raise ValueError(f"{base_directory} not exist")
-
+    str_base_directory = str(base_directory).rstrip('/') + '/**'
+    found_directories = iglob(str_base_directory, recursive=True)
     if required_file_names:
         found_directories = [
-            Path(directory) for directory, _, sub_files
-            in os.walk(base_directory, followlinks=True)
-            if len(sub_files) > 0 and files_match(
-                sub_files, required_file_names)]
+            Path(g) for g in found_directories
+            if Path(g).is_dir()
+            and directory_have_files(Path(g), required_file_names)]
     else:
         found_directories = [
-            Path(directory) for directory, _, sub_files
-            in os.walk(base_directory, followlinks=True)]
+            Path(g) for g in found_directories
+            if Path(g).is_dir()]
 
     if pattern is not None:
         found_directories = [
@@ -288,6 +283,10 @@ def collect_data_directories(
             if not re.search(inverse_pattern, str(d))]
 
     return found_directories
+
+
+def directory_have_files(directory, files):
+    return np.all([len(glob(str(directory / f))) > 0 for f in files])
 
 
 def collect_files(
