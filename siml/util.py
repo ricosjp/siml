@@ -286,7 +286,7 @@ def collect_data_directories(
 
 
 def directory_have_files(directory, files):
-    return np.all([len(glob(str(directory / f))) > 0 for f in files])
+    return np.all([len(glob(str(directory / f) + '*')) > 0 for f in files])
 
 
 def collect_files(
