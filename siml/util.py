@@ -395,11 +395,14 @@ class PreprocessConverter():
 
     def __init__(
             self, setting_data, *,
-            data_files=None, componentwise=True, power=1., key=None):
+            data_files=None, componentwise=True, power=1.,
+            other_components=[], key=None):
         self.is_erroneous = None
         self.setting_data = setting_data
         self.power = power
+        self.other_components = other_components
         self.key = key
+        self.use_diagonal = False
 
         self._init_converter()
 
@@ -443,8 +446,14 @@ class PreprocessConverter():
             self.converter = preprocessing.StandardScaler(with_mean=False)
             self.is_erroneous = self.is_standard_scaler_var_nan
         elif preprocess_method == 'sparse_std':
-            self.converter = SparseStandardScaler(power=self.power)
+            self.converter = SparseStandardScaler(
+                power=self.power, other_components=self.other_components)
             self.is_erroneous = self.is_standard_scaler_var_nan
+        elif preprocess_method == 'isoam_scale':
+            self.converter = IsoAMScaler(
+                other_components=self.other_components)
+            self.is_erroneous = self.is_standard_scaler_var_nan
+            self.use_diagonal = True
         elif preprocess_method == 'min_max':
             self.converter = preprocessing.MinMaxScaler()
         elif preprocess_method == 'max_abs':
@@ -459,13 +468,16 @@ class PreprocessConverter():
         return
 
     def apply_data_with_rehspe_if_needed(
-            self, data, function, return_applied=True):
+            self, data, function, return_applied=True, use_diagonal=False):
         if isinstance(data, np.ndarray):
+            if use_diagonal:
+                raise ValueError('Cannot set use_diagonal=True for dense data')
             result = self.apply_numpy_data_with_reshape_if_needed(
                 data, function, return_applied=return_applied)
         elif isinstance(data, (sp.coo_matrix, sp.csr_matrix)):
             result = self.apply_sparse_data_with_reshape_if_needed(
-                data, function, return_applied=return_applied)
+                data, function, return_applied=return_applied,
+                use_diagonal=use_diagonal)
         else:
             raise ValueError(f"Unsupported data type: {data.__class__}")
 
@@ -475,13 +487,27 @@ class PreprocessConverter():
         return np.any(np.isnan(self.converter.var_))
 
     def apply_sparse_data_with_reshape_if_needed(
-            self, data, function, return_applied=True):
+            self, data, function, return_applied=True, use_diagonal=False):
         if self.componentwise:
             applied = function(data)
             if return_applied:
                 return applied.tocoo()
             else:
                 return
+
+        elif use_diagonal:
+            print('Start diagonal')
+            print(dt.datetime.now())
+            reshaped = data.diagonal()
+            print('Start apply')
+            print(dt.datetime.now())
+            applied_reshaped = function(reshaped)
+            if return_applied:
+                raise ValueError(
+                    'Cannot set return_applied=True when use_diagonal=True')
+            else:
+                return
+
         else:
             shape = data.shape
             print('Start reshape')
@@ -545,7 +571,8 @@ class PreprocessConverter():
             print(f"Start partial_fit: {data_file}")
             print(dt.datetime.now())
             self.apply_data_with_rehspe_if_needed(
-                data, self.converter.partial_fit, return_applied=False)
+                data, self.converter.partial_fit, return_applied=False,
+                use_diagonal=self.use_diagonal)
             print(f"Start del: {data_file}")
             print(dt.datetime.now())
             del data
@@ -639,43 +666,41 @@ class MaxAbsScaler(TransformerMixin, BaseEstimator):
 class SparseStandardScaler(TransformerMixin, BaseEstimator):
     """Class to perform standardization for sparse data."""
 
-    def __init__(self, power=1.):
+    def __init__(self, power=1., other_components=[]):
         self.var_ = 0.
         self.std_ = 0.
-        self.mean_ = 0.
         self.mean_square_ = 0.
         self.n_ = 0
         self.power = power
+        self.component_dim = len(other_components) + 1
         return
 
     def partial_fit(self, data):
-        self._raise_if_sparse(data)
+        self._raise_if_not_sparse(data)
         self._update(data)
         return self
 
     def _update(self, sparse_dats):
         m = np.prod(sparse_dats.shape)
-        mean = (
-            self.mean_ * self.n_ + np.sum(sparse_dats.data)) / (self.n_ + m)
         mean_square = (
             self.mean_square_ * self.n_ + np.sum(sparse_dats.data**2)) / (
                 self.n_ + m)
 
-        self.mean_ = mean
         self.mean_square_ = mean_square
         self.n_ += m
 
-        self.var_ = self.mean_square_ - self.mean_**2
+        # To use mean_i [x_i^2 + y_i^2 + z_i^2], multiply by the dim
+        self.var_ = self.mean_square_ * self.component_dim
         self.std_ = np.sqrt(self.var_)
         return
 
-    def _raise_if_sparse(self, data):
+    def _raise_if_not_sparse(self, data):
         if not sp.issparse(data):
             raise ValueError('Data is not sparse')
         return
 
     def transform(self, data):
-        self._raise_if_sparse(data)
+        self._raise_if_not_sparse(data)
         if self.std_ == 0.:
             scale = 0.
         else:
@@ -683,8 +708,64 @@ class SparseStandardScaler(TransformerMixin, BaseEstimator):
         return data * scale
 
     def inverse_transform(self, data):
-        self._raise_if_sparse(data)
+        self._raise_if_not_sparse(data)
         inverse_scale = self.std_**(self.power)
+        return data * inverse_scale
+
+
+class IsoAMScaler(TransformerMixin, BaseEstimator):
+    """Class to perform scaling for IsoAM based on
+    https://arxiv.org/abs/2005.06316.
+    """
+
+    def __init__(self, other_components=[]):
+        self.var_ = 0.
+        self.std_ = 0.
+        self.mean_square_ = 0.
+        self.n_ = 0
+        self.component_dim = len(other_components) + 1
+        if self.component_dim == 1:
+            raise ValueError(
+                'To use IsoAMScaler, feed other_components: '
+                f"{other_components}")
+        return
+
+    def partial_fit(self, data):
+        self._update(data)
+        return self
+
+    def _update(self, diagonal_data):
+        if len(diagonal_data.shape) != 1:
+            raise ValueError(f"Input data should be 1D: {diagonal_data}")
+        m = len(diagonal_data)
+        mean_square = (
+            self.mean_square_ * self.n_ + np.sum(diagonal_data**2)) / (
+                self.n_ + m)
+
+        self.mean_square_ = mean_square
+        self.n_ += m
+
+        # To use mean_i [x_i^2 + y_i^2 + z_i^2], multiply by the dim
+        self.var_ = self.mean_square_ * self.component_dim
+        self.std_ = np.sqrt(self.var_)
+        return
+
+    def _raise_if_not_sparse(self, data):
+        if not sp.issparse(data):
+            raise ValueError('Data is not sparse')
+        return
+
+    def transform(self, data):
+        self._raise_if_not_sparse(data)
+        if self.std_ == 0.:
+            scale = 0.
+        else:
+            scale = (1 / self.std_)
+        return data * scale
+
+    def inverse_transform(self, data):
+        self._raise_if_not_sparse(data)
+        inverse_scale = self.std_
         return data * inverse_scale
 
 
@@ -1272,14 +1353,11 @@ def pad_array(array, n):
 
 
 def concatenate_variable(variables):
-    try:
-        concatenatable_variables = np.concatenate(
-            [
-                _to_atleast_2d(variable) for variable in variables
-                if isinstance(variable, np.ndarray)],
-            axis=-1)
-    except:
-        raise ValueError([v.shape for v in variables])
+    concatenatable_variables = np.concatenate(
+        [
+            _to_atleast_2d(variable) for variable in variables
+            if isinstance(variable, np.ndarray)],
+        axis=-1)
     unconcatenatable_variables = [
         variable for variable in variables
         if not isinstance(variable, np.ndarray)]
