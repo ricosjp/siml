@@ -588,7 +588,8 @@ class Preprocessor:
         preprocess_converter = util.PreprocessConverter(
             reference_dict['preprocess_converter'],
             componentwise=reference_dict['componentwise'],
-            power=reference_dict.get('power', 1.))
+            power=reference_dict.get('power', 1.),
+            other_components=reference_dict['other_components'])
         if preprocess_converter is None:
             raise ValueError(f"Reference of {variable_name} is None")
 
@@ -662,18 +663,23 @@ class Preprocessor:
         if preprocess_setting['same_as'] is None:
             if preprocess_setting['method'] == 'identity':
                 preprocess_converter = util.PreprocessConverter(
-                    preprocess_setting['method'],
+                    'identity',
                     componentwise=preprocess_setting['componentwise'],
-                    power=preprocess_setting['power'],
-                    key=self.setting.data.encrypt_key)
+                    other_components=[],
+                    power=1., key=self.setting.data.encrypt_key)
             else:
                 data_files = [
                     data_directory / (variable_name + ext)
                     for data_directory in self.interim_directories]
+                for other_component in preprocess_setting['other_components']:
+                    data_files += [
+                        data_directory / (other_component + ext)
+                        for data_directory in self.interim_directories]
                 preprocess_converter = util.PreprocessConverter(
                     preprocess_setting['method'], data_files=data_files,
                     componentwise=preprocess_setting['componentwise'],
                     power=preprocess_setting['power'],
+                    other_components=preprocess_setting['other_components'],
                     key=self.setting.data.encrypt_key)
         else:
             # same_as is set so no need to prepare preprocessor
@@ -685,6 +691,7 @@ class Preprocessor:
                 'componentwise': preprocess_setting['componentwise'],
                 'preprocess_converter': preprocess_converter,
                 'power': preprocess_setting['power'],
+                'other_components': preprocess_setting['other_components'],
             }}
         if not self.setting.data.preprocessed_root.exists():
             self.setting.data.preprocessed_root.mkdir(
@@ -806,7 +813,8 @@ class Converter:
             variable_name:
             util.PreprocessConverter(
                 value['preprocess_converter'],
-                componentwise=value['componentwise'])
+                componentwise=value['componentwise'],
+                other_components=value['other_components'])
             for variable_name, value in preprocess_setting.preprocess.items()}
         return converters
 

@@ -39,8 +39,10 @@ preprocess:
   global_modulus:
     method: standardize
   x_grad:
-    method: sparse_std
-    componentwise: false
+    method: isoam_scale
+    other_components:
+      - y_grad
+      - z_grad
   y_grad:
     same_as: x_grad
   z_grad:
