@@ -724,6 +724,10 @@ class IsoAMScaler(TransformerMixin, BaseEstimator):
         self.mean_square_ = 0.
         self.n_ = 0
         self.component_dim = len(other_components) + 1
+        if self.component_dim == 1:
+            raise ValueError(
+                'To use IsoAMScaler, feed other_components: '
+                f"{other_components}")
         return
 
     def partial_fit(self, data):
