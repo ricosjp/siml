@@ -143,7 +143,7 @@ class TestNetworksGPU(unittest.TestCase):
             model=main_setting.trainer.output_directory,
             data_directories=main_setting.data.preprocessed_root
             / 'test')
-        self.assertLess(results[0]['loss'], .2)
+        self.assertLess(results[0]['loss'], .5)
         if PLOT:
             cmap = plt.get_cmap('tab10')
             for i, result in enumerate(results):
@@ -214,3 +214,14 @@ class TestNetworksGPU(unittest.TestCase):
             shutil.rmtree(tr.setting.trainer.output_directory)
         loss = tr.train()
         np.testing.assert_array_less(loss, 1.5)
+
+    @testing.attr.multi_gpu(2)
+    def test_mlp_w_translate(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/deform/mlp_w_translate.yml'))
+        main_setting.trainer.gpu_id = 1
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, 10.)

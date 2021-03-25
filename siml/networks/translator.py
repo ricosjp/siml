@@ -42,5 +42,6 @@ class Translator(siml_module.SimlModule):
             [
                 self.aggregate_func(x[..., i], dim=0, keepdims=False)
                 if i in self.components
-                else torch.zeros(x.shape[1:-1]) for i in range(x.shape[-1])],
+                else torch.zeros(x.shape[1:-1]).to(x.device)
+                for i in range(x.shape[-1])],
             dim=-1)
