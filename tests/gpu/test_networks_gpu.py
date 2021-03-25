@@ -143,7 +143,7 @@ class TestNetworksGPU(unittest.TestCase):
             model=main_setting.trainer.output_directory,
             data_directories=main_setting.data.preprocessed_root
             / 'test')
-        self.assertLess(results[0]['loss'], .2)
+        self.assertLess(results[0]['loss'], .5)
         if PLOT:
             cmap = plt.get_cmap('tab10')
             for i, result in enumerate(results):
