@@ -577,3 +577,9 @@ class TestNetworks(unittest.TestCase):
         ).detach().numpy()
         np.testing.assert_almost_equal(np.min(t[:, 0]), 0.)
         np.testing.assert_almost_equal(np.min(t[:, -1]), 0.)
+
+    def test_normalize(self):
+        a = np.random.rand(10, 3)
+        normalized_a = activations.normalize(torch.from_numpy(a)).numpy()
+        np.testing.assert_almost_equal(
+            normalized_a, a / (np.linalg.norm(a, axis=1)[..., None] + 1e-5))
