@@ -42,6 +42,8 @@ def split(x, original_shapes):
     if isinstance(original_shapes, dict):
         raise ValueError(
             'Input is dict. Specify dict_key in the block_setting.')
+    if len(original_shapes) == 1:
+        return (x,)
 
     if len(original_shapes[0]) == 1:
         return torch.split(x, [s[0] for s in original_shapes])
