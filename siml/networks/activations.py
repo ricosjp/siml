@@ -23,6 +23,21 @@ def mean(x, original_shapes):
         torch.mean(s, dim=dim, keepdim=False) for s in split_x], dim=dim)
 
 
+def min(x, original_shapes):
+    split_x = split(x, original_shapes)
+    dim = len(original_shapes[0]) - 1
+    return torch.stack([
+        min_func(s, dim=dim, keepdim=False) for s in split_x], dim=dim)
+
+
+def min_func(*args, **kwargs):
+    ret = torch.min(*args, **kwargs)
+    if isinstance(ret, tuple):
+        return ret[0]
+    else:
+        return ret
+
+
 def split(x, original_shapes):
     if isinstance(original_shapes, dict):
         raise ValueError(
