@@ -38,6 +38,11 @@ def min_func(*args, **kwargs):
         return ret
 
 
+def normalize(x):
+    norms = torch.norm(x, dim=-1, keepdim=True)
+    return x / (norms + 1e-5)
+
+
 def split(x, original_shapes):
     if isinstance(original_shapes, dict):
         raise ValueError(
@@ -66,6 +71,7 @@ DICT_ACTIVATIONS = {
     'max': max_pool,
     'mean': mean,
     'mish': mish,
+    'normalize': normalize,
     'softplus': torch.nn.functional.softplus,
     'sqrt': torch.sqrt,
 }
