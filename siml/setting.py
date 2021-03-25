@@ -617,7 +617,7 @@ class BlockSetting(TypedDataClass):
     hidden_activation: str = 'relu'
     output_activation: str = 'identity'
     input_dropout: float = 0.0
-    hidden_dropout: float = 0.5
+    hidden_dropout: float = 0.0
     output_dropout: float = 0.0
 
     def __post_init__(self):

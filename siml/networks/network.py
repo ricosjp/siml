@@ -28,6 +28,7 @@ from . import symmat2array
 from . import tcn
 from . import tensor_operations
 from . import time_norm
+from . import translator
 
 
 class BlockInformation():
@@ -64,6 +65,7 @@ class Network(torch.nn.Module):
         'symmat2array': BlockInformation(
             symmat2array.Symmat2Array, trainable=False),
         'time_norm': BlockInformation(time_norm.TimeNorm, trainable=False),
+        'translator': BlockInformation(translator.Translator, trainable=False),
 
         # Layers with weights
         'adjustable_mlp': BlockInformation(mlp.MLP),
