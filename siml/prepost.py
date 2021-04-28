@@ -932,7 +932,7 @@ class Converter:
             return_dict_data_y = {}
 
         # Save data
-        if write_simulation_base is None:
+        if write_simulation_base is None or not write_simulation_base.exists():
             fem_data = None
         else:
             fem_data = self._create_fem_data(
