@@ -1,6 +1,7 @@
 from pathlib import Path
 import pickle
 import shutil
+import sys
 import unittest
 
 import numpy as np
@@ -12,6 +13,9 @@ import siml.setting as setting
 import siml.trainer as trainer
 import siml.util as util
 
+sys.path.append('tests')
+import preprocess  # NOQA
+
 
 def load_function(data_files, data_directory):
     # To be used in test_convert_raw_data_bypass_femio
@@ -20,67 +24,6 @@ def load_function(data_files, data_directory):
         'a': np.reshape(df['a'].to_numpy(), (-1, 1)),
         'b': np.reshape(df['b'].to_numpy(), (-1, 1)),
         'c': np.reshape(df['c'].to_numpy(), (-1, 1))}, None
-
-
-def conversion_function(fem_data, raw_directory=None):
-    # To be used in test_preprocess_deform
-    adj = fem_data.calculate_adjacency_matrix_element()
-    nadj = pre.normalize_adjacency_matrix(adj)
-    x_grad, y_grad, z_grad = \
-        fem_data.calculate_spatial_gradient_adjacency_matrices('elemental')
-    x_grad_2, y_grad_2, z_grad_2 = \
-        fem_data.calculate_spatial_gradient_adjacency_matrices(
-            'elemental', n_hop=2)
-    global_modulus = np.mean(
-        fem_data.elemental_data.get_attribute_data('modulus'), keepdims=True)
-
-    tensor_stress = fem_data.convert_array2symmetric_matrix(
-        fem_data.elemental_data.get_attribute_data('ElementalSTRESS'),
-        from_engineering=False)[:, :, :, None]
-    tensor_strain = fem_data.convert_array2symmetric_matrix(
-        fem_data.elemental_data.get_attribute_data('ElementalSTRAIN'),
-        from_engineering=True)[:, :, :, None]
-    tensor_gauss_strain1 = fem_data.convert_array2symmetric_matrix(
-        fem_data.elemental_data.get_attribute_data('GaussSTRAIN1'),
-        from_engineering=True)[:, :, :, None]
-    tensor_gauss_strain2 = fem_data.convert_array2symmetric_matrix(
-        fem_data.elemental_data.get_attribute_data('GaussSTRAIN2'),
-        from_engineering=True)[:, :, :, None]
-    tensor_gauss_strain3 = fem_data.convert_array2symmetric_matrix(
-        fem_data.elemental_data.get_attribute_data('GaussSTRAIN3'),
-        from_engineering=True)[:, :, :, None]
-    tensor_gauss_strain4 = fem_data.convert_array2symmetric_matrix(
-        fem_data.elemental_data.get_attribute_data('GaussSTRAIN4'),
-        from_engineering=True)[:, :, :, None]
-    return {
-        'adj': adj, 'nadj': nadj, 'global_modulus': global_modulus,
-        'x_grad': x_grad, 'y_grad': y_grad, 'z_grad': z_grad,
-        'x_grad_2': x_grad_2, 'y_grad_2': y_grad_2, 'z_grad_2': z_grad_2,
-        'tensor_stress': tensor_stress, 'tensor_strain': tensor_strain,
-        'tensor_gauss_strain1': tensor_gauss_strain1,
-        'tensor_gauss_strain2': tensor_gauss_strain2,
-        'tensor_gauss_strain3': tensor_gauss_strain3,
-        'tensor_gauss_strain4': tensor_gauss_strain4,
-    }
-
-
-def conversion_function_heat_time_series(fem_data, raw_directory=None):
-    # To be used in test_convert_heat_time_series
-    temperature = fem_data.nodal_data.get_attribute_data('TEMPERATURE')
-    raw_conductivity = fem_data.elemental_data.get_attribute_data(
-        'thermal_conductivity')
-    elemental_conductivity = np.array([a[0][:, 0] for a in raw_conductivity])
-    nodal_conductivity = fem_data.convert_elemental2nodal(
-        elemental_conductivity, mode='effective')
-    global_conductivity = np.mean(
-        elemental_conductivity, axis=0, keepdims=True)
-    dict_data = {
-        f"t_{i}": t for i, t in enumerate(temperature)}
-    dict_data.update({
-        'elemental_conductivity': elemental_conductivity,
-        'nodal_conductivity': nodal_conductivity,
-        'global_conductivity': global_conductivity})
-    return dict_data
 
 
 def filter_function(fem_data, raw_directory=None, data_dict=None):
@@ -344,7 +287,8 @@ class TestPrepost(unittest.TestCase):
         shutil.rmtree(main_setting.data.preprocessed_root, ignore_errors=True)
 
         raw_converter = pre.RawConverter(
-            main_setting, conversion_function=conversion_function)
+            main_setting,
+            conversion_function=preprocess.conversion_function)
         raw_converter.convert()
         p = pre.Preprocessor(main_setting)
         p.preprocess_interim_data()
@@ -516,7 +460,8 @@ class TestPrepost(unittest.TestCase):
 
         rc = pre.RawConverter(
             main_setting, recursive=True, write_ucd=False,
-            conversion_function=conversion_function_heat_time_series)
+            conversion_function=preprocess
+            .conversion_function_heat_time_series)
         rc.convert()
 
     def test_preprocess_interim_list(self):
