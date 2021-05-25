@@ -936,15 +936,20 @@ class Converter:
         if write_simulation_base is None or not write_simulation_base.exists():
             fem_data = None
         else:
-            fem_data = self._create_fem_data(
-                return_dict_data_x, return_dict_data_y,
-                write_simulation_base=write_simulation_base,
-                write_simulation_stem=write_simulation_stem,
-                read_simulation_type=read_simulation_type,
-                data_addition_function=data_addition_function,
-                skip_femio=skip_femio, load_function=load_function,
-                convert_to_order1=convert_to_order1,
-                required_file_names=required_file_names)
+            try:
+                fem_data = self._create_fem_data(
+                    return_dict_data_x, return_dict_data_y,
+                    write_simulation_base=write_simulation_base,
+                    write_simulation_stem=write_simulation_stem,
+                    read_simulation_type=read_simulation_type,
+                    data_addition_function=data_addition_function,
+                    skip_femio=skip_femio, load_function=load_function,
+                    convert_to_order1=convert_to_order1,
+                    required_file_names=required_file_names)
+            except ValueError:
+                fem_data = None
+                write_simulation_base = None
+                write_simulation = False
         if output_directory is not None:
             if write_npy:
                 if save_x:
