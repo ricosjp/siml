@@ -223,14 +223,14 @@ description = "FEM I/O Tool"
 name = "femio"
 optional = false
 python-versions = ">=3.6.1,<4.0.0"
-version = "0.3.2.dev202101251019"
+version = "0.3.2.dev202105251143"
 
 [package.dependencies]
 matplotlib = ">=3.1,<4.0"
 meshio = ">=3.3,<4.0"
 networkx = ">=2.4,<3.0"
 numpy = ">=1.17,<2.0"
-numpy-stl = ">=2.10,<3.0"
+numpy-stl = ">=2.13,<3.0"
 pandas = ">=1.0,<2.0"
 scikit-learn = ">=0.22.0,<0.23.0"
 scipy = ">=1.4,<2.0"
@@ -1093,7 +1093,7 @@ einops = [
     {file = "einops-0.2.0.tar.gz", hash = "sha256:165ee28bcb60e5c2cbb801b5c78e181548ff8daa7c8fcabae5b251e55f7fe614"},
 ]
 femio = [
-    {file = "femio-0.3.2.dev202101251019-py3-none-any.whl", hash = "sha256:6561cfba0dcca7da32df957adb19bc2f4e7ca44ae720c2f691ed7690d1c21398"},
+    {file = "femio-0.3.2.dev202105251143-py3-none-any.whl", hash = "sha256:3ebc19685bf4a82408963c0bd656fa5ae6c2c39429a1b992e086b9bbf78106fc"},
 ]
 filelock = [
     {file = "filelock-3.0.12-py3-none-any.whl", hash = "sha256:929b7d63ec5b7d6b71b0fa5ac14e030b3f70b75747cef1b10da9b879fef15836"},
