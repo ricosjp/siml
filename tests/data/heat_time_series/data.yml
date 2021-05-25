@@ -25,6 +25,12 @@ preprocess:
     same_as: nodal_grad_x
   nodal_laplacian:
     method: sparse_std
+  inc_facet2cell: identity
+  inc_cell2facet: identity
+  inc_node2facet: identity
+  inc_node2cell: identity
+  facet_area: std_scale
+  volume: std_scale
   t_0:
     method: standardize
   t_1:
@@ -47,9 +53,31 @@ preprocess:
     same_as: t_0
   t_10:
     same_as: t_0
+  elemental_t_0:
+    same_as: t_0
+  elemental_t_1:
+    same_as: t_0
+  elemental_t_2:
+    same_as: t_0
+  elemental_t_3:
+    same_as: t_0
+  elemental_t_4:
+    same_as: t_0
+  elemental_t_5:
+    same_as: t_0
+  elemental_t_6:
+    same_as: t_0
+  elemental_t_7:
+    same_as: t_0
+  elemental_t_8:
+    same_as: t_0
+  elemental_t_9:
+    same_as: t_0
+  elemental_t_10:
+    same_as: t_0
   elemental_conductivity:
-    method: standardize
+    method: std_scale
   nodal_conductivity:
-    method: standardize
+    same_as: elemental_conductivity
   global_conductivity:
-    medhod: standardize
+    same_as: elemental_conductivity

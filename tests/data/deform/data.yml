@@ -24,6 +24,8 @@ conversion:
 preprocess:
   adj:
     method: identity
+  inc_cell2facet: identity
+  inc_facet2cell: identity
   elemental_strain:
     method: std_scale
     componentwise: false
