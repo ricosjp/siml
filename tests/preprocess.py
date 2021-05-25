@@ -17,6 +17,12 @@ PLOT = False
 def conversion_function(fem_data, data_directory):
     adj = fem_data.calculate_adjacency_matrix_element()
     nadj = prepost.normalize_adjacency_matrix(adj)
+
+    facet_fem_data = fem_data.to_first_order().to_facets()
+    inc_facet2cell = fem_data.calculate_relative_incidence_metrix_element(
+        facet_fem_data, minimum_n_sharing=3)
+    inc_cell2facet = inc_facet2cell.T
+
     x_grad, y_grad, z_grad = \
         fem_data.calculate_spatial_gradient_adjacency_matrices('elemental')
     x_grad_2, y_grad_2, z_grad_2 = \
@@ -45,6 +51,7 @@ def conversion_function(fem_data, data_directory):
         from_engineering=True)[:, :, :, None]
     return {
         'adj': adj, 'nadj': nadj, 'global_modulus': global_modulus,
+        'inc_cell2facet': inc_cell2facet, 'inc_facet2cell': inc_facet2cell,
         'x_grad': x_grad, 'y_grad': y_grad, 'z_grad': z_grad,
         'x_grad_2': x_grad_2, 'y_grad_2': y_grad_2, 'z_grad_2': z_grad_2,
         'tensor_stress': tensor_stress, 'tensor_strain': tensor_strain,
@@ -64,6 +71,17 @@ def conversion_function_heat_time_series(fem_data, raw_directory=None):
         + nodal_grad_y.dot(nodal_grad_y)
         + nodal_grad_z.dot(nodal_grad_z)).tocoo() / 6
 
+    facet_fem_data = fem_data.to_facets()
+    inc_facet2cell = fem_data.calculate_relative_incidence_metrix_element(
+        facet_fem_data, minimum_n_sharing=3)
+    inc_cell2facet = inc_facet2cell.T
+    facet_area = facet_fem_data.calculate_element_areas()
+    volume = fem_data.calculate_element_volumes()
+    inc_node2facet = facet_fem_data.calculate_incidence_matrix() \
+        .T.astype(int)
+    inc_node2cell = fem_data.calculate_incidence_matrix() \
+        .T.astype(int)
+
     temperature = fem_data.nodal_data.get_attribute_data('TEMPERATURE')
     raw_conductivity = fem_data.elemental_data.get_attribute_data(
         'thermal_conductivity')
@@ -72,13 +90,24 @@ def conversion_function_heat_time_series(fem_data, raw_directory=None):
         elemental_conductivity, mode='mean')
     global_conductivity = np.mean(
         elemental_conductivity, axis=0, keepdims=True)
+
     dict_data = {
         f"t_{i}": t for i, t in enumerate(temperature)}
+    dict_data.update({
+        f"elemental_{k}":
+        fem_data.convert_nodal2elemental(v, calc_average=True)
+        for k, v in dict_data.items()})
     dict_data.update({
         'nodal_grad_x': nodal_grad_x,
         'nodal_grad_y': nodal_grad_y,
         'nodal_grad_z': nodal_grad_z,
         'nodal_laplacian': nodal_laplacian,
+        'inc_facet2cell': inc_facet2cell,
+        'inc_cell2facet': inc_cell2facet,
+        'inc_node2facet': inc_node2facet,
+        'inc_node2cell': inc_node2cell,
+        'facet_area': facet_area,
+        'volume': volume,
         'elemental_conductivity': elemental_conductivity,
         'nodal_conductivity': nodal_conductivity,
         'global_conductivity': global_conductivity})

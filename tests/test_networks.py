@@ -76,6 +76,33 @@ class TestNetworks(unittest.TestCase):
         loss = tr.train()
         np.testing.assert_array_less(loss, 1.)
 
+    def test_incidence_gcn_heat(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/heat_time_series/incidence.yml'))
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, 1.)
+
+        ir = inferer.Inferer(
+            main_setting,
+            converter_parameters_pkl=main_setting.data.preprocessed_root
+            / 'preprocessors.pkl')
+        ir.infer(
+            model=main_setting.trainer.output_directory,
+            output_directory_base=tr.setting.trainer.output_directory,
+            data_directories=main_setting.data.preprocessed_root)
+
+    def test_incidence_gcn_deform(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/deform/incidence.yml'))
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, 1.)
+
     def test_message_passing(self):
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/deform/message_passing.yml'))

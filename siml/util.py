@@ -99,7 +99,7 @@ def save_variable(
             np.save(bytesio, data.astype(dtype))
             encrypt_file(encrypt_key, save_file_path, bytesio)
 
-    elif isinstance(data, (sp.coo_matrix, sp.csr_matrix)):
+    elif isinstance(data, (sp.coo_matrix, sp.csr_matrix, sp.csc_matrix)):
         if encrypt_key is None:
             save_file_path = output_directory / (file_basename + '.npz')
             sp.save_npz(save_file_path, data.tocoo().astype(dtype))
@@ -493,7 +493,7 @@ class PreprocessConverter():
                 raise ValueError('Cannot set use_diagonal=True for dense data')
             result = self.apply_numpy_data_with_reshape_if_needed(
                 data, function, return_applied=return_applied)
-        elif isinstance(data, (sp.coo_matrix, sp.csr_matrix)):
+        elif isinstance(data, (sp.coo_matrix, sp.csr_matrix, sp.csc_matrix)):
             result = self.apply_sparse_data_with_reshape_if_needed(
                 data, function, return_applied=return_applied,
                 use_diagonal=use_diagonal)
