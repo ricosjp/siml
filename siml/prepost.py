@@ -229,13 +229,13 @@ class RawConverter():
             if self.setting.conversion.save_femio:
                 fem_data.save(output_directory)
 
-            if self.to_first_order:
-                fem_data_to_save = fem_data.to_first_order()
-            else:
-                fem_data_to_save = fem_data
-            fem_data_to_save = update_fem_data(
-                fem_data_to_save, dict_data, allow_overwrite=True)
             if self.write_ucd:
+                if self.to_first_order:
+                    fem_data_to_save = fem_data.to_first_order()
+                else:
+                    fem_data_to_save = fem_data
+                fem_data_to_save = update_fem_data(
+                    fem_data_to_save, dict_data, allow_overwrite=True)
                 fem_data_to_save.to_first_order().write(
                     'ucd', output_directory / 'mesh.inp',
                     overwrite=self.force_renew)
@@ -243,10 +243,11 @@ class RawConverter():
             self.save_function(
                 fem_data, dict_data, output_directory, self.force_renew)
 
-        save_dict_data(
-            output_directory, dict_data,
-            encrypt_key=self.setting.data.encrypt_key)
-        (output_directory / conversion_setting.finished_file).touch()
+        if not self.setting.conversion.skip_save:
+            save_dict_data(
+                output_directory, dict_data,
+                encrypt_key=self.setting.data.encrypt_key,
+                finish_file=self.setting.conversion.finished_file)
 
         return
 
@@ -1072,7 +1073,8 @@ def _extract_single_variable(
 
 
 def save_dict_data(
-        output_directory, dict_data, *, dtype=np.float32, encrypt_key=None):
+        output_directory, dict_data, *, dtype=np.float32, encrypt_key=None,
+        finished_file='converted'):
     """Save dict_data.
 
     Parameters
@@ -1092,6 +1094,7 @@ def save_dict_data(
     for key, value in dict_data.items():
         util.save_variable(
             output_directory, key, value, dtype=dtype, encrypt_key=encrypt_key)
+    (output_directory / finished_file).touch()
     return
 
 

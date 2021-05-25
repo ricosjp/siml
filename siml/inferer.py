@@ -575,12 +575,18 @@ class Inferer(siml_manager.SimlManager):
                 return data_directory
             else:
                 if 'preprocessed' in str(data_directory):
-                    candidate = pathlib.Path(
+                    raw_candidate = pathlib.Path(
                         str(data_directory).replace('preprocessed', 'raw'))
-                    if candidate.is_dir():
-                        return candidate
+                    if raw_candidate.is_dir():
+                        return raw_candidate
                     else:
-                        return None
+                        interim_candidate = pathlib.Path(
+                            str(data_directory).replace(
+                                'preprocessed', 'interim'))
+                        if interim_candidate.is_dir():
+                            return interim_candidate
+                        else:
+                            return None
                 else:
                     return None
 
