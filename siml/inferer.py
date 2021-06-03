@@ -61,7 +61,7 @@ class Inferer(siml_manager.SimlManager):
                     decrypt_key, model_directory / 'settings.yml.enc',
                     return_stringio=True))
         else:
-            raise ValueError(f"No setting yaml file found")
+            raise ValueError('No setting yaml file found')
 
         obj = cls(main_setting, **kwargs)
         obj.setting.inferer.model_key = decrypt_key
@@ -71,7 +71,7 @@ class Inferer(siml_manager.SimlManager):
         elif (model_directory / 'model.enc').is_file():
             obj.setting.inferer.model = model_directory / 'model.enc'
         else:
-            raise ValueError(f"No model file found")
+            obj.setting.inferer.model = obj._select_snapshot(model_directory)
 
         if (model_directory / 'preprocessors.pkl').is_file():
             obj.setting.inferer.converter_parameters_pkl \
@@ -80,7 +80,7 @@ class Inferer(siml_manager.SimlManager):
             obj.setting.inferer.converter_parameters_pkl \
                 = model_directory / 'preprocessors.pkl.enc'
         else:
-            raise ValueError(f"No preprocessor pickle file found")
+            raise ValueError('No preprocessor pickle file found')
 
         return obj
 
@@ -390,7 +390,7 @@ class Inferer(siml_manager.SimlManager):
         if self.setting.inferer.model is None:
             if self.setting.trainer.pretrain_directory is None:
                 raise ValueError(
-                    f'No pretrain directory is specified for inference.')
+                    'No pretrain directory is specified for inference.')
             else:
                 model = pathlib.Path(self.setting.trainer.pretrain_directory)
         else:
