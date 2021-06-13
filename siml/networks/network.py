@@ -8,6 +8,7 @@ import torch
 
 from .. import setting
 from . import activation
+from . import boundary
 from . import concatenator
 from . import array2diagmat
 from . import array2symmat
@@ -55,11 +56,15 @@ class Network(torch.nn.Module):
             concatenator.Concatenator, trainable=False),
         'contraction': BlockInformation(
             tensor_operations.Contraction, trainable=False),
+        'dirichlet': BlockInformation(
+            boundary.Dirichlet, trainable=False),
         'distributor': BlockInformation(
             reducer.Reducer, trainable=False),  # For backward compatibility
         'identity': BlockInformation(identity.Identity, trainable=False),
         'integration': BlockInformation(
             integration.Integration, trainable=False),
+        'neumann_isogcn': BlockInformation(
+            boundary.NeumannIsoGCN, trainable=False),
         'reducer': BlockInformation(reducer.Reducer, trainable=False),
         'reshape': BlockInformation(reshape.Reshape, trainable=False),
         'symmat2array': BlockInformation(
@@ -222,6 +227,13 @@ class Network(torch.nn.Module):
                     block_setting.input_selection])
                 last_node = first_node - 1
 
+            elif block_type in ['dirichlet', 'neumann_isogcn']:
+                max_first_node = self.dict_block_setting[
+                    predecessors[0]].nodes[-1]
+                first_node = len(np.arange(max_first_node)[
+                    block_setting.input_selection])
+                last_node = first_node
+
             else:
                 if len(predecessors) != 1:
                     raise ValueError(
@@ -303,14 +315,15 @@ class Network(torch.nn.Module):
             else:
                 device = block_setting.device
 
-                if block_setting.input_keys is None:
+                if block_setting.input_keys is None \
+                        and block_setting.input_names is None:
                     inputs = [
                         self._select_dimension(
                             dict_hidden[predecessor],
                             block_setting.input_selection, device)
                         for predecessor
                         in self.call_graph.predecessors(graph_node)]
-                else:
+                elif block_setting.input_keys is not None:
                     inputs = [
                         torch.cat([
                             dict_hidden[predecessor][input_key][
@@ -318,11 +331,24 @@ class Network(torch.nn.Module):
                             for input_key in block_setting.input_keys], dim=-1)
                         for predecessor
                         in self.call_graph.predecessors(graph_node)]
+                elif block_setting.input_names is not None:
+                    if set(block_setting.input_names) != set(
+                            self.call_graph.predecessors(graph_node)):
+                        raise ValueError(
+                            'input_names differs from the predecessors:\n'
+                            f"{set(block_setting.input_names)}\n"
+                            f"{set(self.call_graph.predecessors(graph_node))}")
+                    inputs = [
+                        dict_hidden[input_name][
+                            ..., block_setting.input_selection].to(device)
+                        for input_name in block_setting.input_names]
+                else:
+                    raise ValueError('Should not reach here')
 
                 if self.dict_block_information[graph_node].use_support:
                     if self.merge_sparses:
-                        # NOTE: support_input_indices are ignored
-                        selected_supports = supports
+                        raise ValueError(
+                            'merge_sparses is no longer available')
                     else:
                         if len(supports.shape) == 1:
                             selected_supports = supports[
@@ -363,7 +389,7 @@ class Network(torch.nn.Module):
         if isinstance(x, dict):
             if input_selection != slice(0, None, 1):
                 raise ValueError(
-                    f"Cannot set input_selection after dict_output")
+                    'Cannot set input_selection after dict_output')
             return {key: value.to(device) for key, value in x.items()}
         else:
             if input_selection == slice(0, None, 1):

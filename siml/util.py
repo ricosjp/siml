@@ -117,7 +117,7 @@ def save_variable(
 
 def load_variable(
         data_directory, file_basename, *, allow_missing=False,
-        check_nan=True, retry=True, decrypt_key=None):
+        check_nan=False, retry=True, decrypt_key=None):
     """Load variable data.
 
     Parameters
@@ -782,7 +782,6 @@ class IsoAMScaler(TransformerMixin, BaseEstimator):
         return data * scale
 
     def inverse_transform(self, data):
-        self._raise_if_not_sparse(data)
         inverse_scale = self.std_
         return data * inverse_scale
 

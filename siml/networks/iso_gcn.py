@@ -45,9 +45,9 @@ class IsoGCN(abstract_gcn.AbstractGCN):
         self.ah_w = block_setting.optional.get(
             'ah_w', False)
         if self.ah_w:
-            print(f"Matrix multiplication mode: (AH) W")
+            print('Matrix multiplication mode: (AH) W')
         else:
-            print(f"Matrix multiplication mode: A (HW)")
+            print('Matrix multiplication mode: A (HW)')
 
         if 'propagations' not in block_setting.optional:
             raise ValueError(
