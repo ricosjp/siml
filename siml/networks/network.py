@@ -25,6 +25,7 @@ from . import message_passing
 from . import pinv_mlp
 from . import reducer
 from . import reshape
+from . import share
 from . import siml_module
 from . import symmat2array
 from . import tcn
@@ -86,6 +87,7 @@ class Network(torch.nn.Module):
         'message_passing': BlockInformation(
             message_passing.MessagePassing, use_support=True),
         'pinv_mlp': BlockInformation(pinv_mlp.PInvMLP),
+        'share': BlockInformation(share.Share),
         'tcn': BlockInformation(tcn.TCN),
     }
     INPUT_LAYER_NAME = 'Input'
@@ -233,6 +235,14 @@ class Network(torch.nn.Module):
                 last_node = first_node
 
             elif block_type == 'pinv_mlp':
+                max_first_node = self.dict_block_setting[
+                    block_setting.reference_block_name].nodes[-1]
+                first_node = len(np.arange(max_first_node)[
+                    block_setting.input_selection])
+                last_node = self.dict_block_setting[
+                    block_setting.reference_block_name].nodes[0]
+
+            elif block_type == 'share':
                 max_first_node = self.dict_block_setting[
                     block_setting.reference_block_name].nodes[-1]
                 first_node = len(np.arange(max_first_node)[
