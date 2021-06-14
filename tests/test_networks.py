@@ -633,3 +633,25 @@ class TestNetworks(unittest.TestCase):
         np.testing.assert_almost_equal(
             x_.detach().numpy(), x.detach().numpy(),
             decimal=5)
+
+    def test_share(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/deform/share.yml'))
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        tr.train()
+
+        for l_ref, l_inv in zip(
+                tr.model.dict_block['MLP'].linears,
+                tr.model.dict_block['SHARE'].linears):
+            np.testing.assert_almost_equal(
+                l_inv.weight.detach().numpy(), l_ref.weight.detach().numpy())
+            np.testing.assert_almost_equal(
+                l_inv.bias.detach().numpy(), l_ref.bias.detach().numpy())
+
+        x = torch.rand(100, 3, 3, 1)
+        y = tr.model.dict_block['MLP'](x)
+        y_ = tr.model.dict_block['SHARE'](x)
+        np.testing.assert_almost_equal(
+            y_.detach().numpy(), y.detach().numpy())
