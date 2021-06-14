@@ -610,3 +610,26 @@ class TestNetworks(unittest.TestCase):
         normalized_a = activations.normalize(torch.from_numpy(a)).numpy()
         np.testing.assert_almost_equal(
             normalized_a, a / (np.linalg.norm(a, axis=1)[..., None] + 1e-5))
+
+    def test_pinv_mlp(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/deform/pinv_mlp.yml'))
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        tr.train()
+
+        for l_ref, l_inv in zip(
+                tr.model.dict_block['MLP'].linears,
+                tr.model.dict_block['PINV_MLP'].linears[-1::-1]):
+            np.testing.assert_almost_equal(
+                l_inv.weight.detach().numpy(), l_ref.weight.detach().numpy())
+            np.testing.assert_almost_equal(
+                l_inv.bias.detach().numpy(), l_ref.bias.detach().numpy())
+
+        x = torch.rand(100, 3, 3, 6)
+        y = tr.model.dict_block['MLP'](x)
+        x_ = tr.model.dict_block['PINV_MLP'](y)
+        np.testing.assert_almost_equal(
+            x_.detach().numpy(), x.detach().numpy(),
+            decimal=5)
