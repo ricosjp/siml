@@ -6,6 +6,23 @@ def identity(x):
     return x
 
 
+def atanh(x, epsilon=1e-5):
+    x[x > 1 - epsilon] = 1 - epsilon
+    x[x < -1 + epsilon] = -1 + epsilon
+    return torch.atanh(x)
+
+
+class ATanh(torch.nn.Module):
+
+    def __init__(self, epsilon):
+        super().__init__()
+        self.epsilon = epsilon
+        return
+
+    def forward(self, x):
+        return atanh(x, epsilon=self.epsilon)
+
+
 def max_pool(x, original_shapes):
     split_x = split(x, original_shapes)
     dim = len(original_shapes[0]) - 1

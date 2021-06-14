@@ -113,6 +113,12 @@ class TypedDataClass:
                     return {key: list(value) for key, value in x.items()}
                 else:
                     raise ValueError(f"Unexpected input: {x}")
+        elif field.type == str:
+            def type_function(x):
+                if x is None:
+                    return None
+                else:
+                    return str(x)
         else:
             type_function = field.type
 
@@ -579,6 +585,7 @@ class BlockSetting(TypedDataClass):
     destinations: typing.List[str] = dc.field(
         default_factory=list)
     residual: bool = False
+    reference_block_name: str = None
     activation_after_residual: bool = True
     allow_linear_residual: bool = False
     bias: bool = True

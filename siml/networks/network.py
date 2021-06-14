@@ -22,6 +22,7 @@ from . import laplace_net
 from . import lstm
 from . import mlp
 from . import message_passing
+from . import pinv_mlp
 from . import reducer
 from . import reshape
 from . import siml_module
@@ -84,6 +85,7 @@ class Network(torch.nn.Module):
         'mlp': BlockInformation(mlp.MLP),
         'message_passing': BlockInformation(
             message_passing.MessagePassing, use_support=True),
+        'pinv_mlp': BlockInformation(pinv_mlp.PInvMLP),
         'tcn': BlockInformation(tcn.TCN),
     }
     INPUT_LAYER_NAME = 'Input'
@@ -118,10 +120,6 @@ class Network(torch.nn.Module):
             block_information.use_support
             for block_information in self.dict_block_information.values()])
         self.merge_sparses = False
-        # self.merge_sparses = np.any([
-        #     isinstance(v, iso_gcn.IsoGCN) for v in self.dict_block.values()])
-        if self.merge_sparses:
-            print('Sparse matrices are merged for IsoGCN')
 
         return
 
@@ -234,6 +232,14 @@ class Network(torch.nn.Module):
                     block_setting.input_selection])
                 last_node = first_node
 
+            elif block_type == 'pinv_mlp':
+                max_first_node = self.dict_block_setting[
+                    block_setting.reference_block_name].nodes[-1]
+                first_node = len(np.arange(max_first_node)[
+                    block_setting.input_selection])
+                last_node = self.dict_block_setting[
+                    block_setting.reference_block_name].nodes[0]
+
             else:
                 if len(predecessors) != 1:
                     raise ValueError(
@@ -297,7 +303,21 @@ class Network(torch.nn.Module):
             block_name:
             self.dict_block_information[block_name].block(block_setting).to(
                 block_setting.device)
-            for block_name, block_setting in self.dict_block_setting.items()})
+            for block_name, block_setting in self.dict_block_setting.items()
+            if block_setting.reference_block_name is None
+        })
+
+        # Update dict_block for blocks depending on other blocks
+        dict_block.update(torch.nn.ModuleDict({
+            block_name:
+            self.dict_block_information[block_name].block(
+                block_setting,
+                reference_block=dict_block[
+                    block_setting.reference_block_name]
+            ).to(block_setting.device)
+            for block_name, block_setting in self.dict_block_setting.items()
+            if block_setting.reference_block_name is not None
+        }))
         return dict_block
 
     def forward(self, x_):
