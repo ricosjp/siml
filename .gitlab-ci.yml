@@ -1,12 +1,10 @@
-image: registry.ritc.jp/ricos/machine_learning/siml:0.2.7
+image: registry.ritc.jp/ricos/machine_learning/siml:0.2.8
 
 default:
   before_script:
     - poetry config virtualenvs.create false
-    - poetry config repositories.ricos https://pypi.ritc.jp
-    - poetry config http-basic.ricos ricos ${RICOS_PYPI_KEY}
     - poetry build
-    - python3.7 -m pip install -U femio --pre --index=https://ricos:${RICOS_PYPI_KEY}@pypi.ritc.jp
+    - python3.7 -m pip install -U femio --pre
     - python3.7 -m pip install dist/pysiml-*.whl  # Only install root project, not dependencies
     # - poetry install
 
