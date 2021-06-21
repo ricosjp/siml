@@ -1,0 +1,83 @@
+data:
+  preprocessed:
+    - tests/data/heat_time_series/preprocessed
+  train:
+    - tests/data/heat_time_series/preprocessed
+  validation:
+    - tests/data/heat_time_series/preprocessed
+  develop:
+    - tests/data/heat_time_series/preprocessed
+inferer:
+  write_simulation: true
+  write_simulation_type: ucd
+trainer:
+  lazy: false
+  num_workers: 0
+  output_directory: tests/data/heat_time_series/models/incidence
+  split_ratio:
+    validation: .1
+    test: .0
+  inputs:
+    - name: elemental_t_0
+      dim: 1
+    - name: elemental_t_2
+      dim: 1
+    - name: elemental_t_4
+      dim: 1
+    - name: elemental_t_6
+      dim: 1
+  support_inputs:
+    - inc_cell2facet
+    - inc_facet2cell
+  outputs:
+    - name: elemental_t_8
+      dim: 1
+    - name: elemental_t_10
+      dim: 1
+  prune: true
+  batch_size: 2
+  n_epoch: 30
+  log_trigger_epoch: 1
+  stop_trigger_epoch: 10
+  seed: 0
+model:
+  blocks:
+    - name: IN_MLP
+      type: mlp
+      destinations:
+        - GCN_CELL2FACET
+        - ADD
+      nodes:
+        - -1
+        - 16
+      activations:
+        - identity
+    - name: GCN_CELL2FACET
+      type: gcn
+      destinations:
+        - GCN_FACET2CELL
+      support_input_index: 0
+      nodes:
+        - -1
+        - 16
+      activations:
+        - identity
+    - name: GCN_FACET2CELL
+      type: gcn
+      destinations:
+        - ADD
+      support_input_index: 1
+      nodes:
+        - -1
+        - 16
+      activations:
+        - identity
+    - name: ADD
+      type: reducer
+      destinations:
+        - OUT_LINEAR
+    - name: OUT_LINEAR
+      type: mlp
+      nodes:
+        - -1
+        - -1

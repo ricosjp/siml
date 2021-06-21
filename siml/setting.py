@@ -617,7 +617,7 @@ class BlockSetting(TypedDataClass):
     hidden_activation: str = 'relu'
     output_activation: str = 'identity'
     input_dropout: float = 0.0
-    hidden_dropout: float = 0.5
+    hidden_dropout: float = 0.0
     output_dropout: float = 0.0
 
     def __post_init__(self):
@@ -731,6 +731,8 @@ class ConversionSetting(TypedDataClass):
         If True, make femio parse time series data.
     save_femio: bool, optional [True]
         If True, save femio data in the interim directories.
+    skip_save: bool, optional [True]
+        If True, skip SiML's default saving function.
     """
 
     mandatory_variables: typing.List[str] = dc.field(
@@ -747,6 +749,7 @@ class ConversionSetting(TypedDataClass):
     skip_femio: bool = False
     time_series: bool = False
     save_femio: bool = False
+    skip_save: bool = False
 
     @classmethod
     def read_settings_yaml(cls, settings_yaml):

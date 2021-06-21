@@ -14,6 +14,7 @@ import siml.networks.array2symmat as array2symmat
 import siml.networks.reducer as reducer
 import siml.networks.symmat2array as symmat2array
 import siml.networks.tensor_operations as tensor_operations
+import siml.networks.translator as translator
 import siml.setting as setting
 import siml.trainer as trainer
 
@@ -69,6 +70,33 @@ class TestNetworks(unittest.TestCase):
     def test_gcn(self):
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/deform/gcn.yml'))
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, 1.)
+
+    def test_incidence_gcn_heat(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/heat_time_series/incidence.yml'))
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, 1.)
+
+        ir = inferer.Inferer(
+            main_setting,
+            converter_parameters_pkl=main_setting.data.preprocessed_root
+            / 'preprocessors.pkl')
+        ir.infer(
+            model=main_setting.trainer.output_directory,
+            output_directory_base=tr.setting.trainer.output_directory,
+            data_directories=main_setting.data.preprocessed_root)
+
+    def test_incidence_gcn_deform(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/deform/incidence.yml'))
         tr = trainer.Trainer(main_setting)
         if tr.setting.trainer.output_directory.exists():
             shutil.rmtree(tr.setting.trainer.output_directory)
@@ -518,3 +546,67 @@ class TestNetworks(unittest.TestCase):
         np.testing.assert_almost_equal(
             contraction(torch.from_numpy(a)).numpy(),
             desired)
+
+    def test_translator_min_component_0_2(self):
+        tor = translator.Translator(setting.BlockSetting(
+            optional={'method': 'min', 'components': [0, 2]}))
+        a = np.random.rand(10, 3)
+        b = np.random.rand(20, 3)
+        desired = np.concatenate([
+            np.stack([
+                a[:, 0] - np.min(a[:, 0]),
+                a[:, 1],
+                a[:, 2] - np.min(a[:, 2]),
+            ], axis=-1),
+            np.stack([
+                b[:, 0] - np.min(b[:, 0]),
+                b[:, 1],
+                b[:, 2] - np.min(b[:, 2]),
+            ], axis=-1),
+        ])
+        np.testing.assert_almost_equal(tor(
+            torch.from_numpy(np.concatenate([a, b])),
+            original_shapes=([10], [20])).numpy(), desired)
+
+    def test_translator_min_component_all(self):
+        tor = translator.Translator(setting.BlockSetting(
+            optional={'method': 'mean'}))
+        a = np.random.rand(10, 3)
+        b = np.random.rand(20, 3)
+        desired = np.concatenate([
+            np.stack([
+                a[:, 0] - np.mean(a[:, 0]),
+                a[:, 1] - np.mean(a[:, 1]),
+                a[:, 2] - np.mean(a[:, 2]),
+            ], axis=-1),
+            np.stack([
+                b[:, 0] - np.mean(b[:, 0]),
+                b[:, 1] - np.mean(b[:, 1]),
+                b[:, 2] - np.mean(b[:, 2]),
+            ], axis=-1),
+        ])
+        np.testing.assert_almost_equal(tor(
+            torch.from_numpy(np.concatenate([a, b])),
+            original_shapes=([10], [20])).numpy(), desired)
+
+    def test_mlp_w_translate(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/deform/mlp_w_translate.yml'))
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, 10.)
+
+        x = np.random.rand(10 + 20, 6).astype(np.float32)
+        t = tr.model.dict_block['TRANSLATE'](
+            torch.from_numpy(x), original_shapes=[(10,), (20,)]
+        ).detach().numpy()
+        np.testing.assert_almost_equal(np.min(t[:, 0]), 0.)
+        np.testing.assert_almost_equal(np.min(t[:, -1]), 0.)
+
+    def test_normalize(self):
+        a = np.random.rand(10, 3)
+        normalized_a = activations.normalize(torch.from_numpy(a)).numpy()
+        np.testing.assert_almost_equal(
+            normalized_a, a / (np.linalg.norm(a, axis=1)[..., None] + 1e-5))

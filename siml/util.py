@@ -99,7 +99,7 @@ def save_variable(
             np.save(bytesio, data.astype(dtype))
             encrypt_file(encrypt_key, save_file_path, bytesio)
 
-    elif isinstance(data, (sp.coo_matrix, sp.csr_matrix)):
+    elif isinstance(data, (sp.coo_matrix, sp.csr_matrix, sp.csc_matrix)):
         if encrypt_key is None:
             save_file_path = output_directory / (file_basename + '.npz')
             sp.save_npz(save_file_path, data.tocoo().astype(dtype))
@@ -493,7 +493,7 @@ class PreprocessConverter():
                 raise ValueError('Cannot set use_diagonal=True for dense data')
             result = self.apply_numpy_data_with_reshape_if_needed(
                 data, function, return_applied=return_applied)
-        elif isinstance(data, (sp.coo_matrix, sp.csr_matrix)):
+        elif isinstance(data, (sp.coo_matrix, sp.csr_matrix, sp.csc_matrix)):
             result = self.apply_sparse_data_with_reshape_if_needed(
                 data, function, return_applied=return_applied,
                 use_diagonal=use_diagonal)
@@ -669,7 +669,7 @@ class MaxAbsScaler(TransformerMixin, BaseEstimator):
 
         if sp.issparse(data):
             if len(scale) != 1:
-                raise ValueError(f"Should be componentwise: false")
+                raise ValueError('Should be componentwise: false')
             scale = scale[0]
         return data * scale
 
@@ -677,7 +677,7 @@ class MaxAbsScaler(TransformerMixin, BaseEstimator):
         inverse_scale = self.max_
         if sp.issparse(data):
             if len(inverse_scale) != 1:
-                raise ValueError(f"Should be componentwise: false")
+                raise ValueError('Should be componentwise: false')
             inverse_scale = inverse_scale[0]**(self.power)
         return data * inverse_scale
 
@@ -775,7 +775,6 @@ class IsoAMScaler(TransformerMixin, BaseEstimator):
         return
 
     def transform(self, data):
-        self._raise_if_not_sparse(data)
         if self.std_ == 0.:
             scale = 0.
         else:
