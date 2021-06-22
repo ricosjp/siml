@@ -178,9 +178,9 @@ class SimlManager():
             raise ValueError('Model parameter length invalid')
         # Convert new state_dict in case DataParallel wraps model
         model_state_dict = OrderedDict({
-            key: value for key, value in zip(
-                self.model.state_dict().keys(),
-                checkpoint['model_state_dict'].values())})
+            k1: checkpoint['model_state_dict'][k2] for k1, k2 in zip(
+                sorted(self.model.state_dict().keys()),
+                sorted(checkpoint['model_state_dict'].keys()))})
         self.model.load_state_dict(model_state_dict)
         print(f"{snapshot} loaded as a pretrain model.")
         return
@@ -224,7 +224,7 @@ class SimlManager():
 
     def _create_loss_function(self, pad=False, allow_no_answer=False):
         if pad:
-            raise ValueError(f"pad = True is no longer supported")
+            raise ValueError('pad = True is no longer supported')
         if allow_no_answer:
             loss_with_answer = self._create_loss_function()
             def loss_function_with_allowing_no_answer(
