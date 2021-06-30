@@ -305,6 +305,8 @@ class TrainerSetting(TypedDataClass):
         If fed, split the data into train, validation, and test at the
         beginning of the training. Should be
         {'validation': float, 'test': float} dict.
+    figure_format: str
+        The format of the figure. The default is 'pdf'.
     """
 
     inputs: typing.Union[typing.List[dict], typing.Dict[str, list]] \
@@ -361,6 +363,7 @@ class TrainerSetting(TypedDataClass):
     draw_network: bool = True
     output_stats: bool = False
     split_ratio: dict = dc.field(default_factory=dict)
+    figure_format: str = 'pdf'
 
     def __post_init__(self):
         if self.element_wise and self.lazy:
