@@ -1,6 +1,6 @@
 ![](sphinx/fig/siml_logo.svg)
 
-# SiML: A Simulation ML library.
+# SiML: A Simulation ML library
 SiML is a machine learning library focusing on geometrical and simulation data.
 It facilitates machine learning processes, including preprocessing, learning,
 and prediction.
