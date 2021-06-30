@@ -69,6 +69,8 @@ pages:
     paths:
       - public
       - docs
+  tags:
+    - avx
   only:
     - master
     - develop
