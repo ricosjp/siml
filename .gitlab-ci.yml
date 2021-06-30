@@ -15,7 +15,6 @@ stages:
   - preprocess
   - test
   - deploy
-  - commit
 
 # docker:
 #   image: docker:latest
@@ -72,6 +71,7 @@ pages:
   only:
     - master
     - develop
+    - update_documents
 
 .test:
   stage: test
@@ -171,21 +171,3 @@ deploy:wheel:tag:
     - export VERSION=$CI_COMMIT_REF_NAME
   only:
     - tags
-
-commit:
-  stage: commit
-  script:
-    - mkdir -p ~/.ssh
-    - chmod 700 ~/.ssh
-    - ssh-keyscan -H "$CI_SERVER_HOST" >> ~/.ssh/known_hosts
-    - eval "$(ssh-agent -s)"
-    - echo "$SSH_PRIVATE_KEY" | ssh-add - > /dev/null
-    - git config --global user.name "runner@gitlab.ritc.jp"
-    - git config --global user.email "runner@gitlab.ritc.jp"
-    - git remote set-url --push origin git@$CI_SERVER_HOST:$CI_PROJECT_PATH.git
-    - git add docs
-    - git commit -m '[ci skip] push document by GitLab runner'
-    - git push origin --force HEAD:gh-pages
-  only:
-    - master
-  allow_failure: true
