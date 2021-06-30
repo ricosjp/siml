@@ -1,0 +1,154 @@
+data:
+  raw: 00_basic_data/raw
+  interim: 00_basic_data/interim
+  preprocessed: 00_basic_data/preprocessed
+  inferred: 00_basic_data/inferred
+  train:
+    - 00_basic_data/preprocessed/train
+  validation:
+    - 00_basic_data/preprocessed/validation
+  test:
+    - 00_basic_data/preprocessed/test
+conversion:
+  file_type: 'ucd'
+  required_file_names:
+    - '*.inp'
+
+trainer:
+  output_directory: 00_basic_data/model
+  inputs:
+    - name: phi
+      dim: 1
+  support_inputs:
+    - nodal_isoam_x
+    - nodal_isoam_y
+    - nodal_isoam_z
+  outputs:
+    - name: grad
+      dim: 1
+  prune: false
+  n_epoch: 100
+  log_trigger_epoch: 1
+  stop_trigger_epoch: 5
+  seed: 0
+  lazy: false
+  batch_size: 4
+  num_workers: 0
+  figure_format: png
+
+model:
+  blocks:
+    # Encoder
+    - name: IN_MLP
+      type: mlp
+      destinations:
+        - ISOGCN_1
+        - MID_MLP_1
+      nodes:
+        - -1
+        - 4
+        - 16
+      activations:
+        - tanh
+        - tanh
+
+    # Processor 1
+    - name: ISOGCN_1
+      type: iso_gcn
+      destinations:
+        - MUL_1
+      nodes:
+        - -1
+        - 16
+      activations:
+        - identity
+      support_input_indices:
+        - 0
+        - 1
+        - 2
+      optional:
+        propagations:
+          - convolution
+    - name: MID_MLP_1
+      type: mlp
+      destinations:
+        - MUL_1
+      nodes:
+        - -1
+        - 16
+        - 16
+      activations:
+        - tanh
+        - tanh
+    - name: MUL_1
+      type: reducer
+      destinations:
+        - CONTRACTION
+        - ADD
+      optional:
+        operator: mul
+
+    # Processor 2
+    - name: CONTRACTION
+      type: contraction
+      destinations:
+        - ISOGCN_2
+        - MID_MLP_2
+    - name: ISOGCN_2
+      type: iso_gcn
+      destinations:
+        - MUL_2
+      nodes:
+        - -1
+        - 16
+      activations:
+        - identity
+      support_input_indices:
+        - 0
+        - 1
+        - 2
+      optional:
+        propagations:
+          - convolution
+    - name: MID_MLP_2
+      type: mlp
+      destinations:
+        - MUL_2
+      nodes:
+        - -1
+        - 16
+        - 16
+      activations:
+        - tanh
+        - tanh
+    - name: MUL_2
+      type: reducer
+      destinations:
+        - ADD
+      optional:
+        operator: mul
+
+    # Decoder
+    - name: ADD
+      type: reducer
+      destinations:
+        - OUT_MLP
+      optional:
+        operator: add
+    - name: OUT_MLP
+      type: adjustable_mlp
+      bias: false
+      nodes:
+        - -1
+        - 1
+      activations:
+        - identity
+
+inferer:
+  converter_parameters_pkl: 00_basic_data/preprocessed/preprocessors.pkl
+  save: true
+  output_directory_base: 00_basic_data/inferred
+  write_simulation: true
+  write_simulation_base: 00_basic_data/raw
+  write_simulation_type: ucd
+  read_simulation_type: ucd
