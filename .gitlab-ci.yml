@@ -59,9 +59,9 @@ autopep8:
 pages:
   stage: deploy
   script:
-    - poetry run python3 -m pip install -r sphinx/requirements.txt
-    - poetry run sphinx-apidoc -f -o ./sphinx siml
-    - poetry run sphinx-build ./sphinx ./docs
+    - python3.7 -m pip install -r sphinx/requirements.txt
+    - sphinx-apidoc -f -o ./sphinx siml
+    - sphinx-build ./sphinx ./docs
     - cp -r docs public
     - poetry build
     - mv dist/*.whl public/
