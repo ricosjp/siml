@@ -14,6 +14,37 @@
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
 
+from glob import glob
+import shutil
+import os
+from sphinx_gallery.sorting import FileNameSortKey
+
+
+class PNGScraper(object):
+    def __init__(self):
+        self.seen = set()
+
+    def __repr__(self):
+        return 'PNGScraper'
+
+    def __call__(self, block, block_vars, gallery_conf):
+        # Find all PNG files in the directory of this example.
+        path_current_example = os.path.dirname(block_vars['src_file'])
+        path_fig = os.path.join(
+            path_current_example,
+            os.path.basename(block_vars['src_file']).rstrip('.py') + '_fig')
+        pngs = sorted(glob(os.path.join(path_fig, 'res.png')))
+
+        image_names = list()
+        image_path_iterator = block_vars['image_path_iterator']
+        for png in pngs:
+            if png not in self.seen:
+                self.seen |= set(png)
+                this_image_path = image_path_iterator.next()
+                image_names.append(this_image_path)
+                shutil.copyfile(png, this_image_path)
+        return ''
+
 
 # -- Project information -----------------------------------------------------
 
@@ -27,7 +58,19 @@ author = 'RICOS Co. Ltd.'
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.napoleon']
+extensions = [
+    'sphinx.ext.autodoc',
+    'sphinx.ext.napoleon',
+    'sphinx_gallery.gen_gallery',
+]
+
+sphinx_gallery_conf = {
+    'examples_dirs': '../examples',
+    'gallery_dirs': 'examples',
+    "within_subsection_order": FileNameSortKey,
+    "filename_pattern": r"/*\.py",
+    'image_scrapers': ('matplotlib', PNGScraper()),
+}
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

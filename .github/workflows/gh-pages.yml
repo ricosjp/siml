@@ -1,0 +1,28 @@
+name: github pages
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: sphinx
+        shell: bash
+        run: |
+          pip install --upgrade pip poetry
+          poetry run python3 -m pip install -r sphinx/requirements.txt
+          poetry run sphinx-apidoc -f -o ./sphinx siml
+          poetry run sphinx-build ./sphinx ./docs
+          poetry build
+          cp -r docs public
+          mv dist/*.whl public/
+      - name: deploy_pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: public
+          force_orphan: true

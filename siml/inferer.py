@@ -119,7 +119,7 @@ class Inferer(siml_manager.SimlManager):
             Function to save results. If not fed the default save function
             will be used.
         """
-        self.setting = settings
+        super().__init__(settings)
         self.conversion_function = conversion_function
         self.load_function = load_function
         self.data_addition_function = data_addition_function
