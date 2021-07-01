@@ -98,7 +98,8 @@ class Trainer(siml_manager.SimlManager):
         self.model = networks.Network(self.setting.model, self.setting.trainer)
         if self.setting.trainer.draw_network and draw:
             self.model.draw(
-                self.setting.trainer.output_directory / 'network.pdf')
+                self.setting.trainer.output_directory
+                / f"network.{self.setting.trainer.figure_format}")
 
         self.element_wise = self._determine_element_wise()
         self.loss = self._create_loss_function()
@@ -259,7 +260,8 @@ class Trainer(siml_manager.SimlManager):
             return
 
         self.log_file = self.setting.trainer.output_directory / 'log.csv'
-        self.plot_file = self.setting.trainer.output_directory / 'plot.pdf'
+        self.plot_file = self.setting.trainer.output_directory \
+            / f"plot.{self.setting.trainer.figure_format}"
 
         @self.trainer.on(
             ignite.engine.Events.EPOCH_COMPLETED(
