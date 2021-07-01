@@ -15,10 +15,11 @@ jobs:
       - name: sphinx
         shell: bash
         run: |
+          poetry build
+          python3.7 -m pip install dist/pysiml-*.whl
           python3.7 -m pip install -r sphinx/requirements.txt
           sphinx-apidoc -f -o ./sphinx siml
           sphinx-build ./sphinx ./docs
-          poetry build
           cp -r docs public
           mv dist/*.whl public/
       - name: deploy_pages
