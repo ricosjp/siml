@@ -1,0 +1,842 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>siml.networks package &mdash; siml  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/gallery.css" type="text/css" />
+  <link rel="stylesheet" href="_static/gallery-binder.css" type="text/css" />
+  <link rel="stylesheet" href="_static/gallery-dataframe.css" type="text/css" />
+  <link rel="stylesheet" href="_static/gallery-rendered-html.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="siml.networks.pyg package" href="siml.networks.pyg.html" />
+    <link rel="prev" title="siml package" href="siml.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> siml
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="examples/index.html">Examples</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="siml.html">siml package</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="siml.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">siml.networks package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#subpackages">Subpackages</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-siml.networks.abstract_gcn">siml.networks.abstract_gcn module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-siml.networks.activation">siml.networks.activation module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-siml.networks.activations">siml.networks.activations module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-siml.networks.array2diagmat">siml.networks.array2diagmat module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-siml.networks.array2symmat">siml.networks.array2symmat module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-siml.networks.concatenator">siml.networks.concatenator module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-siml.networks.deepsets">siml.networks.deepsets module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-siml.networks.gcn">siml.networks.gcn module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-siml.networks.grad_gcn">siml.networks.grad_gcn module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-siml.networks.identity">siml.networks.identity module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-siml.networks.integration">siml.networks.integration module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-siml.networks.iso_gcn">siml.networks.iso_gcn module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-siml.networks.laplace_net">siml.networks.laplace_net module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-siml.networks.lstm">siml.networks.lstm module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-siml.networks.message_passing">siml.networks.message_passing module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-siml.networks.mlp">siml.networks.mlp module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-siml.networks.network">siml.networks.network module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-siml.networks.reducer">siml.networks.reducer module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-siml.networks.reshape">siml.networks.reshape module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-siml.networks.siml_module">siml.networks.siml_module module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-siml.networks.symmat2array">siml.networks.symmat2array module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-siml.networks.tcn">siml.networks.tcn module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-siml.networks.tensor_operations">siml.networks.tensor_operations module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-siml.networks.time_norm">siml.networks.time_norm module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-siml.networks.translator">siml.networks.translator module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-siml.networks">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.data_parallel">siml.data_parallel module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.datasets">siml.datasets module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.inferer">siml.inferer module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.mains">siml.mains module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.optimize">siml.optimize module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.postprocessor">siml.postprocessor module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.prepost">siml.prepost module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.setting">siml.setting module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.siml_manager">siml.siml_manager module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.study">siml.study module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.trainer">siml.trainer module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.util">siml.util module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">siml</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="siml.html">siml package</a> &raquo;</li>
+        
+      <li>siml.networks package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/siml.networks.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <section id="siml-networks-package">
+<h1>siml.networks package<a class="headerlink" href="#siml-networks-package" title="Permalink to this headline">¶</a></h1>
+<section id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="siml.networks.pyg.html">siml.networks.pyg package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="siml.networks.pyg.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.networks.pyg.html#module-siml.networks.pyg.abstract_pyg_gcn">siml.networks.pyg.abstract_pyg_gcn module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.networks.pyg.html#module-siml.networks.pyg.cluster_gcn">siml.networks.pyg.cluster_gcn module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.networks.pyg.html#module-siml.networks.pyg.gcnii">siml.networks.pyg.gcnii module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.networks.pyg.html#module-siml.networks.pyg.gcnii_pytorch_geometric">siml.networks.pyg.gcnii_pytorch_geometric module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.networks.pyg.html#module-siml.networks.pyg.gin">siml.networks.pyg.gin module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.networks.pyg.html#module-siml.networks.pyg">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="module-siml.networks.abstract_gcn">
+<span id="siml-networks-abstract-gcn-module"></span><h2>siml.networks.abstract_gcn module<a class="headerlink" href="#module-siml.networks.abstract_gcn" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="siml.networks.abstract_gcn.AbstractGCN">
+<em class="property">class </em><code class="sig-prename descclassname">siml.networks.abstract_gcn.</code><code class="sig-name descname">AbstractGCN</code><span class="sig-paren">(</span><em class="sig-param">block_setting</em>, <em class="sig-param">*</em>, <em class="sig-param">create_subchain=True</em>, <em class="sig-param">residual=False</em>, <em class="sig-param">multiple_networks=None</em><span class="sig-paren">)</span><a class="headerlink" href="#siml.networks.abstract_gcn.AbstractGCN" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#siml.networks.siml_module.SimlModule" title="siml.networks.siml_module.SimlModule"><code class="xref py py-class docutils literal notranslate"><span class="pre">siml.networks.siml_module.SimlModule</span></code></a></p>
+<dl class="method">
+<dt id="siml.networks.abstract_gcn.AbstractGCN.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">supports</em>, <em class="sig-param">original_shapes=None</em><span class="sig-paren">)</span><a class="headerlink" href="#siml.networks.abstract_gcn.AbstractGCN.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Execute the NN’s forward computation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>numpy.ndarray</em><em> or </em><em>cupy.ndarray</em>) – Input of the NN.</p></li>
+<li><p><strong>supports</strong> (<em>List</em><em>[</em><em>chainer.util.CooMatrix</em><em>]</em>) – List of support inputs.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>y</strong> – Output of the NN.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>numpy.ndarray of cupy.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="siml.networks.abstract_gcn.AbstractGCN.training">
+<code class="sig-name descname">training</code><em class="property"> = None</em><a class="headerlink" href="#siml.networks.abstract_gcn.AbstractGCN.training" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-siml.networks.activation">
+<span id="siml-networks-activation-module"></span><h2>siml.networks.activation module<a class="headerlink" href="#module-siml.networks.activation" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="siml.networks.activation.Activation">
+<em class="property">class </em><code class="sig-prename descclassname">siml.networks.activation.</code><code class="sig-name descname">Activation</code><span class="sig-paren">(</span><em class="sig-param">block_setting</em><span class="sig-paren">)</span><a class="headerlink" href="#siml.networks.activation.Activation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#siml.networks.siml_module.SimlModule" title="siml.networks.siml_module.SimlModule"><code class="xref py py-class docutils literal notranslate"><span class="pre">siml.networks.siml_module.SimlModule</span></code></a></p>
+<p>Activation block.</p>
+<dl class="method">
+<dt id="siml.networks.activation.Activation.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">supports=None</em>, <em class="sig-param">original_shapes=None</em><span class="sig-paren">)</span><a class="headerlink" href="#siml.networks.activation.Activation.forward" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="siml.networks.activation.Activation.training">
+<code class="sig-name descname">training</code><em class="property"> = None</em><a class="headerlink" href="#siml.networks.activation.Activation.training" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-siml.networks.activations">
+<span id="siml-networks-activations-module"></span><h2>siml.networks.activations module<a class="headerlink" href="#module-siml.networks.activations" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="siml.networks.activations.identity">
+<code class="sig-prename descclassname">siml.networks.activations.</code><code class="sig-name descname">identity</code><span class="sig-paren">(</span><em class="sig-param">x</em><span class="sig-paren">)</span><a class="headerlink" href="#siml.networks.activations.identity" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="siml.networks.activations.max_pool">
+<code class="sig-prename descclassname">siml.networks.activations.</code><code class="sig-name descname">max_pool</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">original_shapes</em><span class="sig-paren">)</span><a class="headerlink" href="#siml.networks.activations.max_pool" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="siml.networks.activations.mean">
+<code class="sig-prename descclassname">siml.networks.activations.</code><code class="sig-name descname">mean</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">original_shapes</em><span class="sig-paren">)</span><a class="headerlink" href="#siml.networks.activations.mean" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="siml.networks.activations.min">
+<code class="sig-prename descclassname">siml.networks.activations.</code><code class="sig-name descname">min</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">original_shapes</em><span class="sig-paren">)</span><a class="headerlink" href="#siml.networks.activations.min" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="siml.networks.activations.min_func">
+<code class="sig-prename descclassname">siml.networks.activations.</code><code class="sig-name descname">min_func</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#siml.networks.activations.min_func" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="siml.networks.activations.mish">
+<code class="sig-prename descclassname">siml.networks.activations.</code><code class="sig-name descname">mish</code><span class="sig-paren">(</span><em class="sig-param">x</em><span class="sig-paren">)</span><a class="headerlink" href="#siml.networks.activations.mish" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="siml.networks.activations.normalize">
+<code class="sig-prename descclassname">siml.networks.activations.</code><code class="sig-name descname">normalize</code><span class="sig-paren">(</span><em class="sig-param">x</em><span class="sig-paren">)</span><a class="headerlink" href="#siml.networks.activations.normalize" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="siml.networks.activations.split">
+<code class="sig-prename descclassname">siml.networks.activations.</code><code class="sig-name descname">split</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">original_shapes</em><span class="sig-paren">)</span><a class="headerlink" href="#siml.networks.activations.split" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</section>
+<section id="module-siml.networks.array2diagmat">
+<span id="siml-networks-array2diagmat-module"></span><h2>siml.networks.array2diagmat module<a class="headerlink" href="#module-siml.networks.array2diagmat" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="siml.networks.array2diagmat.Array2Diagmat">
+<em class="property">class </em><code class="sig-prename descclassname">siml.networks.array2diagmat.</code><code class="sig-name descname">Array2Diagmat</code><span class="sig-paren">(</span><em class="sig-param">block_setting</em><span class="sig-paren">)</span><a class="headerlink" href="#siml.networks.array2diagmat.Array2Diagmat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#siml.networks.siml_module.SimlModule" title="siml.networks.siml_module.SimlModule"><code class="xref py py-class docutils literal notranslate"><span class="pre">siml.networks.siml_module.SimlModule</span></code></a></p>
+<p>Convert array to diagonal matrix. [n, f] -&gt; [n, 3, 3, f]</p>
+<dl class="method">
+<dt id="siml.networks.array2diagmat.Array2Diagmat.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">supports=None</em>, <em class="sig-param">original_shapes=None</em><span class="sig-paren">)</span><a class="headerlink" href="#siml.networks.array2diagmat.Array2Diagmat.forward" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="siml.networks.array2diagmat.Array2Diagmat.training">
+<code class="sig-name descname">training</code><em class="property"> = None</em><a class="headerlink" href="#siml.networks.array2diagmat.Array2Diagmat.training" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-siml.networks.array2symmat">
+<span id="siml-networks-array2symmat-module"></span><h2>siml.networks.array2symmat module<a class="headerlink" href="#module-siml.networks.array2symmat" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="siml.networks.array2symmat.Array2Symmat">
+<em class="property">class </em><code class="sig-prename descclassname">siml.networks.array2symmat.</code><code class="sig-name descname">Array2Symmat</code><span class="sig-paren">(</span><em class="sig-param">block_setting</em><span class="sig-paren">)</span><a class="headerlink" href="#siml.networks.array2symmat.Array2Symmat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#siml.networks.siml_module.SimlModule" title="siml.networks.siml_module.SimlModule"><code class="xref py py-class docutils literal notranslate"><span class="pre">siml.networks.siml_module.SimlModule</span></code></a></p>
+<p>Convert array to symmetric matrix.</p>
+<dl class="method">
+<dt id="siml.networks.array2symmat.Array2Symmat.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">supports=None</em>, <em class="sig-param">original_shapes=None</em><span class="sig-paren">)</span><a class="headerlink" href="#siml.networks.array2symmat.Array2Symmat.forward" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="siml.networks.array2symmat.Array2Symmat.training">
+<code class="sig-name descname">training</code><em class="property"> = None</em><a class="headerlink" href="#siml.networks.array2symmat.Array2Symmat.training" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-siml.networks.concatenator">
+<span id="siml-networks-concatenator-module"></span><h2>siml.networks.concatenator module<a class="headerlink" href="#module-siml.networks.concatenator" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="siml.networks.concatenator.Concatenator">
+<em class="property">class </em><code class="sig-prename descclassname">siml.networks.concatenator.</code><code class="sig-name descname">Concatenator</code><span class="sig-paren">(</span><em class="sig-param">block_setting</em><span class="sig-paren">)</span><a class="headerlink" href="#siml.networks.concatenator.Concatenator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#siml.networks.siml_module.SimlModule" title="siml.networks.siml_module.SimlModule"><code class="xref py py-class docutils literal notranslate"><span class="pre">siml.networks.siml_module.SimlModule</span></code></a></p>
+<p>Concatenation operation block.</p>
+<dl class="method">
+<dt id="siml.networks.concatenator.Concatenator.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">*xs</em>, <em class="sig-param">op=None</em>, <em class="sig-param">supports=None</em>, <em class="sig-param">original_shapes=None</em><span class="sig-paren">)</span><a class="headerlink" href="#siml.networks.concatenator.Concatenator.forward" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="siml.networks.concatenator.Concatenator.training">
+<code class="sig-name descname">training</code><em class="property"> = None</em><a class="headerlink" href="#siml.networks.concatenator.Concatenator.training" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-siml.networks.deepsets">
+<span id="siml-networks-deepsets-module"></span><h2>siml.networks.deepsets module<a class="headerlink" href="#module-siml.networks.deepsets" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="siml.networks.deepsets.DeepSets">
+<em class="property">class </em><code class="sig-prename descclassname">siml.networks.deepsets.</code><code class="sig-name descname">DeepSets</code><span class="sig-paren">(</span><em class="sig-param">block_setting</em><span class="sig-paren">)</span><a class="headerlink" href="#siml.networks.deepsets.DeepSets" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#siml.networks.siml_module.SimlModule" title="siml.networks.siml_module.SimlModule"><code class="xref py py-class docutils literal notranslate"><span class="pre">siml.networks.siml_module.SimlModule</span></code></a></p>
+<p>Permutation equivalent layer published in
+<a class="reference external" href="https://arxiv.org/abs/1703.06114">https://arxiv.org/abs/1703.06114</a> .</p>
+<dl class="attribute">
+<dt id="siml.networks.deepsets.DeepSets.training">
+<code class="sig-name descname">training</code><em class="property"> = None</em><a class="headerlink" href="#siml.networks.deepsets.DeepSets.training" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-siml.networks.gcn">
+<span id="siml-networks-gcn-module"></span><h2>siml.networks.gcn module<a class="headerlink" href="#module-siml.networks.gcn" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="siml.networks.gcn.GCN">
+<em class="property">class </em><code class="sig-prename descclassname">siml.networks.gcn.</code><code class="sig-name descname">GCN</code><span class="sig-paren">(</span><em class="sig-param">block_setting</em><span class="sig-paren">)</span><a class="headerlink" href="#siml.networks.gcn.GCN" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#siml.networks.abstract_gcn.AbstractGCN" title="siml.networks.abstract_gcn.AbstractGCN"><code class="xref py py-class docutils literal notranslate"><span class="pre">siml.networks.abstract_gcn.AbstractGCN</span></code></a></p>
+<p>Graph Convolutional network based on <a class="reference external" href="https://arxiv.org/abs/1609.02907">https://arxiv.org/abs/1609.02907</a> .</p>
+<dl class="attribute">
+<dt id="siml.networks.gcn.GCN.training">
+<code class="sig-name descname">training</code><em class="property"> = None</em><a class="headerlink" href="#siml.networks.gcn.GCN.training" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-siml.networks.grad_gcn">
+<span id="siml-networks-grad-gcn-module"></span><h2>siml.networks.grad_gcn module<a class="headerlink" href="#module-siml.networks.grad_gcn" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="siml.networks.grad_gcn.GradGCN">
+<em class="property">class </em><code class="sig-prename descclassname">siml.networks.grad_gcn.</code><code class="sig-name descname">GradGCN</code><span class="sig-paren">(</span><em class="sig-param">block_setting</em><span class="sig-paren">)</span><a class="headerlink" href="#siml.networks.grad_gcn.GradGCN" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#siml.networks.abstract_gcn.AbstractGCN" title="siml.networks.abstract_gcn.AbstractGCN"><code class="xref py py-class docutils literal notranslate"><span class="pre">siml.networks.abstract_gcn.AbstractGCN</span></code></a></p>
+<p>Graph Convolutional network with taking into account spatial gradient.</p>
+<dl class="attribute">
+<dt id="siml.networks.grad_gcn.GradGCN.training">
+<code class="sig-name descname">training</code><em class="property"> = None</em><a class="headerlink" href="#siml.networks.grad_gcn.GradGCN.training" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-siml.networks.identity">
+<span id="siml-networks-identity-module"></span><h2>siml.networks.identity module<a class="headerlink" href="#module-siml.networks.identity" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="siml.networks.identity.Identity">
+<em class="property">class </em><code class="sig-prename descclassname">siml.networks.identity.</code><code class="sig-name descname">Identity</code><span class="sig-paren">(</span><em class="sig-param">block_setting</em><span class="sig-paren">)</span><a class="headerlink" href="#siml.networks.identity.Identity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#siml.networks.siml_module.SimlModule" title="siml.networks.siml_module.SimlModule"><code class="xref py py-class docutils literal notranslate"><span class="pre">siml.networks.siml_module.SimlModule</span></code></a></p>
+<p>Identity block.</p>
+<dl class="method">
+<dt id="siml.networks.identity.Identity.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">*x</em>, <em class="sig-param">supports=None</em>, <em class="sig-param">original_shapes=None</em><span class="sig-paren">)</span><a class="headerlink" href="#siml.networks.identity.Identity.forward" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="siml.networks.identity.Identity.training">
+<code class="sig-name descname">training</code><em class="property"> = None</em><a class="headerlink" href="#siml.networks.identity.Identity.training" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-siml.networks.integration">
+<span id="siml-networks-integration-module"></span><h2>siml.networks.integration module<a class="headerlink" href="#module-siml.networks.integration" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="siml.networks.integration.Integration">
+<em class="property">class </em><code class="sig-prename descclassname">siml.networks.integration.</code><code class="sig-name descname">Integration</code><span class="sig-paren">(</span><em class="sig-param">block_setting</em><span class="sig-paren">)</span><a class="headerlink" href="#siml.networks.integration.Integration" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#siml.networks.siml_module.SimlModule" title="siml.networks.siml_module.SimlModule"><code class="xref py py-class docutils literal notranslate"><span class="pre">siml.networks.siml_module.SimlModule</span></code></a></p>
+<p>Integration block.</p>
+<dl class="method">
+<dt id="siml.networks.integration.Integration.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">supports=None</em>, <em class="sig-param">original_shapes=None</em><span class="sig-paren">)</span><a class="headerlink" href="#siml.networks.integration.Integration.forward" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="siml.networks.integration.Integration.training">
+<code class="sig-name descname">training</code><em class="property"> = None</em><a class="headerlink" href="#siml.networks.integration.Integration.training" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-siml.networks.iso_gcn">
+<span id="siml-networks-iso-gcn-module"></span><h2>siml.networks.iso_gcn module<a class="headerlink" href="#module-siml.networks.iso_gcn" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="siml.networks.iso_gcn.IsoGCN">
+<em class="property">class </em><code class="sig-prename descclassname">siml.networks.iso_gcn.</code><code class="sig-name descname">IsoGCN</code><span class="sig-paren">(</span><em class="sig-param">block_setting</em><span class="sig-paren">)</span><a class="headerlink" href="#siml.networks.iso_gcn.IsoGCN" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#siml.networks.abstract_gcn.AbstractGCN" title="siml.networks.abstract_gcn.AbstractGCN"><code class="xref py py-class docutils literal notranslate"><span class="pre">siml.networks.abstract_gcn.AbstractGCN</span></code></a></p>
+<p>IsoGCN according to <a class="reference external" href="https://arxiv.org/abs/2005.06316">https://arxiv.org/abs/2005.06316</a> .</p>
+<dl class="attribute">
+<dt id="siml.networks.iso_gcn.IsoGCN.training">
+<code class="sig-name descname">training</code><em class="property"> = None</em><a class="headerlink" href="#siml.networks.iso_gcn.IsoGCN.training" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-siml.networks.laplace_net">
+<span id="siml-networks-laplace-net-module"></span><h2>siml.networks.laplace_net module<a class="headerlink" href="#module-siml.networks.laplace_net" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="siml.networks.laplace_net.LaplaceNet">
+<em class="property">class </em><code class="sig-prename descclassname">siml.networks.laplace_net.</code><code class="sig-name descname">LaplaceNet</code><span class="sig-paren">(</span><em class="sig-param">block_setting</em><span class="sig-paren">)</span><a class="headerlink" href="#siml.networks.laplace_net.LaplaceNet" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#siml.networks.abstract_gcn.AbstractGCN" title="siml.networks.abstract_gcn.AbstractGCN"><code class="xref py py-class docutils literal notranslate"><span class="pre">siml.networks.abstract_gcn.AbstractGCN</span></code></a></p>
+<p>Graph Convolutional network with laplacian.</p>
+<dl class="attribute">
+<dt id="siml.networks.laplace_net.LaplaceNet.training">
+<code class="sig-name descname">training</code><em class="property"> = None</em><a class="headerlink" href="#siml.networks.laplace_net.LaplaceNet.training" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-siml.networks.lstm">
+<span id="siml-networks-lstm-module"></span><h2>siml.networks.lstm module<a class="headerlink" href="#module-siml.networks.lstm" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="siml.networks.lstm.LSTM">
+<em class="property">class </em><code class="sig-prename descclassname">siml.networks.lstm.</code><code class="sig-name descname">LSTM</code><span class="sig-paren">(</span><em class="sig-param">block_setting</em><span class="sig-paren">)</span><a class="headerlink" href="#siml.networks.lstm.LSTM" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#siml.networks.siml_module.SimlModule" title="siml.networks.siml_module.SimlModule"><code class="xref py py-class docutils literal notranslate"><span class="pre">siml.networks.siml_module.SimlModule</span></code></a></p>
+<p>LSTM layer.</p>
+<dl class="attribute">
+<dt id="siml.networks.lstm.LSTM.training">
+<code class="sig-name descname">training</code><em class="property"> = None</em><a class="headerlink" href="#siml.networks.lstm.LSTM.training" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-siml.networks.message_passing">
+<span id="siml-networks-message-passing-module"></span><h2>siml.networks.message_passing module<a class="headerlink" href="#module-siml.networks.message_passing" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="siml.networks.message_passing.MessagePassing">
+<em class="property">class </em><code class="sig-prename descclassname">siml.networks.message_passing.</code><code class="sig-name descname">MessagePassing</code><span class="sig-paren">(</span><em class="sig-param">block_setting</em><span class="sig-paren">)</span><a class="headerlink" href="#siml.networks.message_passing.MessagePassing" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#siml.networks.abstract_gcn.AbstractGCN" title="siml.networks.abstract_gcn.AbstractGCN"><code class="xref py py-class docutils literal notranslate"><span class="pre">siml.networks.abstract_gcn.AbstractGCN</span></code></a></p>
+<p>Message passing layer based on <a class="reference external" href="https://arxiv.org/abs/1704.01212">https://arxiv.org/abs/1704.01212</a>.</p>
+<dl class="method">
+<dt id="siml.networks.message_passing.MessagePassing.make_reduce_matrix">
+<code class="sig-name descname">make_reduce_matrix</code><span class="sig-paren">(</span><em class="sig-param">nadj</em>, <em class="sig-param">*</em>, <em class="sig-param">mean=False</em><span class="sig-paren">)</span><a class="headerlink" href="#siml.networks.message_passing.MessagePassing.make_reduce_matrix" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="siml.networks.message_passing.MessagePassing.training">
+<code class="sig-name descname">training</code><em class="property"> = None</em><a class="headerlink" href="#siml.networks.message_passing.MessagePassing.training" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-siml.networks.mlp">
+<span id="siml-networks-mlp-module"></span><h2>siml.networks.mlp module<a class="headerlink" href="#module-siml.networks.mlp" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="siml.networks.mlp.MLP">
+<em class="property">class </em><code class="sig-prename descclassname">siml.networks.mlp.</code><code class="sig-name descname">MLP</code><span class="sig-paren">(</span><em class="sig-param">block_setting</em>, <em class="sig-param">*</em>, <em class="sig-param">create_linears=True</em>, <em class="sig-param">create_activations=True</em>, <em class="sig-param">create_dropouts=True</em>, <em class="sig-param">no_parameter=False</em>, <em class="sig-param">residual_dimension=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#siml.networks.mlp.MLP" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#siml.networks.siml_module.SimlModule" title="siml.networks.siml_module.SimlModule"><code class="xref py py-class docutils literal notranslate"><span class="pre">siml.networks.siml_module.SimlModule</span></code></a></p>
+<p>Multi Layer Perceptron.</p>
+<dl class="attribute">
+<dt id="siml.networks.mlp.MLP.training">
+<code class="sig-name descname">training</code><em class="property"> = None</em><a class="headerlink" href="#siml.networks.mlp.MLP.training" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-siml.networks.network">
+<span id="siml-networks-network-module"></span><h2>siml.networks.network module<a class="headerlink" href="#module-siml.networks.network" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="siml.networks.network.BlockInformation">
+<em class="property">class </em><code class="sig-prename descclassname">siml.networks.network.</code><code class="sig-name descname">BlockInformation</code><span class="sig-paren">(</span><em class="sig-param">block</em>, <em class="sig-param">use_support=False</em>, <em class="sig-param">trainable=True</em><span class="sig-paren">)</span><a class="headerlink" href="#siml.networks.network.BlockInformation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="siml.networks.network.Network">
+<em class="property">class </em><code class="sig-prename descclassname">siml.networks.network.</code><code class="sig-name descname">Network</code><span class="sig-paren">(</span><em class="sig-param">model_setting</em>, <em class="sig-param">trainer_setting</em><span class="sig-paren">)</span><a class="headerlink" href="#siml.networks.network.Network" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.module.Module</span></code></p>
+<dl class="attribute">
+<dt id="siml.networks.network.Network.INPUT_LAYER_NAME">
+<code class="sig-name descname">INPUT_LAYER_NAME</code><em class="property"> = 'Input'</em><a class="headerlink" href="#siml.networks.network.Network.INPUT_LAYER_NAME" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="siml.networks.network.Network.OUTPUT_LAYER_NAME">
+<code class="sig-name descname">OUTPUT_LAYER_NAME</code><em class="property"> = 'Output'</em><a class="headerlink" href="#siml.networks.network.Network.OUTPUT_LAYER_NAME" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="siml.networks.network.Network.dict_block_info">
+<code class="sig-name descname">dict_block_info</code><em class="property"> = {'activation': &lt;siml.networks.network.BlockInformation object&gt;, 'adjustable_mlp': &lt;siml.networks.network.BlockInformation object&gt;, 'array2diagmat': &lt;siml.networks.network.BlockInformation object&gt;, 'array2symmat': &lt;siml.networks.network.BlockInformation object&gt;, 'cluster_gcn': &lt;siml.networks.network.BlockInformation object&gt;, 'concatenator': &lt;siml.networks.network.BlockInformation object&gt;, 'contraction': &lt;siml.networks.network.BlockInformation object&gt;, 'deepsets': &lt;siml.networks.network.BlockInformation object&gt;, 'distributor': &lt;siml.networks.network.BlockInformation object&gt;, 'gcn': &lt;siml.networks.network.BlockInformation object&gt;, 'gcnii': &lt;siml.networks.network.BlockInformation object&gt;, 'gin': &lt;siml.networks.network.BlockInformation object&gt;, 'grad_gcn': &lt;siml.networks.network.BlockInformation object&gt;, 'identity': &lt;siml.networks.network.BlockInformation object&gt;, 'integration': &lt;siml.networks.network.BlockInformation object&gt;, 'iso_gcn': &lt;siml.networks.network.BlockInformation object&gt;, 'laplace_net': &lt;siml.networks.network.BlockInformation object&gt;, 'lstm': &lt;siml.networks.network.BlockInformation object&gt;, 'message_passing': &lt;siml.networks.network.BlockInformation object&gt;, 'mlp': &lt;siml.networks.network.BlockInformation object&gt;, 'reducer': &lt;siml.networks.network.BlockInformation object&gt;, 'reshape': &lt;siml.networks.network.BlockInformation object&gt;, 'symmat2array': &lt;siml.networks.network.BlockInformation object&gt;, 'tcn': &lt;siml.networks.network.BlockInformation object&gt;, 'time_norm': &lt;siml.networks.network.BlockInformation object&gt;, 'translator': &lt;siml.networks.network.BlockInformation object&gt;}</em><a class="headerlink" href="#siml.networks.network.Network.dict_block_info" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="siml.networks.network.Network.draw">
+<code class="sig-name descname">draw</code><span class="sig-paren">(</span><em class="sig-param">output_file_name</em><span class="sig-paren">)</span><a class="headerlink" href="#siml.networks.network.Network.draw" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="siml.networks.network.Network.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">x_</em><span class="sig-paren">)</span><a class="headerlink" href="#siml.networks.network.Network.forward" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="siml.networks.network.Network.training">
+<code class="sig-name descname">training</code><em class="property"> = None</em><a class="headerlink" href="#siml.networks.network.Network.training" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="siml.networks.network.add_block">
+<code class="sig-prename descclassname">siml.networks.network.</code><code class="sig-name descname">add_block</code><span class="sig-paren">(</span><em class="sig-param">name</em>, <em class="sig-param">block</em>, <em class="sig-param">*</em>, <em class="sig-param">trainable=True</em>, <em class="sig-param">use_support=False</em><span class="sig-paren">)</span><a class="headerlink" href="#siml.networks.network.add_block" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add block definition to siml.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>str</em>) – Name of the block.</p></li>
+<li><p><strong>block</strong> (<em>siml.network.SimlModule-like</em>) – User defined block.</p></li>
+<li><p><strong>trainable</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True, the block is considered as a trainable block. The default is
+True.</p></li>
+<li><p><strong>use_support</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True, use sparse matrix for the second input. The default is False.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-siml.networks.reducer">
+<span id="siml-networks-reducer-module"></span><h2>siml.networks.reducer module<a class="headerlink" href="#module-siml.networks.reducer" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="siml.networks.reducer.Reducer">
+<em class="property">class </em><code class="sig-prename descclassname">siml.networks.reducer.</code><code class="sig-name descname">Reducer</code><span class="sig-paren">(</span><em class="sig-param">block_setting</em><span class="sig-paren">)</span><a class="headerlink" href="#siml.networks.reducer.Reducer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#siml.networks.siml_module.SimlModule" title="siml.networks.siml_module.SimlModule"><code class="xref py py-class docutils literal notranslate"><span class="pre">siml.networks.siml_module.SimlModule</span></code></a></p>
+<p>Broadcastive operation block.</p>
+<dl class="method">
+<dt id="siml.networks.reducer.Reducer.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">*xs</em>, <em class="sig-param">op=None</em>, <em class="sig-param">supports=None</em>, <em class="sig-param">original_shapes=None</em><span class="sig-paren">)</span><a class="headerlink" href="#siml.networks.reducer.Reducer.forward" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="siml.networks.reducer.Reducer.training">
+<code class="sig-name descname">training</code><em class="property"> = None</em><a class="headerlink" href="#siml.networks.reducer.Reducer.training" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-siml.networks.reshape">
+<span id="siml-networks-reshape-module"></span><h2>siml.networks.reshape module<a class="headerlink" href="#module-siml.networks.reshape" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="siml.networks.reshape.Reshape">
+<em class="property">class </em><code class="sig-prename descclassname">siml.networks.reshape.</code><code class="sig-name descname">Reshape</code><span class="sig-paren">(</span><em class="sig-param">block_setting</em><span class="sig-paren">)</span><a class="headerlink" href="#siml.networks.reshape.Reshape" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#siml.networks.siml_module.SimlModule" title="siml.networks.siml_module.SimlModule"><code class="xref py py-class docutils literal notranslate"><span class="pre">siml.networks.siml_module.SimlModule</span></code></a></p>
+<p>Reshape block.</p>
+<dl class="method">
+<dt id="siml.networks.reshape.Reshape.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">supports=None</em>, <em class="sig-param">original_shapes=None</em><span class="sig-paren">)</span><a class="headerlink" href="#siml.networks.reshape.Reshape.forward" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="siml.networks.reshape.Reshape.training">
+<code class="sig-name descname">training</code><em class="property"> = None</em><a class="headerlink" href="#siml.networks.reshape.Reshape.training" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-siml.networks.siml_module">
+<span id="siml-networks-siml-module-module"></span><h2>siml.networks.siml_module module<a class="headerlink" href="#module-siml.networks.siml_module" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="siml.networks.siml_module.SimlModule">
+<em class="property">class </em><code class="sig-prename descclassname">siml.networks.siml_module.</code><code class="sig-name descname">SimlModule</code><span class="sig-paren">(</span><em class="sig-param">block_setting</em>, <em class="sig-param">*</em>, <em class="sig-param">create_linears=True</em>, <em class="sig-param">create_activations=True</em>, <em class="sig-param">create_dropouts=True</em>, <em class="sig-param">no_parameter=False</em>, <em class="sig-param">residual_dimension=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#siml.networks.siml_module.SimlModule" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.module.Module</span></code></p>
+<dl class="method">
+<dt id="siml.networks.siml_module.SimlModule.create_activation">
+<code class="sig-name descname">create_activation</code><span class="sig-paren">(</span><em class="sig-param">activation_settings=None</em><span class="sig-paren">)</span><a class="headerlink" href="#siml.networks.siml_module.SimlModule.create_activation" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="siml.networks.siml_module.SimlModule.create_activations">
+<code class="sig-name descname">create_activations</code><span class="sig-paren">(</span><em class="sig-param">activation_settings=None</em>, <em class="sig-param">residual=None</em><span class="sig-paren">)</span><a class="headerlink" href="#siml.networks.siml_module.SimlModule.create_activations" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="siml.networks.siml_module.SimlModule.create_dropout_ratios">
+<code class="sig-name descname">create_dropout_ratios</code><span class="sig-paren">(</span><em class="sig-param">dropouts=None</em><span class="sig-paren">)</span><a class="headerlink" href="#siml.networks.siml_module.SimlModule.create_dropout_ratios" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="siml.networks.siml_module.SimlModule.create_linears">
+<code class="sig-name descname">create_linears</code><span class="sig-paren">(</span><em class="sig-param">nodes=None</em>, <em class="sig-param">bias=None</em><span class="sig-paren">)</span><a class="headerlink" href="#siml.networks.siml_module.SimlModule.create_linears" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="siml.networks.siml_module.SimlModule.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">supports=None</em>, <em class="sig-param">original_shapes=None</em><span class="sig-paren">)</span><a class="headerlink" href="#siml.networks.siml_module.SimlModule.forward" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="siml.networks.siml_module.SimlModule.training">
+<code class="sig-name descname">training</code><em class="property"> = None</em><a class="headerlink" href="#siml.networks.siml_module.SimlModule.training" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-siml.networks.symmat2array">
+<span id="siml-networks-symmat2array-module"></span><h2>siml.networks.symmat2array module<a class="headerlink" href="#module-siml.networks.symmat2array" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="siml.networks.symmat2array.Symmat2Array">
+<em class="property">class </em><code class="sig-prename descclassname">siml.networks.symmat2array.</code><code class="sig-name descname">Symmat2Array</code><span class="sig-paren">(</span><em class="sig-param">block_setting</em><span class="sig-paren">)</span><a class="headerlink" href="#siml.networks.symmat2array.Symmat2Array" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#siml.networks.siml_module.SimlModule" title="siml.networks.siml_module.SimlModule"><code class="xref py py-class docutils literal notranslate"><span class="pre">siml.networks.siml_module.SimlModule</span></code></a></p>
+<p>Convert symmetric matrix to array.</p>
+<dl class="method">
+<dt id="siml.networks.symmat2array.Symmat2Array.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">supports=None</em>, <em class="sig-param">original_shapes=None</em><span class="sig-paren">)</span><a class="headerlink" href="#siml.networks.symmat2array.Symmat2Array.forward" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="siml.networks.symmat2array.Symmat2Array.training">
+<code class="sig-name descname">training</code><em class="property"> = None</em><a class="headerlink" href="#siml.networks.symmat2array.Symmat2Array.training" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-siml.networks.tcn">
+<span id="siml-networks-tcn-module"></span><h2>siml.networks.tcn module<a class="headerlink" href="#module-siml.networks.tcn" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="siml.networks.tcn.TCN">
+<em class="property">class </em><code class="sig-prename descclassname">siml.networks.tcn.</code><code class="sig-name descname">TCN</code><span class="sig-paren">(</span><em class="sig-param">block_setting</em><span class="sig-paren">)</span><a class="headerlink" href="#siml.networks.tcn.TCN" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#siml.networks.siml_module.SimlModule" title="siml.networks.siml_module.SimlModule"><code class="xref py py-class docutils literal notranslate"><span class="pre">siml.networks.siml_module.SimlModule</span></code></a></p>
+<p>Temporal Convolutional Networks (TCN) <a class="reference external" href="https://arxiv.org/abs/1803.01271">https://arxiv.org/abs/1803.01271</a> .</p>
+<dl class="attribute">
+<dt id="siml.networks.tcn.TCN.training">
+<code class="sig-name descname">training</code><em class="property"> = None</em><a class="headerlink" href="#siml.networks.tcn.TCN.training" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-siml.networks.tensor_operations">
+<span id="siml-networks-tensor-operations-module"></span><h2>siml.networks.tensor_operations module<a class="headerlink" href="#module-siml.networks.tensor_operations" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="siml.networks.tensor_operations.Contraction">
+<em class="property">class </em><code class="sig-prename descclassname">siml.networks.tensor_operations.</code><code class="sig-name descname">Contraction</code><span class="sig-paren">(</span><em class="sig-param">block_setting</em><span class="sig-paren">)</span><a class="headerlink" href="#siml.networks.tensor_operations.Contraction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#siml.networks.siml_module.SimlModule" title="siml.networks.siml_module.SimlModule"><code class="xref py py-class docutils literal notranslate"><span class="pre">siml.networks.siml_module.SimlModule</span></code></a></p>
+<p>Tensor contraction block.</p>
+<dl class="method">
+<dt id="siml.networks.tensor_operations.Contraction.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">*xs</em>, <em class="sig-param">supports=None</em>, <em class="sig-param">original_shapes=None</em><span class="sig-paren">)</span><a class="headerlink" href="#siml.networks.tensor_operations.Contraction.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate tensor contraction of rank n ( &gt; m) and m tensors
+sum_{l_1, …, l_m}
+A_{i,k_1,k_2,…,l_1,l_2,…,l_{m}} B_{i,l_1,l_2,…,l_m}</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="siml.networks.tensor_operations.Contraction.training">
+<code class="sig-name descname">training</code><em class="property"> = None</em><a class="headerlink" href="#siml.networks.tensor_operations.Contraction.training" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-siml.networks.time_norm">
+<span id="siml-networks-time-norm-module"></span><h2>siml.networks.time_norm module<a class="headerlink" href="#module-siml.networks.time_norm" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="siml.networks.time_norm.TimeNorm">
+<em class="property">class </em><code class="sig-prename descclassname">siml.networks.time_norm.</code><code class="sig-name descname">TimeNorm</code><span class="sig-paren">(</span><em class="sig-param">block_setting</em><span class="sig-paren">)</span><a class="headerlink" href="#siml.networks.time_norm.TimeNorm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#siml.networks.siml_module.SimlModule" title="siml.networks.siml_module.SimlModule"><code class="xref py py-class docutils literal notranslate"><span class="pre">siml.networks.siml_module.SimlModule</span></code></a></p>
+<p>Normalization for time series data which makes x[t=0, …] = 0.</p>
+<dl class="method">
+<dt id="siml.networks.time_norm.TimeNorm.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">supports=None</em>, <em class="sig-param">original_shapes=None</em><span class="sig-paren">)</span><a class="headerlink" href="#siml.networks.time_norm.TimeNorm.forward" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="siml.networks.time_norm.TimeNorm.training">
+<code class="sig-name descname">training</code><em class="property"> = None</em><a class="headerlink" href="#siml.networks.time_norm.TimeNorm.training" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-siml.networks.translator">
+<span id="siml-networks-translator-module"></span><h2>siml.networks.translator module<a class="headerlink" href="#module-siml.networks.translator" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="siml.networks.translator.Translator">
+<em class="property">class </em><code class="sig-prename descclassname">siml.networks.translator.</code><code class="sig-name descname">Translator</code><span class="sig-paren">(</span><em class="sig-param">block_setting</em><span class="sig-paren">)</span><a class="headerlink" href="#siml.networks.translator.Translator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#siml.networks.siml_module.SimlModule" title="siml.networks.siml_module.SimlModule"><code class="xref py py-class docutils literal notranslate"><span class="pre">siml.networks.siml_module.SimlModule</span></code></a></p>
+<p>Translation block.</p>
+<dl class="attribute">
+<dt id="siml.networks.translator.Translator.training">
+<code class="sig-name descname">training</code><em class="property"> = None</em><a class="headerlink" href="#siml.networks.translator.Translator.training" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-siml.networks">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-siml.networks" title="Permalink to this headline">¶</a></h2>
+</section>
+</section>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="siml.networks.pyg.html" class="btn btn-neutral float-right" title="siml.networks.pyg package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="siml.html" class="btn btn-neutral float-left" title="siml package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, RICOS Co. Ltd.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

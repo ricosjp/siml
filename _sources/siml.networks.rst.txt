@@ -1,0 +1,221 @@
+siml.networks package
+=====================
+
+Subpackages
+-----------
+
+.. toctree::
+
+   siml.networks.pyg
+
+Submodules
+----------
+
+siml.networks.abstract\_gcn module
+----------------------------------
+
+.. automodule:: siml.networks.abstract_gcn
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.networks.activation module
+-------------------------------
+
+.. automodule:: siml.networks.activation
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.networks.activations module
+--------------------------------
+
+.. automodule:: siml.networks.activations
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.networks.array2diagmat module
+----------------------------------
+
+.. automodule:: siml.networks.array2diagmat
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.networks.array2symmat module
+---------------------------------
+
+.. automodule:: siml.networks.array2symmat
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.networks.concatenator module
+---------------------------------
+
+.. automodule:: siml.networks.concatenator
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.networks.deepsets module
+-----------------------------
+
+.. automodule:: siml.networks.deepsets
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.networks.gcn module
+------------------------
+
+.. automodule:: siml.networks.gcn
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.networks.grad\_gcn module
+------------------------------
+
+.. automodule:: siml.networks.grad_gcn
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.networks.identity module
+-----------------------------
+
+.. automodule:: siml.networks.identity
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.networks.integration module
+--------------------------------
+
+.. automodule:: siml.networks.integration
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.networks.iso\_gcn module
+-----------------------------
+
+.. automodule:: siml.networks.iso_gcn
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.networks.laplace\_net module
+---------------------------------
+
+.. automodule:: siml.networks.laplace_net
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.networks.lstm module
+-------------------------
+
+.. automodule:: siml.networks.lstm
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.networks.message\_passing module
+-------------------------------------
+
+.. automodule:: siml.networks.message_passing
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.networks.mlp module
+------------------------
+
+.. automodule:: siml.networks.mlp
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.networks.network module
+----------------------------
+
+.. automodule:: siml.networks.network
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.networks.reducer module
+----------------------------
+
+.. automodule:: siml.networks.reducer
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.networks.reshape module
+----------------------------
+
+.. automodule:: siml.networks.reshape
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.networks.siml\_module module
+---------------------------------
+
+.. automodule:: siml.networks.siml_module
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.networks.symmat2array module
+---------------------------------
+
+.. automodule:: siml.networks.symmat2array
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.networks.tcn module
+------------------------
+
+.. automodule:: siml.networks.tcn
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.networks.tensor\_operations module
+---------------------------------------
+
+.. automodule:: siml.networks.tensor_operations
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.networks.time\_norm module
+-------------------------------
+
+.. automodule:: siml.networks.time_norm
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.networks.translator module
+-------------------------------
+
+.. automodule:: siml.networks.translator
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: siml.networks
+   :members:
+   :undoc-members:
+   :show-inheritance:
