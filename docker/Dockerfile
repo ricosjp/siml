@@ -33,7 +33,7 @@ ARG ricos_pypi_key
 ENV PATH $PATH:/root/.poetry/bin
 
 RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python3.7 \
-  && sed -i.bak s/python/python3.7/g ~/.poetry/bin/poetry \
+  && sed -i.bak s/python3/python3.7/g ~/.poetry/bin/poetry \
   && python3.7 -m pip install -U pip \
   && python3.7 -m pip install -U setuptools \
   && python3.7 -m pip install -U wheel \
