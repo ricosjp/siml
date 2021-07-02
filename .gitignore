@@ -8,6 +8,12 @@ tests/data/*
 models
 *_models/*
 docker/pyproject.toml
+examples/00_basic_data
+
+# Documents
+*.rst
+docs
+sphinx
 
 # Figures
 figs/*

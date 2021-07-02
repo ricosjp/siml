@@ -41,7 +41,7 @@ class RawConverter():
         """Initialize converter of raw data and save them in interim directory.
 
         Parameters
-        -----------
+        ----------
         main_setting: siml.setting.MainSetting
             MainSetting object.
         recursive: bool, optional [True]
@@ -92,9 +92,9 @@ class RawConverter():
     def convert(self, raw_directory=None):
         """Perform conversion.
 
-        Parmeters
-        ---------
-        raw_directory: str or pathlib.Path or list of them, optional [None]
+        Parameters
+        ----------
+        raw_directory: str or pathlib.Path, optional
             Raw data directory name. If not fed, self.setting.data.raw is used
             instead.
         """
@@ -319,7 +319,7 @@ def concatenate_preprocessed_data(
     NOTE: It may lead data leakage so it is just for research use.
 
     Parameters
-    -----------
+    ----------
         preprocessed_base_directories: pathlib.Path or List[pathlib.Path]
             Base directory name of preprocessed data.
         output_directory_base: pathlib.Path
@@ -393,7 +393,7 @@ class Preprocessor:
         e.g. standardization and then save them.
 
         Parameters
-        -----------
+        ----------
         force_renew: bool, optional [False]
             If True, renew npy files even if they are alerady exist.
         save_func: function object, optional [None]
@@ -618,7 +618,7 @@ class Preprocessor:
         """Prepare preprocess converter for single variable.
 
         Parameters
-        -----------
+        ----------
         variable_name: str
             The name of the variable.
         preprocess_setting: dict
@@ -626,7 +626,7 @@ class Preprocessor:
             'componentwise' keywords.
 
         Returns
-        --------
+        -------
         dict_preprocessor_setting: dict
             Dict of preprocessor setting for the variable.
         """
@@ -727,14 +727,14 @@ class Preprocessor:
         """Transform single variable with the created preprocess_converter.
 
         Parameters
-        -----------
+        ----------
         variable_name: str
             The name of the variable.
         preprocess_converter: siml.util.PreprocessConverter
             The PreprocessConverter object to transform.
 
         Returns
-        --------
+        -------
         None
         """
         if isinstance(preprocess_converter.converter, util.Identity):
@@ -842,7 +842,7 @@ class Converter:
         """Postprocess data with inversely converting them.
 
         Parameters
-        -----------
+        ----------
             dict_data_x: dict
                 Dict of input data.
             dict_data_y: dict
@@ -1035,7 +1035,7 @@ def extract_variables(
     """Extract variables from FEMData object to convert to data dictionary.
 
     Parameters
-    -----------
+    ----------
         fem_data: femio.FEMData
             FEMData object to be extracted variables from.
         mandatory_variables: list of str
@@ -1043,7 +1043,7 @@ def extract_variables(
         optional_variables: list of str, optional [None]
             Optional variable names.
     Returns
-    --------
+    -------
         dict_data: dict
             Data dictionary.
     """
@@ -1083,7 +1083,7 @@ def save_dict_data(
     """Save dict_data.
 
     Parameters
-    -----------
+    ----------
         output_directory: pathlib.Path
             Output directory path.
         dict_data: dict
@@ -1109,7 +1109,7 @@ def determine_output_directory(
     input_directory.
 
     Parameters
-    -----------
+    ----------
         input_directory: pathlib.Path
             Input directory path.
         output_base_directory: pathlib.Path
@@ -1146,11 +1146,11 @@ def normalize_adjacency_matrix(adj):
     """Symmetrically normalize adjacency matrix.
 
     Parameters
-    -----------
+    ----------
         adj: scipy.sparse.coo_matrix
             Adjacency matrix in COO expression.
     Returns
-    --------
+    -------
         normalized_adj: scipy.sparse.coo_matrix
             Normalized adjacency matrix in COO expression.
     """
@@ -1174,7 +1174,7 @@ def analyze_data_directories(
     """Analyze data f_name with grid over x_name.
 
     Parameters
-    -----------
+    ----------
         data_directories: List[pathlib.Path]
             List of data directories.
         x_names: List[str]
@@ -1273,7 +1273,7 @@ def split_data_arrays(xs, fs, *, n_split=10, ref_index=0):
     """Split data fs with regards to grids of xs.
 
     Parameters
-    -----------
+    ----------
         xs: List[numpy.ndarray]
             n_sample-length list contains (n_element, dim_x) shaped ndarray.
         fs: List[numpy.ndarray]

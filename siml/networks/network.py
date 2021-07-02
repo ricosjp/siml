@@ -382,7 +382,10 @@ class Network(torch.nn.Module):
             for graph_node in self.sorted_graph_nodes}
         d = nx.drawing.nx_pydot.to_pydot(nx.relabel.relabel_nodes(
             self.call_graph, mapping=mapping, copy=True))
-        d.write_pdf(output_file_name)
+        if self.trainer_setting.figure_format == 'pdf':
+            d.write_pdf(output_file_name)
+        elif self.trainer_setting.figure_format == 'png':
+            d.write_png(output_file_name)
         plt.close(figure)
         return
 

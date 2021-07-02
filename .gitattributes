@@ -1,3 +1,32 @@
+# Test data files
+*.bak linguist-generated
+*.cnt linguist-generated
+*.dat linguist-generated
+*.inp linguist-generated
+*.msh linguist-generated
+*.npy linguist-generated
+*.npz linguist-generated
+*.obj linguist-generated
+*.res.* linguist-generated
+*.step linguist-generated
+*.stl linguist-generated
+*.vtk linguist-generated
+tests/data/**/**/* linguist-generated
 tests/data/* linguist-generated
+
+# Documents
+*.md text diff=markdown
+*.txt text
+*.rst text
+*.pdf binary
+*.js linguist-documentation
+*.css linguist-documentation
+*.html linguist-documentation
 docs/* linguist-documentation
 sphinx/* linguist-documentation
+
+# Figures
+*.png   binary
+*.ico   binary
+*.gif   binary
+*.svg   text
