@@ -34,6 +34,13 @@ def filter_function(fem_data, raw_directory=None, data_dict=None):
 
 class TestPrepost(unittest.TestCase):
 
+    def test_preprocessors_pkl_eliminates_sklearn_objects(self):
+        with open(
+                'tests/data/deform/preprocessed/preprocessors.pkl', 'rb') as f:
+            dict_data = pickle.load(f)
+        for value in dict_data.values():
+            self.assertTrue(isinstance(value['preprocess_converter'], dict))
+
     def test_determine_output_directory(self):
         self.assertEqual(
             pre.determine_output_directory(
