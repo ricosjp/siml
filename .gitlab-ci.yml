@@ -146,7 +146,6 @@ pages:
   only:
     - master
     - develop
-    - fix_pages
 
 
 .deploy:wheel:

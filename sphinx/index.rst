@@ -20,7 +20,7 @@ which are in graph or point cloud formats in general.
 Installation
 ============
 
-SiML supports Python 3.7 or newer.
+SiML supports Python 3.9 or newer.
 SiML can be installed via pip
 (note that the name of the package is :code:`pysiml`):
 

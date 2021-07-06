@@ -13,7 +13,7 @@ packages = [
 include = ["pyproject.toml"]
 
 [tool.poetry.dependencies]
-python = ">=3.8, <3.10"
+python = ">=3.9, <3.10"
 
 PyYAML       = "^5.2"
 femio        = {version = ">=0.3.1", allow-prereleases = true}
