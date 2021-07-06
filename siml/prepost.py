@@ -815,6 +815,7 @@ class Converter:
             variable_name:
             util.PreprocessConverter(
                 value['preprocess_converter'],
+                method=value['method'],
                 componentwise=value['componentwise'],
                 other_components=value['other_components'])
             for variable_name, value in preprocess_setting.preprocess.items()}
