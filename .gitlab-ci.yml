@@ -57,7 +57,7 @@ autopep8:
 pages:
   stage: deploy
   script:
-    - python3.7 -m pip install -r sphinx/requirements.txt
+    - python3.9 -m pip install -r sphinx/requirements.txt
     - sphinx-apidoc -f -o ./sphinx siml
     - sphinx-build ./sphinx ./docs
     - cp -r docs public
