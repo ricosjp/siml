@@ -53,27 +53,27 @@ class TypedDataClass:
                 x = [x]
             return x
 
-        if field.type == typing.List[Path]:
+        if field.type == list[Path]:
             def type_function(x):
                 x = to_list_if_needed(x)
                 return [Path(_x) for _x in x]
-        elif field.type == typing.List[str]:
+        elif field.type == list[str]:
             def type_function(x):
                 x = to_list_if_needed(x)
                 return [str(_x) for _x in x]
-        elif field.type == typing.List[int]:
+        elif field.type == list[int]:
             def type_function(x):
                 x = to_list_if_needed(x)
                 return [int(_x) for _x in x]
-        elif field.type == typing.List[bool]:
+        elif field.type == list[bool]:
             def type_function(x):
                 x = to_list_if_needed(x)
                 return [bool(_x) for _x in x]
-        elif field.type == typing.List[float]:
+        elif field.type == list[float]:
             def type_function(x):
                 x = to_list_if_needed(x)
                 return [float(_x) for _x in x]
-        elif field.type == typing.List[dict]:
+        elif field.type == list[dict]:
             def type_function(x):
                 x = to_list_if_needed(x)
                 return [dict(_x) for _x in x]
@@ -87,7 +87,7 @@ class TypedDataClass:
                 else:
                     return slice(*x)
         elif field.type == typing.Union[
-                typing.List[dict], typing.Dict[str, list]]:
+                list[dict], dict[str, list]]:
             def type_function(x):
                 if isinstance(x, list):
                     return [dict(_x) for _x in x]
@@ -96,7 +96,7 @@ class TypedDataClass:
                 else:
                     raise ValueError(f"Unexpected input: {x}")
         elif field.type == typing.Union[
-                typing.List[int], typing.Dict[str, list]]:
+                list[int], dict[str, list]]:
             def type_function(x):
                 if isinstance(x, list):
                     return [int(_x) for _x in x]
@@ -105,7 +105,7 @@ class TypedDataClass:
                 else:
                     raise ValueError(f"Unexpected input: {x}")
         elif field.type == typing.Union[
-                typing.List[str], typing.Dict[str, list]]:
+                list[str], dict[str, list]]:
             def type_function(x):
                 if isinstance(x, list):
                     return [str(_x) for _x in x]
@@ -136,21 +136,21 @@ class TypedDataClass:
 @dc.dataclass
 class DataSetting(TypedDataClass):
 
-    raw: typing.List[Path] = dc.field(
+    raw: list[Path] = dc.field(
         default_factory=lambda: [Path('data/raw')])
-    interim: typing.List[Path] = dc.field(
+    interim: list[Path] = dc.field(
         default_factory=lambda: [Path('data/interim')])
-    preprocessed: typing.List[Path] = dc.field(
+    preprocessed: list[Path] = dc.field(
         default_factory=lambda: [Path('data/preprocessed')])
-    inferred: typing.List[Path] = dc.field(
+    inferred: list[Path] = dc.field(
         default_factory=lambda: [Path('data/inferred')])
-    train: typing.List[Path] = dc.field(
+    train: list[Path] = dc.field(
         default_factory=lambda: [Path('data/preprocessed/train')])
-    validation: typing.List[Path] = dc.field(
+    validation: list[Path] = dc.field(
         default_factory=lambda: [])
-    develop: typing.List[Path] = dc.field(
+    develop: list[Path] = dc.field(
         default_factory=lambda: [])
-    test: typing.List[Path] = dc.field(
+    test: list[Path] = dc.field(
         default_factory=lambda: [])
     pad: bool = False
     encrypt_key: bytes = dc.field(
@@ -223,72 +223,72 @@ class StudySetting(TypedDataClass):
 class TrainerSetting(TypedDataClass):
 
     """
-    inputs: list of dict or dict
+    inputs: list[dict] or dict
         Variable names of inputs.
-    outputs: list of dict or dict
+    outputs: list[dict] or dict
         Variable names of outputs.
-    train_directories: list of str or pathlib.Path
+    train_directories: list[str] or pathlib.Path
         Training data directories.
     output_directory: str or pathlib.Path
         Output directory name.
-    validation_directories: list of str or pathlib.Path, optional [[]]
+    validation_directories: list[str] or pathlib.Path, optional
         Validation data directories.
-    restart_directory: str or pathlib.Path, optional [None]
+    restart_directory: str or pathlib.Path, optional
         Directory name to be used for restarting.
-    pretrain_directory: str or pathlib.Path, optional [None]
+    pretrain_directory: str or pathlib.Path, optional
         Pretrained directory name.
     loss_function: chainer.FunctionNode,
-            optional [chainer.functions.mean_squared_error]
+            optional
         Loss function to be used for training.
-    optimizer: chainer.Optimizer, optional [chainer.optimizers.Adam]
+    optimizer: chainer.Optimizer, optional
         Optimizer to be used for training.
-    compute_accuracy: bool, optional [False]
+    compute_accuracy: bool, optional
         If True, compute accuracy.
-    batch_size: int, optional [1]
+    batch_size: int, optional
         Batch size for train dataset.
-    validation_batch_size: int, optional [1]
+    validation_batch_size: int, optional
         Batch size for validation dataset.
-    n_epoch: int, optional [1000]
+    n_epoch: int, optional
         The number of epochs.
-    gpu_id: int, optional [-1]
+    gpu_id: int, optional
         GPU ID. Specify non negative value to use GPU. -1 Meaning CPU.
-    log_trigger_epoch: int, optional [1]
+    log_trigger_epoch: int, optional
         The interval of logging of training. It is used for logging,
         plotting, and saving snapshots.
-    stop_trigger_epoch: int, optional [10]
+    stop_trigger_epoch: int, optional
         The interval to check if training should be stopped. It is used
         for early stopping and pruning.
-    optuna_trial: optuna.Trial, optional [None]
+    optuna_trial: optuna.Trial, optional
         Trial object used to perform optuna hyper parameter tuning.
-    prune: bool, optional [False]
+    prune: bool, optional
         If True and optuna_trial is given, prining would be performed.
-    seed: str, optional [0]
+    seed: str, optional
         Random seed.
-    element_wise: bool, optional [False]
+    element_wise: bool, optional
         If True, concatenate data to force element wise training
         (so no graph information can be used). With this option,
         element_batch_size will be used for trainer's batch size as it is
         "element wise" training.
-    element_batch_size: int, optional [-1]
+    element_batch_size: int, optional
         If positive, split one mesh int element_batch_size and perform update
         multiple times for one mesh. In case of element_wise is True,
         element_batch_size is the batch size in the usual sence.
-    validation_element_batch_size: int, optional [-1]
+    validation_element_batch_size: int, optional
         element_batch_size for validation dataset.
-    simplified_model: bool, optional [False]
+    simplified_model: bool, optional
         If True, regard the target simulation as simplified simulation
         (so-called "1D simulation"), which focuses on only a few inputs and
         outputs. The behavior of the trainer will be similar to that with
         element_wise = True.
-    time_series: bool, optional [False]
+    time_series: bool, optional
         If True, regard the data as time series. In that case, the data shape
         will be [seq, batch, element, feature] instead of the default
         [batch, element, feature] shape.
-    lazy: bool, optional [True]
+    lazy: bool, optional
         If True, load data lazily.
-    num_workers: int, optional [None]
+    num_workers: int, optional
         The number of workers to load data.
-    display_mergin: int, optional [5]
+    display_mergin: int, optional
     non_blocking: bool [True]
         If True and this copy is between CPU and GPU, the copy may occur
         asynchronously with respect to the host. For other cases, this argument
@@ -301,7 +301,7 @@ class TrainerSetting(TypedDataClass):
         If True, draw network (requireing graphviz).
     output_stats: bool [False]
         If True, output stats of training (like mean of weight, grads, ...)
-    split_ratio: Dict[str, float]
+    split_ratio: dict[str, float]
         If fed, split the data into train, validation, and test at the
         beginning of the training. Should be
         {'validation': float, 'test': float} dict.
@@ -309,12 +309,12 @@ class TrainerSetting(TypedDataClass):
         The format of the figure. The default is 'pdf'.
     """
 
-    inputs: typing.Union[typing.List[dict], typing.Dict[str, list]] \
+    inputs: typing.Union[list[dict], dict[str, list]] \
         = dc.field(default_factory=list)
     support_input: str = dc.field(default=None, metadata={'allow_none': True})
-    support_inputs: typing.List[str] = dc.field(
+    support_inputs: list[str] = dc.field(
         default=None, metadata={'allow_none': True})
-    outputs: typing.Union[typing.List[dict], typing.Dict[str, list]] \
+    outputs: typing.Union[list[dict], dict[str, list]] \
         = dc.field(default_factory=list)
     output_directory: Path = None
 
@@ -324,7 +324,7 @@ class TrainerSetting(TypedDataClass):
         default=None, metadata={'allow_none': True})
     n_epoch: int = 100
 
-    validation_directories: typing.List[Path] = dc.field(
+    validation_directories: list[Path] = dc.field(
         default_factory=lambda: [])
     restart_directory: Path = dc.field(
         default=None, metadata={'allow_none': True})
@@ -501,36 +501,36 @@ class TrainerSetting(TypedDataClass):
 @dc.dataclass
 class InfererSetting(TypedDataClass):
     """
-    model: pathlib.Path optional [None]
+    model: pathlib.Path optional
         Model directory, file path, or buffer. If not fed,
         TrainerSetting.pretrain_directory will be used.
-    save: bool, optional [False]
+    save: bool, optional
         If True, save inference results.
-    output_directory: pathlib.Path, optional [None]
+    output_directory: pathlib.Path, optional
         Output directory path. If fed, output the data in the specified
         directory. When this is fed, output_directory_base has no effect.
-    output_directory_base: pathlib.Path, optional [None]
+    output_directory_base: pathlib.Path, optional
         Output directory base name. If not fed, data/inferred will be the
         default output directory base.
-    data_directories: List[pathlib.Path], optional [None]
+    data_directories: list[pathlib.Path], optional
         Data directories to infer.
-    write_simulation: bool, optional [False]
+    write_simulation: bool, optional
         If True, write simulation data file(s) based on the inference.
-    write_npy: bool, optional [True]
+    write_npy: bool, optional
         If True, write npy files of inferences.
-    write_yaml: bool, optional [True]
+    write_yaml: bool, optional
         If True, write yaml file used to make inference.
-    write_simulation_base: pathlib.Path, optional [None]
+    write_simulation_base: pathlib.Path, optional
         Base of simulation data to be used for write_simulation option.
         If not fed, try to find from the input directories.
-    read_simulation_type: str, optional ['fistr']
+    read_simulation_type: str, optional
         Simulation file type to read.
-    write_simulation_type: str, optional ['fistr']
+    write_simulation_type: str, optional
         Simulation file type to write.
-    converter_parameters_pkl: pathlib.Path, optional [None]
+    converter_parameters_pkl: pathlib.Path, optional
         Pickel file of converter parameters. IF not fed,
         DataSetting.preprocessed_root is used.
-    perform_preprocess: bool, optional [False]
+    perform_preprocess: bool, optional
         If True, perform preprocess.
     accomodate_length: int
         If specified, duplicate initial state to initialize RNN state.
@@ -550,7 +550,7 @@ class InfererSetting(TypedDataClass):
         default=None, metadata={'allow_none': True})
     output_directory_base: Path = Path('data/inferred')
     overwrite: bool = False
-    data_directories: typing.List[Path] = dc.field(
+    data_directories: list[Path] = dc.field(
         default_factory=list)
     write_simulation: bool = False
     write_npy: bool = True
@@ -579,30 +579,30 @@ class BlockSetting(TypedDataClass):
     is_last: bool = False
     type: str = dc.field(
         default=None, metadata={'allow_none': True})
-    destinations: typing.List[str] = dc.field(
+    destinations: list[str] = dc.field(
         default_factory=list)
     residual: bool = False
     activation_after_residual: bool = True
     allow_linear_residual: bool = False
     bias: bool = True
     input_slice: slice = slice(0, None, 1)
-    input_indices: typing.List[int] = dc.field(
+    input_indices: list[int] = dc.field(
         default=None, metadata={'allow_none': True})
-    input_keys: typing.List[str] = dc.field(
+    input_keys: list[str] = dc.field(
         default=None, metadata={'allow_none': True})
     output_key: str = dc.field(
         default=None, metadata={'allow_none': True})
     support_input_index: int = dc.field(
         default=None, metadata={'allow_none': True})
-    support_input_indices: typing.List[int] = dc.field(
+    support_input_indices: list[int] = dc.field(
         default=None, metadata={'allow_none': True})
-    nodes: typing.List[int] = dc.field(
+    nodes: list[int] = dc.field(
         default_factory=lambda: [-1, -1])
-    kernel_sizes: typing.List[int] = dc.field(
+    kernel_sizes: list[int] = dc.field(
         default=None, metadata={'allow_none': True})
-    activations: typing.List[str] = dc.field(
+    activations: list[str] = dc.field(
         default_factory=lambda: ['identity'])
-    dropouts: typing.List[float] = dc.field(
+    dropouts: list[float] = dc.field(
         default=None, metadata={'allow_none': True})
     device: int = dc.field(
         default=None, metadata={'allow_none': True})
@@ -668,7 +668,7 @@ class BlockSetting(TypedDataClass):
 
 @dc.dataclass
 class ModelSetting(TypedDataClass):
-    blocks: typing.List[BlockSetting]
+    blocks: list[BlockSetting]
 
     def __init__(self, setting=None):
         if setting is None:
@@ -686,7 +686,7 @@ class ModelSetting(TypedDataClass):
 class OptunaSetting(TypedDataClass):
     n_trial: int = 100
     output_base_directory: Path = Path('models/optuna')
-    hyperparameters: typing.List[dict] = dc.field(default_factory=list)
+    hyperparameters: list[dict] = dc.field(default_factory=list)
     setting: dict = dc.field(default_factory=dict)
 
     def __post_init__(self):
@@ -705,50 +705,49 @@ class ConversionSetting(TypedDataClass):
 
     Parameters
     -----------
-    mandatory_variables: list of str
+    mandatory_variables: list[str]
         Mandatory variable names. If any of them are not found,
         ValueError is raised.
-    mandatory: list of str
+    mandatory: list[str]
         An alias of mandatory_variables.
-    optional_variables: list of str
+    optional_variables: list[str]
         Optional variable names. If any of them are not found,
         they are ignored.
-    optional: list of str
+    optional: list[str]
         An alias of optional_variables.
-    output_base_directory: str or pathlib.Path, optional ['data/interim']
+    output_base_directory: str or pathlib.Path, optional
         Output base directory for the converted raw data. By default,
         'data/interim' is the output base directory, so
         'data/interim/aaa/bbb' directory is the output directory for
         'data/raw/aaa/bbb' directory.
-    finished_file: str, optional ['converted']
+    finished_file: str, optional
         File name to indicate that the conversion is finished.
-    file_type: str, optional ['fistr']
+    file_type: str, optional
         File type to be read.
-    required_file_names: list of str,
-            optional []
+    required_file_names: list[str], optional
         Required file names.
-    skip_femio: bool, optional [False]
+    skip_femio: bool, optional
         If True, skip femio.FEMData reading process. Useful for
         user-defined data format such as csv, h5, etc.
-    time_series: bool, optional [False]
+    time_series: bool, optional
         If True, make femio parse time series data.
-    save_femio: bool, optional [True]
+    save_femio: bool, optional
         If True, save femio data in the interim directories.
-    skip_save: bool, optional [True]
+    skip_save: bool, optional
         If True, skip SiML's default saving function.
     """
 
-    mandatory_variables: typing.List[str] = dc.field(
+    mandatory_variables: list[str] = dc.field(
         default_factory=list)
-    optional_variables: typing.List[str] = dc.field(
+    optional_variables: list[str] = dc.field(
         default_factory=list)
-    mandatory: typing.List[str] = dc.field(
+    mandatory: list[str] = dc.field(
         default_factory=list)
-    optional: typing.List[str] = dc.field(
+    optional: list[str] = dc.field(
         default_factory=list)
     finished_file: str = 'converted'
     file_type: str = 'fistr'
-    required_file_names: typing.List[str] = dc.field(default_factory=list)
+    required_file_names: list[str] = dc.field(default_factory=list)
     skip_femio: bool = False
     time_series: bool = False
     save_femio: bool = False
@@ -952,12 +951,12 @@ def write_yaml(data_class, file_name, *, overwrite=False):
 
     Parameters
     -----------
-        data_class: dataclasses.dataclass
-            DataClass object to write.
-        file_name: str or pathlib.Path
-            YAML file name to write.
-        overwrite: bool, optional [False]
-            If True, overwrite file.
+    data_class: dataclasses.dataclass
+        DataClass object to write.
+    file_name: str or pathlib.Path
+        YAML file name to write.
+    overwrite: bool, optional
+        If True, overwrite file.
     """
     file_name = Path(file_name)
     if file_name.exists() and not overwrite:
@@ -973,10 +972,10 @@ def dump_yaml(data_class, stream):
 
     Parameters
     -----------
-        data_class: dataclasses.dataclass
-            DataClass object to write.
-        stream: File or stream
-            Stream to write.
+    data_class: dataclasses.dataclass
+        DataClass object to write.
+    stream: File or stream
+        Stream to write.
     """
     dict_data = dc.asdict(data_class)
     standardized_dict_data = _standardize_data(dict_data)

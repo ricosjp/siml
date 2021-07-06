@@ -569,7 +569,7 @@ def convert_sparse_tensor(
 
     Parameters
     ----------
-    sparse_info: List[List[Dict[str: torch.Tensor]]]
+    sparse_info: list[list[dict[str: torch.Tensor]]]
         Sparse data which has: row, col, values, size in COO format.
     non_blocking: bool, optional
         Dummy parameter to have unified interface with
@@ -611,7 +611,7 @@ def merge_sparse_tensors(stripped_sparse_info, *, return_coo=True):
 
     Parameters
     ----------
-    stripped_sparse_info: List[Dict[str: torch.Tensor]]
+    stripped_sparse_info: list[dict[str: torch.Tensor]]
         Sparse data which has: row, col, values, size in COO format.
     return_coo: bool
         If True, return torch.sparse_coo_tensor. Else, return sparse info

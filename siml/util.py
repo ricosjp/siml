@@ -33,12 +33,13 @@ def load_yaml_file(file_name):
 
     Parameters
     ----------
-        file_name: str or pathlib.Path
-            YAML file name.
+    file_name: str or pathlib.Path
+        YAML file name.
+
     Returns
     --------
-        dict_data: dict
-            YAML contents.
+    dict_data: dict
+        YAML contents.
     """
     with open(file_name, 'r') as f:
         dict_data = yaml.load(f, Loader=yaml.SafeLoader)
@@ -50,11 +51,12 @@ def load_yaml(source):
 
     Parameters
     ----------
-        source: File-like object or str or pathlib.Path
+    source: File-like object or str or pathlib.Path
+
     Returns
     --------
-        dict_data: dict
-            YAML contents.
+    dict_data: dict
+        YAML contents.
     """
     if isinstance(source, io.TextIOBase):
         return yaml.load(source, Loader=yaml.SafeLoader)
@@ -73,16 +75,17 @@ def save_variable(
 
     Parameters
     ----------
-        output_directory: pathlib.Path
-            Save directory path.
-        file_basename: str
-            Save file base name without extenstion.
-        data: np.ndarray or scipy.sparse.coo_matrix
-            Data to be saved.
-        dtype: type, optional [np.float32]
-            Data type to be saved.
-        encrypt_key: bytes, optional [None]
-            Data for encryption.
+    output_directory: pathlib.Path
+        Save directory path.
+    file_basename: str
+        Save file base name without extenstion.
+    data: np.ndarray or scipy.sparse.coo_matrix
+        Data to be saved.
+    dtype: type, optional
+        Data type to be saved.
+    encrypt_key: bytes, optional
+        Data for encryption.
+
     Returns
     --------
         None
@@ -122,15 +125,16 @@ def load_variable(
 
     Parameters
     ----------
-        output_directory: pathlib.Path
-            Directory path.
-        file_basename: str
-            File base name without extenstion.
-        allow_missing: bool, optional [False]
-            If True, return None when the corresponding file is missing.
-            Otherwise, raise ValueError.
-        decrypt_key: bytes, optional [None]
-            If fed, it is used to decrypt the file.
+    output_directory: pathlib.Path
+        Directory path.
+    file_basename: str
+        File base name without extenstion.
+    allow_missing: bool, optional
+        If True, return None when the corresponding file is missing.
+        Otherwise, raise ValueError.
+    decrypt_key: bytes, optional
+        If fed, it is used to decrypt the file.
+
     Returns
     --------
         data: numpy.ndarray or scipy.sparse.coo_matrix
@@ -188,18 +192,15 @@ def copy_variable_file(
 
     Parameters
     ----------
-        input_directory: pathlib.Path
-            Input directory path.
-        file_basename: str
-            File base name without extenstion.
-        output_directory: pathlib.Path
-            Putput directory path.
-        allow_missing: bool, optional [False]
-            If True, return None when the corresponding file is missing.
-            Otherwise, raise ValueError.
-    Returns
-    --------
-        None
+    input_directory: pathlib.Path
+        Input directory path.
+    file_basename: str
+        File base name without extenstion.
+    output_directory: pathlib.Path
+        Putput directory path.
+    allow_missing: bool, optional
+        If True, return None when the corresponding file is missing.
+        Otherwise, raise ValueError.
     """
     if (input_directory / (file_basename + '.npy')).exists():
         ext = '.npy'
@@ -242,16 +243,17 @@ def collect_data_directories(
     ----------
     base_directory: pathlib.Path
         Base directory to search directory from.
-    required_file_names: list of str
+    required_file_names: list[str]
         If given, return only directories which have required files.
     pattern: str
         If given, return only directories which match the pattern.
     inverse_pattern: str, optional
         If given, return only files which DO NOT match the pattern.
+
     Returns
     --------
-        found_directories: list of pathlib.Path
-            All found directories.
+    found_directories: list[pathlib.Path]
+        All found directories.
     """
     if isinstance(base_directory, (list, tuple, set)):
         found_directories = list(np.unique(np.concatenate([
@@ -316,9 +318,9 @@ def collect_files(
 
     Parameters
     ----------
-    base_directory: pathlib.Path or List[pathlib.Path]
+    base_directory: pathlib.Path or list[pathlib.Path]
         Base directory to search directory from.
-    required_file_names: list of str
+    required_file_names: list[str]
         File names.
     pattern: str, optional
         If given, return only files which match the pattern.
@@ -327,7 +329,7 @@ def collect_files(
 
     Returns
     -------
-    collected_files: List[pathlib.Path]
+    collected_files: list[pathlib.Path]
     """
     if isinstance(required_file_names, list):
         found_files = []
@@ -371,12 +373,13 @@ def files_match(file_names, required_file_names):
 
     Parameters
     ----------
-        file_names: List[str]
-        file_names: List[str]
+    file_names: list[str]
+    file_names: list[str]
+
     Returns
     --------
-        files_match: bool
-            True if all files match. Otherwise False.
+    files_match: bool
+        True if all files match. Otherwise False.
     """
     replaced_required_file_names = [
         required_file_name.replace('.', r'\.').replace('*', '.*')
@@ -393,12 +396,13 @@ def files_exist(directory, file_names):
 
     Parameters
     ----------
-        directory: pathlib.Path
-        file_names: list of str
+    directory: pathlib.Path
+    file_names: list[str]
+
     Returns
     --------
-        files_exist: bool
-            True if all files exist. Otherwise False.
+    files_exist: bool
+        True if all files exist. Otherwise False.
     """
     if isinstance(file_names, str):
         file_names = [file_names]
@@ -900,18 +904,6 @@ def calculate_ansys_angles(orientations):
 
 
 def calculate_rotation_angles(orientations, *, standardize=False):
-    """Calculate rotation angles w.r.t global axes.
-
-    Parameters
-    ----------
-        orients: 2-D orientation data in FrontISTR style.
-        standardize: Convert range of outputs to [-.5, .5].
-    Returns
-    --------
-    numpy.ndarray
-        [[theta_x, theta_y, theta_z], ...], where each theta is corresponding
-        to the rotation angle w.r.t each exis (Euler angles).
-    """
     rotations = generate_rotation_matrices(
         orientations[:, :3], orientations[:, 3:6])
     thetas_x = [np.arctan2(r[2, 1], r[2, 2]) for r in rotations]
@@ -930,7 +922,7 @@ def calculate_natural_element_shape(fem_data):
 
     Parameters
     ----------
-    fem_data: FEMData object
+    fem_data: femio.FEMData
 
     Returns
     --------
@@ -985,7 +977,7 @@ def calculate_element_position(fem_data):
 
     Parameters
     ----------
-    fem_data: FEMData object
+    fem_data: femio.FEMData
 
     Returns
     --------
@@ -1025,8 +1017,8 @@ def calculate_adjacency_matrix(fem_data, *, n_node=None):
 
     Parameters
     ----------
-    fem_data: FEMData object
-    n_node: int, optional [None]
+    fem_data: femio.FEMData
+    n_node: int, optional
         the number of node of interest. n_node = 4 to extract only order
         1 nodes in tet2 mesh.
 
@@ -1091,7 +1083,7 @@ def calculate_mesh_shape(fem_data, *, n_node=None):
 
     Parameters
     ----------
-    fem_data: FEMData objects.
+    fem_data: femio.FEMData
     n_node: The number of node to consider (default: use all nodes).
 
     Returns
@@ -1120,8 +1112,10 @@ def calculate_node_position(fem_data, *, n_node=None):
 
     Parameters
     ----------
-        fem_data: FEMData objects.
-        n_node: The number of node to consider (default: use all nodes).
+    fem_data: femio.FEMData
+    n_node: int
+        The number of node to consider (default: use all nodes).
+
     Returns
     --------
     numpy.ndarray
@@ -1279,14 +1273,15 @@ def rotate_strain_like_data(rotation, data):
 
     Parameters
     ----------
-        rotation: numpy.ndarray
-            (dim, dim) shaped matrix.
-        data: numpy.ndarray
-            (n, dim!) shaped array representing symmetric tensors.
+    rotation: numpy.ndarray
+        (dim, dim) shaped matrix.
+    data: numpy.ndarray
+        (n, dim!) shaped array representing symmetric tensors.
+
     Returns
     --------
-        rotated_tensors: numpy.ndarray
-            (n, dim!) shaped array.
+    rotated_tensors: numpy.ndarray
+        (n, dim!) shaped array.
     """
     return symmat2array(
         rotation @ array2symmat(data, from_engineering=True) @ rotation.T,
@@ -1299,21 +1294,22 @@ def read_fem(data_dir, *, return_femdata=False, read_fem_all=False,
 
     Parameters
     ----------
-        data_dir: str
-            Data directory name.
-        return_femdata: bool, optional [False]
-            If True, also return FEMData object.
-        read_fem_all: bool, optional [False]
-            If True, read FEMData all. Only effective if return_femdata is
-            True.
+    data_dir: str
+        Data directory name.
+    return_femdata: bool, optional
+        If True, also return FEMData object.
+    read_fem_all: bool, optional
+        If True, read FEMData all. Only effective if return_femdata is
+        True.
+
     Returns
     --------
-        node: numpy.ndarray
-            Node positions.
-        disp: numpy.ndarray
-            Nodal displacements.
-        fem_data: femio.FEMData, optional
-            FEMData object. Only provided if return_femdata is True.
+    node: numpy.ndarray
+        Node positions.
+    disp: numpy.ndarray
+        Nodal displacements.
+    fem_data: femio.FEMData, optional
+        FEMData object. Only provided if return_femdata is True.
     """
     fem_data = FEMData.read_directory(
         'fistr', data_dir, read_npy=read_femio_npy)
@@ -1353,16 +1349,17 @@ def pad_array(array, n):
 
     Parameters
     ----------
-        array: numpy.ndarray or scipy.sparse.coomatrix
-            Input array of size (m, f1, f2, ...) for numpy.ndarray or (m. m)
-            for scipy.sparse.coomatrix
-        n: int
-            Size after padding. n should be equal to or larger than m.
+    array: numpy.ndarray or scipy.sparse.coo_matrix
+        Input array of size (m, f1, f2, ...) for numpy.ndarray or (m. m)
+        for scipy.sparse.coomatrix
+    n: int
+        Size after padding. n should be equal to or larger than m.
+
     Returns
     --------
-        padded_array: numpy.ndarray or scipy.sparse.coomatrix
-            Padded array of size (n, f1, f2, ...) for numpy.ndarray or (n, n)
-            for scipy.sparse.coomatrix.
+    padded_array: numpy.ndarray or scipy.sparse.coo_matrix
+        Padded array of size (n, f1, f2, ...) for numpy.ndarray or (n, n)
+        for scipy.sparse.coomatrix.
     """
     shape = array.shape
     residual_length = n - shape[0]
@@ -1406,7 +1403,7 @@ def determine_max_process(max_process=None):
 
     Parameters
     ----------
-    max_process: int, optional [None]
+    max_process: int, optional
         Input maximum process.
 
     Returns
@@ -1430,20 +1427,20 @@ def split_data(list_directories, *, validation=.1, test=.1, shuffle=True):
 
     Parameters
     ----------
-    list_directories: list
+    list_directories: list[pathlib.Path]
         List of data directories.
-    validation: float, optional [.1]
+    validation: float, optional
         The ratio of the validation dataset size.
-    test: float, optional [.1]
+    test: float, optional
         The ratio of the test dataset size.
-    shuffle: bool, optional [True]
+    shuffle: bool, optional
         If True, shuffle list_directories.
 
     Returns
     -------
-    train_directories: list
-    validation_directories: list
-    test_directories: list
+    train_directories: list[pathlib.Path]
+    validation_directories: list[pathlib.Path]
+    test_directories: list[pathlib.Path]
     """
     if validation + test > 1.:
         raise ValueError(

@@ -193,7 +193,7 @@ class IsoGCN(abstract_gcn.AbstractGCN):
             [n_vertex, dim, dim, ..., n_feature]-shaped tensor.
                        ~~~~~~~~~~~~~~
                        tensor rank repetition
-        supports: List[torch.Tensor]
+        supports: list[torch.Tensor]
             List of [n_vertex, n_vertex]-shaped sparse tensor.
 
         Returns
@@ -224,7 +224,7 @@ class IsoGCN(abstract_gcn.AbstractGCN):
         ----------
         x: torch.Tensor
             [n_vertex, n_feature]-shaped tensor.
-        supports: List[torch.Tensor]
+        supports: list[torch.Tensor]
             List of [n_vertex, n_vertex]-shaped sparse tensor.
 
         Returns
@@ -258,7 +258,7 @@ class IsoGCN(abstract_gcn.AbstractGCN):
             [n_vertex, dim, dim, ..., n_feature]-shaped tensor.
                        ~~~~~~~~~~~~~~
                        tensor rank repetition
-        supports: List[torch.Tensor]
+        supports: list[torch.Tensor]
             List of [n_vertex, n_vertex]-shaped sparse tensor.
 
         Returns
