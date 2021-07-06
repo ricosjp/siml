@@ -15,11 +15,11 @@ class AbstractGCN(siml_module.SimlModule):
         -----------
         block_setting: siml.setting.BlockSetting
             BlockSetting object.
-        create_subchain: bool, optional [True]
+        create_subchain: bool, optional
             If True, create subchain to be trained.
-        residual: bool, optional [False]
+        residual: bool, optional
             If True, make the network residual.
-        multiple_networks: bool, optional [None]
+        multiple_networks: bool, optional
             If False, create only one subchain and share weights. If not set,
             use block_setting.optional['multiple_networks'] setting. If both
             not set, set True.
@@ -106,10 +106,11 @@ class AbstractGCN(siml_module.SimlModule):
 
         Parameters
         -----------
-            x: numpy.ndarray or cupy.ndarray
-                Input of the NN.
-            supports: List[chainer.util.CooMatrix]
-                List of support inputs.
+        x: numpy.ndarray or cupy.ndarray
+            Input of the NN.
+        supports: list[chainer.util.CooMatrix]
+            List of support inputs.
+
         Returns
         --------
             y: numpy.ndarray of cupy.ndarray

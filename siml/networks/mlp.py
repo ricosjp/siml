@@ -12,12 +12,13 @@ class MLP(siml_module.SimlModule):
 
         Parameters
         -----------
-            x: numpy.ndarray or cupy.ndarray
-                Input of the NN.
+        x: numpy.ndarray or cupy.ndarray
+            Input of the NN.
+
         Returns
         --------
-            y: numpy.ndarray or cupy.ndarray
-                Output of the NN.
+        y: numpy.ndarray or cupy.ndarray
+            Output of the NN.
         """
         h = x
         for linear, dropout_ratio, activation in zip(

@@ -23,11 +23,12 @@ class Objective():
 
         Parameters
         -----------
-            trial: optuna.trial.Trial
+        trial: optuna.trial.Trial
+
         Returns
         --------
-            loss: float
-                Loss value for the trial
+        loss: float
+            Loss value for the trial
         """
 
         # Update setting with suggesting hyperparameters

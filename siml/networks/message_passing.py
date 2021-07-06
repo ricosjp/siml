@@ -15,8 +15,8 @@ class MessagePassing(abstract_gcn.AbstractGCN):
 
         Parameters
         ----------
-            block_setting: siml.setting.BlockSetting
-                BlockSetting object.
+        block_setting: siml.setting.BlockSetting
+            BlockSetting object.
         """
         super().__init__(block_setting, create_subchain=False)
         self.concat = block_setting.optional.get(
@@ -52,14 +52,15 @@ class MessagePassing(abstract_gcn.AbstractGCN):
 
         Parameters
         ----------
-            x: numpy.ndarray or cupy.ndarray
-                Input of the NN.
-            support: chainer.util.CooMatrix
-                Normalized adjacency matrix.
+        x: numpy.ndarray or cupy.ndarray
+            Input of the NN.
+        support: chainer.util.CooMatrix
+            Normalized adjacency matrix.
+
         Returns
         --------
-            y: numpy.ndarray of cupy.ndarray
-                Output of the NN.
+        y: numpy.ndarray of cupy.ndarray
+            Output of the NN.
         """
         h_node = x
         reduce_matrix = self.make_reduce_matrix(support, mean=True)

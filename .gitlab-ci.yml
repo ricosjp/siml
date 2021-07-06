@@ -54,25 +54,6 @@ autopep8:
     - python3.9 -m autopep8 --diff --exit-code $(find siml tests -name "*.py")
   allow_failure: true
 
-pages:
-  stage: deploy
-  script:
-    - python3.9 -m pip install -r sphinx/requirements.txt
-    - sphinx-apidoc -f -o ./sphinx siml
-    - sphinx-build ./sphinx ./docs
-    - cp -r docs public
-    - poetry build
-    - mv dist/*.whl public/
-  artifacts:
-    paths:
-      - public
-      - docs
-  tags:
-    - avx
-  only:
-    - master
-    - develop
-
 .test:
   stage: test
   tags:
@@ -145,6 +126,27 @@ test_other:
   extends: .test
   script:
     - python3.9 -m pytest tests/test_prepost.py tests/test_setting.py tests/test_util.py tests/test_inferer.py --capture=no
+
+pages:
+  stage: deploy
+  script:
+    - poetry build
+    - python3.9 -m pip install dist/pysiml-*.whl
+    - python3.9 -m pip install -r sphinx/requirements.txt
+    - sphinx-apidoc -f -o ./sphinx siml
+    - sphinx-build ./sphinx ./docs
+    - cp -r docs public
+    - mv dist/*.whl public/
+  artifacts:
+    paths:
+      - public
+      - docs
+  tags:
+    - avx
+  only:
+    - master
+    - develop
+
 
 .deploy:wheel:
   stage: deploy

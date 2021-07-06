@@ -12,10 +12,10 @@ class LSTM(siml_module.SimlModule):
 
         Parameters
         -----------
-            block_setting: siml.setting.BlockSetting
-                BlockSetting object.
-            residual: bool
-                If True, use residual network.
+        block_setting: siml.setting.BlockSetting
+            BlockSetting object.
+        residual: bool
+            If True, use residual network.
         """
 
         super().__init__(block_setting, create_linears=False)
@@ -32,14 +32,15 @@ class LSTM(siml_module.SimlModule):
 
         Parameters
         -----------
-            x: numpy.ndarray or cupy.ndarray
-                Input of the NN.
-            supports: List[chainer.util.CooMatrix]
-                List of support inputs.
+        x: numpy.ndarray or cupy.ndarray
+            Input of the NN.
+        supports: list[chainer.util.CooMatrix]
+            List of support inputs.
+
         Returns
         --------
-            y: numpy.ndarray of cupy.ndarray
-                Output of the NN.
+        y: numpy.ndarray of cupy.ndarray
+            Output of the NN.
         """
         h = x
         hidden = None

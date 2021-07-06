@@ -13,8 +13,8 @@ class Integration(siml_module.SimlModule):
 
         Parameters
         -----------
-            block_setting: siml.setting.BlockSetting
-                BlockSetting object.
+        block_setting: siml.setting.BlockSetting
+            BlockSetting object.
         """
         super().__init__(block_setting, no_parameter=True)
         if 'dummy_index' in block_setting.optional:
