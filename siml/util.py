@@ -414,7 +414,7 @@ class PreprocessConverter():
 
     def __init__(
             self, setting_data, *,
-            data_files=None, componentwise=True, power=1.,
+            data_files=None, componentwise=True, power=1., method=None,
             other_components=[], key=None):
         self.is_erroneous = None
         self.setting_data = setting_data
@@ -422,6 +422,7 @@ class PreprocessConverter():
         self.other_components = other_components
         self.key = key
         self.use_diagonal = False
+        self.method = method
 
         self._init_converter()
 
@@ -451,8 +452,15 @@ class PreprocessConverter():
             raise ValueError(f"Unsupported setting_data: {self.setting_data}")
 
     def _init_with_dict(self, setting_dict):
-        preprocess_method = setting_dict['method']
-        self._init_with_str(preprocess_method)
+        if 'method' in setting_dict:
+            preprocess_method = setting_dict['method']
+            self._init_with_str(preprocess_method)
+        else:
+            if self.method is None:
+                raise ValueError('Feed ''method'' when initialize with pkl')
+            self._init_with_str(self.method)
+            for key, value in setting_dict.items():
+                setattr(self.converter, key, value)
         return
 
     def _init_with_str(self, preprocess_method):

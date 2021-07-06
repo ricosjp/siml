@@ -587,21 +587,21 @@ def convert_sparse_tensor(
             for si in sparse_info])
     else:
         if isinstance(sparse_info[0], list):
-            converted_sparses = np.array([
+            converted_sparses = [
                 [
                     torch.sparse_coo_tensor(
                         torch.stack([s['row'], s['col']]),
                         s['values'], s['size']
                     ).to(device)
                     for s in si]
-                for si in sparse_info])
+                for si in sparse_info]
         else:
-            converted_sparses = np.array([
+            converted_sparses = [
                 torch.sparse_coo_tensor(
                     torch.stack([si['row'], si['col']]),
                     si['values'], si['size']
                 ).to(device)
-                for si in sparse_info])
+                for si in sparse_info]
 
     return converted_sparses
 

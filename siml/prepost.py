@@ -506,8 +506,8 @@ class Preprocessor:
                     variable_name, dict_before_replacement)
                 for variable_name in dict_before_replacement.keys()}
 
-            with open(preprocessors_pkl_path, 'wb') as f:
-                pickle.dump(dict_preprocessor_settings, f)
+            self.dump_preprocessors(
+                dict_preprocessor_settings, preprocessors_pkl_path)
 
         else:
             print(f"{preprocessors_pkl_path} already exists. Skip merger.")
@@ -589,6 +589,7 @@ class Preprocessor:
 
         preprocess_converter = util.PreprocessConverter(
             reference_dict['preprocess_converter'],
+            method=reference_dict['method'],
             componentwise=reference_dict['componentwise'],
             power=reference_dict.get('power', 1.),
             other_components=reference_dict['other_components'])
@@ -698,13 +699,28 @@ class Preprocessor:
         if not self.setting.data.preprocessed_root.exists():
             self.setting.data.preprocessed_root.mkdir(
                 parents=True, exist_ok=True)
-        with open(
-                self.setting.data.preprocessed_root
-                / f"{variable_name}_{self.PREPROCESSORS_PKL_NAME}",
-                'wb') as f:
-            pickle.dump(dict_preprocessor_setting, f)
+        partial_pkl_name = self.setting.data.preprocessed_root \
+            / f"{variable_name}_{self.PREPROCESSORS_PKL_NAME}"
+        self.dump_preprocessors(dict_preprocessor_setting, partial_pkl_name)
 
         return dict_preprocessor_setting
+
+    def dump_preprocessors(self, dict_preprocessor_setting, file_path):
+        dict_to_dump = {}
+        for key, value in dict_preprocessor_setting.items():
+            dict_to_dump[key] = {}
+            for k, v in value.items():
+                if k == 'preprocess_converter' and v is not None:
+                    if isinstance(v, dict):
+                        dict_to_dump[key].update({k: v})
+                    else:
+                        dict_to_dump[key].update({k: vars(v.converter)})
+                else:
+                    dict_to_dump[key].update({k: v})
+        with open(file_path, 'wb') as f:
+            pickle.dump(dict_to_dump, f)
+
+        return
 
     def _file_exists(self, output_directory, variable_name):
         npy_file = output_directory / (variable_name + '.npy')
@@ -815,6 +831,7 @@ class Converter:
             variable_name:
             util.PreprocessConverter(
                 value['preprocess_converter'],
+                method=value['method'],
                 componentwise=value['componentwise'],
                 other_components=value['other_components'])
             for variable_name, value in preprocess_setting.preprocess.items()}

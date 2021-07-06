@@ -1,13 +1,11 @@
-image: registry.ritc.jp/ricos/machine_learning/siml:0.2.7
+image: registry.ritc.jp/ricos/machine_learning/siml:0.2.8
 
 default:
   before_script:
     - poetry config virtualenvs.create false
-    - poetry config repositories.ricos https://pypi.ritc.jp
-    - poetry config http-basic.ricos ricos ${RICOS_PYPI_KEY}
     - poetry build
-    - python3.7 -m pip install -U femio --pre --index=https://ricos:${RICOS_PYPI_KEY}@pypi.ritc.jp
-    - python3.7 -m pip install dist/pysiml-*.whl  # Only install root project, not dependencies
+    - python3.9 -m pip install -U femio --pre
+    - python3.9 -m pip install dist/pysiml-*.whl  # Only install root project, not dependencies
     # - poetry install
 
 stages:
@@ -34,7 +32,7 @@ stages:
 
 preprocess:
   stage: preprocess
-  script: python3.7 tests/preprocess.py
+  script: python3.9 tests/preprocess.py
   artifacts:
     paths:
       - tests/data/deform/interim
@@ -53,7 +51,7 @@ preprocess:
 autopep8:
   stage: preprocess
   script:
-    - python3.7 -m autopep8 --diff --exit-code $(find siml tests -name "*.py")
+    - python3.9 -m autopep8 --diff --exit-code $(find siml tests -name "*.py")
   allow_failure: true
 
 pages:
@@ -83,7 +81,7 @@ pages:
 test_gpu_networks:
   extends: .test
   script:
-    - python3.7 -m pytest tests/gpu/test_networks_gpu.py --capture=no
+    - python3.9 -m pytest tests/gpu/test_networks_gpu.py --capture=no
   tags:
     - multi-gpu
     - avx
@@ -91,7 +89,7 @@ test_gpu_networks:
 test_gpu:
   extends: .test
   script:
-    - python3.7 -m pytest tests/gpu/test_optimize_gpu.py tests/gpu/test_trainer_gpu.py --capture=no
+    - python3.9 -m pytest tests/gpu/test_optimize_gpu.py tests/gpu/test_trainer_gpu.py --capture=no
   tags:
     - multi-gpu
     - avx
@@ -99,7 +97,7 @@ test_gpu:
 test_gpu_parallel:
   extends: .test
   script:
-    - python3.7 -m pytest tests/gpu/test_trainer_gpu_parallel.py --capture=no
+    - python3.9 -m pytest tests/gpu/test_trainer_gpu_parallel.py --capture=no
   allow_failure: true
   tags:
     - multi-gpu
@@ -107,51 +105,51 @@ test_gpu_parallel:
 
 test_network:
   extends: .test
-  script: python3.7 -m pytest tests/test_network.py --capture=no
+  script: python3.9 -m pytest tests/test_network.py --capture=no
 
 test_networks:
   extends: .test
-  script: python3.7 -m pytest tests/test_networks.py --capture=no
+  script: python3.9 -m pytest tests/test_networks.py --capture=no
 
 test_geo:
   extends: .test
-  script: python3.7 -m pytest tests/test_geo.py --capture=no
+  script: python3.9 -m pytest tests/test_geo.py --capture=no
 
 test_iso_gcn:
   extends: .test
-  script: python3.7 -m pytest tests/test_iso_gcn.py --capture=no
+  script: python3.9 -m pytest tests/test_iso_gcn.py --capture=no
 
 test_optimize:
   extends: .test
-  script: python3.7 -m pytest tests/test_optimize.py --capture=no
+  script: python3.9 -m pytest tests/test_optimize.py --capture=no
 
 test_study:
   extends: .test
-  script: python3.7 -m pytest tests/test_study.py --capture=no
+  script: python3.9 -m pytest tests/test_study.py --capture=no
 
 test_trainer:
   extends: .test
-  script: python3.7 -m pytest tests/test_trainer.py --capture=no
+  script: python3.9 -m pytest tests/test_trainer.py --capture=no
 
 test_trainer_wo_pyg:
   extends: .test
   script:
-    - python3.7 -m pip uninstall torch-geometric -y
-    - python3.7 -m pytest tests/test_trainer.py --capture=no -k test_whole_process
+    - python3.9 -m pip uninstall torch-geometric -y
+    - python3.9 -m pytest tests/test_trainer.py --capture=no -k test_whole_process
 
 test_trainer_long:
   extends: .test
-  script: python3.7 -m pytest tests/test_trainer_long.py --capture=no
+  script: python3.9 -m pytest tests/test_trainer_long.py --capture=no
 
 test_other:
   extends: .test
   script:
-    - python3.7 -m pytest tests/test_prepost.py tests/test_setting.py tests/test_util.py tests/test_inferer.py --capture=no
+    - python3.9 -m pytest tests/test_prepost.py tests/test_setting.py tests/test_util.py tests/test_inferer.py --capture=no
 
 .deploy:wheel:
   stage: deploy
   script:
-    - python3.7 -m pip install --upgrade pip
+    - python3.9 -m pip install --upgrade pip
     - poetry version $VERSION
     - poetry config repositories.ricos https://pypi.ritc.jp
     - poetry build -f wheel

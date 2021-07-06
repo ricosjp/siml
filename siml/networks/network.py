@@ -290,7 +290,7 @@ class Network(torch.nn.Module):
 
     def forward(self, x_):
         x = x_['x']
-        supports = np.asarray(x_.get('supports', None))
+        supports = x_.get('supports', None)
         original_shapes = x_.get('original_shapes', None)
 
         dict_hidden = {
@@ -324,14 +324,15 @@ class Network(torch.nn.Module):
                         # NOTE: support_input_indices are ignored
                         selected_supports = supports
                     else:
-                        if len(supports.shape) == 1:
-                            selected_supports = supports[
-                                block_setting.support_input_indices]
-                        else:
+                        if isinstance(supports[0], list):
                             selected_supports = [
                                 [s.to(device) for s in sp] for sp
                                 in supports[
                                     :, block_setting.support_input_indices]]
+                        else:
+                            selected_supports = [
+                                supports[i].to(device) for i
+                                in block_setting.support_input_indices]
 
                     hidden = self.dict_block[graph_node](
                         *inputs, supports=selected_supports,
@@ -363,7 +364,7 @@ class Network(torch.nn.Module):
         if isinstance(x, dict):
             if input_selection != slice(0, None, 1):
                 raise ValueError(
-                    f"Cannot set input_selection after dict_output")
+                    'Cannot set input_selection after dict_output')
             return {key: value.to(device) for key, value in x.items()}
         else:
             if input_selection == slice(0, None, 1):
