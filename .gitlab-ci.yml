@@ -9,9 +9,9 @@ default:
     # - poetry install
 
 stages:
-  # - docker
-  # - preprocess
-  # - test
+  - docker
+  - preprocess
+  - test
   - deploy
 
 # docker:
@@ -30,29 +30,102 @@ stages:
 #   only:
 #     - master
 
-preprocess:
-  stage: preprocess
-  script: python3.9 tests/preprocess.py
-  artifacts:
-    paths:
-      - tests/data/deform/interim
-      - tests/data/deform/preprocessed
-      - tests/data/deform_timeseries/preprocessed
-      - tests/data/rotation/preprocessed
-      - tests/data/large/preprocessed
-      - tests/data/ode/interim
-      - tests/data/ode/preprocessed
-      - tests/data/ode/preprocessed
-      - tests/data/rotation_thermal_stress/preprocessed
-      - tests/data/rotation_thermal_stress/interim/cube/original
-      - tests/data/heat_time_series/preprocessed
-    expire_in: 60min
-
-autopep8:
-  stage: preprocess
-  script:
-    - python3.9 -m autopep8 --diff --exit-code $(find siml tests -name "*.py")
-  allow_failure: true
+# preprocess:
+#   stage: preprocess
+#   script: python3.9 tests/preprocess.py
+#   artifacts:
+#     paths:
+#       - tests/data/deform/interim
+#       - tests/data/deform/preprocessed
+#       - tests/data/deform_timeseries/preprocessed
+#       - tests/data/rotation/preprocessed
+#       - tests/data/large/preprocessed
+#       - tests/data/ode/interim
+#       - tests/data/ode/preprocessed
+#       - tests/data/ode/preprocessed
+#       - tests/data/rotation_thermal_stress/preprocessed
+#       - tests/data/rotation_thermal_stress/interim/cube/original
+#       - tests/data/heat_time_series/preprocessed
+#     expire_in: 60min
+#
+# autopep8:
+#   stage: preprocess
+#   script:
+#     - python3.9 -m autopep8 --diff --exit-code $(find siml tests -name "*.py")
+#   allow_failure: true
+#
+# .test:
+#   stage: test
+#   tags:
+#     - avx
+#
+# test_gpu_networks:
+#   extends: .test
+#   script:
+#     - python3.9 -m pytest tests/gpu/test_networks_gpu.py --capture=no
+#   tags:
+#     - multi-gpu
+#     - avx
+#
+# test_gpu:
+#   extends: .test
+#   script:
+#     - python3.9 -m pytest tests/gpu/test_optimize_gpu.py tests/gpu/test_trainer_gpu.py --capture=no
+#   tags:
+#     - multi-gpu
+#     - avx
+#
+# test_gpu_parallel:
+#   extends: .test
+#   script:
+#     - python3.9 -m pytest tests/gpu/test_trainer_gpu_parallel.py --capture=no
+#   allow_failure: true
+#   tags:
+#     - multi-gpu
+#     - avx
+#
+# test_network:
+#   extends: .test
+#   script: python3.9 -m pytest tests/test_network.py --capture=no
+#
+# test_networks:
+#   extends: .test
+#   script: python3.9 -m pytest tests/test_networks.py --capture=no
+#
+# test_geo:
+#   extends: .test
+#   script: python3.9 -m pytest tests/test_geo.py --capture=no
+#
+# test_iso_gcn:
+#   extends: .test
+#   script: python3.9 -m pytest tests/test_iso_gcn.py --capture=no
+#
+# test_optimize:
+#   extends: .test
+#   script: python3.9 -m pytest tests/test_optimize.py --capture=no
+#
+# test_study:
+#   extends: .test
+#   script: python3.9 -m pytest tests/test_study.py --capture=no
+#
+# test_trainer:
+#   extends: .test
+#   script: python3.9 -m pytest tests/test_trainer.py --capture=no
+#
+# test_trainer_wo_pyg:
+#   extends: .test
+#   script:
+#     - python3.9 -m pip uninstall torch-geometric -y
+#     - python3.9 -m pytest tests/test_trainer.py --capture=no -k test_whole_process
+#
+# test_trainer_long:
+#   extends: .test
+#   script: python3.9 -m pytest tests/test_trainer_long.py --capture=no
+#
+# test_other:
+#   extends: .test
+#   script:
+#     - python3.9 -m pytest tests/test_prepost.py tests/test_setting.py tests/test_util.py tests/test_inferer.py --capture=no
 
 pages:
   stage: deploy
@@ -75,78 +148,6 @@ pages:
     - develop
     - fix_pages
 
-.test:
-  stage: test
-  tags:
-    - avx
-
-test_gpu_networks:
-  extends: .test
-  script:
-    - python3.9 -m pytest tests/gpu/test_networks_gpu.py --capture=no
-  tags:
-    - multi-gpu
-    - avx
-
-test_gpu:
-  extends: .test
-  script:
-    - python3.9 -m pytest tests/gpu/test_optimize_gpu.py tests/gpu/test_trainer_gpu.py --capture=no
-  tags:
-    - multi-gpu
-    - avx
-
-test_gpu_parallel:
-  extends: .test
-  script:
-    - python3.9 -m pytest tests/gpu/test_trainer_gpu_parallel.py --capture=no
-  allow_failure: true
-  tags:
-    - multi-gpu
-    - avx
-
-test_network:
-  extends: .test
-  script: python3.9 -m pytest tests/test_network.py --capture=no
-
-test_networks:
-  extends: .test
-  script: python3.9 -m pytest tests/test_networks.py --capture=no
-
-test_geo:
-  extends: .test
-  script: python3.9 -m pytest tests/test_geo.py --capture=no
-
-test_iso_gcn:
-  extends: .test
-  script: python3.9 -m pytest tests/test_iso_gcn.py --capture=no
-
-test_optimize:
-  extends: .test
-  script: python3.9 -m pytest tests/test_optimize.py --capture=no
-
-test_study:
-  extends: .test
-  script: python3.9 -m pytest tests/test_study.py --capture=no
-
-test_trainer:
-  extends: .test
-  script: python3.9 -m pytest tests/test_trainer.py --capture=no
-
-test_trainer_wo_pyg:
-  extends: .test
-  script:
-    - python3.9 -m pip uninstall torch-geometric -y
-    - python3.9 -m pytest tests/test_trainer.py --capture=no -k test_whole_process
-
-test_trainer_long:
-  extends: .test
-  script: python3.9 -m pytest tests/test_trainer_long.py --capture=no
-
-test_other:
-  extends: .test
-  script:
-    - python3.9 -m pytest tests/test_prepost.py tests/test_setting.py tests/test_util.py tests/test_inferer.py --capture=no
 
 .deploy:wheel:
   stage: deploy
