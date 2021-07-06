@@ -450,9 +450,11 @@ class TestPrepost(unittest.TestCase):
         with open(
                 main_setting.data.preprocessed_root / 'preprocessors.pkl',
                 'rb') as f:
-            preprocess_converter = pickle.load(f)['x_grad'][
+            preprocess_converter_setting = pickle.load(f)['x_grad'][
                 'preprocess_converter']
-        std = preprocess_converter.converter.std_
+        std = preprocess_converter_setting['std_']
+        preprocess_converter = util.PreprocessConverter(
+            preprocess_converter_setting, method='sparse_std', power=.5)
         np.testing.assert_almost_equal(
             preprocessed_x_grad.toarray() * std**.5, reference_x_grad)
         np.testing.assert_almost_equal(
