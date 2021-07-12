@@ -108,116 +108,6 @@ class Network(torch.nn.Module):
             block_setting.nodes[0] = input_node
             block_setting.nodes[-1] = output_node
 
-        # for graph_node in self.sorted_graph_nodes:
-        #     block_setting = self.dict_block_setting[graph_node]
-        #     predecessors = tuple(self.call_graph.predecessors(graph_node))
-        #     block_type = block_setting.type
-        #
-        #     if graph_node == config.INPUT_LAYER_NAME:
-        #         first_node = self.trainer_setting.input_length
-        #         last_node = self.trainer_setting.input_length
-        #
-        #     elif graph_node == config.OUTPUT_LAYER_NAME:
-        #         first_node = self.trainer_setting.output_length
-        #         last_node = self.trainer_setting.output_length
-        #
-        #     elif block_type == x'array2symmat':
-        #         first_node == 6
-        #         last_node = 1
-        #
-        #     elif block_type == x'symmat2array':
-        #         max_first_node = np.sum([
-        #             self.dict_block_setting[predecessor].nodes[-1]
-        #             for predecessor in predecessors])
-        #         first_node = max(len(np.arange(max_first_node)[
-        #             block_setting.input_selection]), 1)
-        #         last_node = first_node * 6
-        #
-        #     elif block_type == x'concatenator':
-        #         max_first_node = np.sum([
-        #             self.dict_block_setting[predecessor].nodes[-1]
-        #             for predecessor in predecessors])
-        #         first_node = len(np.arange(max_first_node)[
-        #             block_setting.input_selection])
-        #         last_node = first_node
-        #
-        #     elif block_type in [x'reducer', x'contraction']:
-        #         max_first_node = np.sum([
-        #             self.dict_block_setting[predecessor].nodes[-1]
-        #             for predecessor in predecessors])
-        #         first_node = len(np.arange(max_first_node)[
-        #             block_setting.input_selection])
-        #         last_node = np.max([
-        #             self.dict_block_setting[predecessor].nodes[-1]
-        #             for predecessor in predecessors])
-        #
-        #     elif block_type == x'reshape':
-        #         max_first_node = np.sum([
-        #             self.dict_block_setting[predecessor].nodes[-1]
-        #             for predecessor in predecessors])
-        #         first_node = len(np.arange(max_first_node)[
-        #             block_setting.input_selection])
-        #         last_node = block_setting.optional['new_shape'][1]
-        #
-        #     elif block_type == x'integration':
-        #         max_first_node = self.dict_block_setting[
-        #             predecessors[0]].nodes[-1]
-        #         first_node = len(np.arange(max_first_node)[
-        #             block_setting.input_selection])
-        #         last_node = first_node - 1
-        #
-        #     else:
-        #         if block_setting.is_first:
-        #             if isinstance(self.trainer_setting.input_length, dict):
-        #                 input_keys = block_setting.input_keys
-        #                 if input_keys is None:
-        #                     raise ValueError(
-        #                         'Input is dict. Plese specify input_keys to '
-        #                         f"the first nodes: {block_setting}")
-        #                 input_length = self.trainer_setting.input_length
-        #                 max_first_node = int(
-        #                     np.sum([
-        #                         input_length[input_key] for input_key
-        #                         in input_keys]))
-        #             else:
-        #                 max_first_node = self.trainer_setting.input_length
-        #         else:
-        #             max_first_node = self.dict_block_setting[
-        #                 tuple(predecessors)[0]].nodes[-1]
-        #         first_node = len(np.arange(max_first_node)[
-        #             block_setting.input_selection])
-        #
-        #         if self.dict_block_class[block_type].trainable:
-        #             last_node = self.trainer_setting.output_length
-        #         else:
-        #             last_node = first_node
-        #
-        #     if graph_node not in [
-        #             config.INPUT_LAYER_NAME, config.OUTPUT_LAYER_NAME] \
-        #             and block_setting.nodes[0] == -1:
-        #         block_setting.nodes[0] = int(first_node)
-        #
-        #     if graph_node not in [
-        #             config.INPUT_LAYER_NAME, config.OUTPUT_LAYER_NAME] \
-        #             and block_setting.nodes[-1] == -1:
-        #         output_key = block_setting.output_key
-        #         if output_key is None:
-        #             if isinstance(last_node, dict):
-        #                 raise ValueError(
-        #                     'Output is dict. Plese specify output_key to the '
-        #                     f"last nodes: {block_setting}")
-        #             block_setting.nodes[-1] = int(
-        #                 last_node)
-        #         else:
-        #             if block_setting.is_last:
-        #                 output_length = self.trainer_setting.output_length
-        #                 block_setting.nodes[-1] = int(
-        #                     output_length[output_key])
-        #             else:
-        #                 raise ValueError(
-        #                     'Cannot put output_key when is_last is False: '
-        #                     f"{block_setting}")
-
         return
 
     def _create_dict_block(self):
@@ -338,5 +228,8 @@ def add_block(block):
     block: siml.network.SimlModule-like
         User defined block.
     """
-    Network.dict_block_class.update({block.get_name(): block})
+    name = block.get_name()
+    if name in Network.dict_block_class:
+        raise ValueError(f"Block name {name} already exists.")
+    Network.dict_block_class.update({name: block})
     return

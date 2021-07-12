@@ -68,6 +68,22 @@ class TestNetwork(unittest.TestCase):
     def test_user_defined_block(self):
 
         class CutOffBlock(networks.SimlModule):
+            @staticmethod
+            def get_name():
+                return 'cutoff'
+
+            @staticmethod
+            def is_trainable():
+                return True
+
+            @staticmethod
+            def accepts_multiple_inputs():
+                return False
+
+            @staticmethod
+            def uses_support():
+                return False
+
             def __init__(self, block_setting):
                 super().__init__(block_setting)
                 self.upper = block_setting.optional.get('upper', .1)
@@ -84,7 +100,7 @@ class TestNetwork(unittest.TestCase):
                 return h
 
         networks.add_block(
-            name='cutoff', block=CutOffBlock, trainable=True)
+            block=CutOffBlock)
 
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/deform/cutoff.yml'))
