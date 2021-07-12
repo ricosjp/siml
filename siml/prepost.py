@@ -1178,6 +1178,10 @@ def normalize_adjacency_matrix(adj):
     """
     print(f"to_coo adj: {dt.datetime.now()}")
     adj = sp.coo_matrix(adj)
+    diag = adj.diagonal()
+    additional_diag = np.zeros(len(diag))
+    additional_diag[np.abs(diag) < 1.e-5] = 1.
+    adj = adj + sp.diags(additional_diag)
     print(f"sum raw: {dt.datetime.now()}")
     rowsum = np.array(adj.sum(1))
     print(f"invert d: {dt.datetime.now()}")
@@ -1186,7 +1190,7 @@ def normalize_adjacency_matrix(adj):
     print(f"making diag: {dt.datetime.now()}")
     d_mat_inv_sqrt = sp.diags(d_inv_sqrt)
     print(f"calculating norm: {dt.datetime.now()}")
-    return adj.dot(d_mat_inv_sqrt).transpose().dot(d_mat_inv_sqrt).tocoo()
+    return d_mat_inv_sqrt.dot(adj).dot(d_mat_inv_sqrt).tocoo()
 
 
 def analyze_data_directories(
