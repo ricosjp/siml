@@ -111,7 +111,7 @@ class SimlModule(torch.nn.Module, metaclass=abc.ABCMeta):
                     raise ValueError(
                         'Output is dict. Plese specify output_key to the '
                         f"last nodes: {block_setting}")
-                output_node = candidate_output_node
+                output_node = int(candidate_output_node)
             else:
                 if block_setting.is_last:
                     output_length = output_length
