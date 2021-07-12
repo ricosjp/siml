@@ -67,6 +67,21 @@ class TestPrepost(unittest.TestCase):
         np.testing.assert_almost_equal(
             d_inv_sqrt @ adj @ d_inv_sqrt, nadj.toarray())
 
+    def test_normalize_adjacency_matrix_wo_diag(self):
+        adj = np.array([
+            [0., 5., 0.],
+            [1., 0., 1.],
+            [0., 0., 0.],
+        ])
+        nadj = pre.normalize_adjacency_matrix(adj)
+        d_inv_sqrt = np.array([
+            [6.**-.5, 0., 0.],
+            [0., 3.**-.5, 0.],
+            [0., 0., 1.**-.5],
+        ])
+        np.testing.assert_almost_equal(
+            d_inv_sqrt @ (adj + np.eye(3)) @ d_inv_sqrt, nadj.toarray())
+
     def test_split_data_arrays(self):
         true_xs = [
             np.concatenate([
