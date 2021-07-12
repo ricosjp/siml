@@ -11,6 +11,22 @@ class DeepSets(siml_module.SimlModule):
     https://arxiv.org/abs/1703.06114 .
     """
 
+    @staticmethod
+    def get_name():
+        return 'deepsets'
+
+    @staticmethod
+    def is_trainable():
+        return True
+
+    @staticmethod
+    def accepts_multiple_inputs():
+        return False
+
+    @staticmethod
+    def uses_support():
+        return False
+
     def __init__(self, block_setting):
         """Initialize the NN.
 

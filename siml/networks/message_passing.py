@@ -10,6 +10,10 @@ class MessagePassing(abstract_gcn.AbstractGCN):
     """Message passing layer based on https://arxiv.org/abs/1704.01212.
     """
 
+    @staticmethod
+    def get_name():
+        return 'message_passing'
+
     def __init__(self, block_setting):
         """Initialize the NN.
 

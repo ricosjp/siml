@@ -10,6 +10,22 @@ class TCN(siml_module.SimlModule):
     """Temporal Convolutional Networks (TCN) https://arxiv.org/abs/1803.01271 .
     """
 
+    @staticmethod
+    def get_name():
+        return 'tcn'
+
+    @staticmethod
+    def is_trainable():
+        return True
+
+    @staticmethod
+    def accepts_multiple_inputs():
+        return False
+
+    @staticmethod
+    def uses_support():
+        return False
+
     def __init__(self, block_setting):
         """Initialize the NN.
 

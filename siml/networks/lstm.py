@@ -7,6 +7,22 @@ from . import siml_module
 class LSTM(siml_module.SimlModule):
     """LSTM layer."""
 
+    @staticmethod
+    def get_name():
+        return 'lstm'
+
+    @staticmethod
+    def is_trainable():
+        return True
+
+    @staticmethod
+    def accepts_multiple_inputs():
+        return False
+
+    @staticmethod
+    def uses_support():
+        return False
+
     def __init__(self, block_setting):
         """Initialize the NN.
 

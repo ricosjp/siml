@@ -9,6 +9,10 @@ from . import identity
 class IsoGCN(abstract_gcn.AbstractGCN):
     """IsoGCN according to https://arxiv.org/abs/2005.06316 ."""
 
+    @staticmethod
+    def get_name():
+        return 'iso_gcn'
+
     def __init__(self, block_setting):
         self.is_first = True  # For block setting validation
 
@@ -45,9 +49,9 @@ class IsoGCN(abstract_gcn.AbstractGCN):
         self.ah_w = block_setting.optional.get(
             'ah_w', False)
         if self.ah_w:
-            print(f"Matrix multiplication mode: (AH) W")
+            print("Matrix multiplication mode: (AH) W")
         else:
-            print(f"Matrix multiplication mode: A (HW)")
+            print("Matrix multiplication mode: A (HW)")
 
         if 'propagations' not in block_setting.optional:
             raise ValueError(

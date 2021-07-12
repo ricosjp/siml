@@ -11,6 +11,10 @@ from ... import setting
 class GIN(abstract_pyg_gcn.AbstractPyGGCN):
     """Graph Isomorphism Network based on https://arxiv.org/abs/1810.00826 ."""
 
+    @staticmethod
+    def get_name():
+        return 'gin'
+
     def __init__(self, block_setting):
         super().__init__(
             block_setting, create_subchain=True, residual=False)
