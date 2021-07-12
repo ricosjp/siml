@@ -9,11 +9,9 @@ from . import array2diagmat
 from . import array2symmat
 from . import deepsets
 from . import gcn
-from . import grad_gcn
 from . import identity
 from . import integration
 from . import iso_gcn
-from . import laplace_net
 from . import lstm
 from . import mlp
 from . import message_passing
@@ -45,35 +43,12 @@ blocks = [
     # Layers with weights
     deepsets.DeepSets,
     gcn.GCN,
-    grad_gcn.GradGCN,
     iso_gcn.IsoGCN,
-    laplace_net.LaplaceNet,
     lstm.LSTM,
     mlp.MLP,
     message_passing.MessagePassing,
     tcn.TCN,
 ]
-
-# # Layers without weights
-# 'activation': activation.Activation,
-# 'array2diagmat': array2diagmat.Array2Diagmat,
-# 'array2symmat': array2symmat.Array2Symmat,
-# 'contraction': tensor_operations.Contraction,
-# 'integration': integration.Integration,
-# 'reducer': reducer.Reducer,
-# 'reshape': reshape.Reshape,
-# 'symmat2array': symmat2array.Symmat2Array,
-# 'time_norm': time_norm.TimeNorm,
-#
-# # Layers with weights
-# 'deepsets': deepsets.DeepSets,
-# 'gcn': gcn.GCN,
-# 'grad_gcn': grad_gcn.GradGCN,
-# 'iso_gcn': iso_gcn.IsoGCN,
-# 'laplace_net': laplace_net.LaplaceNet,
-# 'lstm': lstm.LSTM,
-# 'message_passing': message_passing.MessagePassing,
-# 'tcn': tcn.TCN,
 
 for block in blocks:
     add_block(block)

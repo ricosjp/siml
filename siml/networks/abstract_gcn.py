@@ -6,6 +6,18 @@ from . import siml_module
 
 class AbstractGCN(siml_module.SimlModule):
 
+    @staticmethod
+    def is_trainable():
+        return True
+
+    @staticmethod
+    def accepts_multiple_inputs():
+        return False
+
+    @staticmethod
+    def uses_support():
+        return True
+
     def __init__(
             self, block_setting,
             *, create_subchain=True, residual=False, multiple_networks=None):

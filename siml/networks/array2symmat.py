@@ -7,6 +7,34 @@ from . import siml_module
 class Array2Symmat(siml_module.SimlModule):
     """Convert array to symmetric matrix."""
 
+    @staticmethod
+    def get_name():
+        return 'array2symmat'
+
+    @staticmethod
+    def is_trainable():
+        return False
+
+    @staticmethod
+    def accepts_multiple_inputs():
+        return False
+
+    @staticmethod
+    def uses_support():
+        return False
+
+    @classmethod
+    def _get_n_input_node(
+            cls, block_setting, predecessors, dict_block_setting,
+            input_length):
+        return 6
+
+    @classmethod
+    def _get_n_output_node(
+            cls, input_node, block_setting, predecessors, dict_block_setting,
+            output_length):
+        return 1
+
     def __init__(self, block_setting):
         super().__init__(block_setting, no_parameter=True)
         self.from_engineering = block_setting.optional.get(

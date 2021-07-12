@@ -121,11 +121,11 @@ class Network(torch.nn.Module):
         #         first_node = self.trainer_setting.output_length
         #         last_node = self.trainer_setting.output_length
         #
-        #     elif block_type == 'array2symmat':
+        #     elif block_type == x'array2symmat':
         #         first_node == 6
         #         last_node = 1
         #
-        #     elif block_type == 'symmat2array':
+        #     elif block_type == x'symmat2array':
         #         max_first_node = np.sum([
         #             self.dict_block_setting[predecessor].nodes[-1]
         #             for predecessor in predecessors])
@@ -133,15 +133,15 @@ class Network(torch.nn.Module):
         #             block_setting.input_selection]), 1)
         #         last_node = first_node * 6
         #
-        #     # elif block_type == 'concatenator':
-        #     #     max_first_node = np.sum([
-        #     #         self.dict_block_setting[predecessor].nodes[-1]
-        #     #         for predecessor in predecessors])
-        #     #     first_node = len(np.arange(max_first_node)[
-        #     #         block_setting.input_selection])
-        #     #     last_node = first_node
+        #     elif block_type == x'concatenator':
+        #         max_first_node = np.sum([
+        #             self.dict_block_setting[predecessor].nodes[-1]
+        #             for predecessor in predecessors])
+        #         first_node = len(np.arange(max_first_node)[
+        #             block_setting.input_selection])
+        #         last_node = first_node
         #
-        #     elif block_type in ['reducer', 'contraction']:
+        #     elif block_type in [x'reducer', x'contraction']:
         #         max_first_node = np.sum([
         #             self.dict_block_setting[predecessor].nodes[-1]
         #             for predecessor in predecessors])
@@ -151,7 +151,7 @@ class Network(torch.nn.Module):
         #             self.dict_block_setting[predecessor].nodes[-1]
         #             for predecessor in predecessors])
         #
-        #     elif block_type == 'reshape':
+        #     elif block_type == x'reshape':
         #         max_first_node = np.sum([
         #             self.dict_block_setting[predecessor].nodes[-1]
         #             for predecessor in predecessors])
@@ -159,7 +159,7 @@ class Network(torch.nn.Module):
         #             block_setting.input_selection])
         #         last_node = block_setting.optional['new_shape'][1]
         #
-        #     elif block_type == 'integration':
+        #     elif block_type == x'integration':
         #         max_first_node = self.dict_block_setting[
         #             predecessors[0]].nodes[-1]
         #         first_node = len(np.arange(max_first_node)[

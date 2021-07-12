@@ -8,6 +8,10 @@ class GCN(abstract_gcn.AbstractGCN):
     """Graph Convolutional network based on https://arxiv.org/abs/1609.02907 .
     """
 
+    @staticmethod
+    def get_name():
+        return 'gcn'
+
     def __init__(self, block_setting):
         super().__init__(
             block_setting, create_subchain=True,
@@ -19,9 +23,9 @@ class GCN(abstract_gcn.AbstractGCN):
         self.ah_w = block_setting.optional.get(
             'ah_w', False)
         if self.ah_w:
-            print(f"Matrix multiplication mode: (AH) W")
+            print("Matrix multiplication mode: (AH) W")
         else:
-            print(f"Matrix multiplication mode: A (HW)")
+            print("Matrix multiplication mode: A (HW)")
 
         return
 

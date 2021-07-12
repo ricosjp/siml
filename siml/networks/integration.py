@@ -8,6 +8,28 @@ from . import siml_module
 class Integration(siml_module.SimlModule):
     """Integration block."""
 
+    @staticmethod
+    def get_name():
+        return 'integration'
+
+    @staticmethod
+    def is_trainable():
+        return False
+
+    @staticmethod
+    def accepts_multiple_inputs():
+        return False
+
+    @staticmethod
+    def uses_support():
+        return False
+
+    @classmethod
+    def _get_n_output_node(
+            cls, input_node, block_setting, predecessors, dict_block_setting,
+            output_length):
+        return input_node - 1
+
     def __init__(self, block_setting):
         """Initialize the NN.
 
