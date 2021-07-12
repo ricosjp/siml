@@ -18,7 +18,7 @@ class Contraction(siml_module.SimlModule):
 
     @staticmethod
     def accepts_multiple_inputs():
-        return False
+        return True
 
     @staticmethod
     def uses_support():

@@ -8,6 +8,10 @@ from . import abstract_pyg_gcn
 class ClusterGCN(abstract_pyg_gcn.AbstractPyGGCN):
     """Cluster-GCN based on https://arxiv.org/abs/1905.07953 ."""
 
+    @staticmethod
+    def get_name():
+        return 'cluster_gcn'
+
     def __init__(self, block_setting):
         super().__init__(
             block_setting, create_subchain=False, residual=False)
