@@ -1,0 +1,72 @@
+data:
+  train:
+    - tests/data/deform/preprocessed/train
+  validation:
+    - tests/data/deform/preprocessed/validation
+trainer:
+  lazy: false
+  num_workers: 0
+  output_directory: tests/data/deform/set_transformer
+  inputs:
+    - name: elemental_strain
+      dim: 6
+    - name: elemental_stress
+      dim: 6
+  outputs:
+    - name: global_modulus
+      dim: 1
+  prune: true
+  batch_size: 10
+  n_epoch: 1000
+  log_trigger_epoch: 10
+  stop_trigger_epoch: 20
+  seed: 0
+model:
+  blocks:
+    - name: SET_TRANSFORMER_ENCODER
+      type: set_transformer_encoder
+      destinations:
+        - SET_TRANSFORMER_DECODER_1
+      nodes:
+        - -1
+        - 64
+      activations:
+        - tanh
+      optional:
+        n_head: 4
+        n_inducing_point: -1
+        layer_norm: true
+    - name: SET_TRANSFORMER_DECODER_1
+      type: set_transformer_decoder
+      destinations:
+        - SET_TRANSFORMER_DECODER_2
+      nodes:
+        - -1
+        - 64
+      activations:
+        - tanh
+      optional:
+        n_head: 4
+        layer_norm: true
+        n_output: 2
+    - name: SET_TRANSFORMER_DECODER_2
+      type: set_transformer_decoder
+      destinations:
+        - OUT_MLP
+      nodes:
+        - -1
+        - 16
+      activations:
+        - tanh
+      optional:
+        n_head: 4
+        layer_norm: true
+        n_output: 1
+        n_input: 2
+    - name: OUT_MLP
+      type: mlp
+      nodes:
+        - -1
+        - -1
+      activations:
+        - identity
