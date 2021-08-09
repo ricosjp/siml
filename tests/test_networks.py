@@ -526,3 +526,21 @@ class TestNetworks(unittest.TestCase):
         normalized_a = activations.normalize(torch.from_numpy(a)).numpy()
         np.testing.assert_almost_equal(
             normalized_a, a / (np.linalg.norm(a, axis=1)[..., None] + 1e-5))
+
+    def test_set_transformer_full(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/deform/set_transformer.yml'))
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, 1.)
+
+    def test_set_transformer_encoder(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/deform/set_transformer_encoder.yml'))
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, 1.)

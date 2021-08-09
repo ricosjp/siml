@@ -17,6 +17,7 @@ from . import mlp
 from . import message_passing
 from . import reducer
 from . import reshape
+from . import set_transformer
 from . import symmat2array
 from . import tcn
 from . import tensor_operations
@@ -47,6 +48,8 @@ blocks = [
     lstm.LSTM,
     mlp.MLP,
     message_passing.MessagePassing,
+    set_transformer.SetTransformerEncoder,
+    set_transformer.SetTransformerDecoder,
     tcn.TCN,
 ]
 
