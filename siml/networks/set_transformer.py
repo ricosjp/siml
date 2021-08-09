@@ -144,6 +144,7 @@ class MAB(torch.nn.Module):
     """MAB: the Multihead Attention Block.
     It maps [n, d_in] x [n, d_in] -> [n, d_out].
     """
+
     def __init__(
             self, dim_Q, dim_K, dim_V, num_heads, activation, layer_norm):
         super(MAB, self).__init__()
@@ -234,6 +235,7 @@ class PMA(torch.nn.Module):
     It maps [n, d_in] -> [k, d_out], where k is the number of the output
     vectors.
     """
+
     def __init__(
             self, dim, num_heads, num_seeds, activation, layer_norm):
         super(PMA, self).__init__()
