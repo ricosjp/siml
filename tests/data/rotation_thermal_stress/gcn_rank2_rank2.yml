@@ -1,0 +1,58 @@
+data:
+  train:
+    - tests/data/rotation_thermal_stress/preprocessed
+  validation:
+    - tests/data/rotation_thermal_stress/preprocessed
+  develop:
+    - tests/data/rotation_thermal_stress/preprocessed
+trainer:
+  lazy: false
+  num_workers: 0
+  output_directory: tests/data/rotation_thermal_stress/models/gcn_rank2_rank2
+  split_ratio:
+    validation: .1
+    test: .0
+  inputs:
+    - name: nodal_strain_mat
+  support_inputs:
+    - nadj
+  outputs:
+    - name: nodal_lte_mat
+      dim: 1
+  prune: true
+  batch_size: 2
+  n_epoch: 10
+  log_trigger_epoch: 1
+  stop_trigger_epoch: 1
+  seed: 0
+model:
+  blocks:
+    - name: IN_LINEAR
+      type: mlp
+      destinations:
+        - GCN_TENSOR
+      bias: false
+      nodes:
+        - -1
+        - 16
+      activations:
+        - identity
+    - name: GCN_TENSOR
+      type: gcn
+      destinations:
+        - OUT_LINEAR
+      bias: false
+      residual: true
+      nodes:
+        - -1
+        - 16
+      activations:
+        - identity
+    - name: OUT_LINEAR
+      type: mlp
+      bias: false
+      nodes:
+        - -1
+        - -1
+      activations:
+        - identity
