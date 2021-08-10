@@ -43,7 +43,14 @@ class IsoGCN(abstract_gcn.AbstractGCN):
             print(f"Output symmetric matrix for: {block_setting.name}")
 
         self.factor = block_setting.optional.get('factor', 1.)
+        self.repeat = block_setting.optional.get(
+            'repeat', 1)
+        self.convergence_threshold = block_setting.optional.get(
+            'convergence_threshold', None)
         print(f"Factor: {self.factor}")
+        print(
+            f"max repeat: {self.repeat}, "
+            f"convergeence threshold: {self.convergence_threshold}")
         self.ah_w = block_setting.optional.get(
             'ah_w', False)
         if self.ah_w:
@@ -132,8 +139,7 @@ class IsoGCN(abstract_gcn.AbstractGCN):
             # A (H W)
             h = self.subchains[0][0](h)
 
-        for propagation_function in self.propagation_functions:
-            h = propagation_function(h, support) * self.factor
+        h = self._propagate_core(h, support)
 
         if self.ah_w:
             # (A H) W
@@ -145,6 +151,24 @@ class IsoGCN(abstract_gcn.AbstractGCN):
 
         h = torch.nn.functional.dropout(
             h, p=self.dropout_ratios[0], training=self.training)
+        return h
+
+    def _propagate_core(self, x, support):
+        h = x
+        for _ in range(self.repeat):
+            h_previous = h
+            h = h + self._apply_propagation_functions(x, support)
+            if self.convergence_threshold is not None:
+                residual = torch.linalg.norm(
+                    h - h_previous) / (torch.linalg.norm(h_previous) + 1.e-5)
+                if residual < self.convergence_threshold:
+                    break
+        return h
+
+    def _apply_propagation_functions(self, x, support):
+        h = x
+        for propagation_function in self.propagation_functions:
+            h = propagation_function(h, support) * self.factor
         return h
 
     def _create_propagation_functions(self):

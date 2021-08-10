@@ -19,7 +19,14 @@ class GCN(abstract_gcn.AbstractGCN):
 
         self.factor = block_setting.optional.get(
             'factor', 1.)
+        self.repeat = block_setting.optional.get(
+            'repeat', 1)
+        self.convergence_threshold = block_setting.optional.get(
+            'convergence_threshold', None)
         print(f"Factor: {self.factor}")
+        print(
+            f"max repeat: {self.repeat}, "
+            f"convergeence threshold: {self.convergence_threshold}")
         self.ah_w = block_setting.optional.get(
             'ah_w', False)
         if self.ah_w:
@@ -51,5 +58,12 @@ class GCN(abstract_gcn.AbstractGCN):
     def _propagate(self, x, support):
         original_shape = x.shape
         h = torch.reshape(x, (original_shape[0], -1))
-        h = torch.sparse.mm(support, h) * self.factor
+        for _ in range(self.repeat):
+            h_previous = h
+            h = torch.sparse.mm(support, h) * self.factor
+            if self.convergence_threshold is not None:
+                residual = torch.linalg.norm(
+                    h - h_previous) / (torch.linalg.norm(h_previous) + 1.e-5)
+                if residual < self.convergence_threshold:
+                    break
         return torch.reshape(h, original_shape)
