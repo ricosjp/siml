@@ -37,13 +37,19 @@ class GCN(abstract_gcn.AbstractGCN):
 
             if self.ah_w:
                 # Pattern A: (A H) W
-                h = subchain(torch.sparse.mm(support, h) * self.factor)
+                h = subchain(self._propagate(h, support))
 
             else:
                 # Pattern B: A (H W)
-                h = torch.sparse.mm(support, subchain(h)) * self.factor
+                h = self._propagate(subchain(h), support)
 
             h = torch.nn.functional.dropout(
                 h, p=dropout_ratio, training=self.training)
             h = activation(h)
         return h
+
+    def _propagate(self, x, support):
+        original_shape = x.shape
+        h = torch.reshape(x, (original_shape[0], -1))
+        h = torch.sparse.mm(support, h) * self.factor
+        return torch.reshape(h, original_shape)
