@@ -8,7 +8,7 @@ data:
 trainer:
   lazy: false
   num_workers: 0
-  output_directory: tests/data/rotation_thermal_stress/models/gcn_rank2_rank2
+  output_directory: tests/data/rotation_thermal_stress/models/sgcn_rank2_rank2
   split_ratio:
     validation: .1
     test: .0
@@ -30,14 +30,14 @@ model:
     - name: IN_LINEAR
       type: mlp
       destinations:
-        - GCN_TENSOR
+        - SGCN_TENSOR
       bias: false
       nodes:
         - -1
         - 16
       activations:
         - identity
-    - name: GCN_TENSOR
+    - name: SGCN_TENSOR
       type: gcn
       destinations:
         - OUT_LINEAR
@@ -48,6 +48,9 @@ model:
         - 16
       activations:
         - identity
+      optional:
+        repeat: 10000
+        convergence_threshold: 1.e-5
     - name: OUT_LINEAR
       type: mlp
       bias: false
