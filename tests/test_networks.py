@@ -536,6 +536,26 @@ class TestNetworks(unittest.TestCase):
         loss = tr.train()
         np.testing.assert_array_less(loss, 1.)
 
+        # Test permutation invariance
+        tr.prepare_training()
+        x = np.reshape(np.arange(5*12), (5, 12)).astype(np.float32) * .1
+        original_shapes = [[5]]
+
+        tr.model.eval()
+        with torch.no_grad():
+            y_wo_permutation = tr.model({
+                'x': torch.from_numpy(x), 'original_shapes': original_shapes})
+
+            x_w_permutation = np.concatenate(
+                [x[2:], x[:2]], axis=0)
+            y_w_permutation = tr.model({
+                'x': torch.from_numpy(x_w_permutation),
+                'original_shapes': original_shapes})
+
+        np.testing.assert_almost_equal(
+            y_wo_permutation.detach().numpy(),
+            y_w_permutation.detach().numpy(), decimal=6)
+
     def test_set_transformer_encoder(self):
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/deform/set_transformer_encoder.yml'))
@@ -544,3 +564,27 @@ class TestNetworks(unittest.TestCase):
             shutil.rmtree(tr.setting.trainer.output_directory)
         loss = tr.train()
         np.testing.assert_array_less(loss, 1.)
+
+        # Test permutation equivariance
+        tr.prepare_training()
+        x = np.reshape(np.arange(5*7), (5, 7)).astype(np.float32) * .1
+        original_shapes = [[5]]
+
+        tr.model.eval()
+        with torch.no_grad():
+            y_wo_permutation = tr.model({
+                'x': torch.from_numpy(x), 'original_shapes': original_shapes})
+
+            x_w_permutation = np.concatenate(
+                [x[2:], x[:2]], axis=0)
+            y_w_permutation = tr.model({
+                'x': torch.from_numpy(x_w_permutation),
+                'original_shapes': original_shapes})
+
+        np.testing.assert_almost_equal(
+            np.concatenate(
+                [
+                    y_wo_permutation[2:].detach().numpy(),
+                    y_wo_permutation[:2].detach().numpy()],
+                axis=0),
+            y_w_permutation.detach().numpy(), decimal=6)
