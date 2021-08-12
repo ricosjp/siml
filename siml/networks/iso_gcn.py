@@ -28,7 +28,7 @@ class IsoGCN(abstract_gcn.AbstractGCN):
             block_setting, create_subchain=self.create_subchain,
             multiple_networks=False, residual=block_setting.residual)
         if not self.create_subchain:
-            print(f"Skipe subchain creation for: {block_setting.name}")
+            print(f"Skip subchain creation for: {block_setting.name}")
             self.subchains = [[identity.Identity(block_setting)]]
 
         if len(self.subchains[0]) > 1:
@@ -42,10 +42,19 @@ class IsoGCN(abstract_gcn.AbstractGCN):
         if self.symmetric:
             print(f"Output symmetric matrix for: {block_setting.name}")
 
-        self.merge_sparse = block_setting.optional.get('merge_sparse', False)
-        print(f"Merge sparse: {self.merge_sparse}")
         self.factor = block_setting.optional.get('factor', 1.)
+        self.repeat = block_setting.optional.get(
+            'repeat', 1)
+        self.convergence_threshold = block_setting.optional.get(
+            'convergence_threshold', None)
         print(f"Factor: {self.factor}")
+        print(
+            f"max repeat: {self.repeat}, "
+            f"convergeence threshold: {self.convergence_threshold}")
+        if self.repeat > 1:
+            self.propagate_core = self._propagate_core_implicit
+        else:
+            self.propagate_core = self._propagate_core_explicit
         self.ah_w = block_setting.optional.get(
             'ah_w', False)
         if self.ah_w:
@@ -111,16 +120,16 @@ class IsoGCN(abstract_gcn.AbstractGCN):
                         f"{self.block_setting}")
         return
 
-    def _forward_single(self, x, merged_support):
+    def _forward_single(self, x, support):
         if self.is_first:
-            self._validate_block(x, merged_support)
+            self._validate_block(x, support)
             self.is_first = False
         if self.residual:
             shortcut = self.shortcut(x)
         else:
             shortcut = 0.
 
-        h_res = self._propagate(x, merged_support)
+        h_res = self._propagate(x, support)
         if self.block_setting.activation_after_residual:
             h_res = self.activations[-1](h_res + shortcut)
         else:
@@ -134,8 +143,7 @@ class IsoGCN(abstract_gcn.AbstractGCN):
             # A (H W)
             h = self.subchains[0][0](h)
 
-        for propagation_function in self.propagation_functions:
-            h = propagation_function(h, support) * self.factor
+        h = self.propagate_core(h, support)
 
         if self.ah_w:
             # (A H) W
@@ -149,6 +157,27 @@ class IsoGCN(abstract_gcn.AbstractGCN):
             h, p=self.dropout_ratios[0], training=self.training)
         return h
 
+    def _propagate_core_explicit(self, x, support):
+        return self._apply_propagation_functions(x, support)
+
+    def _propagate_core_implicit(self, x, support):
+        h = x
+        for _ in range(self.repeat):
+            h_previous = h
+            h = h + self._apply_propagation_functions(x, support)
+            if self.convergence_threshold is not None:
+                residual = torch.linalg.norm(
+                    h - h_previous) / (torch.linalg.norm(h_previous) + 1.e-5)
+                if residual < self.convergence_threshold:
+                    break
+        return h
+
+    def _apply_propagation_functions(self, x, support):
+        h = x
+        for propagation_function in self.propagation_functions:
+            h = propagation_function(h, support) * self.factor
+        return h
+
     def _create_propagation_functions(self):
         str_propagations = self.block_setting.optional['propagations']
         propagation_functions = [
@@ -158,28 +187,17 @@ class IsoGCN(abstract_gcn.AbstractGCN):
         return propagation_functions
 
     def _create_propagation_function(self, str_propagation):
-        if self.merge_sparse:
-            if str_propagation == 'convolution':
-                return self._convolution_with_merge
-            elif str_propagation == 'contraction':
-                return self._contraction_with_merge
-            elif str_propagation == 'tensor_product':
-                return self._tensor_product_with_merge
-            else:
-                raise ValueError(
-                    f"Unexpected propagation method: {str_propagation}")
+        if str_propagation == 'convolution':
+            return self._convolution
+        elif str_propagation == 'contraction':
+            return self._contraction
+        elif str_propagation == 'tensor_product':
+            return self._tensor_product
         else:
-            if str_propagation == 'convolution':
-                return self._convolution_without_merge
-            elif str_propagation == 'contraction':
-                return self._contraction_without_merge
-            elif str_propagation == 'tensor_product':
-                return self._tensor_product_without_merge
-            else:
-                raise ValueError(
-                    f"Unexpected propagation method: {str_propagation}")
+            raise ValueError(
+                f"Unexpected propagation method: {str_propagation}")
 
-    def _calculate_dim_without_merge(self, supports, n_vertex):
+    def _calculate_dim(self, supports, n_vertex):
         dim, mod = divmod(supports.shape[0], n_vertex)
         if mod != 0:
             raise ValueError(
@@ -188,7 +206,7 @@ class IsoGCN(abstract_gcn.AbstractGCN):
                 f"    n_vertex: {n_vertex}")
         return dim
 
-    def _tensor_product_without_merge(self, x, supports):
+    def _tensor_product(self, x, supports):
         """Calculate tensor product G \\otimes x.
 
         Parameters
@@ -211,17 +229,17 @@ class IsoGCN(abstract_gcn.AbstractGCN):
         dim = len(supports)
         tensor_rank = len(shape) - 2
         if tensor_rank == 0:
-            h = self._convolution_without_merge(x, supports)
+            h = self._convolution(x, supports)
         elif tensor_rank > 0:
             h = torch.stack([
-                self._tensor_product_without_merge(x[:, i_dim], supports)
+                self._tensor_product(x[:, i_dim], supports)
                 for i_dim in range(dim)], dim=-2)
         else:
             raise ValueError(f"Tensor shape invalid: {shape}")
 
         return h
 
-    def _convolution_without_merge(self, x, supports, top=True):
+    def _convolution(self, x, supports, top=True):
         """Calculate convolution G \\ast x.
 
         Parameters
@@ -252,7 +270,7 @@ class IsoGCN(abstract_gcn.AbstractGCN):
 
         return h
 
-    def _contraction_without_merge(self, x, supports):
+    def _contraction(self, x, supports):
         """Calculate contraction G \\cdot B. It calculates
         \\sum_l G_{i,j,k_1,k_2,...,l} H_{jk_1,k_2,...,l,f}
 
@@ -292,61 +310,7 @@ class IsoGCN(abstract_gcn.AbstractGCN):
                 raise ValueError
         elif tensor_rank > 1:
             return torch.stack([
-                self._contraction_without_merge(x[:, i_dim], supports)
+                self._contraction(x[:, i_dim], supports)
                 for i_dim in range(self.dim)], dim=1)
         else:
             raise ValueError(f"Tensor rank is 0 (shape: {shape})")
-
-    def _calculate_dim_with_merge(self, merged_support, n_vertex):
-        dim, mod = divmod(merged_support.shape[0], n_vertex)
-        if mod != 0:
-            raise ValueError(
-                'IsoGCN not supported for\n'
-                f"    Sparse shape: {merged_support.shape}\n",
-                f"    n_vertex: {n_vertex}")
-        return dim
-
-    def _convolution_with_merge(self, x, merged_support):
-        """Calculate convolution G \\ast x.
-
-        Parameters
-        ----------
-        x: torch.Tensor
-            [n_vertex, n_feature]-shaped tensor.
-        merged_support: torch.Tensor
-            [n_vertex * dim, n_vertex * dim]-shaped sparse tensor.
-
-        Returns
-        -------
-        y: torch.Tensor
-            [n_vertex, dim, n_feature]-shaped tensor.
-        """
-        raise NotImplementedError
-        n_vertex = len(x)
-        dim = self._calculate_dim_with_merge(merged_support, n_vertex)
-        x = torch.cat([x] * dim, dim=0)
-        return merged_support.mm(x).view(n_vertex, dim, -1)
-
-    def _contraction_with_merge(self, x, merged_support):
-        """Calculate contraction G \\cdot x.
-
-        Parameters
-        ----------
-        x: torch.Tensor
-            [n_vertex, dim, n_feature]-shaped tensor.
-        merged_support: torch.Tensor
-            [n_vertex * dim, n_vertex * dim]-shaped sparse tensor.
-
-        Returns
-        -------
-        y: torch.Tensor
-            [n_vertex, n_feature]-shaped tensor.
-        """
-        raise NotImplementedError
-        n_vertex = x.shape[1]
-        dim = self._calculate_dim_with_merge(merged_support, n_vertex)
-        return torch.sum(merged_support.mm(x.view(dim * n_vertex, -1)).view(
-            dim, n_vertex, -1), dim=0)
-
-    def _tensor_product_with_merge(self, x, merged_support):
-        raise NotImplementedError
