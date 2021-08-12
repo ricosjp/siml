@@ -56,8 +56,9 @@ class GCN(abstract_gcn.AbstractGCN):
         return h
 
     def _propagate(self, x, support):
-        original_shape = x.shape
-        h = torch.reshape(x, (original_shape[0], -1))
+        result_shape = list(x.shape)
+        h = torch.reshape(x, (result_shape[0], -1))
+        result_shape[0] = support.shape[0]
         for _ in range(self.repeat):
             h_previous = h
             h = torch.sparse.mm(support, h) * self.factor
@@ -66,4 +67,4 @@ class GCN(abstract_gcn.AbstractGCN):
                     h - h_previous) / (torch.linalg.norm(h_previous) + 1.e-5)
                 if residual < self.convergence_threshold:
                     break
-        return torch.reshape(h, original_shape)
+        return torch.reshape(h, result_shape)
