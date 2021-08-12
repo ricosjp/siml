@@ -762,7 +762,7 @@ class TestIsoGCN(unittest.TestCase):
 
     def test_sgcn_rotation_thermal_stress_rank2_rank2(self):
         main_setting = setting.MainSetting.read_settings_yaml(
-            Path('tests/data/rotation_thermal_stress/gcn_rank2_rank2.yml'))
+            Path('tests/data/rotation_thermal_stress/sgcn_rank2_rank2.yml'))
         tr = trainer.Trainer(main_setting)
         if tr.setting.trainer.output_directory.exists():
             shutil.rmtree(tr.setting.trainer.output_directory)

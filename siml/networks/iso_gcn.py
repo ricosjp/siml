@@ -51,6 +51,10 @@ class IsoGCN(abstract_gcn.AbstractGCN):
         print(
             f"max repeat: {self.repeat}, "
             f"convergeence threshold: {self.convergence_threshold}")
+        if self.repeat > 1:
+            self.propagate_core = self._propagate_core_implicit
+        else:
+            self.propagate_core = self._propagate_core_explicit
         self.ah_w = block_setting.optional.get(
             'ah_w', False)
         if self.ah_w:
@@ -139,7 +143,7 @@ class IsoGCN(abstract_gcn.AbstractGCN):
             # A (H W)
             h = self.subchains[0][0](h)
 
-        h = self._propagate_core(h, support)
+        h = self.propagate_core(h, support)
 
         if self.ah_w:
             # (A H) W
@@ -153,7 +157,10 @@ class IsoGCN(abstract_gcn.AbstractGCN):
             h, p=self.dropout_ratios[0], training=self.training)
         return h
 
-    def _propagate_core(self, x, support):
+    def _propagate_core_explicit(self, x, support):
+        return self._apply_propagation_functions(x, support)
+
+    def _propagate_core_implicit(self, x, support):
         h = x
         for _ in range(self.repeat):
             h_previous = h
