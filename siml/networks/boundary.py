@@ -8,6 +8,22 @@ from . import siml_module
 class Dirichlet(siml_module.SimlModule):
     """Dirichlet boundary condition management."""
 
+    @staticmethod
+    def get_name():
+        return 'dirichlet'
+
+    @staticmethod
+    def is_trainable():
+        return False
+
+    @staticmethod
+    def accepts_multiple_inputs():
+        return True
+
+    @staticmethod
+    def uses_support():
+        return False
+
     def __init__(self, block_setting):
         """Initialize the module.
 
@@ -48,6 +64,22 @@ class Dirichlet(siml_module.SimlModule):
 
 class NeumannIsoGCN(siml_module.SimlModule):
     """Neumann boundary condition management using IsoGCN."""
+
+    @staticmethod
+    def get_name():
+        return 'neumann_isogcn'
+
+    @staticmethod
+    def is_trainable():
+        return False
+
+    @staticmethod
+    def accepts_multiple_inputs():
+        return True
+
+    @staticmethod
+    def uses_support():
+        return False
 
     def __init__(self, block_setting):
         """Initialize the module.
@@ -91,6 +123,22 @@ class NeumannIsoGCN(siml_module.SimlModule):
 
 class NeumannEncoder(siml_module.SimlModule):
     """Encoder for Neumann condition."""
+
+    @staticmethod
+    def get_name():
+        return 'neumann_encoder'
+
+    @staticmethod
+    def is_trainable():
+        return True
+
+    @staticmethod
+    def accepts_multiple_inputs():
+        return False
+
+    @staticmethod
+    def uses_support():
+        return False
 
     def __init__(self, block_setting, reference_block):
         super().__init__(

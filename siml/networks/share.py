@@ -5,6 +5,22 @@ from . import siml_module
 class Share(siml_module.SimlModule):
     """The same module as the specified reference."""
 
+    @staticmethod
+    def get_name():
+        return 'share'
+
+    @staticmethod
+    def is_trainable():
+        return True
+
+    @staticmethod
+    def accepts_multiple_inputs():
+        return False
+
+    @staticmethod
+    def uses_support():
+        return False
+
     def __init__(self, block_setting, reference_block):
         super().__init__(
             block_setting, create_linears=False,

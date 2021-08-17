@@ -597,7 +597,7 @@ class BlockSetting(TypedDataClass):
         default=None, metadata={'allow_none': True})
     input_keys: list[str] = dc.field(
         default=None, metadata={'allow_none': True})
-    input_names: typing.List[str] = dc.field(
+    input_names: list[str] = dc.field(
         default=None, metadata={'allow_none': True})
     output_key: str = dc.field(
         default=None, metadata={'allow_none': True})

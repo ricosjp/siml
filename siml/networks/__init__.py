@@ -7,6 +7,7 @@ from . import activation
 from . import concatenator
 from . import array2diagmat
 from . import array2symmat
+from . import boundary
 from . import deepsets
 from . import gcn
 from . import identity
@@ -18,6 +19,7 @@ from . import message_passing
 from . import reducer
 from . import reshape
 from . import set_transformer
+from . import share
 from . import symmat2array
 from . import tcn
 from . import tensor_operations
@@ -31,6 +33,9 @@ blocks = [
     activation.Activation,
     array2diagmat.Array2Diagmat,
     array2symmat.Array2Symmat,
+    boundary.Dirichlet,
+    boundary.NeumannIsoGCN,
+    boundary.NeumannEncoder,
     concatenator.Concatenator,
     tensor_operations.Contraction,
     identity.Identity,
@@ -50,6 +55,7 @@ blocks = [
     message_passing.MessagePassing,
     set_transformer.SetTransformerEncoder,
     set_transformer.SetTransformerDecoder,
+    share.Share,
     tcn.TCN,
 ]
 
