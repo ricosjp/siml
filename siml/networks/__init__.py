@@ -16,6 +16,7 @@ from . import iso_gcn
 from . import lstm
 from . import mlp
 from . import message_passing
+from . import pinv_mlp
 from . import reducer
 from . import reshape
 from . import set_transformer
@@ -53,6 +54,7 @@ blocks = [
     lstm.LSTM,
     mlp.MLP,
     message_passing.MessagePassing,
+    pinv_mlp.PInvMLP,
     set_transformer.SetTransformerEncoder,
     set_transformer.SetTransformerDecoder,
     share.Share,

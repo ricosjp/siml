@@ -8,6 +8,22 @@ from . import siml_module
 class PInvMLP(siml_module.SimlModule):
     """Pseudo inverse of Multi Layer Perceptron."""
 
+    @staticmethod
+    def get_name():
+        return 'pinv_mlp'
+
+    @staticmethod
+    def is_trainable():
+        return True
+
+    @staticmethod
+    def accepts_multiple_inputs():
+        return False
+
+    @staticmethod
+    def uses_support():
+        return False
+
     def __init__(self, block_setting, reference_block):
         super().__init__(
             block_setting, create_linears=False,
@@ -63,7 +79,10 @@ class PInvLinear(torch.nn.Module):
         w = self.weight
         b = self.bias
 
-        h = torch.einsum('n...f,fg->n...g', x - b, torch.pinverse(w.T))
+        if b is None:
+            h = torch.einsum('n...f,fg->n...g', x, torch.pinverse(w.T))
+        else:
+            h = torch.einsum('n...f,fg->n...g', x - b, torch.pinverse(w.T))
         return h
 
     @property

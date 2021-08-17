@@ -120,7 +120,7 @@ class Network(torch.nn.Module):
         # Update dict_block for blocks depending on other blocks
         dict_block.update(torch.nn.ModuleDict({
             block_name:
-            self.dict_block_information[block_name].block(
+            self.dict_block_information[block_name](
                 block_setting,
                 reference_block=dict_block[
                     block_setting.reference_block_name]
