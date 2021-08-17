@@ -6,6 +6,10 @@ def identity(x):
     return x
 
 
+def one(x):
+    return 1
+
+
 def atanh(x, epsilon=1e-5):
     x[x > 1 - epsilon] = 1 - epsilon
     x[x < -1 + epsilon] = -1 + epsilon
@@ -21,6 +25,10 @@ class ATanh(torch.nn.Module):
 
     def forward(self, x):
         return atanh(x, epsilon=self.epsilon)
+
+
+def derivative_tanh(x):
+    return 1 / torch.cosh(x)**2
 
 
 def max_pool(x, original_shapes):

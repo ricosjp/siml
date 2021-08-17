@@ -64,8 +64,6 @@ class PInvLinear(torch.nn.Module):
         b = self.bias
 
         h = torch.einsum('n...f,fg->n...g', x - b, torch.pinverse(w.T))
-        # print(x.shape, b.shape, torch.pinverse(w.T).shape)
-        # h = torch.einsum('nf,fg->ng', x - b, w)
         return h
 
     @property

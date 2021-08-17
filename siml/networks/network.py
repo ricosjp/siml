@@ -67,6 +67,8 @@ class Network(torch.nn.Module):
             integration.Integration, trainable=False),
         'neumann_isogcn': BlockInformation(
             boundary.NeumannIsoGCN, trainable=False),
+        'neumann_encoder': BlockInformation(
+            boundary.NeumannEncoder, trainable=False),
         'reducer': BlockInformation(reducer.Reducer, trainable=False),
         'reshape': BlockInformation(reshape.Reshape, trainable=False),
         'symmat2array': BlockInformation(
@@ -227,9 +229,10 @@ class Network(torch.nn.Module):
                     block_setting.input_selection])
                 last_node = first_node - 1
 
-            elif block_type in ['dirichlet', 'neumann_isogcn']:
+            elif block_type in [
+                    'dirichlet', 'neumann_isogcn', 'neumann_encoder']:
                 max_first_node = self.dict_block_setting[
-                    predecessors[0]].nodes[-1]
+                    block_setting.input_names[0]].nodes[-1]
                 first_node = len(np.arange(max_first_node)[
                     block_setting.input_selection])
                 last_node = first_node

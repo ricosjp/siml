@@ -95,6 +95,16 @@ class SimlModule(torch.nn.Module):
         return dropout_ratios
 
     def forward(self, x, supports=None, original_shapes=None):
+        if self.block_setting.no_grad:
+            with torch.no_grad():
+                h = self._forward(
+                    x, supports=supports, original_shapes=original_shapes)
+        else:
+            h = self._forward(
+                x, supports=supports, original_shapes=original_shapes)
+        return h
+
+    def _forward(self, x, supports=None, original_shapes=None):
         h = self._forward_core(
             x, supports=supports, original_shapes=original_shapes)
         if self.residual:

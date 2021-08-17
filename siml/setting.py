@@ -615,6 +615,7 @@ class BlockSetting(TypedDataClass):
     coeff: float = dc.field(
         default=None, metadata={'allow_none': True})
     time_series: bool = False
+    no_grad: bool = False
 
     optional: dict = dc.field(default_factory=dict)
 
