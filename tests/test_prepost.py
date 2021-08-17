@@ -34,6 +34,13 @@ def filter_function(fem_data, raw_directory=None, data_dict=None):
 
 class TestPrepost(unittest.TestCase):
 
+    def test_preprocessors_pkl_eliminates_sklearn_objects(self):
+        with open(
+                'tests/data/deform/preprocessed/preprocessors.pkl', 'rb') as f:
+            dict_data = pickle.load(f)
+        for value in dict_data.values():
+            self.assertTrue(isinstance(value['preprocess_converter'], dict))
+
     def test_determine_output_directory(self):
         self.assertEqual(
             pre.determine_output_directory(
@@ -59,6 +66,21 @@ class TestPrepost(unittest.TestCase):
         ])
         np.testing.assert_almost_equal(
             d_inv_sqrt @ adj @ d_inv_sqrt, nadj.toarray())
+
+    def test_normalize_adjacency_matrix_wo_diag(self):
+        adj = np.array([
+            [0., 5., 0.],
+            [1., 0., 1.],
+            [0., 0., 0.],
+        ])
+        nadj = pre.normalize_adjacency_matrix(adj)
+        d_inv_sqrt = np.array([
+            [6.**-.5, 0., 0.],
+            [0., 3.**-.5, 0.],
+            [0., 0., 1.**-.5],
+        ])
+        np.testing.assert_almost_equal(
+            d_inv_sqrt @ (adj + np.eye(3)) @ d_inv_sqrt, nadj.toarray())
 
     def test_split_data_arrays(self):
         true_xs = [
@@ -443,9 +465,11 @@ class TestPrepost(unittest.TestCase):
         with open(
                 main_setting.data.preprocessed_root / 'preprocessors.pkl',
                 'rb') as f:
-            preprocess_converter = pickle.load(f)['x_grad'][
+            preprocess_converter_setting = pickle.load(f)['x_grad'][
                 'preprocess_converter']
-        std = preprocess_converter.converter.std_
+        std = preprocess_converter_setting['std_']
+        preprocess_converter = util.PreprocessConverter(
+            preprocess_converter_setting, method='sparse_std', power=.5)
         np.testing.assert_almost_equal(
             preprocessed_x_grad.toarray() * std**.5, reference_x_grad)
         np.testing.assert_almost_equal(

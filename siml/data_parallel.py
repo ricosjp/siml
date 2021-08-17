@@ -47,7 +47,6 @@ def scatter_core(inputs, target_gpus, dim=0):
         if isinstance(obj, datasets.DataDict):
             # Siml dict input
             n_gpu, indices = get_loop_variables(list(obj.values())[0])
-            keys = obj.keys()
             return [datasets.DataDict({
                 key:
                 torch.cat(value[indices[i]:indices[i+1]]).to(target_gpus[i])
@@ -65,13 +64,13 @@ def scatter_core(inputs, target_gpus, dim=0):
                 # Sparse info
                 n_sparse_features = len(obj[0])
                 return [
-                    np.array([
+                    [
                         datasets.merge_sparse_tensors(
                             [
                                 s[i_feature] for s
                                 in obj[indices[i]:indices[i+1]]],
                             return_coo=True).to(target_gpus[i])
-                        for i_feature in range(n_sparse_features)])
+                        for i_feature in range(n_sparse_features)]
                     for i in range(n_gpu)]
             else:
                 # Dense tensor

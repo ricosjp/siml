@@ -9,6 +9,10 @@ from .gcnii_pytorch_geometric import GCN2Conv
 class GCNII(abstract_pyg_gcn.AbstractPyGGCN):
     """GCNII based on https://arxiv.org/abs/2007.02133 ."""
 
+    @staticmethod
+    def get_name():
+        return 'gcnii'
+
     def __init__(self, block_setting):
         super().__init__(
             block_setting, create_subchain=False, residual=False)

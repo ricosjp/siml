@@ -101,25 +101,25 @@ class Inferer(siml_manager.SimlManager):
             If fed, overwrite self.setting.inferer.converter_parameters_pkl
         save: bool, optional
             If fed, overwrite self.setting.inferer.save
-        conversion_function: function, optional [None]
+        conversion_function: function, optional
             Conversion function to preprocess raw data. It should receive
             two parameters, fem_data and raw_directory. If not fed,
             no additional conversion occurs.
-        load_function: function, optional [None]
+        load_function: function, optional
             Function to load data, which take list of pathlib.Path objects
             (as required files) and pathlib.Path object (as data directory)
             and returns data_dictionary and fem_data (can be None) to be saved.
-        data_addition_function: function, optional [None]
+        data_addition_function: function, optional
             Function to add some data at simulation data writing phase.
             If not fed, no data addition occurs.
-        postprocess_function: function, optional [None]
+        postprocess_function: function, optional
             Function to make postprocess of the inference data.
             If not fed, no additional postprocess will be performed.
-        save_function: function, optional [None]
+        save_function: function, optional
             Function to save results. If not fed the default save function
             will be used.
         """
-        self.setting = settings
+        super().__init__(settings)
         self.conversion_function = conversion_function
         self.load_function = load_function
         self.data_addition_function = data_addition_function
@@ -143,7 +143,7 @@ class Inferer(siml_manager.SimlManager):
 
         Parameters
         ----------
-        data_directories: List[pathlib.Path], optional
+        data_directories: list[pathlib.Path], optional
             List of data directories. Data is searched recursively.
             The default is an empty list.
         model: pathlib.Path, optional
@@ -155,7 +155,7 @@ class Inferer(siml_manager.SimlManager):
 
         Returns
         -------
-        inference_results: List[Dict]
+        inference_results: list[Dict]
             Inference results contains:
                 - dict_x: input and answer variables
                 - dict_y: inferred variables
@@ -192,12 +192,12 @@ class Inferer(siml_manager.SimlManager):
 
         Parameters
         ----------
-            model_path: pathlib.Path
-                Model file or directory name.
-            raw_dict_x: dict
-                Dict of raw x data.
-            answer_raw_dict_y: dict, optional [None]
-                Dict of answer raw y data.
+        model_path: pathlib.Path
+            Model file or directory name.
+        raw_dict_x: dict
+            Dict of raw x data.
+        answer_raw_dict_y: dict, optional
+            Dict of answer raw y data.
 
         Returns
         -------
@@ -233,12 +233,12 @@ class Inferer(siml_manager.SimlManager):
 
         Parameters
         ----------
-        model: pathlib.Path or io.BufferedIOBase, optional [None]
+        model: pathlib.Path or io.BufferedIOBase, optional
             Model directory, file path, or buffer. If not fed,
             TrainerSetting.pretrain_directory will be used.
-        data_directories: List[pathlib.Path]
+        data_directories: list[pathlib.Path]
             List of data directories.
-        n_interpolation: int, optional [100]
+        n_interpolation: int, optional
             The number of points used for interpolation.
         Returns
         -------

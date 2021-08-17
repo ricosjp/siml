@@ -41,37 +41,37 @@ class RawConverter():
         """Initialize converter of raw data and save them in interim directory.
 
         Parameters
-        -----------
+        ----------
         main_setting: siml.setting.MainSetting
             MainSetting object.
-        recursive: bool, optional [True]
+        recursive: bool, optional
             If True, recursively convert data.
-        conversion_function: function, optional [None]
+        conversion_function: callable, optional
             Conversion function which takes femio.FEMData object and
             pathlib.Path (data directory) as only arguments and returns data
             dict to be saved.
-        filter_function: function, optional [None]
+        filter_function: callable, optional
             Function to filter the data which can be converted. It should take
             femio.FEMData object, pathlib.Path (data directory), and dict_data
             as only arguments and returns True (for convertable data) or False
             (for unconvertable data).
-        load_function: function, optional [None]
+        load_function: callable, optional
             Function to load data, which take list of pathlib.Path objects
             (as required files) and pathlib.Path object (as data directory)
             and returns data_dictionary and fem_data (can be None) to be saved.
-        save_function: function, optional [None]
+        save_function: callable, optional
             Function to save data, which take femio.FEMData object,
             data_dict, pathliub.Path object as output directory,
             and bool represents force renew.
-        force_renew: bool, optional [False]
+        force_renew: bool, optional
             If True, renew npy files even if they are alerady exist.
-        read_npy: bool, optional [False]
+        read_npy: bool, optional
             If True, read .npy files instead of original files if exists.
-        write_ucd: bool, optional [True]
+        write_ucd: bool, optional
             If True, write AVS UCD file with preprocessed variables.
-        read_res: bool, optional [True]
+        read_res: bool, optional
             If True, read res file of FrontISTR.
-        max_process: int, optional [None]
+        max_process: int, optional
             The maximum number of processes to perform conversion.
         """
         self.setting = main_setting
@@ -92,9 +92,9 @@ class RawConverter():
     def convert(self, raw_directory=None):
         """Perform conversion.
 
-        Parmeters
-        ---------
-        raw_directory: str or pathlib.Path or list of them, optional [None]
+        Parameters
+        ----------
+        raw_directory: str or pathlib.Path, optional
             Raw data directory name. If not fed, self.setting.data.raw is used
             instead.
         """
@@ -319,18 +319,18 @@ def concatenate_preprocessed_data(
     NOTE: It may lead data leakage so it is just for research use.
 
     Parameters
-    -----------
-        preprocessed_base_directories: pathlib.Path or List[pathlib.Path]
-            Base directory name of preprocessed data.
-        output_directory_base: pathlib.Path
-            Base directory of output. Inside of it, train, validation, and
-            test directories will be created.
-        variable_names: List[str]
-            Variable names to be concatenated.
-        ratios: List[float], optional [[.9, .05, .05]]
-            Ratio to split data.
-        overwrite: bool, optional [False]
-            If True, overwrite output data.
+    ----------
+    preprocessed_base_directories: pathlib.Path or list[pathlib.Path]
+        Base directory name of preprocessed data.
+    output_directory_base: pathlib.Path
+        Base directory of output. Inside of it, train, validation, and
+        test directories will be created.
+    variable_names: list[str]
+        Variable names to be concatenated.
+    ratios: list[float], optional
+        Ratio to split data.
+    overwrite: bool, optional
+        If True, overwrite output data.
     """
     if np.abs(np.sum(ratios) - 1.0) > 1e-5:
         raise ValueError('The sum of ratios does not make 1.')
@@ -393,18 +393,18 @@ class Preprocessor:
         e.g. standardization and then save them.
 
         Parameters
-        -----------
-        force_renew: bool, optional [False]
+        ----------
+        force_renew: bool, optional
             If True, renew npy files even if they are alerady exist.
-        save_func: function object, optional [None]
+        save_func: callable, optional
             Callback function to customize save data. It should accept
             output_directory, variable_name, and transformed_data.
-        str_replace: str, optional ['interim']
+        str_replace: str, optional
             String to replace data directory in order to convert from interim
             data to preprocessed data.
-        max_process: int, optional [None]
+        max_process: int, optional
             The maximum number of processes.
-        allow_missing: bool, optional [False]
+        allow_missing: bool, optional
             If True, continue even if some of variables are missing.
         """
         self.setting = main_setting
@@ -446,7 +446,7 @@ class Preprocessor:
 
         Parameters
         ----------
-        group_id: int, optional [None]
+        group_id: int, optional
             group_id to specify chunk of preprocessing group. Useful when
             MemoryError occurs with all variables preprocessed in one node.
             If not specified, process all variables.
@@ -478,7 +478,7 @@ class Preprocessor:
 
         Parameters
         ----------
-        data_directory: pathlib.Path, optional [None]
+        data_directory: pathlib.Path, optional
             Directory path contains variable-wise preprocessor settings pkl
             files. If not fed, looking at self.setting.data.preprocessed_root .
 
@@ -506,8 +506,8 @@ class Preprocessor:
                     variable_name, dict_before_replacement)
                 for variable_name in dict_before_replacement.keys()}
 
-            with open(preprocessors_pkl_path, 'wb') as f:
-                pickle.dump(dict_preprocessor_settings, f)
+            self.dump_preprocessors(
+                dict_preprocessor_settings, preprocessors_pkl_path)
 
         else:
             print(f"{preprocessors_pkl_path} already exists. Skip merger.")
@@ -522,11 +522,11 @@ class Preprocessor:
 
         Parameters
         ----------
-        preprocessor_pkl: dict or pathlib.Path, optional [None]
+        preprocessor_pkl: dict or pathlib.Path, optional
             dict or pickle file path describing settings and parameters for
             preprocessors. If not fed, data will be loaded from
             self.setting.data.preprocessed_root.
-        group_id: int, optional [None]
+        group_id: int, optional
             group_id to specify chunk of preprocessing group. Useful when
             MemoryError occurs with all variables preprocessed in one node.
             If not specified, process all variables.
@@ -589,6 +589,7 @@ class Preprocessor:
 
         preprocess_converter = util.PreprocessConverter(
             reference_dict['preprocess_converter'],
+            method=reference_dict['method'],
             componentwise=reference_dict['componentwise'],
             power=reference_dict.get('power', 1.),
             other_components=reference_dict['other_components'])
@@ -618,7 +619,7 @@ class Preprocessor:
         """Prepare preprocess converter for single variable.
 
         Parameters
-        -----------
+        ----------
         variable_name: str
             The name of the variable.
         preprocess_setting: dict
@@ -626,7 +627,7 @@ class Preprocessor:
             'componentwise' keywords.
 
         Returns
-        --------
+        -------
         dict_preprocessor_setting: dict
             Dict of preprocessor setting for the variable.
         """
@@ -698,13 +699,28 @@ class Preprocessor:
         if not self.setting.data.preprocessed_root.exists():
             self.setting.data.preprocessed_root.mkdir(
                 parents=True, exist_ok=True)
-        with open(
-                self.setting.data.preprocessed_root
-                / f"{variable_name}_{self.PREPROCESSORS_PKL_NAME}",
-                'wb') as f:
-            pickle.dump(dict_preprocessor_setting, f)
+        partial_pkl_name = self.setting.data.preprocessed_root \
+            / f"{variable_name}_{self.PREPROCESSORS_PKL_NAME}"
+        self.dump_preprocessors(dict_preprocessor_setting, partial_pkl_name)
 
         return dict_preprocessor_setting
+
+    def dump_preprocessors(self, dict_preprocessor_setting, file_path):
+        dict_to_dump = {}
+        for key, value in dict_preprocessor_setting.items():
+            dict_to_dump[key] = {}
+            for k, v in value.items():
+                if k == 'preprocess_converter' and v is not None:
+                    if isinstance(v, dict):
+                        dict_to_dump[key].update({k: v})
+                    else:
+                        dict_to_dump[key].update({k: vars(v.converter)})
+                else:
+                    dict_to_dump[key].update({k: v})
+        with open(file_path, 'wb') as f:
+            pickle.dump(dict_to_dump, f)
+
+        return
 
     def _file_exists(self, output_directory, variable_name):
         npy_file = output_directory / (variable_name + '.npy')
@@ -727,14 +743,14 @@ class Preprocessor:
         """Transform single variable with the created preprocess_converter.
 
         Parameters
-        -----------
+        ----------
         variable_name: str
             The name of the variable.
         preprocess_converter: siml.util.PreprocessConverter
             The PreprocessConverter object to transform.
 
         Returns
-        --------
+        -------
         None
         """
         if isinstance(preprocess_converter.converter, util.Identity):
@@ -815,6 +831,7 @@ class Converter:
             variable_name:
             util.PreprocessConverter(
                 value['preprocess_converter'],
+                method=value['method'],
                 componentwise=value['componentwise'],
                 other_components=value['other_components'])
             for variable_name, value in preprocess_setting.preprocess.items()}
@@ -842,39 +859,39 @@ class Converter:
         """Postprocess data with inversely converting them.
 
         Parameters
-        -----------
-            dict_data_x: dict
-                Dict of input data.
-            dict_data_y: dict
-                Dict of output data.
-            output_directory: pathlib.Path, optional [None]
-                Output directory path.
-            dict_data_y_answer: dict
-                Dict of expected output data.
-            overwrite: bool, optional [False]
-                If True, overwrite data.
-            save_x: bool, optional [False]
-                If True, save input values in addition to output values.
-            write_simulation: bool, optional [False]
-                If True, write simulation data file(s) based on the inference.
-            write_npy: bool, optional [True]
-                If True, write npy files of inferences.
-            write_simulation_base: pathlib.Path, optional [None]
-                Base of simulation data to be used for write_simulation option.
-                If not fed, try to find from the input directories.
-            read_simulation_type: str, optional ['fistr']
-                Simulation file type to read simulation base.
-            write_simulation_type: str, optional ['fistr']
-                Simulation file type to write.
-            skip_femio: bool, optional [False]
-                If True, skip femio to read simulation base.
-            load_function: callable, optional [None]
-                Load function taking data_files and data_directory as inputs,
-                and returns data_dict and fem_data.
-            required_file_names: List[str], optional [[]]
-                Required file names for load function.
-            data_addition_function=callable, optional [None]
-                Function to add some data to existing fem_data.
+        ----------
+        dict_data_x: dict
+            Dict of input data.
+        dict_data_y: dict
+            Dict of output data.
+        output_directory: pathlib.Path, optional
+            Output directory path.
+        dict_data_y_answer: dict
+            Dict of expected output data.
+        overwrite: bool, optional
+            If True, overwrite data.
+        save_x: bool, optional
+            If True, save input values in addition to output values.
+        write_simulation: bool, optional
+            If True, write simulation data file(s) based on the inference.
+        write_npy: bool, optional
+            If True, write npy files of inferences.
+        write_simulation_base: pathlib.Path, optional
+            Base of simulation data to be used for write_simulation option.
+            If not fed, try to find from the input directories.
+        read_simulation_type: str, optional
+            Simulation file type to read simulation base.
+        write_simulation_type: str, optional
+            Simulation file type to write.
+        skip_femio: bool, optional
+            If True, skip femio to read simulation base.
+        load_function: callable, optional
+            Load function taking data_files and data_directory as inputs,
+            and returns data_dict and fem_data.
+        required_file_names: list[str], optional
+            Required file names for load function.
+        data_addition_function=callable, optional
+            Function to add some data to existing fem_data.
 
         Returns
         --------
@@ -1035,15 +1052,16 @@ def extract_variables(
     """Extract variables from FEMData object to convert to data dictionary.
 
     Parameters
-    -----------
-        fem_data: femio.FEMData
-            FEMData object to be extracted variables from.
-        mandatory_variables: list of str
-            Mandatory variable names.
-        optional_variables: list of str, optional [None]
-            Optional variable names.
+    ----------
+    fem_data: femio.FEMData
+        FEMData object to be extracted variables from.
+    mandatory_variables: list[str]
+        Mandatory variable names.
+    optional_variables: list[str], optional
+        Optional variable names.
+
     Returns
-    --------
+    -------
         dict_data: dict
             Data dictionary.
     """
@@ -1083,17 +1101,18 @@ def save_dict_data(
     """Save dict_data.
 
     Parameters
-    -----------
-        output_directory: pathlib.Path
-            Output directory path.
-        dict_data: dict
-            Data dictionary to be saved.
-        dtype: type, optional [np.float32]
-            Data type to be saved.
-        encrypt_key: bytes, optional [None]
-            Data for encryption.
+    ----------
+    output_directory: pathlib.Path
+        Output directory path.
+    dict_data: dict
+        Data dictionary to be saved.
+    dtype: type, optional
+        Data type to be saved.
+    encrypt_key: bytes, optional
+        Data for encryption.
+
     Returns
-    --------
+    -------
         None
     """
     for key, value in dict_data.items():
@@ -1109,17 +1128,19 @@ def determine_output_directory(
     input_directory.
 
     Parameters
-    -----------
-        input_directory: pathlib.Path
-            Input directory path.
-        output_base_directory: pathlib.Path
-            Output base directory path. The output directry name is under that
-            directory.
-        str_replace: str
-            The string to be replaced.
-    Output:
-        output_directory: pathlib.Path
-            Detemined output directory path.
+    ----------
+    input_directory: pathlib.Path
+        Input directory path.
+    output_base_directory: pathlib.Path
+        Output base directory path. The output directry name is under that
+        directory.
+    str_replace: str
+        The string to be replaced.
+
+    Returns
+    -------
+    output_directory: pathlib.Path
+        Detemined output directory path.
     """
     common_prefix = Path(os.path.commonprefix(
         [input_directory, output_base_directory]))
@@ -1146,16 +1167,21 @@ def normalize_adjacency_matrix(adj):
     """Symmetrically normalize adjacency matrix.
 
     Parameters
-    -----------
-        adj: scipy.sparse.coo_matrix
-            Adjacency matrix in COO expression.
+    ----------
+    adj: scipy.sparse.coo_matrix
+        Adjacency matrix in COO expression.
+
     Returns
-    --------
-        normalized_adj: scipy.sparse.coo_matrix
-            Normalized adjacency matrix in COO expression.
+    -------
+    normalized_adj: scipy.sparse.coo_matrix
+        Normalized adjacency matrix in COO expression.
     """
     print(f"to_coo adj: {dt.datetime.now()}")
     adj = sp.coo_matrix(adj)
+    diag = adj.diagonal()
+    additional_diag = np.zeros(len(diag))
+    additional_diag[np.abs(diag) < 1.e-5] = 1.
+    adj = adj + sp.diags(additional_diag)
     print(f"sum raw: {dt.datetime.now()}")
     rowsum = np.array(adj.sum(1))
     print(f"invert d: {dt.datetime.now()}")
@@ -1164,7 +1190,7 @@ def normalize_adjacency_matrix(adj):
     print(f"making diag: {dt.datetime.now()}")
     d_mat_inv_sqrt = sp.diags(d_inv_sqrt)
     print(f"calculating norm: {dt.datetime.now()}")
-    return adj.dot(d_mat_inv_sqrt).transpose().dot(d_mat_inv_sqrt).tocoo()
+    return d_mat_inv_sqrt.dot(adj).dot(d_mat_inv_sqrt).tocoo()
 
 
 def analyze_data_directories(
@@ -1174,27 +1200,27 @@ def analyze_data_directories(
     """Analyze data f_name with grid over x_name.
 
     Parameters
-    -----------
-        data_directories: List[pathlib.Path]
-            List of data directories.
-        x_names: List[str]
-            Names of x variables.
-        f_names: List[str]
-            Name of f variable.
-        n_split: int, optional, [10]
-            The number to split x space.
-        n_bin: int, optional, [100]
-            The number of bins to draw histogram
-        out_directory: pathlib.Path, optional, [None]
-            Output directory path. By default no output is written.
-        ref_index: int, optional, [0]
-            Reference data directory index to analyze data.
-        plot: bool, optional, [True]
-            If True, plot data by grid.
-        symmetric: bool, optional, [False]
-            If True, take plot range symmetric.
-        magnitude_range: float, optional [1.]
-            Magnitude to be multiplied to the range of plot.
+    ----------
+    data_directories: list[pathlib.Path]
+        List of data directories.
+    x_names: list[str]
+        Names of x variables.
+    f_names: list[str]
+        Name of f variable.
+    n_split: int, optional
+        The number to split x space.
+    n_bin: int, optional
+        The number of bins to draw histogram
+    out_directory: pathlib.Path, optional
+        Output directory path. By default no output is written.
+    ref_index: int, optional
+        Reference data directory index to analyze data.
+    plot: bool, optional
+        If True, plot data by grid.
+    symmetric: bool, optional
+        If True, take plot range symmetric.
+    magnitude_range: float, optional
+        Magnitude to be multiplied to the range of plot.
     """
 
     # Initialization
@@ -1273,13 +1299,13 @@ def split_data_arrays(xs, fs, *, n_split=10, ref_index=0):
     """Split data fs with regards to grids of xs.
 
     Parameters
-    -----------
-        xs: List[numpy.ndarray]
-            n_sample-length list contains (n_element, dim_x) shaped ndarray.
-        fs: List[numpy.ndarray]
-            n_sample-length list contains (n_element, dim_f) shaped ndarray.
-        n_split: int, optional, [10]
-            The number to split x space.
+    ----------
+    xs: list[numpy.ndarray]
+        n_sample-length list contains (n_element, dim_x) shaped ndarray.
+    fs: list[numpy.ndarray]
+        n_sample-length list contains (n_element, dim_f) shaped ndarray.
+    n_split: int, optional
+        The number to split x space.
     """
 
     x_grids = _generate_grids(xs, n_split)

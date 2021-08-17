@@ -1,0 +1,18 @@
+data:
+  raw: 00_basic_data/raw
+  interim: 00_basic_data/interim
+  preprocessed: 00_basic_data/preprocessed
+  inferred: 00_basic_data/inferred
+conversion:
+  file_type: 'ucd'
+  required_file_names:
+    - '*.inp'
+
+preprocess:
+  node: std_scale
+  phi: standardize
+  grad: std_scale
+  nodal_nadj: identity
+  nodal_isoam_x: identity
+  nodal_isoam_y: identity
+  nodal_isoam_z: identity

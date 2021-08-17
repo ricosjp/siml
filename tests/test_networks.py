@@ -300,7 +300,7 @@ class TestNetworks(unittest.TestCase):
             shutil.rmtree(main_setting.trainer.output_directory)
         tr = trainer.Trainer(main_setting)
         loss = tr.train()
-        self.assertLess(loss, 5.e-1)
+        self.assertLess(loss, 1.)
 
         ir = inferer.Inferer(
             main_setting,
@@ -311,90 +311,6 @@ class TestNetworks(unittest.TestCase):
             data_directories=main_setting.data.preprocessed_root
             / 'test')
         self.assertLess(results[0]['loss'], 1.)
-
-    def test_grad_gcn(self):
-        main_setting = setting.MainSetting.read_settings_yaml(
-            Path('tests/data/deform/grad_gcn.yml'))
-        tr = trainer.Trainer(main_setting)
-        if tr.setting.trainer.output_directory.exists():
-            shutil.rmtree(tr.setting.trainer.output_directory)
-        loss = tr.train()
-        np.testing.assert_array_less(loss, 1.)
-        self.assertEqual(len(tr.model.dict_block['GRAD_GCN1'].subchains), 1)
-        self.assertEqual(len(tr.model.dict_block['GRAD_GCN2'].subchains), 1)
-
-    def test_grad_res_gcn(self):
-        main_setting = setting.MainSetting.read_settings_yaml(
-            Path('tests/data/deform/grad_res_gcn.yml'))
-        tr = trainer.Trainer(main_setting)
-        if tr.setting.trainer.output_directory.exists():
-            shutil.rmtree(tr.setting.trainer.output_directory)
-        loss = tr.train()
-        np.testing.assert_array_less(loss, 1.)
-        self.assertEqual(len(tr.model.dict_block['GRAD_GCN1'].subchains), 1)
-        self.assertEqual(len(tr.model.dict_block['GRAD_GCN2'].subchains), 1)
-
-        main_setting = setting.MainSetting.read_settings_yaml(
-            Path('tests/data/deform/grad_res_gcn/settings.yml'))
-        ir = inferer.Inferer(
-            main_setting,
-            converter_parameters_pkl=Path(
-                'tests/data/deform/preprocessed/preprocessors.pkl'))
-        ir.setting.inferer.output_directory = \
-            main_setting.trainer.output_directory / 'inferred'
-        if ir.setting.inferer.output_directory.exists():
-            shutil.rmtree(ir.setting.inferer.output_directory)
-
-        res = ir.infer(
-            model=Path('tests/data/deform/grad_res_gcn'),
-            data_directories=Path(
-                'tests/data/deform/preprocessed/validation/'
-                'tet2_3_modulusx0.9500'))
-        np.testing.assert_array_less(res[0]['loss'], 1e-2)
-
-    def test_laplace_net(self):
-        main_setting = setting.MainSetting.read_settings_yaml(
-            Path('tests/data/rotation/laplace_net.yml'))
-        tr = trainer.Trainer(main_setting)
-        if tr.setting.trainer.output_directory.exists():
-            shutil.rmtree(tr.setting.trainer.output_directory)
-        loss = tr.train()
-        np.testing.assert_array_less(loss, 1.)
-        self.assertEqual(len(tr.model.dict_block['LAPLACE_NET1'].subchains), 1)
-        self.assertEqual(len(tr.model.dict_block['LAPLACE_NET2'].subchains), 1)
-
-    def test_res_laplace_net(self):
-        main_setting = setting.MainSetting.read_settings_yaml(
-            Path('tests/data/rotation/res_laplace_net.yml'))
-        tr = trainer.Trainer(main_setting)
-        if tr.setting.trainer.output_directory.exists():
-            shutil.rmtree(tr.setting.trainer.output_directory)
-        loss = tr.train()
-        np.testing.assert_array_less(loss, 1.)
-        self.assertEqual(len(tr.model.dict_block['LAPLACE_NET1'].subchains), 1)
-        self.assertEqual(len(tr.model.dict_block['LAPLACE_NET2'].subchains), 1)
-
-        # Confirm results does not change under rigid body transformation
-        grad_grad_ir = inferer.Inferer(
-            main_setting,
-            converter_parameters_pkl=Path(
-                'tests/data/rotation/preprocessed/preprocessors.pkl'))
-        grad_grad_ir.setting.inferer.output_directory = \
-            main_setting.trainer.output_directory / 'inferred'
-        if grad_grad_ir.setting.inferer.output_directory.exists():
-            shutil.rmtree(grad_grad_ir.setting.inferer.output_directory)
-        results = grad_grad_ir.infer(
-            model=main_setting.trainer.output_directory,
-            data_directories=[
-                Path(
-                    'tests/data/rotation/preprocessed/cube/clscale1.0/'
-                    'original'),
-                Path(
-                    'tests/data/rotation/preprocessed/cube/clscale1.0/'
-                    'rotated')])
-        np.testing.assert_almost_equal(
-            results[0]['dict_y']['t_100'],
-            results[1]['dict_y']['t_100'], decimal=5)
 
     def test_grad_grad_ridid_transformation_invariant(self):
         data_directory = Path(
@@ -655,3 +571,65 @@ class TestNetworks(unittest.TestCase):
         y_ = tr.model.dict_block['SHARE'](x)
         np.testing.assert_almost_equal(
             y_.detach().numpy(), y.detach().numpy())
+
+    def test_set_transformer_full(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/deform/set_transformer.yml'))
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, 1.)
+
+        # Test permutation invariance
+        tr.prepare_training()
+        x = np.reshape(np.arange(5*12), (5, 12)).astype(np.float32) * .1
+        original_shapes = [[5]]
+
+        tr.model.eval()
+        with torch.no_grad():
+            y_wo_permutation = tr.model({
+                'x': torch.from_numpy(x), 'original_shapes': original_shapes})
+
+            x_w_permutation = np.concatenate(
+                [x[2:], x[:2]], axis=0)
+            y_w_permutation = tr.model({
+                'x': torch.from_numpy(x_w_permutation),
+                'original_shapes': original_shapes})
+
+        np.testing.assert_almost_equal(
+            y_wo_permutation.detach().numpy(),
+            y_w_permutation.detach().numpy(), decimal=6)
+
+    def test_set_transformer_encoder(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/deform/set_transformer_encoder.yml'))
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, 1.)
+
+        # Test permutation equivariance
+        tr.prepare_training()
+        x = np.reshape(np.arange(5*7), (5, 7)).astype(np.float32) * .1
+        original_shapes = [[5]]
+
+        tr.model.eval()
+        with torch.no_grad():
+            y_wo_permutation = tr.model({
+                'x': torch.from_numpy(x), 'original_shapes': original_shapes})
+
+            x_w_permutation = np.concatenate(
+                [x[2:], x[:2]], axis=0)
+            y_w_permutation = tr.model({
+                'x': torch.from_numpy(x_w_permutation),
+                'original_shapes': original_shapes})
+
+        np.testing.assert_almost_equal(
+            np.concatenate(
+                [
+                    y_wo_permutation[2:].detach().numpy(),
+                    y_wo_permutation[:2].detach().numpy()],
+                axis=0),
+            y_w_permutation.detach().numpy(), decimal=6)

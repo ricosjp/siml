@@ -5,6 +5,22 @@ from . import siml_module
 class Activation(siml_module.SimlModule):
     """Activation block."""
 
+    @staticmethod
+    def get_name():
+        return 'activation'
+
+    @staticmethod
+    def is_trainable():
+        return False
+
+    @staticmethod
+    def accepts_multiple_inputs():
+        return False
+
+    @staticmethod
+    def uses_support():
+        return False
+
     def __init__(self, block_setting):
         super().__init__(block_setting, no_parameter=True)
         self.use_original_shapes = self.block_setting.activations[0] in [

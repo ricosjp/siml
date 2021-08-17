@@ -1,0 +1,3 @@
+
+INPUT_LAYER_NAME = 'Input'
+OUTPUT_LAYER_NAME = 'Output'

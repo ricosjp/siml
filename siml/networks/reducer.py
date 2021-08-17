@@ -9,13 +9,45 @@ from . import siml_module
 class Reducer(siml_module.SimlModule):
     """Broadcastive operation block."""
 
+    @staticmethod
+    def get_name():
+        return 'reducer'
+
+    @staticmethod
+    def is_trainable():
+        return False
+
+    @staticmethod
+    def accepts_multiple_inputs():
+        return True
+
+    @staticmethod
+    def uses_support():
+        return False
+
+    @classmethod
+    def _get_n_input_node(
+            cls, block_setting, predecessors, dict_block_setting,
+            input_length):
+        return np.sum([
+            dict_block_setting[predecessor].nodes[-1]
+            for predecessor in predecessors])
+
+    @classmethod
+    def _get_n_output_node(
+            cls, input_node, block_setting, predecessors, dict_block_setting,
+            output_length):
+        return np.max([
+            dict_block_setting[predecessor].nodes[-1]
+            for predecessor in predecessors])
+
     def __init__(self, block_setting):
         """Initialize the NN.
 
         Parameters
         -----------
-            block_setting: siml.setting.BlockSetting
-                BlockSetting object.
+        block_setting: siml.setting.BlockSetting
+            BlockSetting object.
         """
         super().__init__(block_setting, no_parameter=True)
 

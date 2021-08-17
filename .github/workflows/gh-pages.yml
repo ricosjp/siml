@@ -1,0 +1,30 @@
+name: github pages
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    container:
+        image: ghcr.io/ricosjp/siml:0.2.8
+    steps:
+      - uses: actions/checkout@v1
+      - name: sphinx
+        shell: bash
+        run: |
+          poetry build
+          python3.9 -m pip install dist/pysiml-*.whl
+          python3.9 -m pip install -r sphinx/requirements.txt
+          sphinx-apidoc -f -o ./sphinx siml
+          sphinx-build ./sphinx ./docs
+          cp -r docs public
+          mv dist/*.whl public/
+      - name: deploy_pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: public
+          force_orphan: true

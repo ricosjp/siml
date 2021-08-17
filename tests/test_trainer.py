@@ -215,7 +215,8 @@ class TestTrainer(unittest.TestCase):
         self.assertEqual(tr_batch_1.validation_loader.batch_size, 1)
         self.assertEqual(tr_batch_2.validation_loader.batch_size, 2)
 
-        np.testing.assert_array_almost_equal(loss_batch_1, loss_batch_2)
+        np.testing.assert_array_almost_equal(
+            loss_batch_1, loss_batch_2, decimal=5)
 
     def test_early_stopping(self):
         main_setting = setting.MainSetting.read_settings_yaml(

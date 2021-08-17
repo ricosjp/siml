@@ -8,6 +8,22 @@ from . import activations
 class Translator(siml_module.SimlModule):
     """Translation block."""
 
+    @staticmethod
+    def get_name():
+        return 'translator'
+
+    @staticmethod
+    def accepts_multiple_inputs():
+        return False
+
+    @staticmethod
+    def is_trainable():
+        return False
+
+    @staticmethod
+    def uses_support():
+        return False
+
     def __init__(self, block_setting):
         super().__init__(block_setting, no_parameter=True)
         self.method = block_setting.optional.get('method', 'mean')
