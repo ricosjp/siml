@@ -57,10 +57,14 @@ class SetTransformerEncoder(siml_module.SimlModule):
                 n_inducing_point=n_inducing_point, layer_norm=layer_norm,
                 activation=activation)
             for n1, n2, activation in zip(nodes[:-1], nodes[1:], activations)])
+        self.dict_key = block_setting.optional.get('dict_key', None)
         return
 
     def _forward_core(self, x, supports=None, original_shapes=None):
-        split_xs = activations.split(x, original_shapes)
+        if self.dict_key is None:
+            split_xs = activations.split(x, original_shapes)
+        else:
+            split_xs = activations.split(x, original_shapes[self.dict_key])
         h = torch.cat([
             self._forward_one_sample(split_x)
             for split_x in split_xs], dim=0)
@@ -109,6 +113,7 @@ class SetTransformerDecoder(siml_module.SimlModule):
         layer_norm = self.block_setting.optional.get('layer_norm', True)
         self.n_input = self.block_setting.optional.get('n_input', None)
         n_output = self.block_setting.optional.get('n_output', 1)
+        self.dict_key = block_setting.optional.get('dict_key', None)
 
         if len(self.block_setting.nodes) != 2:
             raise ValueError(
@@ -128,7 +133,10 @@ class SetTransformerDecoder(siml_module.SimlModule):
 
     def _forward_core(self, x, supports=None, original_shapes=None):
         if self.n_input is None:
-            split_xs = activations.split(x, original_shapes)
+            if self.dict_key is None:
+                split_xs = activations.split(x, original_shapes)
+            else:
+                split_xs = activations.split(x, original_shapes[self.dict_key])
             h = torch.cat([
                 self.decoder(split_x[None, ...])[0]
                 for split_x in split_xs], dim=0)

@@ -71,7 +71,7 @@ def normalize(x):
 def split(x, original_shapes):
     if isinstance(original_shapes, dict):
         raise ValueError(
-            'Input is dict. Specify dict_key in the block_setting.')
+            'Input is dict. Specify dict_key in the block_setting.optional.')
     if len(original_shapes) == 1:
         return (x,)
 
