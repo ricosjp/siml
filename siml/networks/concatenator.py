@@ -30,7 +30,6 @@ class Concatenator(siml_module.SimlModule):
         return sum([
             dict_block_setting[predecessor].nodes[-1]
             for predecessor in predecessors])
-        return input_length
 
     @classmethod
     def _get_n_output_node(
