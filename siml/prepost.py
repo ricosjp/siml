@@ -1031,6 +1031,8 @@ class Converter:
             ext = '.inp'
         elif write_simulation_type == 'vtk':
             ext = '.vtk'
+        elif write_simulation_type == 'polyvtk':
+            ext = '.vtu'
         else:
             raise ValueError(
                 f"Unexpected write_simulation_type: {write_simulation_type}")
