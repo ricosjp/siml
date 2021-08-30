@@ -95,11 +95,8 @@ class SimlModule(torch.nn.Module, metaclass=abc.ABCMeta):
             max_input_node = cls._get_n_input_node(
                 block_setting, predecessors, dict_block_setting, input_length)
         if block_setting.nodes[0] == -1:
-            try:
-                input_node = len(np.arange(max_input_node)[
-                    block_setting.input_selection])
-            except:
-                raise ValueError(block_setting, max_input_node)
+            input_node = len(np.arange(max_input_node)[
+                block_setting.input_selection])
         else:
             input_node = block_setting.nodes[0]
 
