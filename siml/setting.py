@@ -834,10 +834,10 @@ class MainSetting:
     model: ModelSetting = ModelSetting()
     optuna: OptunaSetting = OptunaSetting()
     study: StudySetting = StudySetting()
-    replace_preprocessed: bool = True
+    replace_preprocessed: bool = False
 
     @classmethod
-    def read_settings_yaml(cls, settings_yaml, replace_preprocessed=True):
+    def read_settings_yaml(cls, settings_yaml, replace_preprocessed=False):
         dict_settings = util.load_yaml(settings_yaml)
         if isinstance(settings_yaml, Path):
             name = settings_yaml.stem
@@ -849,7 +849,7 @@ class MainSetting:
 
     @classmethod
     def read_dict_settings(
-            cls, dict_settings, *, name=None, replace_preprocessed=True):
+            cls, dict_settings, *, name=None, replace_preprocessed=False):
         if 'trainer' in dict_settings \
                 and 'name' not in dict_settings['trainer']:
             if name is None:
