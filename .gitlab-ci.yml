@@ -38,6 +38,8 @@ preprocess:
       - tests/data/deform/interim
       - tests/data/deform/preprocessed
       - tests/data/deform_timeseries/preprocessed
+      - tests/data/grad/interim
+      - tests/data/grad/preprocessed
       - tests/data/rotation/preprocessed
       - tests/data/large/preprocessed
       - tests/data/ode/interim
