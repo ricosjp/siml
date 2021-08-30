@@ -525,7 +525,7 @@ class TestTrainer(unittest.TestCase):
             main_setting,
             model=main_setting.trainer.output_directory,
             converter_parameters_pkl=main_setting.data.preprocessed[0]
-            / 'preprocessed/preprocessors.pkl', save=False)
+            / 'preprocessors.pkl', save=False)
         ir.setting.inferer.perform_inverse = False
         results = ir.infer(
             data_directories=Path(
@@ -546,7 +546,7 @@ class TestTrainer(unittest.TestCase):
             main_setting,
             model=main_setting.trainer.output_directory,
             converter_parameters_pkl=main_setting.data.preprocessed[0]
-            / 'preprocessed/preprocessors.pkl', save=False)
+            / 'preprocessors.pkl', save=False)
         ir.setting.inferer.perform_inverse = False
         results = ir.infer(
             data_directories=Path(
@@ -571,7 +571,7 @@ class TestTrainer(unittest.TestCase):
             main_setting,
             model=main_setting.trainer.output_directory,
             converter_parameters_pkl=main_setting.data.preprocessed[0]
-            / 'preprocessed/preprocessors.pkl', save=False)
+            / 'preprocessors.pkl', save=False)
         ir.setting.inferer.perform_inverse = False
         results = ir.infer(
             data_directories=Path(
@@ -591,7 +591,7 @@ class TestTrainer(unittest.TestCase):
             main_setting,
             model=main_setting.trainer.output_directory,
             converter_parameters_pkl=main_setting.data.preprocessed[0]
-            / 'preprocessed/preprocessors.pkl', save=False)
+            / 'preprocessors.pkl', save=False)
         ir.setting.inferer.perform_inverse = False
         results = ir.infer(
             data_directories=Path(
