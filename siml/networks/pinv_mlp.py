@@ -92,9 +92,12 @@ class PInvLinear(torch.nn.Module):
         b = self.bias
 
         if b is None:
-            h = torch.einsum('n...f,fg->n...g', x, torch.pinverse(w.T))
+            h = torch.einsum(
+                'n...f,fg->n...g', x, torch.pinverse(w.detach().T))
         else:
-            h = torch.einsum('n...f,fg->n...g', x - b, torch.pinverse(w.T))
+            h = torch.einsum(
+                'n...f,fg->n...g', x - b.detach(),
+                torch.pinverse(w.detach().T))
         return h
 
     @property

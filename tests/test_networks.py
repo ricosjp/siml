@@ -550,6 +550,29 @@ class TestNetworks(unittest.TestCase):
             x_.detach().numpy(), x.detach().numpy(),
             decimal=5)
 
+    def test_pinv_mlp_no_bias(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/deform/pinv_mlp_no_bias.yml'))
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        tr.train()
+
+        for l_ref, l_inv in zip(
+                tr.model.dict_block['MLP'].linears,
+                tr.model.dict_block['PINV_MLP'].linears[-1::-1]):
+            np.testing.assert_almost_equal(
+                l_inv.weight.detach().numpy(), l_ref.weight.detach().numpy())
+            self.assertIsNone(l_inv.bias)
+            self.assertIsNone(l_ref.bias)
+
+        x = torch.rand(100, 3, 3, 6)
+        y = tr.model.dict_block['MLP'](x)
+        x_ = tr.model.dict_block['PINV_MLP'](y)
+        np.testing.assert_almost_equal(
+            x_.detach().numpy(), x.detach().numpy(),
+            decimal=5)
+
     def test_share(self):
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/deform/share.yml'))
