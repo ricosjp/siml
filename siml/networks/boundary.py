@@ -169,10 +169,11 @@ class NeumannIsoGCN(siml_module.SimlModule):
         grad = xs[0]
         directed_neumann = xs[1]
         inversed_moment_tensors = xs[2]
-        neumann = self.linear(
-            torch.einsum(
+        with torch.no_grad():
+            neumann = torch.einsum(
                 'ikl,il...f->ik...f',
-                inversed_moment_tensors[..., 0], directed_neumann))
+                inversed_moment_tensors[..., 0],
+                self.linear(directed_neumann))
         if self.create_ratio:
             sigmoid_coeff = torch.sigmoid(self.coeff.weight[0, 0])
             return (sigmoid_coeff * grad + (1 - sigmoid_coeff) * neumann) * 2
@@ -241,12 +242,12 @@ class NeumannEncoder(siml_module.SimlModule):
         Parameters
         ----------
         xs: List[torch.Tensor]
-            0: Variable values
+            0: Variable values (not encoded)
             1: Neumann values multiplied with normal vectors
             or
-            0: Variable values
+            0: Variable values (not encoded)
             1: Neumann values
-            2: Surface normal vectors
+            2: Surface weighted normal vectors
 
         Returns
         -------
@@ -272,16 +273,16 @@ class NeumannEncoder(siml_module.SimlModule):
         for linear, name, activation, derivative_activation in zip(
                 self.linears, self.activation_names,
                 self.activations, self.derivative_activations):
-            lineared_h = linear(h)
             if name == 'identity':
                 neumann = torch.einsum(
                     'i...f,fg->i...g', neumann, linear.weight.T)
             else:
+                lineared_h = linear(h)
                 derivative_h = derivative_activation(lineared_h)
                 neumann = torch.einsum(
                     'ig,i...g->i...g', derivative_h, torch.einsum(
                         'i...f,fg->i...g', neumann, linear.weight.T))
-            h = activation(lineared_h)
+                h = activation(lineared_h)
 
         if len(xs) == 2:
             return neumann
