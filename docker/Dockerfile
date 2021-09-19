@@ -10,6 +10,8 @@ RUN apt-get update -y \
   gcc \
   ssh \
   curl \
+  libglu1-mesa-dev \
+  libxrender1 \
   g++ \
   lsb-release wget software-properties-common \
   libedit-dev \
