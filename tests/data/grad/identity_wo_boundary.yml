@@ -18,7 +18,7 @@ inferer:
   read_simulation_type: ucd
 
 trainer:
-  output_directory: tests/data/grad/linear_wo_boundary
+  output_directory: tests/data/grad/identity_wo_boundary
   inputs:
     rank0:
       - name: phi

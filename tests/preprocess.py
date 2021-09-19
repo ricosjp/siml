@@ -63,7 +63,7 @@ def conversion_function(fem_data, data_directory):
 
 
 def conversion_function_grad(fem_data, raw_directory=None):
-    fem_data.nodes.data = fem_data.nodes.data * .1
+    fem_data.nodes.data = fem_data.nodes.data
     node = fem_data.nodes.data
 
     phi = fem_data.nodal_data.get_attribute_data('phi')
@@ -76,16 +76,16 @@ def conversion_function_grad(fem_data, raw_directory=None):
         mode='effective')
     nodal_grad_x, nodal_grad_y, nodal_grad_z = \
         fem_data.calculate_spatial_gradient_adjacency_matrices(
-            'nodal', n_hop=1, moment_matrix=True, normals=nodal_surface_normal)
+            'nodal', n_hop=1, moment_matrix=True, normals=nodal_surface_normal,
+            normal_weight_factor=1., consider_volume=False)
     inversed_moment_tensor = fem_data.nodal_data.get_attribute_data(
         'inversed_moment_tensors')[..., None]
+    weighted_normal = fem_data.nodal_data.get_attribute_data(
+        'weighted_surface_normals')
 
     neumann = np.einsum('ij,ij->i', nodal_surface_normal, grad[..., 0])
-    normal_norm = np.linalg.norm(nodal_surface_normal, axis=1)
-    directed_neumann = np.zeros(grad.shape)
-    surface_filter = normal_norm > .9
-    directed_neumann[surface_filter] = np.einsum(
-        'ij,i->ij', nodal_surface_normal, neumann)[surface_filter, ..., None]
+    directed_neumann = np.einsum(
+        'ij,i->ij', weighted_normal, neumann)[..., None]
 
     dict_data = {
         'node': node,
@@ -99,6 +99,7 @@ def conversion_function_grad(fem_data, raw_directory=None):
         'directed_neumann': directed_neumann,
         'neumann': neumann[..., None],
         'nodal_surface_normal': nodal_surface_normal[..., None],
+        'nodal_weighted_normal': weighted_normal[..., None],
     }
     return dict_data
 

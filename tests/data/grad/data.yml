@@ -11,7 +11,8 @@ conversion:
 preprocess:
   node: std_scale
   phi: std_scale
-  grad: std_scale
+  grad:
+    same_as: phi
   nodal_nadj: identity
   nodal_grad_x:
     method: isoam_scale
@@ -29,3 +30,4 @@ preprocess:
   neumann:
     same_as: phi
   nodal_surface_normal: identity
+  nodal_weighted_normal: identity

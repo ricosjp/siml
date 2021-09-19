@@ -27,7 +27,7 @@ trainer:
       - name: neumann
         dim: 1
     normal:
-      - name: nodal_surface_normal
+      - name: nodal_weighted_normal
         dim: 1
     inversed_moment:
       - name: inversed_moment_tensor
@@ -136,7 +136,7 @@ model:
         - MUL
         - NORM
       optional:
-        create_linear: true
+        create_linear: false
 
     - name: NORM
       type: contraction

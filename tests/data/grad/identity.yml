@@ -18,7 +18,7 @@ inferer:
   read_simulation_type: ucd
 
 trainer:
-  output_directory: tests/data/grad/linear
+  output_directory: tests/data/grad/identity
   inputs:
     rank0:
       - name: phi
