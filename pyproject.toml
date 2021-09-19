@@ -17,6 +17,8 @@ python = ">=3.9, <3.10"
 
 PyYAML       = "^5.2"
 femio        = {version = ">=0.3.1", allow-prereleases = true}
+vtk = {version = "==9.0.20210626.dev0", optional = true}
+mayavi = {version = "^4.7.3", optional = true}
 einops       = "^0.2"
 joblib       = "^0.14.1"
 optuna       = "^1.3"
