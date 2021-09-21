@@ -4,7 +4,8 @@ default:
   before_script:
     - poetry config virtualenvs.create false
     - poetry build
-    - python3.9 -m pip install -U femio --pre
+    - python3.9 -m pip uninstall -y femio pysiml
+    - python3.9 -m pip install femio --pre
     - python3.9 -m pip install dist/pysiml-*.whl  # Only install root project, not dependencies
     # - poetry install
 

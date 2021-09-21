@@ -44,8 +44,9 @@ RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-
   && python3.9 -m pip install -U setuptools \
   && python3.9 -m pip install -U wheel \
   && python3.9 -m pip install --ignore-installed -U PyYAML \
+  && python3.9 -m pip install Cython \
   && poetry config virtualenvs.create false \
-  && poetry update \
+  && poetry install \
   && python3.9 -m pip install torch==1.9.0+cu111 -f https://download.pytorch.org/whl/torch_stable.html \
   && python3.9 -m pip install llvmlite==0.35.0 \
   && python3.9 -m pip install torch-scatter -f https://pytorch-geometric.com/whl/torch-1.9.0+cu111.html \
