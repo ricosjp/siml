@@ -151,7 +151,7 @@ class Trainer(siml_manager.SimlManager):
         return dict_stats
 
     def _calculate_tensor_stats(self, tensor, prefix):
-        numpy_tensor = tensor.detach().numpy()
+        numpy_tensor = tensor.detach().cpu().numpy()
         abs_numpy_tensor = np.abs(numpy_tensor)
         return {
             f"{prefix}mean": float(np.mean(numpy_tensor)),

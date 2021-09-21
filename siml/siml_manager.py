@@ -124,8 +124,15 @@ class SimlManager():
         elif path.is_dir():
             yamls = list(path.glob('*.y*ml'))
             if len(yamls) != 1:
-                raise ValueError(f"{len(yamls)} yaml files found in {path}")
-            yaml_file = yamls[0]
+                yaml_file_candidates = [
+                    y for y in yamls if 'setting' in str(y)]
+                if len(yaml_file_candidates) == 1:
+                    yaml_file = yaml_file_candidates[0]
+                else:
+                    raise ValueError(
+                        f"{len(yamls)} yaml files found in {path}")
+            else:
+                yaml_file = yamls[0]
         if only_model:
             self.setting.model = setting.MainSetting.read_settings_yaml(
                 yaml_file).model

@@ -619,6 +619,7 @@ class BlockSetting(TypedDataClass):
         default=None, metadata={'allow_none': True})
     time_series: bool = False
     no_grad: bool = False
+    weight_norm: bool = False
 
     optional: dict = dc.field(default_factory=dict)
 

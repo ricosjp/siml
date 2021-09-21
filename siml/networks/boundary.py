@@ -169,11 +169,10 @@ class NeumannIsoGCN(siml_module.SimlModule):
         grad = xs[0]
         directed_neumann = xs[1]
         inversed_moment_tensors = xs[2]
-        with torch.no_grad():
-            neumann = torch.einsum(
-                'ikl,il...f->ik...f',
-                inversed_moment_tensors[..., 0],
-                self.linear(directed_neumann))
+        neumann = torch.einsum(
+            'ikl,il...f->ik...f',
+            inversed_moment_tensors[..., 0],
+            self.linear(directed_neumann))
         if self.create_ratio:
             sigmoid_coeff = torch.sigmoid(self.coeff.weight[0, 0])
             return (sigmoid_coeff * grad + (1 - sigmoid_coeff) * neumann) * 2

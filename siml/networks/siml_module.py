@@ -192,9 +192,15 @@ class SimlModule(torch.nn.Module, metaclass=abc.ABCMeta):
             bias = self.block_setting.bias
 
         try:
-            linears = torch.nn.ModuleList([
-                torch.nn.Linear(n1, n2, bias=bias)
-                for n1, n2 in zip(nodes[:-1], nodes[1:])])
+            if self.block_setting.weight_norm:
+                linears = torch.nn.ModuleList([
+                    torch.nn.utils.weight_norm(
+                        torch.nn.Linear(n1, n2, bias=bias), dim=None)
+                    for n1, n2 in zip(nodes[:-1], nodes[1:])])
+            else:
+                linears = torch.nn.ModuleList([
+                    torch.nn.Linear(n1, n2, bias=bias)
+                    for n1, n2 in zip(nodes[:-1], nodes[1:])])
         except RuntimeError:
             raise ValueError(f"Cannot cretate linear for {self.block_setting}")
         return linears

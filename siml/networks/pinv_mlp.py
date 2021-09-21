@@ -2,6 +2,9 @@
 import torch
 
 from . import activations
+from . import id_mlp
+from . import mlp
+from . import normalized_mlp
 from . import siml_module
 
 
@@ -43,8 +46,19 @@ class PInvMLP(siml_module.SimlModule):
             no_parameter=True)
         self.epsilon = self.block_setting.optional.get('epsilon', 1.e-5)
         self.reference_block = reference_block
+        if isinstance(
+                self.reference_block, normalized_mlp.NormalizedMLP):
+            self.option = 'normalized_mlp'
+        elif isinstance(self.reference_block, id_mlp.IdMLP):
+            self.option = 'id_mlp'
+        elif isinstance(self.reference_block, mlp.MLP):
+            self.option = 'mlp'
+        else:
+            raise ValueError(
+                f"Unexpected reference block {self.reference_block}"
+                f"for {self.block_setting}")
         self.linears = [
-            PInvLinear(linear)
+            PInvLinear(linear, option=self.option)
             for linear in self.reference_block.linears[-1::-1]]
         self.activations = [
             self._define_activation(name)
@@ -82,22 +96,30 @@ class PInvMLP(siml_module.SimlModule):
 
 class PInvLinear(torch.nn.Module):
 
-    def __init__(self, ref_linear):
+    def __init__(self, ref_linear, option):
         super().__init__()
         self.ref = ref_linear
+        self.option = option
         return
 
     def forward(self, x):
-        w = self.weight
+        if self.option == 'normalized_mlp':
+            w = self.weight / torch.max(torch.abs(self.weight))
+        elif self.option == 'id_mlp':
+            w = self.weight + 1
+        elif self.option == 'mlp':
+            w = self.weight
+        else:
+            raise ValueError(f"Unexpected option: {self.option}")
         b = self.bias
 
         if b is None:
             h = torch.einsum(
-                'n...f,fg->n...g', x, torch.pinverse(w.detach().T))
+                'n...f,fg->n...g', x, torch.pinverse(w.T))
         else:
             h = torch.einsum(
-                'n...f,fg->n...g', x - b.detach(),
-                torch.pinverse(w.detach().T))
+                'n...f,fg->n...g', x - b,
+                torch.pinverse(w.T))
         return h
 
     @property

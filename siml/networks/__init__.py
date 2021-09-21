@@ -10,12 +10,14 @@ from . import array2symmat
 from . import boundary
 from . import deepsets
 from . import gcn
+from . import id_mlp
 from . import identity
 from . import integration
 from . import iso_gcn
 from . import lstm
 from . import mlp
 from . import message_passing
+from . import normalized_mlp
 from . import pinv_mlp
 from . import reducer
 from . import reshape
@@ -50,10 +52,12 @@ blocks = [
     # Layers with weights
     deepsets.DeepSets,
     gcn.GCN,
+    id_mlp.IdMLP,
     iso_gcn.IsoGCN,
     lstm.LSTM,
     mlp.MLP,
     message_passing.MessagePassing,
+    normalized_mlp.NormalizedMLP,
     pinv_mlp.PInvMLP,
     set_transformer.SetTransformerEncoder,
     set_transformer.SetTransformerDecoder,
