@@ -121,12 +121,13 @@ class DerivativeLeakyRELU(torch.nn.Module):
             original_lrelu = torch.nn.LeakyReLU(
                 negative_slope=DEFAULT_NEGATIVE_SLOPE_FOR_LEAKY_RELU)
         self.original_negative_slope = original_lrelu.negative_slope
-        self.center_value = (1 + self.original_negative_slope) / 2
+        self.center_value = torch.tensor(
+            (1 + self.original_negative_slope) / 2)
         return
 
     def forward(self, x):
-        return torch.heaviside(x, self.center_value) \
-            + torch.heaviside(-x, self.center_value) \
+        return torch.heaviside(x, self.center_value.to(x.device)) \
+            + torch.heaviside(-x, torch.tensor(0.).to(x.device)) \
             * self.original_negative_slope
 
 

@@ -56,6 +56,24 @@ class TestActivations (unittest.TestCase):
         np.testing.assert_almost_equal(
             tensor_.detach().numpy(), tensor.numpy())
 
+    def test_derivative_leaky_relu(self):
+        tensor = torch.linspace(-1, 0, 1000)
+        leaky_relu = torch.nn.LeakyReLU()
+        derivative_leaky_relu = activations.DerivativeLeakyRELU(leaky_relu)
+        h_derivative = derivative_leaky_relu(tensor)
+        np.testing.assert_almost_equal(
+            h_derivative.detach().numpy()[:-1], leaky_relu.negative_slope)
+
+        tensor = torch.linspace(0, 1, 1000)
+        leaky_relu = torch.nn.LeakyReLU()
+        derivative_leaky_relu = activations.DerivativeLeakyRELU(leaky_relu)
+        h_derivative = derivative_leaky_relu(tensor)
+        np.testing.assert_almost_equal(
+            h_derivative.detach().numpy()[1:], 1.)
+        np.testing.assert_almost_equal(
+            h_derivative.detach().numpy()[0],
+            (1 + leaky_relu.negative_slope) / 2)
+
     def test_inverse_tanh(self):
         tensor = torch.rand(100, 3)
         tensor_ = activations.atanh(torch.tanh(tensor))
