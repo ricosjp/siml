@@ -90,6 +90,8 @@ class PInvMLP(siml_module.SimlModule):
             return activations.identity
         elif name == 'tanh':
             return activations.ATanh(epsilon=self.epsilon)
+        elif name == 'leaky_relu':
+            return activations.InversedLeakyReLU()
         else:
             raise ValueError(f"Unsupported activation name: {name}")
 
@@ -118,8 +120,7 @@ class PInvLinear(torch.nn.Module):
                 'n...f,fg->n...g', x, torch.pinverse(w.T))
         else:
             h = torch.einsum(
-                'n...f,fg->n...g', x - b,
-                torch.pinverse(w.T))
+                'n...f,fg->n...g', x - b, torch.pinverse(w.T))
         return h
 
     @property

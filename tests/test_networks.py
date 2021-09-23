@@ -550,6 +550,20 @@ class TestNetworks(unittest.TestCase):
             x_.detach().numpy(), x.detach().numpy(),
             decimal=5)
 
+        x = torch.rand(100, 3, 3, 6) * 1e-2
+        y = tr.model.dict_block['MLP'](x)
+        x_ = tr.model.dict_block['PINV_MLP'](y)
+        np.testing.assert_almost_equal(
+            x_.detach().numpy() / 1e-2, x.detach().numpy() / 1e-2,
+            decimal=3)
+
+        x = torch.rand(100, 3, 3, 6) * 100
+        y = tr.model.dict_block['MLP'](x)
+        x_ = tr.model.dict_block['PINV_MLP'](y)
+        np.testing.assert_almost_equal(
+            x_.detach().numpy() / 100, x.detach().numpy() / 100,
+            decimal=5)
+
     def test_pinv_mlp_no_bias(self):
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/deform/pinv_mlp_no_bias.yml'))
@@ -571,6 +585,20 @@ class TestNetworks(unittest.TestCase):
         x_ = tr.model.dict_block['PINV_MLP'](y)
         np.testing.assert_almost_equal(
             x_.detach().numpy(), x.detach().numpy(),
+            decimal=5)
+
+        x = torch.rand(100, 3, 3, 6) * 1e-2
+        y = tr.model.dict_block['MLP'](x)
+        x_ = tr.model.dict_block['PINV_MLP'](y)
+        np.testing.assert_almost_equal(
+            x_.detach().numpy() / 1e-2, x.detach().numpy() / 1e-2,
+            decimal=3)
+
+        x = torch.rand(100, 3, 3, 6) * 100
+        y = tr.model.dict_block['MLP'](x)
+        x_ = tr.model.dict_block['PINV_MLP'](y)
+        np.testing.assert_almost_equal(
+            x_.detach().numpy() / 100, x.detach().numpy() / 100,
             decimal=5)
 
     def test_share(self):

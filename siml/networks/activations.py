@@ -2,6 +2,9 @@
 import torch
 
 
+DEFAULT_NEGATIVE_SLOPE_FOR_LEAKY_RELU = .5
+
+
 def identity(x):
     return x
 
@@ -11,6 +14,10 @@ def one(x):
 
 
 def atanh(x, epsilon=1e-5):
+    if torch.any(x > 1 + epsilon) or torch.any(x < -1 - epsilon):
+        raise ValueError(
+            'Input range not in (-1, 1), but '
+            f"[{torch.min(x)}, {torch.max(x)}])")
     x[x > 1 - epsilon] = 1 - epsilon
     x[x < -1 + epsilon] = -1 + epsilon
     return torch.atanh(x)
@@ -87,6 +94,25 @@ def mish(x):
     return x * torch.tanh(torch.nn.functional.softplus(x))
 
 
+class InversedLeakyReLU(torch.nn.Module):
+
+    def __init__(self, original_lrelu=None):
+        super().__init__()
+        if original_lrelu is None:
+            original_lrelu = torch.nn.LeakyReLU(
+                negative_slope=DEFAULT_NEGATIVE_SLOPE_FOR_LEAKY_RELU)
+        original_negative_slope = original_lrelu.negative_slope
+        assert original_negative_slope > 1e-5, \
+            f"Too small original negative slope: {original_negative_slope}"
+        inversed_negative_slope = 1 / original_negative_slope
+        self.inversed_leaky_relu = torch.nn.LeakyReLU(
+            negative_slope=inversed_negative_slope)
+        return
+
+    def forward(self, x):
+        return self.inversed_leaky_relu(x)
+
+
 DICT_ACTIVATIONS = {
     'identity': identity,
     'relu': torch.relu,
@@ -99,4 +125,7 @@ DICT_ACTIVATIONS = {
     'normalize': normalize,
     'softplus': torch.nn.functional.softplus,
     'sqrt': torch.sqrt,
+    'leaky_relu': torch.nn.LeakyReLU(
+        negative_slope=DEFAULT_NEGATIVE_SLOPE_FOR_LEAKY_RELU),
+    'inversed_leaky_relu': InversedLeakyReLU(),
 }
