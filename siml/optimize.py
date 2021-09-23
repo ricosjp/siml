@@ -140,7 +140,7 @@ class Study:
         self.output_directory.mkdir(parents=True, exist_ok=True)
 
         if db_setting is None:
-            print(f"No DB setting found. No optuna data will be saved.")
+            print('No DB setting found. No optuna data will be saved.')
             self.storage = None
         else:
             if db_setting.use_sqlite:

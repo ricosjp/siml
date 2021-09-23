@@ -10,6 +10,7 @@ from . import array2symmat
 from . import boundary
 from . import deepsets
 from . import gcn
+from . import group
 from . import id_mlp
 from . import identity
 from . import integration
@@ -52,6 +53,7 @@ blocks = [
     # Layers with weights
     deepsets.DeepSets,
     gcn.GCN,
+    group.Group,
     id_mlp.IdMLP,
     iso_gcn.IsoGCN,
     lstm.LSTM,

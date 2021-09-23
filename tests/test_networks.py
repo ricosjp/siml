@@ -649,12 +649,3 @@ class TestNetworks(unittest.TestCase):
                     y_wo_permutation[:2].detach().numpy()],
                 axis=0),
             y_w_permutation.detach().numpy(), decimal=6)
-
-    def test_group_repeat(self):
-        main_setting = setting.MainSetting.read_settings_yaml(
-            Path('tests/data/rotation_thermal_stress/group_repeat.yml'))
-        tr = trainer.Trainer(main_setting)
-        if tr.setting.trainer.output_directory.exists():
-            shutil.rmtree(tr.setting.trainer.output_directory)
-        loss = tr.train()
-        np.testing.assert_array_less(loss, 1.)

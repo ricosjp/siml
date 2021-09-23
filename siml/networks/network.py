@@ -102,7 +102,8 @@ class Network(torch.nn.Module):
             input_node, output_node = block_class.get_n_nodes(
                 block_setting, predecessors, self.dict_block_setting,
                 self.trainer_setting.input_length,
-                self.trainer_setting.output_length)
+                self.trainer_setting.output_length,
+                self.model_setting)
             block_setting.nodes[0] = input_node
             block_setting.nodes[-1] = output_node
 
@@ -114,7 +115,8 @@ class Network(torch.nn.Module):
             self.dict_block_information[block_name](block_setting).to(
                 block_setting.device)
             for block_name, block_setting in self.dict_block_setting.items()
-            if block_setting.reference_block_name is None
+            if (block_setting.reference_block_name is None) and
+            (block_setting.type != 'group')
         })
 
         # Update dict_block for blocks depending on other blocks
@@ -127,6 +129,16 @@ class Network(torch.nn.Module):
             ).to(block_setting.device)
             for block_name, block_setting in self.dict_block_setting.items()
             if block_setting.reference_block_name is not None
+        }))
+
+        # Update dict_block for blocks depending on other groups
+        dict_block.update(torch.nn.ModuleDict({
+            block_name:
+            self.dict_block_information[block_name](
+                block_setting,
+                model_setting=self.model_setting)
+            for block_name, block_setting in self.dict_block_setting.items()
+            if block_setting.type == 'group'
         }))
         return dict_block
 
@@ -145,7 +157,10 @@ class Network(torch.nn.Module):
             else:
                 device = block_setting.device
 
-                if block_setting.input_keys is None \
+                if block_setting.type == 'group':
+                    inputs = self.dict_block[graph_node].generate_inputs(
+                        dict_hidden)
+                elif block_setting.input_keys is None \
                         and block_setting.input_names is None:
                     inputs = [
                         self._select_dimension(
@@ -175,7 +190,23 @@ class Network(torch.nn.Module):
                 else:
                     raise ValueError('Should not reach here')
 
-                if self.dict_block_information[graph_node].uses_support():
+                if block_setting.type == 'group':
+                    output = self.dict_block[graph_node](
+                        inputs, supports=supports,
+                        original_shapes=original_shapes)
+                    if isinstance(output, torch.Tensor):
+                        hidden = output
+                    elif isinstance(output, dict):
+                        for k, v in output.keys():
+                            assert k in dict_hidden, \
+                                f"{k} not in {dict_hidden.keys()}"
+                            if block_setting.coeff is None:
+                                dict_hidden[k] = v
+                            else:
+                                dict_hidden[k] = v * block_setting.coeff
+                        continue
+
+                elif self.dict_block_information[graph_node].uses_support():
                     if self.merge_sparses:
                         raise ValueError(
                             'merge_sparses is no longer available')

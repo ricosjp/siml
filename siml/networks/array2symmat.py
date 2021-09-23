@@ -26,13 +26,13 @@ class Array2Symmat(siml_module.SimlModule):
     @classmethod
     def _get_n_input_node(
             cls, block_setting, predecessors, dict_block_setting,
-            input_length):
+            input_length, **kwargs):
         return 6
 
     @classmethod
     def _get_n_output_node(
             cls, input_node, block_setting, predecessors, dict_block_setting,
-            output_length):
+            output_length, **kwargs):
         return 1
 
     def __init__(self, block_setting):

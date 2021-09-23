@@ -138,6 +138,34 @@ class TypedDataClass:
         standardized_dict_data = _standardize_data(dict_data)
         return standardized_dict_data
 
+    def _collect_values(self, data, key, *, default=None, asis=False):
+        if default is None:
+            def get(dict_data, key):
+                return dict_data[key]
+        else:
+            def get(dict_data, key):
+                return dict_data.get(key, default)
+
+        if isinstance(data, list):
+            return [get(d, key) for d in data]
+        elif isinstance(data, dict):
+            if asis:
+                return {
+                    dict_key: [get(v, key) for v in dict_value]
+                    for dict_key, dict_value in data.items()}
+            else:
+                return [
+                    get(v, key)
+                    for dict_value in data.values() for v in dict_value]
+        else:
+            raise ValueError(f"Unexpected data: {data}")
+
+    def _sum_dims(self, dim_data):
+        if isinstance(dim_data, dict):
+            return {key: np.sum(value) for key, value in dim_data.items()}
+        else:
+            return np.sum(dim_data)
+
 
 @dc.dataclass
 class DataSetting(TypedDataClass):
@@ -475,34 +503,6 @@ class TrainerSetting(TypedDataClass):
             self.output_directory = base \
                 / f"{self.name}_{id_}_{util.date_string()}"
 
-    def _collect_values(self, data, key, *, default=None, asis=False):
-        if default is None:
-            def get(dict_data, key):
-                return dict_data[key]
-        else:
-            def get(dict_data, key):
-                return dict_data.get(key, default)
-
-        if isinstance(data, list):
-            return [get(d, key) for d in data]
-        elif isinstance(data, dict):
-            if asis:
-                return {
-                    dict_key: [get(v, key) for v in dict_value]
-                    for dict_key, dict_value in data.items()}
-            else:
-                return [
-                    get(v, key)
-                    for dict_value in data.values() for v in dict_value]
-        else:
-            raise ValueError(f"Unexpected data: {data}")
-
-    def _sum_dims(self, dim_data):
-        if isinstance(dim_data, dict):
-            return {key: np.sum(value) for key, value in dim_data.items()}
-        else:
-            return np.sum(dim_data)
-
 
 @dc.dataclass
 class InfererSetting(TypedDataClass):
@@ -678,15 +678,74 @@ class BlockSetting(TypedDataClass):
 
 
 @dc.dataclass
+class GroupSetting(TypedDataClass):
+    blocks: list[BlockSetting]
+    name: str = 'GROUP'
+    inputs: typing.Union[list[dict], dict[str, list]] \
+        = dc.field(default_factory=list)
+    support_inputs: list[str] = dc.field(
+        default=None, metadata={'allow_none': True})
+    outputs: typing.Union[list[dict], dict[str, list]] \
+        = dc.field(default_factory=list)
+
+    def __post_init__(self):
+        self.blocks = [
+            self._convert_block_if_needed(block) for block in self.blocks]
+        return
+
+    def _convert_block_if_needed(self, block):
+        if isinstance(block, BlockSetting):
+            return block
+        elif isinstance(block, dict):
+            return BlockSetting(**block)
+        else:
+            raise ValueError(f"Unexpected block type: {block}")
+
+    @property
+    def input_names(self):
+        return self._collect_values(
+            self.inputs, 'name', asis=True)
+
+    @property
+    def input_dims(self):
+        return self._collect_values(
+            self.inputs, 'dim', default=1, asis=True)
+
+    @property
+    def output_names(self):
+        return self._collect_values(
+            self.outputs, 'name', asis=True)
+
+    @property
+    def output_dims(self):
+        return self._collect_values(
+            self.outputs, 'dim', default=1, asis=True)
+
+    @property
+    def input_length(self):
+        return self._sum_dims(self.input_dims)
+
+    @property
+    def output_length(self):
+        return self._sum_dims(self.output_dims)
+
+
+@dc.dataclass
 class ModelSetting(TypedDataClass):
     blocks: list[BlockSetting]
+    groups: list[GroupSetting] = None
 
-    def __init__(self, setting=None):
-        if setting is None:
-            self.blocks = [BlockSetting()]
+    def __init__(self, setting=None, blocks=None):
+        if blocks is not None:
+            self.blocks = blocks
         else:
-            self.blocks = [
-                BlockSetting(**block) for block in setting['blocks']]
+            if setting is None:
+                self.blocks = [BlockSetting()]
+            else:
+                self.blocks = [
+                    BlockSetting(**block) for block in setting['blocks']]
+                self.groups = [
+                    GroupSetting(**group) for group in setting['groups']]
         if np.all(b.is_first is False for b in self.blocks):
             self.blocks[0].is_first = True
         if np.all(b.is_last is False for b in self.blocks):

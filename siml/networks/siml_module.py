@@ -45,7 +45,7 @@ class SimlModule(torch.nn.Module, metaclass=abc.ABCMeta):
     @classmethod
     def get_n_nodes(
             cls, block_setting, predecessors, dict_block_setting,
-            input_length, output_length):
+            input_length, output_length, model_setting):
         """Get the number of input and output nodes.
 
         Parameters
@@ -60,6 +60,8 @@ class SimlModule(torch.nn.Module, metaclass=abc.ABCMeta):
             Input length.
         output_length: int or dict[int]
             Output length.
+        model_setting: siml.setting.ModelSetting
+            ModelSetting object.
 
         Returns
         -------
@@ -93,7 +95,8 @@ class SimlModule(torch.nn.Module, metaclass=abc.ABCMeta):
                 max_input_node = input_length
         else:
             max_input_node = cls._get_n_input_node(
-                block_setting, predecessors, dict_block_setting, input_length)
+                block_setting, predecessors, dict_block_setting, input_length,
+                model_setting=model_setting)
         if block_setting.nodes[0] == -1:
             input_node = len(np.arange(max_input_node)[
                 block_setting.input_selection])
@@ -102,7 +105,7 @@ class SimlModule(torch.nn.Module, metaclass=abc.ABCMeta):
 
         candidate_output_node = cls._get_n_output_node(
             input_node, block_setting, predecessors,
-            dict_block_setting, output_length)
+            dict_block_setting, output_length, model_setting=model_setting)
 
         if block_setting.nodes[-1] == -1:
             output_key = block_setting.output_key
@@ -132,13 +135,13 @@ class SimlModule(torch.nn.Module, metaclass=abc.ABCMeta):
     @classmethod
     def _get_n_input_node(
             cls, block_setting, predecessors, dict_block_setting,
-            input_length):
+            input_length, **kwargs):
         return dict_block_setting[tuple(predecessors)[0]].nodes[-1]
 
     @classmethod
     def _get_n_output_node(
             cls, input_node, block_setting, predecessors, dict_block_setting,
-            output_length):
+            output_length, **kwargs):
         if cls.is_trainable():
             return output_length
         else:

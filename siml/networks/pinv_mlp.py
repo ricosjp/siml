@@ -30,13 +30,13 @@ class PInvMLP(siml_module.SimlModule):
     @classmethod
     def _get_n_input_node(
             cls, block_setting, predecessors, dict_block_setting,
-            input_length):
+            input_length, **kwargs):
         return dict_block_setting[block_setting.reference_block_name].nodes[-1]
 
     @classmethod
     def _get_n_output_node(
             cls, input_node, block_setting, predecessors, dict_block_setting,
-            output_length):
+            output_length, **kwargs):
         return dict_block_setting[block_setting.reference_block_name].nodes[0]
 
     def __init__(self, block_setting, reference_block):

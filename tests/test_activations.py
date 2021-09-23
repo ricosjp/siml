@@ -14,7 +14,7 @@ import siml.trainer as trainer
 PLOT = False
 
 
-class TestActivations (unittest.TestCase):
+class TestActivations(unittest.TestCase):
 
     def test_activations(self):
         main_setting = setting.MainSetting.read_settings_yaml(
