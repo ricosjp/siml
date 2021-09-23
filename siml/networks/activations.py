@@ -113,6 +113,23 @@ class InversedLeakyReLU(torch.nn.Module):
         return self.inversed_leaky_relu(x)
 
 
+class DerivativeLeakyRELU(torch.nn.Module):
+
+    def __init__(self, original_lrelu=None):
+        super().__init__()
+        if original_lrelu is None:
+            original_lrelu = torch.nn.LeakyReLU(
+                negative_slope=DEFAULT_NEGATIVE_SLOPE_FOR_LEAKY_RELU)
+        self.original_negative_slope = original_lrelu.negative_slope
+        self.center_value = (1 + self.original_negative_slope) / 2
+        return
+
+    def forward(self, x):
+        return torch.heaviside(x, self.center_value) \
+            + torch.heaviside(-x, self.center_value) \
+            * self.original_negative_slope
+
+
 DICT_ACTIVATIONS = {
     'identity': identity,
     'relu': torch.relu,

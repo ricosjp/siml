@@ -3,12 +3,10 @@ import shutil
 import unittest
 
 import numpy as np
-import matplotlib.pyplot as plt
 import scipy.sparse as sp
 import torch
 
 import siml.inferer as inferer
-import siml.networks.activations as activations
 import siml.networks.array2diagmat as array2diagmat
 import siml.networks.array2symmat as array2symmat
 import siml.networks.reducer as reducer
@@ -17,9 +15,6 @@ import siml.networks.tensor_operations as tensor_operations
 import siml.networks.translator as translator
 import siml.setting as setting
 import siml.trainer as trainer
-
-
-PLOT = False
 
 
 class TestNetworks(unittest.TestCase):
@@ -243,30 +238,6 @@ class TestNetworks(unittest.TestCase):
         tr = trainer.Trainer(main_setting)
         loss = tr.train()
         self.assertLess(loss, 1.)
-
-    def test_activations(self):
-        main_setting = setting.MainSetting.read_settings_yaml(
-            Path('tests/data/deform/activations.yml'))
-
-        if main_setting.trainer.output_directory.exists():
-            shutil.rmtree(main_setting.trainer.output_directory)
-        tr = trainer.Trainer(main_setting)
-        loss = tr.train()
-        self.assertLess(loss, 1.)
-
-    def test_mish(self):
-        np.testing.assert_almost_equal(
-            activations.mish(torch.Tensor([100.])), [100.])
-        np.testing.assert_almost_equal(
-            activations.mish(torch.Tensor([-100.])), [0.])
-        np.testing.assert_almost_equal(
-            activations.mish(torch.Tensor([1.])),
-            [1. * np.tanh(np.log(1 + np.exp(1.)))])
-        if PLOT:
-            x = np.linspace(-10., 10., 100)
-            mish = activations.mish(torch.from_numpy(x))
-            plt.plot(x, mish.numpy())
-            plt.show()
 
     def test_no_bias(self):
         main_setting = setting.MainSetting.read_settings_yaml(
@@ -520,12 +491,6 @@ class TestNetworks(unittest.TestCase):
         ).detach().numpy()
         np.testing.assert_almost_equal(np.min(t[:, 0]), 0.)
         np.testing.assert_almost_equal(np.min(t[:, -1]), 0.)
-
-    def test_normalize(self):
-        a = np.random.rand(10, 3)
-        normalized_a = activations.normalize(torch.from_numpy(a)).numpy()
-        np.testing.assert_almost_equal(
-            normalized_a, a / (np.linalg.norm(a, axis=1)[..., None] + 1e-5))
 
     def test_pinv_mlp(self):
         main_setting = setting.MainSetting.read_settings_yaml(
