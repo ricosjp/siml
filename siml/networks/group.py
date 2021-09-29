@@ -3,6 +3,7 @@ import numpy as np
 import torch
 
 from .. import setting
+from .. import util
 from . import network
 from . import siml_module
 
@@ -73,6 +74,29 @@ class Group(siml_module.SimlModule):
         self.group_setting = self.create_group_setting(
             block_setting, model_setting)
         self.group = self._create_group(block_setting, model_setting)
+        self.loop = self.group_setting.repeat > 1
+
+        if self.loop:
+            input_is_dict = isinstance(
+                self.group_setting.inputs.variables, dict)
+            output_is_dict = isinstance(
+                self.group_setting.outputs.variables, dict)
+            if (input_is_dict and not output_is_dict) \
+                    or (not input_is_dict and output_is_dict):
+                raise ValueError(
+                    'When loop, both inputs and outputs should be '
+                    'either list or dict.\n'
+                    f"inputs:\n{self.group_setting.inputs}\n"
+                    f"outputs:\n{self.group_setting.outputs}")
+            skips = self.group_setting.inputs.collect_values(
+                    'skip', default=False)
+            self.mask_function = util.VariableMask(
+                skips=skips,
+                dims=self.group_setting.inputs.dims,
+                is_dict=output_is_dict)
+            self.forward = self.forward_w_loop
+        else:
+            self.forward = self.forward_wo_loop
         return
 
     def _create_group(self, block_setting, model_setting):
@@ -83,18 +107,46 @@ class Group(siml_module.SimlModule):
             support_input=self.group_setting.support_inputs)
         return network.Network(model_setting, trainer_setting)
 
-    def forward(self, x, supports, original_shapes=None):
-        return self.generate_outputs(self.group({
-            'x': x, 'supports': supports, 'original_shapes': original_shapes}))
+    def forward_wo_loop(self, x, supports, original_shapes=None):
+        return self.group({
+            'x': x, 'supports': supports,
+            'original_shapes': original_shapes})
 
-    def generate_inputs(self, dict_hidden):
+    def forward_w_loop(self, x, supports, original_shapes=None):
+        h = x
+        for _ in range(self.group_setting.repeat):
+            print(h.keys())
+            h_previous = self.mask_function(h)[0]
+            h = self.group({
+                'x': h, 'supports': supports,
+                'original_shapes': original_shapes})
+            if self.group_setting.convergence_threshold is not None:
+                print(h.keys())
+                residual = self.calculate_criteria(
+                    self.mask_function(h)[0], h_previous)
+                if residual < self.group_setting.convergence_threshold:
+                    break
+        return h
+
+    def calculate_criteria(self, x, ref):
+        if isinstance(x, list):
+            assert len(x) == len(ref)
+            return torch.sum(torch.stack([
+                self.calculate_criteria(x_, ref_)
+                for x_, ref_ in zip(x, ref)]))
+        else:
+            return torch.linalg.norm(x - ref) \
+                / (torch.linalg.norm(ref) + 1.e-5)
+
+    def generate_inputs(self, dict_predecessors):
         if isinstance(self.input_names, (list, tuple)):
             return torch.cat([
-                dict_hidden[k] for k in self.input_names], dim=-1)
+                dict_predecessors[k] for k in self.input_names], dim=-1)
         else:
             return {
                 k: torch.cat([
-                    dict_hidden[v_] for v_ in v], dim=-1)
+                    dict_predecessors[v_][k] for v_ in v
+                    if k in dict_predecessors[v_]], dim=-1)
                 for k, v in self.input_names.items()}
 
     def generate_outputs(self, y):

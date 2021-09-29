@@ -24,12 +24,14 @@ class TypedDataClass:
     def convert(self):
         """Convert all fields accordingly with their type definitions."""
         for field_name, field in self.__dataclass_fields__.items():
-            try:
-                self._convert_field(field_name, field)
-            except TypeError:
-                raise TypeError(
-                    f"Can't convert {getattr(self, field_name)} to "
-                    f"{field.type} for {field_name}")
+            self._convert_field(field_name, field)
+            # try:
+            #     self._convert_field(field_name, field)
+            # except TypeError as e:
+            #     raise TypeError(
+            #         f"{e}\n"
+            #         f"Can't convert {getattr(self, field_name)} to "
+            #         f"{typing.Type[field.type]} for {field_name}")
 
     def validate(self):
         for field_name, field in self.__dataclass_fields__.items():
@@ -86,11 +88,19 @@ class TypedDataClass:
                     return x
                 else:
                     return slice(*x)
+        elif field.type == CollectionVariableSetting:
+            def type_function(x):
+                return CollectionVariableSetting(x, super_post_init=False)
+        elif field.type == typing.Union[
+                list[VariableSetting],
+                dict[str, VariableSetting]]:
+            def type_function(x):
+                return CollectionVariableSetting(x, super_post_init=False)
         elif field.type == typing.Union[
                 list[dict], dict[str, list]]:
             def type_function(x):
                 if isinstance(x, list):
-                    return [dict(_x) for _x in x]
+                    return [_x for _x in x]
                 elif isinstance(x, dict):
                     return {key: list(value) for key, value in x.items()}
                 else:
@@ -138,34 +148,6 @@ class TypedDataClass:
         standardized_dict_data = _standardize_data(dict_data)
         return standardized_dict_data
 
-    def _collect_values(self, data, key, *, default=None, asis=False):
-        if default is None:
-            def get(dict_data, key):
-                return dict_data[key]
-        else:
-            def get(dict_data, key):
-                return dict_data.get(key, default)
-
-        if isinstance(data, list):
-            return [get(d, key) for d in data]
-        elif isinstance(data, dict):
-            if asis:
-                return {
-                    dict_key: [get(v, key) for v in dict_value]
-                    for dict_key, dict_value in data.items()}
-            else:
-                return [
-                    get(v, key)
-                    for dict_value in data.values() for v in dict_value]
-        else:
-            raise ValueError(f"Unexpected data: {data}")
-
-    def _sum_dims(self, dim_data):
-        if isinstance(dim_data, dict):
-            return {key: np.sum(value) for key, value in dim_data.items()}
-        else:
-            return np.sum(dim_data)
-
 
 @dc.dataclass
 class DataSetting(TypedDataClass):
@@ -195,8 +177,6 @@ class DataSetting(TypedDataClass):
             raise ValueError(
                 "pad = True option is deprecated. Set pad = False")
         super().__post_init__()
-
-        return
 
     @property
     def raw_root(self):
@@ -254,13 +234,110 @@ class StudySetting(TypedDataClass):
 
 
 @dc.dataclass
+class VariableSetting(TypedDataClass):
+    """
+    name: str
+        The name of the variable.
+    dim: int
+        The number of the feature of the variable.
+        For higher tensor variables, it should be the dimension of the last
+        index.
+    skip: bool
+        If True, skip the variable for loss computation or convergence
+        computation.
+    """
+    name: str = 'variable'
+    dim: int = 1
+    skip: bool = False
+
+    def get(self, key, default=None):
+        if default is None:
+            return getattr(self, key)
+        else:
+            return getattr(self, key, default)
+
+
+@dc.dataclass
+class CollectionVariableSetting(TypedDataClass):
+
+    variables: typing.Union[
+        list[dict], dict[str, list]] = dc.field(
+            default=None, metadata={'allow_none': True})
+    super_post_init: bool = True
+
+    def __post_init__(self):
+        if isinstance(self.variables, CollectionVariableSetting):
+            self.strip()
+
+        if self.variables is None or len(self.variables) == 0:
+            self.variables = []
+        elif isinstance(self.variables, dict):
+            self.variables = {
+                key: CollectionVariableSetting(value)
+                for key, value in self.variables.items()}
+        elif isinstance(self.variables, list):
+            self.variables = [
+                VariableSetting(**v) if isinstance(v, dict) else v
+                for v in self.variables]
+        else:
+            raise ValueError(f"Unexpected variables: {self.variables}")
+
+        if self.super_post_init:
+            super().__post_init__()
+        return
+
+    def strip(self):
+        while isinstance(self.variables, CollectionVariableSetting):
+            self.variables = self.variables.variables
+        return
+
+    def collect_values(self, key, *, default=None):
+        data = self.variables
+        if isinstance(data, list):
+            return [d.get(key) for d in data]
+        elif isinstance(data, dict):
+            return {
+                dict_key: dict_value.collect_values(key, default=default)
+                for dict_key, dict_value in data.items()}
+        else:
+            raise ValueError(f"Unexpected data: {data}")
+
+    @property
+    def names(self):
+        return self.collect_values('name')
+
+    @property
+    def dims(self):
+        return self.collect_values('dim', default=1)
+
+    @property
+    def length(self):
+        dim_data = self.dims
+        if isinstance(dim_data, dict):
+            return {key: np.sum(value) for key, value in dim_data.items()}
+        else:
+            return np.sum(dim_data)
+
+    def to_dict(self):
+        if isinstance(self.variables, dict):
+            ret_dict = {}
+            for value in self.variables.values():
+                ret_dict.update(value.to_dict())
+            return ret_dict
+        elif isinstance(self.variables, list):
+            return {d.name: d.to_dict() for d in self.variables}
+        else:
+            raise ValueError(f"Unexpected self.variables: {self.variables}")
+
+
+@dc.dataclass
 class TrainerSetting(TypedDataClass):
 
     """
-    inputs: list[dict] or dict
-        Variable names of inputs.
-    outputs: list[dict] or dict
-        Variable names of outputs.
+    inputs: siml.setting.CollectionVariableSetting
+        Variable settings of inputs.
+    outputs: siml.setting.CollectionVariableSetting
+        Variable settings of outputs.
     train_directories: list[str] or pathlib.Path
         Training data directories.
     output_directory: str or pathlib.Path
@@ -343,13 +420,13 @@ class TrainerSetting(TypedDataClass):
         The format of the figure. The default is 'pdf'.
     """
 
-    inputs: typing.Union[list[dict], dict[str, list]] \
-        = dc.field(default_factory=list)
+    inputs: CollectionVariableSetting = dc.field(
+        default_factory=CollectionVariableSetting)
     support_input: str = dc.field(default=None, metadata={'allow_none': True})
     support_inputs: list[str] = dc.field(
         default=None, metadata={'allow_none': True})
-    outputs: typing.Union[list[dict], dict[str, list]] \
-        = dc.field(default_factory=list)
+    outputs: CollectionVariableSetting = dc.field(
+        default_factory=CollectionVariableSetting)
     output_directory: Path = None
 
     name: str = 'default'
@@ -444,51 +521,41 @@ class TrainerSetting(TypedDataClass):
                 "Set stop_trigger_epoch larger than log_trigger_epoch")
 
         super().__post_init__()
+        return
 
     @property
     def output_skips(self):
-        return self._collect_values(
-            self.outputs, 'skip', default=False, asis=True)
+        return self.outputs.collect_values(
+            'skip', default=False)
 
     @property
     def input_names(self):
-        return self._collect_values(
-            self.inputs, 'name', asis=True)
+        return self.inputs.names
 
     @property
     def input_dims(self):
-        return self._collect_values(
-            self.inputs, 'dim', default=1, asis=True)
+        return self.inputs.dims
 
     @property
     def output_names(self):
-        return self._collect_values(
-            self.outputs, 'name', asis=True)
+        return self.outputs.names
 
     @property
     def output_dims(self):
-        return self._collect_values(
-            self.outputs, 'dim', default=1, asis=True)
+        return self.outputs.dims
 
     @property
     def input_length(self):
-        return self._sum_dims(self.input_dims)
+        return self.inputs.length
 
     @property
     def output_length(self):
-        return self._sum_dims(self.output_dims)
+        return self.outputs.length
 
     @property
     def variable_information(self):
-        def to_dict(data):
-            if isinstance(data, dict):
-                return {v['name']: v for value in data.values() for v in value}
-            elif isinstance(data, list):
-                return {d['name']: d for d in data}
-            else:
-                raise ValueError(f"Unexpected data: {data}")
-        out_dict = to_dict(self.inputs)
-        out_dict.update(to_dict(self.outputs))
+        out_dict = self.inputs.to_dict()
+        out_dict.update(self.outputs.to_dict())
         return out_dict
 
     def update_output_directory(self, *, id_=None, base=None):
@@ -599,6 +666,8 @@ class BlockSetting(TypedDataClass):
         default=None, metadata={'allow_none': True})
     input_names: list[str] = dc.field(
         default=None, metadata={'allow_none': True})
+    mid_key: str = dc.field(
+        default=None, metadata={'allow_none': True})
     output_key: str = dc.field(
         default=None, metadata={'allow_none': True})
     support_input_index: int = dc.field(
@@ -681,16 +750,20 @@ class BlockSetting(TypedDataClass):
 class GroupSetting(TypedDataClass):
     blocks: list[BlockSetting]
     name: str = 'GROUP'
-    inputs: typing.Union[list[dict], dict[str, list]] \
-        = dc.field(default_factory=list)
+    inputs: CollectionVariableSetting = dc.field(
+        default_factory=CollectionVariableSetting)
     support_inputs: list[str] = dc.field(
         default=None, metadata={'allow_none': True})
-    outputs: typing.Union[list[dict], dict[str, list]] \
-        = dc.field(default_factory=list)
+    outputs: CollectionVariableSetting = dc.field(
+        default_factory=CollectionVariableSetting)
+    repeat: int = 1
+    convergence_threshold: float = dc.field(
+        default=None, metadata={'allow_none': True})
 
     def __post_init__(self):
         self.blocks = [
             self._convert_block_if_needed(block) for block in self.blocks]
+        super().__post_init__()
         return
 
     def _convert_block_if_needed(self, block):
@@ -703,31 +776,27 @@ class GroupSetting(TypedDataClass):
 
     @property
     def input_names(self):
-        return self._collect_values(
-            self.inputs, 'name', asis=True)
+        return self.inputs.names
 
     @property
     def input_dims(self):
-        return self._collect_values(
-            self.inputs, 'dim', default=1, asis=True)
+        return self.inputs.dims
 
     @property
     def output_names(self):
-        return self._collect_values(
-            self.outputs, 'name', asis=True)
+        return self.outputs.names
 
     @property
     def output_dims(self):
-        return self._collect_values(
-            self.outputs, 'dim', default=1, asis=True)
+        return self.outputs.dims
 
     @property
     def input_length(self):
-        return self._sum_dims(self.input_dims)
+        return self.inputs.length
 
     @property
     def output_length(self):
-        return self._sum_dims(self.output_dims)
+        return self.outputs.length
 
 
 @dc.dataclass

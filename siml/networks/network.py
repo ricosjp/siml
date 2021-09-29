@@ -158,8 +158,12 @@ class Network(torch.nn.Module):
                 device = block_setting.device
 
                 if block_setting.type == 'group':
+                    dict_predecessors = {
+                        predecessor: dict_hidden[predecessor]
+                        for predecessor
+                        in self.call_graph.predecessors(graph_node)}
                     inputs = self.dict_block[graph_node].generate_inputs(
-                        dict_hidden)
+                        dict_predecessors)
                 elif block_setting.input_keys is None \
                         and block_setting.input_names is None:
                     inputs = [
@@ -197,7 +201,7 @@ class Network(torch.nn.Module):
                     if isinstance(output, torch.Tensor):
                         hidden = output
                     elif isinstance(output, dict):
-                        for k, v in output.keys():
+                        for k, v in output.items():
                             assert k in dict_hidden, \
                                 f"{k} not in {dict_hidden.keys()}"
                             if block_setting.coeff is None:
@@ -230,11 +234,14 @@ class Network(torch.nn.Module):
 
                 if block_setting.coeff is not None:
                     hidden = hidden * block_setting.coeff
-                if block_setting.output_key is None:
-                    dict_hidden[graph_node] = hidden
-                else:
+                if block_setting.output_key is not None:
                     dict_hidden[graph_node] = {
                         block_setting.output_key: hidden}
+                if block_setting.mid_key is not None:
+                    dict_hidden[graph_node] = {
+                        block_setting.mid_key: hidden}
+                else:
+                    dict_hidden[graph_node] = hidden
                 # print(graph_node, hidden.shape)
 
         if self.y_dict_mode:

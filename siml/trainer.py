@@ -201,8 +201,10 @@ class Trainer(siml_manager.SimlManager):
             self.setting.data.validation = validation
             self.setting.data.test = test
 
-        input_is_dict = isinstance(self.setting.trainer.inputs, dict)
-        output_is_dict = isinstance(self.setting.trainer.outputs, dict)
+        input_is_dict = isinstance(
+            self.setting.trainer.inputs.variables, dict)
+        output_is_dict = isinstance(
+            self.setting.trainer.outputs.variables, dict)
         self.collate_fn = datasets.CollateFunctionGenerator(
             time_series=self.setting.trainer.time_series,
             dict_input=input_is_dict, dict_output=output_is_dict,

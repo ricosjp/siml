@@ -264,7 +264,8 @@ class LossFunction:
         self.output_is_dict = output_is_dict
         self.output_dims = output_dims
 
-        self.mask_function = self._generate_mask_function(output_skips)
+        self.mask_function = util.VariableMask(
+            output_skips, output_dims, output_is_dict)
 
         if time_series:
             self.loss = self.loss_function_time_with_padding
@@ -281,9 +282,12 @@ class LossFunction:
 
     def loss_function_dict(self, y_pred, y, original_shapes=None):
         return torch.mean(torch.stack([
-            self.loss_core(*self.mask_function(
-                y_pred[key].view(y[key].shape), y[key], key))
-            for key in y.keys()]))
+            self.loss_core(ys[0].view(ys[1].shape), ys[1])
+            for ys in self.mask_function(y_pred, y)]))
+        # return torch.mean(torch.stack([
+        #     self.loss_core(*self.mask_function(
+        #         y_pred[key].view(y[key].shape), y[key], key))
+        #     for key in y.keys()]))
 
     def loss_function_without_padding(self, y_pred, y, original_shapes=None):
         return self.loss_core(*self.mask_function(y_pred.view(y.shape), y))
@@ -301,41 +305,3 @@ class LossFunction:
             for s, sy in zip(original_shapes[:, 0], split_y)])
         return self.loss_core(
             *self.mask_function(concatenated_y_pred, concatenated_y))
-
-    def _generate_mask_function(self, output_skips):
-        if isinstance(output_skips, list):
-            if not np.any(output_skips):
-                return self._identity_mask
-        elif isinstance(output_skips, dict):
-            if np.all([not np.any(v) for v in output_skips.values()]):
-                return self._identity_mask
-        else:
-            raise NotImplementedError
-
-        print(f"output_skips: {output_skips}")
-        if self.output_is_dict:
-            self.mask = {
-                key: self._generate_mask(skip_value, self.output_dims[key])
-                for key, skip_value in output_skips.items()}
-            return self._dict_mask
-        else:
-            self.mask = self._generate_mask(output_skips, self.output_dims)
-            return self._array_mask
-
-    def _generate_mask(self, skips, dims):
-        return ~np.array(np.concatenate([
-            [skip] * dim for skip, dim in zip(skips, dims)]))
-
-    def _identity_mask(self, y_pred, y, key=None):
-        return y_pred, y
-
-    def _dict_mask(self, y_pred, y, key):
-        masked_y_pred = y_pred[..., self.mask[key]]
-        masked_y = y[..., self.mask[key]]
-        if torch.numel(masked_y) == 0:
-            return torch.zeros(1).to(y.device), torch.zeros(1).to(y.device)
-        else:
-            return masked_y_pred, masked_y
-
-    def _array_mask(self, y_pred, y, key=None):
-        return y_pred[..., self.mask], y[..., self.mask]
