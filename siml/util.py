@@ -1016,11 +1016,8 @@ class VariableMask:
         return xs
 
     def _dict_mask(self, *xs):
-        try:
-            masked = [
-                [x[key][..., self.mask[key]] for x in xs] for key in xs[0].keys()]
-        except:
-            raise ValueError(self.mask)
+        masked = [
+            [x[key][..., self.mask[key]] for key in xs[0].keys()] for x in xs]
         return [
             [
                 [torch.zeros(1).to(m_.device) if torch.numel(m_) == 0 else m_]

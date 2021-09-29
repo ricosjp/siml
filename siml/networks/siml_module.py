@@ -109,20 +109,15 @@ class SimlModule(torch.nn.Module, metaclass=abc.ABCMeta):
 
         if block_setting.nodes[-1] == -1:
             output_key = block_setting.output_key
-            if output_key is None:
+            if not block_setting.is_last or output_key is None:
                 if isinstance(candidate_output_node, dict):
                     raise ValueError(
                         'Output is dict. Plese specify output_key to the '
                         f"last nodes: {block_setting}")
                 output_node = int(candidate_output_node)
             else:
-                if block_setting.is_last:
-                    output_length = output_length
-                    output_node = int(output_length[output_key])
-                else:
-                    raise ValueError(
-                        'Cannot put output_key when is_last is False: '
-                        f"{block_setting}")
+                output_length = output_length
+                output_node = int(output_length[output_key])
         else:
             output_node = block_setting.nodes[-1]
 

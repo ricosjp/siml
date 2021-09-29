@@ -666,8 +666,6 @@ class BlockSetting(TypedDataClass):
         default=None, metadata={'allow_none': True})
     input_names: list[str] = dc.field(
         default=None, metadata={'allow_none': True})
-    mid_key: str = dc.field(
-        default=None, metadata={'allow_none': True})
     output_key: str = dc.field(
         default=None, metadata={'allow_none': True})
     support_input_index: int = dc.field(

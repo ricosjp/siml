@@ -17,7 +17,8 @@ class Network(torch.nn.Module):
         super().__init__()
         self.model_setting = model_setting
         self.trainer_setting = trainer_setting
-        self.y_dict_mode = isinstance(self.trainer_setting.outputs, dict)
+        self.y_dict_mode = isinstance(
+            self.trainer_setting.outputs.variables, dict)
 
         for block in self.model_setting.blocks:
             if 'distributor' == block.type:
@@ -180,6 +181,7 @@ class Network(torch.nn.Module):
                             for input_key in block_setting.input_keys], dim=-1)
                         for predecessor
                         in self.call_graph.predecessors(graph_node)]
+
                 elif block_setting.input_names is not None:
                     if set(block_setting.input_names) != set(
                             self.call_graph.predecessors(graph_node)):
@@ -201,14 +203,14 @@ class Network(torch.nn.Module):
                     if isinstance(output, torch.Tensor):
                         hidden = output
                     elif isinstance(output, dict):
-                        for k, v in output.items():
-                            assert k in dict_hidden, \
-                                f"{k} not in {dict_hidden.keys()}"
-                            if block_setting.coeff is None:
-                                dict_hidden[k] = v
-                            else:
-                                dict_hidden[k] = v * block_setting.coeff
-                        continue
+                        if block_setting.coeff is None:
+                            hidden = output
+                        else:
+                            hidden = {
+                                k: v * block_setting.coeff
+                                for k, v in output.items()}
+                    else:
+                        raise ValueError(f"Unexpected block results: {output}")
 
                 elif self.dict_block_information[graph_node].uses_support():
                     if self.merge_sparses:
@@ -237,9 +239,6 @@ class Network(torch.nn.Module):
                 if block_setting.output_key is not None:
                     dict_hidden[graph_node] = {
                         block_setting.output_key: hidden}
-                if block_setting.mid_key is not None:
-                    dict_hidden[graph_node] = {
-                        block_setting.mid_key: hidden}
                 else:
                     dict_hidden[graph_node] = hidden
                 # print(graph_node, hidden.shape)
@@ -248,9 +247,17 @@ class Network(torch.nn.Module):
             return_dict = {}
             if isinstance(dict_hidden[config.OUTPUT_LAYER_NAME], dict):
                 return_dict.update(dict_hidden[config.OUTPUT_LAYER_NAME])
-            else:
+            elif isinstance(dict_hidden[config.OUTPUT_LAYER_NAME], list):
                 for h in dict_hidden[config.OUTPUT_LAYER_NAME]:
                     return_dict.update(h)
+            else:
+                if len(self.trainer_setting.outputs.variables.keys()) != 1:
+                    raise ValueError(
+                        'Invalid output setting: '
+                        f"{self.trainer_setting.outputs.variables}")
+                return_dict.update({
+                    k: dict_hidden[config.OUTPUT_LAYER_NAME] for k
+                    in self.trainer_setting.outputs.variables.keys()})
             return return_dict
         else:
             return dict_hidden[config.OUTPUT_LAYER_NAME]

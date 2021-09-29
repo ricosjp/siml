@@ -114,18 +114,22 @@ class Group(siml_module.SimlModule):
 
     def forward_w_loop(self, x, supports, original_shapes=None):
         h = x
+        print('\n==========')
+        print('iter residual')
         for _ in range(self.group_setting.repeat):
-            print(h.keys())
             h_previous = self.mask_function(h)[0]
-            h = self.group({
+            h.update(self.group({
                 'x': h, 'supports': supports,
-                'original_shapes': original_shapes})
+                'original_shapes': original_shapes}))
             if self.group_setting.convergence_threshold is not None:
-                print(h.keys())
                 residual = self.calculate_criteria(
                     self.mask_function(h)[0], h_previous)
+                print(f"{_} {residual}")
                 if residual < self.group_setting.convergence_threshold:
                     break
+
+        else:
+            print(f"Not converged at in {self.group_setting.name}")
         return h
 
     def calculate_criteria(self, x, ref):
