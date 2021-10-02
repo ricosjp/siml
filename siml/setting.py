@@ -840,8 +840,12 @@ class ModelSetting(TypedDataClass):
                 self.blocks = [
                     BlockSetting(**block) for block in setting['blocks']]
                 if 'groups' in setting:
-                    self.groups = [
-                        GroupSetting(**group) for group in setting['groups']]
+                    if setting['groups'] is None:
+                        self.groups = []
+                    else:
+                        self.groups = [
+                            GroupSetting(**group)
+                            for group in setting['groups']]
                 else:
                     self.groups = []
         if np.all(b.is_first is False for b in self.blocks):
@@ -1091,17 +1095,18 @@ class MainSetting:
             self._update_with_dict(original_dict, new_dict))
 
     def _update_with_dict(self, original_setting, new_setting):
-        if 'variables' in original_setting:
-            # For backward compatibility
-            original_setting['variables'] += new_setting
-            return original_setting
         if isinstance(new_setting, str) or isinstance(new_setting, float) \
                 or isinstance(new_setting, int):
             return new_setting
         elif isinstance(new_setting, list):
-            return [
-                self._update_with_dict(original_setting, s)
-                for s in new_setting]
+            if 'variables' in original_setting:
+                # For backward compatibility
+                original_setting['variables'] += new_setting
+                return original_setting
+            else:
+                return [
+                    self._update_with_dict(original_setting, s)
+                    for s in new_setting]
         elif isinstance(new_setting, dict):
             for key, value in new_setting.items():
                 if isinstance(original_setting, list):
