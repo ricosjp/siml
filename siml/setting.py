@@ -1081,6 +1081,10 @@ class MainSetting:
             self._update_with_dict(original_dict, new_dict))
 
     def _update_with_dict(self, original_setting, new_setting):
+        if 'variables' in original_setting:
+            # For backward compatibility
+            original_setting['variables'] += new_setting
+            return original_setting
         if isinstance(new_setting, str) or isinstance(new_setting, float) \
                 or isinstance(new_setting, int):
             return new_setting
