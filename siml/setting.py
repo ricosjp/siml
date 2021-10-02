@@ -811,8 +811,9 @@ class ModelSetting(TypedDataClass):
             else:
                 self.blocks = [
                     BlockSetting(**block) for block in setting['blocks']]
-                self.groups = [
-                    GroupSetting(**group) for group in setting['groups']]
+                if 'groups' in setting:
+                    self.groups = [
+                        GroupSetting(**group) for group in setting['groups']]
         if np.all(b.is_first is False for b in self.blocks):
             self.blocks[0].is_first = True
         if np.all(b.is_last is False for b in self.blocks):
