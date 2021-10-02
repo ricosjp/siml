@@ -244,7 +244,8 @@ class SimlManager():
             return loss_function_with_allowing_no_answer
 
         loss_name = self.setting.trainer.loss_function.lower()
-        output_is_dict = isinstance(self.setting.trainer.outputs, dict)
+        output_is_dict = isinstance(
+            self.setting.trainer.outputs.variables, dict)
         return LossFunction(
             loss_name=loss_name, output_is_dict=output_is_dict,
             time_series=self.setting.trainer.time_series,
@@ -281,13 +282,11 @@ class LossFunction:
         return self.loss(y_pred, y, original_shapes)
 
     def loss_function_dict(self, y_pred, y, original_shapes=None):
+        masked_y_pred, masked_y = self.mask_function(y_pred, y)
         return torch.mean(torch.stack([
-            self.loss_core(ys[0].view(ys[1].shape), ys[1])
-            for ys in self.mask_function(y_pred, y)]))
-        # return torch.mean(torch.stack([
-        #     self.loss_core(*self.mask_function(
-        #         y_pred[key].view(y[key].shape), y[key], key))
-        #     for key in y.keys()]))
+            self.loss_core(myp.view(my.shape), my)
+            for myp, my in zip(masked_y_pred, masked_y)
+        ]))
 
     def loss_function_without_padding(self, y_pred, y, original_shapes=None):
         return self.loss_core(*self.mask_function(y_pred.view(y.shape), y))

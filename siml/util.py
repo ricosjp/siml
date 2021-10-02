@@ -989,9 +989,11 @@ class VariableMask:
         if isinstance(skips, list):
             if not np.any(skips):
                 self.mask_function = self._identity_mask
+                return
         elif isinstance(skips, dict):
             if np.all([not np.any(v) for v in skips.values()]):
-                self.mask_function = self._identity_mask
+                self.mask_function = self._dict_identity_mask
+                return
         else:
             raise NotImplementedError
 
@@ -1005,6 +1007,8 @@ class VariableMask:
             self.mask = self._generate_mask(skips, dims)
             self.mask_function = self._array_mask
 
+        return
+
     def __call__(self, *xs):
         return self.mask_function(*xs)
 
@@ -1015,12 +1019,16 @@ class VariableMask:
     def _identity_mask(self, *xs):
         return xs
 
+    def _dict_identity_mask(self, *xs):
+        return [
+            [x[key] for key in xs[0].keys()] for x in xs]
+
     def _dict_mask(self, *xs):
         masked = [
             [x[key][..., self.mask[key]] for key in xs[0].keys()] for x in xs]
         return [
             [
-                [torch.zeros(1).to(m_.device) if torch.numel(m_) == 0 else m_]
+                torch.zeros(1).to(m_.device) if torch.numel(m_) == 0 else m_
                 for m_ in m]
             for m in masked]
 

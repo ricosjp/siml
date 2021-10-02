@@ -242,7 +242,8 @@ class Network(torch.nn.Module):
             return_dict = {}
             if isinstance(dict_hidden[config.OUTPUT_LAYER_NAME], dict):
                 return_dict.update(dict_hidden[config.OUTPUT_LAYER_NAME])
-            elif isinstance(dict_hidden[config.OUTPUT_LAYER_NAME], list):
+            elif isinstance(
+                    dict_hidden[config.OUTPUT_LAYER_NAME], (list, tuple)):
                 for h in dict_hidden[config.OUTPUT_LAYER_NAME]:
                     return_dict.update(h)
             else:

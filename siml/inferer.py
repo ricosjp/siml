@@ -429,8 +429,10 @@ class Inferer(siml_manager.SimlManager):
     def _get_inferernce_loader(
             self, raw_dict_x=None, answer_raw_dict_y=None,
             allow_no_data=False):
-        input_is_dict = isinstance(self.setting.trainer.inputs, dict)
-        output_is_dict = isinstance(self.setting.trainer.outputs, dict)
+        input_is_dict = isinstance(
+            self.setting.trainer.inputs.variables, dict)
+        output_is_dict = isinstance(
+            self.setting.trainer.outputs.variables, dict)
         self.collate_fn = datasets.CollateFunctionGenerator(
             time_series=self.setting.trainer.time_series,
             dict_input=input_is_dict, dict_output=output_is_dict,
@@ -518,7 +520,8 @@ class Inferer(siml_manager.SimlManager):
         if isinstance(data, dict):
             return {
                 key:
-                self._separate_data(data[key], descriptions[key], axis=axis)
+                self._separate_data(
+                    data[key], descriptions.variables[key], axis=axis)
                 for key in data.keys()}
         if len(data) == 0:
             return {}
@@ -526,10 +529,10 @@ class Inferer(siml_manager.SimlManager):
         data_dict = {}
         index = 0
         data = np.swapaxes(data, 0, axis)
-        for description in descriptions:
-            dim = description.get('dim', 1)
+        for description in descriptions.variables:
+            dim = description.dim
             data_dict.update({
-                description['name']:
+                description.name:
                 np.swapaxes(data[index:index+dim], 0, axis)})
             index += dim
         return data_dict

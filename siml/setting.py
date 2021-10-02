@@ -24,14 +24,14 @@ class TypedDataClass:
     def convert(self):
         """Convert all fields accordingly with their type definitions."""
         for field_name, field in self.__dataclass_fields__.items():
-            self._convert_field(field_name, field)
-            # try:
-            #     self._convert_field(field_name, field)
-            # except TypeError as e:
-            #     raise TypeError(
-            #         f"{e}\n"
-            #         f"Can't convert {getattr(self, field_name)} to "
-            #         f"{typing.Type[field.type]} for {field_name}")
+            # self._convert_field(field_name, field)
+            try:
+                self._convert_field(field_name, field)
+            except TypeError as e:
+                raise TypeError(
+                    f"{e}\n"
+                    f"Can't convert {getattr(self, field_name)} to "
+                    f"{typing.Type[field.type]} for {field_name}")
 
     def validate(self):
         for field_name, field in self.__dataclass_fields__.items():
@@ -90,10 +90,21 @@ class TypedDataClass:
                     return slice(*x)
         elif field.type == CollectionVariableSetting:
             def type_function(x):
-                return CollectionVariableSetting(x, super_post_init=False)
+                if isinstance(x, dict):
+                    if 'super_post_init' in x:
+                        x['super_post_init'] = False
+                        return CollectionVariableSetting(**x)
+                    elif 'variables' in x:
+                        return CollectionVariableSetting(
+                            **x, super_post_init=False)
+                    else:
+                        return CollectionVariableSetting(
+                            x, super_post_init=False)
+                else:
+                    return CollectionVariableSetting(x, super_post_init=False)
         elif field.type == typing.Union[
                 list[VariableSetting],
-                dict[str, VariableSetting]]:
+                dict[str, list[VariableSetting]]]:
             def type_function(x):
                 return CollectionVariableSetting(x, super_post_init=False)
         elif field.type == typing.Union[
@@ -261,20 +272,23 @@ class VariableSetting(TypedDataClass):
 class CollectionVariableSetting(TypedDataClass):
 
     variables: typing.Union[
-        list[dict], dict[str, list]] = dc.field(
+        list[VariableSetting], dict[str, list[VariableSetting]]] = dc.field(
             default=None, metadata={'allow_none': True})
     super_post_init: bool = True
 
     def __post_init__(self):
-        if isinstance(self.variables, CollectionVariableSetting):
-            self.strip()
+        self.strip()
 
         if self.variables is None or len(self.variables) == 0:
             self.variables = []
         elif isinstance(self.variables, dict):
-            self.variables = {
-                key: CollectionVariableSetting(value)
-                for key, value in self.variables.items()}
+            if 'variables' in self.variables:
+                self.variables = CollectionVariableSetting(
+                    self.variables['variables']).variables
+            else:
+                self.variables = {
+                    key: CollectionVariableSetting(value)
+                    for key, value in self.variables.items()}
         elif isinstance(self.variables, list):
             self.variables = [
                 VariableSetting(**v) if isinstance(v, dict) else v
@@ -284,7 +298,11 @@ class CollectionVariableSetting(TypedDataClass):
 
         if self.super_post_init:
             super().__post_init__()
+        self.strip()
         return
+
+    def __len__(self):
+        return len(self.variables)
 
     def strip(self):
         while isinstance(self.variables, CollectionVariableSetting):
@@ -814,6 +832,8 @@ class ModelSetting(TypedDataClass):
                 if 'groups' in setting:
                     self.groups = [
                         GroupSetting(**group) for group in setting['groups']]
+                else:
+                    self.groups = []
         if np.all(b.is_first is False for b in self.blocks):
             self.blocks[0].is_first = True
         if np.all(b.is_last is False for b in self.blocks):
@@ -1006,7 +1026,7 @@ class MainSetting:
             trainer_settings = cls._pop_train_setting(dict_settings['trainer'])
             trainer_setting = TrainerSetting(**trainer_settings)
         else:
-            trainer_setting = TrainerSetting
+            trainer_setting = TrainerSetting()
         if 'model' in dict_settings:
             model_setting = ModelSetting(dict_settings['model'])
         else:
