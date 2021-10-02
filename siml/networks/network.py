@@ -200,17 +200,7 @@ class Network(torch.nn.Module):
                     output = self.dict_block[graph_node](
                         inputs, supports=supports,
                         original_shapes=original_shapes)
-                    if isinstance(output, torch.Tensor):
-                        hidden = output
-                    elif isinstance(output, dict):
-                        if block_setting.coeff is None:
-                            hidden = output
-                        else:
-                            hidden = {
-                                k: v * block_setting.coeff
-                                for k, v in output.items()}
-                    else:
-                        raise ValueError(f"Unexpected block results: {output}")
+                    hidden = output
 
                 elif self.dict_block_information[graph_node].uses_support():
                     if self.merge_sparses:
@@ -235,7 +225,12 @@ class Network(torch.nn.Module):
                         *inputs, original_shapes=original_shapes)
 
                 if block_setting.coeff is not None:
-                    hidden = hidden * block_setting.coeff
+                    if isinstance(hidden, dict):
+                        hidden = {
+                            k: v * block_setting.coeff
+                            for k, v in hidden.items()}
+                    else:
+                        hidden = hidden * block_setting.coeff
                 if block_setting.output_key is not None:
                     dict_hidden[graph_node] = {
                         block_setting.output_key: hidden}

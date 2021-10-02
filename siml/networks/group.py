@@ -114,29 +114,30 @@ class Group(siml_module.SimlModule):
 
     def forward_w_loop(self, x, supports, original_shapes=None):
         h = x
-        print('\n==========')
-        print('iter residual')
         for _ in range(self.group_setting.repeat):
             h_previous = self.mask_function(h)[0]
             h.update(self.group({
                 'x': h, 'supports': supports,
                 'original_shapes': original_shapes}))
             if self.group_setting.convergence_threshold is not None:
-                residual = self.calculate_criteria(
+                residual = self.calculate_residual(
                     self.mask_function(h)[0], h_previous)
-                print(f"{_} {residual}")
+                # print(f"{_} {residual}")
                 if residual < self.group_setting.convergence_threshold:
                     break
 
         else:
-            print(f"Not converged at in {self.group_setting.name}")
+            if self.group_setting.convergence_threshold is not None:
+                print(
+                    f"Not converged at in {self.group_setting.name} "
+                    f"(residual = {residual})")
         return h
 
-    def calculate_criteria(self, x, ref):
+    def calculate_residual(self, x, ref):
         if isinstance(x, list):
             assert len(x) == len(ref)
             return torch.sum(torch.stack([
-                self.calculate_criteria(x_, ref_)
+                self.calculate_residual(x_, ref_)
                 for x_, ref_ in zip(x, ref)]))
         else:
             return torch.linalg.norm(x - ref) \
