@@ -89,7 +89,7 @@ class Group(siml_module.SimlModule):
                     f"inputs:\n{self.group_setting.inputs}\n"
                     f"outputs:\n{self.group_setting.outputs}")
             skips = self.group_setting.inputs.collect_values(
-                    'skip', default=False)
+                'skip', default=False)
             self.mask_function = util.VariableMask(
                 skips=skips,
                 dims=self.group_setting.inputs.dims,
