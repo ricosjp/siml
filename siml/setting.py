@@ -253,12 +253,15 @@ class VariableSetting(TypedDataClass):
         The number of the feature of the variable.
         For higher tensor variables, it should be the dimension of the last
         index.
+    shape: list[int]
+        The shape of the tensor.
     skip: bool
         If True, skip the variable for loss computation or convergence
         computation.
     """
     name: str = 'variable'
     dim: int = 1
+    shape: list[int] = dc.field(default_factory=list)
     skip: bool = False
 
     def get(self, key, default=None):
@@ -273,7 +276,7 @@ class CollectionVariableSetting(TypedDataClass):
 
     variables: typing.Union[
         list[VariableSetting], dict[str, list[VariableSetting]]] = dc.field(
-            default=None, metadata={'allow_none': True})
+            default_factory=list)
     super_post_init: bool = True
 
     def __post_init__(self):
@@ -303,6 +306,13 @@ class CollectionVariableSetting(TypedDataClass):
 
     def __len__(self):
         return len(self.variables)
+
+    def __getitem__(self, key):
+        return self.variables[key]
+
+    def __setitem__(self, key, value):
+        self.variables[key] = value
+        return
 
     def strip(self):
         while isinstance(self.variables, CollectionVariableSetting):

@@ -537,7 +537,7 @@ class TestTrainer(unittest.TestCase):
             - results[0]['dict_x']['cnt_temperature'])**2)
 
         # Traiing without skip
-        main_setting.trainer.outputs['out_rank0'][0]['skip'] = False
+        main_setting.trainer.outputs['out_rank0'][0].skip = False
         tr = trainer.Trainer(main_setting)
         loss = tr.train()
         np.testing.assert_array_less(loss, 1.)
@@ -583,7 +583,7 @@ class TestTrainer(unittest.TestCase):
             - results[0]['dict_x']['cnt_temperature'])**2)
 
         # Traiing without skip
-        main_setting.trainer.outputs[0]['skip'] = False
+        main_setting.trainer.outputs[0].skip = False
         tr = trainer.Trainer(main_setting)
         tr.train()
 
