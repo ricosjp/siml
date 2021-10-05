@@ -306,7 +306,8 @@ class Inferer(siml_manager.SimlManager):
         for column_name in column_names:
             log_dict.update({column_name: [r[column_name] for r in results]})
 
-        pd.DataFrame(log_dict).to_csv(output_directory / 'log.csv', index=None)
+        pd.DataFrame(log_dict).to_csv(
+            output_directory / 'infer.csv', index=None)
         return
 
     def deploy(self, output_directory, *, model=None, encrypt_key=None):
