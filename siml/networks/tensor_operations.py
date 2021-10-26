@@ -6,7 +6,7 @@ from . import siml_module
 
 
 class Contraction(siml_module.SimlModule):
-    """Tensor contraction block."""
+    """Contraction block."""
 
     @staticmethod
     def get_name():
@@ -67,5 +67,63 @@ class Contraction(siml_module.SimlModule):
         string_y = 'a' + string_x[-1-rank_y:-1] + 'z'
         rank_diff = rank_x - rank_y
         string_res = string_x[:1+rank_diff] + 'z'
+        return self.activation(
+            torch.einsum(f"{string_x},{string_y}->{string_res}", x, y))
+
+
+class TensorProduct(siml_module.SimlModule):
+    """Tensor product block."""
+
+    @staticmethod
+    def get_name():
+        return 'tensor_product'
+
+    @staticmethod
+    def is_trainable():
+        return False
+
+    @staticmethod
+    def accepts_multiple_inputs():
+        return True
+
+    @staticmethod
+    def uses_support():
+        return False
+
+    @classmethod
+    def _get_n_input_node(
+            cls, block_setting, predecessors, dict_block_setting,
+            input_length, **kwargs):
+        return np.sum([
+            dict_block_setting[predecessor].nodes[-1]
+            for predecessor in predecessors])
+
+    @classmethod
+    def _get_n_output_node(
+            cls, input_node, block_setting, predecessors, dict_block_setting,
+            output_length, **kwargs):
+        return np.max([
+            dict_block_setting[predecessor].nodes[-1]
+            for predecessor in predecessors])
+
+    def __init__(self, block_setting):
+        super().__init__(block_setting, no_parameter=True)
+        return
+
+    def forward(self, *xs, supports=None, original_shapes=None):
+        """Calculate tensor product of rank n and m tensors
+        A_{i,k_1,k_2,...,k_m} B_{i,l_1,l_2,...,l_m}
+        """
+        if len(xs) == 2:
+            x = xs[0]
+            y = xs[1]
+        else:
+            raise ValueError(f"1 or 2 inputs expected. Given: {len(xs)}")
+        rank_x = len(x.shape) - 2  # [n_vertex, dim, dim, ..., n_feature]
+        rank_y = len(y.shape) - 2  # [n_vertex, dim, dim, ..., n_feature]
+        original_string = 'abcdefghijklmnopqrstuvwxy'
+        string_x = original_string[:1+rank_x] + 'z'
+        string_y = 'a' + original_string[1+rank_x:1+rank_x+rank_y] + 'z'
+        string_res = original_string[:1+rank_x+rank_y] + 'z'
         return self.activation(
             torch.einsum(f"{string_x},{string_y}->{string_res}", x, y))

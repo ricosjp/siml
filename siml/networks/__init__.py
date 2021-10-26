@@ -47,6 +47,7 @@ blocks = [
     reducer.Reducer,
     reshape.Reshape,
     symmat2array.Symmat2Array,
+    tensor_operations.TensorProduct,
     time_norm.TimeNorm,
     translator.Translator,
 

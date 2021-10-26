@@ -434,6 +434,16 @@ class TestNetworks(unittest.TestCase):
             contraction(torch.from_numpy(a)).numpy(),
             desired)
 
+    def test_tensor_product(self):
+        tensor_product = tensor_operations.TensorProduct(
+            setting.BlockSetting())
+        a = np.random.rand(10, 3, 3, 3, 3, 5)
+        b = np.random.rand(10, 2, 2, 5)
+        desired = np.einsum('ijklmf,inof->ijklmnof', a, b)
+        np.testing.assert_almost_equal(
+            tensor_product(torch.from_numpy(a), torch.from_numpy(b)).numpy(),
+            desired)
+
     def test_translator_min_component_0_2(self):
         tor = translator.Translator(setting.BlockSetting(
             optional={'method': 'min', 'components': [0, 2]}))
