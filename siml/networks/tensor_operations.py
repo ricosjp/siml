@@ -112,8 +112,7 @@ class TensorProduct(siml_module.SimlModule):
 
     def forward(self, *xs, supports=None, original_shapes=None):
         """Calculate tensor product of rank n and m tensors
-        \\sum_{l_1, ..., l_m}
-        A_{i,k_1,k_2,...,l_1,l_2,...,l_{m}} B_{i,l_1,l_2,...,l_m}
+        A_{i,k_1,k_2,...,k_m} B_{i,l_1,l_2,...,l_m}
         """
         if len(xs) == 2:
             x = xs[0]
