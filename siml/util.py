@@ -1009,8 +1009,8 @@ class VariableMask:
 
         return
 
-    def __call__(self, *xs):
-        return self.mask_function(*xs)
+    def __call__(self, *xs, **kwarg):
+        return self.mask_function(*xs, **kwarg)
 
     def _generate_mask(self, skips, dims):
         return ~np.array(np.concatenate([
@@ -1023,14 +1023,19 @@ class VariableMask:
         return [
             [x[key] for key in xs[0].keys()] for x in xs]
 
-    def _dict_mask(self, *xs):
+    def _dict_mask(self, *xs, keep_empty_data=True):
         masked = [
             [x[key][..., self.mask[key]] for key in xs[0].keys()] for x in xs]
-        return [
-            [
-                torch.zeros(1).to(m_.device) if torch.numel(m_) == 0 else m_
-                for m_ in m]
-            for m in masked]
+        if keep_empty_data:
+            return [
+                [
+                    torch.zeros(1).to(m_.device)
+                    if torch.numel(m_) == 0 else m_
+                    for m_ in m]
+                for m in masked]
+        else:
+            return [
+                [m_ for m_ in m if torch.numel(m_) > 0] for m in masked]
 
     def _array_mask(self, *xs):
         return [x[..., self.mask] for x in xs]

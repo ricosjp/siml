@@ -785,6 +785,7 @@ class GroupSetting(TypedDataClass):
     repeat: int = 1
     convergence_threshold: float = dc.field(
         default=None, metadata={'allow_none': True})
+    mode: str = 'simple'
 
     def __post_init__(self):
         self.blocks = [

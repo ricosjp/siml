@@ -75,6 +75,7 @@ class Group(siml_module.SimlModule):
             block_setting, model_setting)
         self.group = self._create_group(block_setting, model_setting)
         self.loop = self.group_setting.repeat > 1
+        self.mode = self.group_setting.mode
 
         if self.loop:
             input_is_dict = isinstance(
@@ -88,13 +89,20 @@ class Group(siml_module.SimlModule):
                     'either list or dict.\n'
                     f"inputs:\n{self.group_setting.inputs}\n"
                     f"outputs:\n{self.group_setting.outputs}")
-            skips = self.group_setting.inputs.collect_values(
+            self.skips = self.group_setting.inputs.collect_values(
                 'skip', default=False)
             self.mask_function = util.VariableMask(
-                skips=skips,
+                skips=self.skips,
                 dims=self.group_setting.inputs.dims,
                 is_dict=output_is_dict)
-            self.forward = self.forward_w_loop
+            if self.mode == 'implicit':
+                self.forward = self.forward_implicit
+            elif self.mode == 'steady':
+                raise NotImplementedError
+            elif self.mode == 'simple':
+                self.forward = self.forward_w_loop
+            else:
+                raise ValueError(f"Unexpected mode: {self.mode}")
         else:
             self.forward = self.forward_wo_loop
         return
@@ -138,6 +146,102 @@ class Group(siml_module.SimlModule):
                     f"(residual = {residual})")
                 pass
         return h
+
+    def forward_implicit(self, x, supports, original_shapes=None):
+        masked_x = self.mask_function(x, keep_empty_data=False)[0]
+        h = x
+        masked_h = self.mask_function(h, keep_empty_data=False)[0]
+        nabla_f = self._calculate_nabla_f(
+            h, masked_h, masked_x, supports, original_shapes)
+
+        for i_repeat in range(self.group_setting.repeat):
+            masked_h_previous = self.mask_function(h, keep_empty_data=False)[0]
+            nabla_f_previous = nabla_f
+            operator = self.group({
+                'x': h, 'supports': supports,
+                'original_shapes': original_shapes})
+            masked_operator = self.mask_function(
+                operator, keep_empty_data=False)[0]
+
+            # Ignore higher order derivatives
+            nabla_f = self.operate(self.operate(
+                masked_h, masked_x, torch.sub), masked_operator, torch.sub)
+
+            alphas = self._calculate_alphas(
+                masked_h, masked_h_previous, nabla_f, nabla_f_previous)
+            masked_h = self.operate(
+                masked_h, self.operate(alphas, nabla_f, torch.mul), torch.sub)
+
+            # TODO: Validate with more variables
+            h.update({k: masked_h[i] for i, k in enumerate(
+                [k for k, v in self.skips.items() if ~np.all(v)])})
+
+            if self.group_setting.convergence_threshold is not None:
+                residual = self.calculate_residual(
+                    masked_h, masked_h_previous)
+                # print(f"{i_repeat} {residual}")
+                if residual < self.group_setting.convergence_threshold:
+                    # print(f"Convergent ({i_repeat}: {residual})")
+                    break
+
+                if residual > 10:
+                    print(f"Divergent ({i_repeat}: {residual})")
+                    break
+
+        else:
+            if self.group_setting.convergence_threshold is not None:
+                print(
+                    f"Not converged at in {self.group_setting.name} "
+                    f"(residual = {residual})")
+                pass
+        return h
+
+    def _calculate_nabla_f(
+            self, h, masked_h, masked_x, supports, original_shapes):
+        operator = self.group({
+            'x': h, 'supports': supports,
+            'original_shapes': original_shapes})
+        masked_operator = self.mask_function(
+            operator, keep_empty_data=False)[0]
+
+        # Ignore higher order derivatives
+        nabla_f = self.operate(self.operate(
+            masked_h, masked_x, torch.sub), masked_operator, torch.sub)
+        return nabla_f
+
+    def _calculate_alphas(self, h, h_previous, nabla_f, nabla_f_previous):
+        """Compute the coefficient in the steepest gradient method based on
+        Barzilai-Borwein method.
+        """
+        if isinstance(h, list):
+            return [
+                self._calculate_alphas(
+                    h_, h_previous_, nabla_f_, nabla_f_previous_)
+                for h_, h_previous_, nabla_f_, nabla_f_previous_
+                in zip(h, h_previous, nabla_f, nabla_f_previous)]
+
+        delta_h = h_previous - h
+        delta_nabla_f = nabla_f - nabla_f_previous
+        if torch.allclose(delta_h, torch.tensor(0.).to(delta_h.device)) \
+                and torch.allclose(
+                    delta_nabla_f, torch.tensor(0.).to(
+                        delta_nabla_f.device)):
+            alpha = 1.
+        else:
+            alpha = torch.einsum(
+                'n...,n...->...', delta_h, delta_nabla_f) / (
+                    torch.einsum(
+                        'n...,n...->...', delta_nabla_f, delta_nabla_f)
+                    + 1.e-5)
+        return alpha
+
+    def operate(self, x, y, operator):
+        if isinstance(x, list):
+            assert len(x) == len(y), \
+                f"Length not the same: {len(x)} vs {len(y)}"
+            return [self.operate(x_, y_, operator) for x_, y_ in zip(x, y)]
+        else:
+            return operator(x, y)
 
     def calculate_residual(self, x, ref):
         if isinstance(x, list):

@@ -10,7 +10,7 @@ inferer:
 trainer:
   lazy: false
   num_workers: 0
-  output_directory: tests/data/heat_time_series/models/heat_group_repeat
+  output_directory: tests/data/heat_time_series/models/heat_group_nl_repeat
   split_ratio:
     validation: .1
     test: .0
@@ -83,7 +83,8 @@ model:
   groups:
     - name: GROUP1
       repeat: 10
-      # convergence_threshold: 1.0e-2
+      mode: implicit
+      convergence_threshold: 1.0e-5
       inputs:
         grank0:
           - name: IN_RANK0
@@ -109,7 +110,6 @@ model:
             - grank0
           destinations:
             - ISO_GCN_RANK0_TO_RANK1
-            - ADD
         - name: ID_LINEAR
           type: identity
           is_first: true
@@ -165,9 +165,8 @@ model:
             ah_w: true
         - name: NL
           type: mlp
-          destinations:
-            - ADD
-          coeff: .1
+          output_key: grank0
+          # coeff: .1
           nodes:
             - -1
             - 16
@@ -175,8 +174,3 @@ model:
           activations:
             - tanh
             - identity
-        - name: ADD
-          type: reducer
-          optional:
-            operator: add
-          output_key: grank0
