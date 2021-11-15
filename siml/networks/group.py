@@ -76,6 +76,7 @@ class Group(siml_module.SimlModule):
         self.group = self._create_group(block_setting, model_setting)
         self.loop = self.group_setting.repeat > 1
         self.mode = self.group_setting.mode
+        self.debug = self.group_setting.debug
 
         if self.loop:
             input_is_dict = isinstance(
@@ -130,13 +131,16 @@ class Group(siml_module.SimlModule):
             if self.group_setting.convergence_threshold is not None:
                 residual = self.calculate_residual(
                     self.mask_function(h)[0], h_previous)
-                # print(f"{i_repeat} {residual}")
+                if self.debug:
+                    print(f"{i_repeat} {residual}")
                 if residual < self.group_setting.convergence_threshold:
-                    # print(f"Convergent ({i_repeat}: {residual})")
+                    if self.debug:
+                        print(f"Convergent ({i_repeat}: {residual})")
                     break
 
                 if residual > 10:
-                    # print(f"Divergent ({i_repeat}: {residual})")
+                    if self.debug:
+                        print(f"Divergent ({i_repeat}: {residual})")
                     break
 
         else:
@@ -179,9 +183,11 @@ class Group(siml_module.SimlModule):
             if self.group_setting.convergence_threshold is not None:
                 residual = self.calculate_residual(
                     masked_h, masked_h_previous)
-                # print(f"{i_repeat} {residual}")
+                if self.debug:
+                    print(f"{i_repeat} {residual}")
                 if residual < self.group_setting.convergence_threshold:
-                    # print(f"Convergent ({i_repeat}: {residual})")
+                    if self.debug:
+                        print(f"Convergent ({i_repeat}: {residual})")
                     break
 
                 if residual > 10:

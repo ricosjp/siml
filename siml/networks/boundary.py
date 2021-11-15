@@ -189,7 +189,7 @@ class NeumannEncoder(siml_module.SimlModule):
 
     @staticmethod
     def is_trainable():
-        return True
+        return False
 
     @staticmethod
     def accepts_multiple_inputs():
@@ -269,19 +269,20 @@ class NeumannEncoder(siml_module.SimlModule):
             raise ValueError(
                 f"Input shoulbe x and Neumann (and normal) ({len(xs)} given)")
 
-        for linear, name, activation, derivative_activation in zip(
-                self.linears, self.activation_names,
-                self.activations, self.derivative_activations):
-            if name == 'identity':
-                neumann = torch.einsum(
-                    'i...f,fg->i...g', neumann, linear.weight.T)
-            else:
-                lineared_h = linear(h)
-                derivative_h = derivative_activation(lineared_h)
-                neumann = torch.einsum(
-                    'ig,i...g->i...g', derivative_h, torch.einsum(
-                        'i...f,fg->i...g', neumann, linear.weight.T))
-                h = activation(lineared_h)
+        with torch.no_grad():
+            for linear, name, activation, derivative_activation in zip(
+                    self.linears, self.activation_names,
+                    self.activations, self.derivative_activations):
+                if name == 'identity':
+                    neumann = torch.einsum(
+                        'i...f,fg->i...g', neumann, linear.weight.T)
+                else:
+                    lineared_h = linear(h)
+                    derivative_h = derivative_activation(lineared_h)
+                    neumann = torch.einsum(
+                        'ig,i...g->i...g', derivative_h, torch.einsum(
+                            'i...f,fg->i...g', neumann, linear.weight.T))
+                    h = activation(lineared_h)
 
         if len(xs) == 2:
             return neumann
@@ -294,5 +295,7 @@ class NeumannEncoder(siml_module.SimlModule):
             return activations.one
         elif name == 'tanh':
             return activations.derivative_tanh
+        elif name == 'leaky_relu':
+            return activations.DerivativeLeakyReLU()
         else:
             raise ValueError(f"Unsupported activation name: {name}")
