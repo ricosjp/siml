@@ -1,0 +1,8 @@
+!MESH, NAME=fstrMSH, TYPE=HECMW-ENTIRE
+heat.msh
+!CONTROL, NAME=fstrCNT
+heat.cnt
+!RESULT, NAME=fstrRES, IO=OUT
+heat.res
+!RESULT, NAME=vis_out, IO=OUT
+heat_vis

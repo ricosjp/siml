@@ -113,7 +113,7 @@ class InversedLeakyReLU(torch.nn.Module):
         return self.inversed_leaky_relu(x)
 
 
-class DerivativeLeakyRELU(torch.nn.Module):
+class DerivativeLeakyReLU(torch.nn.Module):
 
     def __init__(self, original_lrelu=None):
         super().__init__()

@@ -2,7 +2,9 @@
 import numpy as np
 import torch
 
+from .. import setting
 from . import siml_module
+from . import reducer
 
 
 class Contraction(siml_module.SimlModule):
@@ -127,3 +129,55 @@ class TensorProduct(siml_module.SimlModule):
         string_res = original_string[:1+rank_x+rank_y] + 'z'
         return self.activation(
             torch.einsum(f"{string_x},{string_y}->{string_res}", x, y))
+
+
+class EquivariantMLP(siml_module.SimlModule):
+    """E(n) equivariant MLP block."""
+
+    @staticmethod
+    def get_name():
+        return 'equivariant_mlp'
+
+    @staticmethod
+    def is_trainable():
+        return True
+
+    @staticmethod
+    def accepts_multiple_inputs():
+        return False
+
+    @staticmethod
+    def uses_support():
+        return False
+
+    def __init__(self, block_setting):
+        super().__init__(block_setting)
+        self.mul = reducer.Reducer(
+            setting.BlockSetting(optional={'operator': 'mul'}))
+        self.linear_weight = torch.nn.Linear(
+            block_setting.nodes[0], block_setting.nodes[-1], bias=False)
+        self.contraction = Contraction(setting.BlockSetting())
+        return
+
+    def _forward_core(self, x, supports=None, original_shapes=None):
+        """Execute the NN's forward computation.
+
+        Parameters
+        -----------
+        x: numpy.ndarray or cupy.ndarray
+            Input of the NN.
+
+        Returns
+        --------
+        y: numpy.ndarray or cupy.ndarray
+            Output of the NN.
+        """
+        h = self.contraction(x)
+        linear_x = self.linear_weight(x)
+        for linear, dropout_ratio, activation in zip(
+                self.linears, self.dropout_ratios, self.activations):
+            h = linear(h)
+            h = torch.nn.functional.dropout(
+                h, p=dropout_ratio, training=self.training)
+            h = activation(h)
+        return self.mul(linear_x, h)

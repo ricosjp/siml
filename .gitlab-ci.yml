@@ -36,19 +36,7 @@ preprocess:
   script: python3.9 tests/preprocess.py
   artifacts:
     paths:
-      - tests/data/deform/interim
-      - tests/data/deform/preprocessed
-      - tests/data/deform_timeseries/preprocessed
-      - tests/data/grad/interim
-      - tests/data/grad/preprocessed
-      - tests/data/rotation/preprocessed
-      - tests/data/large/preprocessed
-      - tests/data/ode/interim
-      - tests/data/ode/preprocessed
-      - tests/data/ode/preprocessed
-      - tests/data/rotation_thermal_stress/preprocessed
-      - tests/data/rotation_thermal_stress/interim/cube/original
-      - tests/data/heat_time_series/preprocessed
+      - tests/data
     expire_in: 60min
 
 autopep8:

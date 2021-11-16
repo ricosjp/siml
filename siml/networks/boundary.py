@@ -118,6 +118,8 @@ class NeumannIsoGCN(siml_module.SimlModule):
         self.reference_block = reference_block
         self.create_linear = self.block_setting.optional.pop(
             'create_linear', False)
+        self.neumann_factor = self.block_setting.optional.pop(
+            'neumann_factor', 1.)
         self.create_ratio = self.block_setting.optional.pop(
             'create_ratio', False)
         if self.reference_block is None:
@@ -129,12 +131,14 @@ class NeumannIsoGCN(siml_module.SimlModule):
                     'Subchain setting incorrect for '
                     f"{self.reference_block.block_setting} "
                     f"(referenced from: {self.block_setting})")
+
             if self.create_linear:
                 self.linear = torch.nn.Linear(
                     *self.reference_block.subchains[0][0].weight.shape,
                     bias=False)
             else:
                 self.linear = self.reference_block.subchains[0][0]
+
             if self.linear.bias is not None:
                 raise ValueError(
                     'Reference IsoGCN should have no bias: '
@@ -172,7 +176,7 @@ class NeumannIsoGCN(siml_module.SimlModule):
         neumann = torch.einsum(
             'ikl,il...f->ik...f',
             inversed_moment_tensors[..., 0],
-            self.linear(directed_neumann))
+            self.linear(directed_neumann)) * self.neumann_factor
         if self.create_ratio:
             sigmoid_coeff = torch.sigmoid(self.coeff.weight[0, 0])
             return (sigmoid_coeff * grad + (1 - sigmoid_coeff) * neumann) * 2
@@ -189,7 +193,7 @@ class NeumannEncoder(siml_module.SimlModule):
 
     @staticmethod
     def is_trainable():
-        return True
+        return False
 
     @staticmethod
     def accepts_multiple_inputs():
@@ -269,19 +273,20 @@ class NeumannEncoder(siml_module.SimlModule):
             raise ValueError(
                 f"Input shoulbe x and Neumann (and normal) ({len(xs)} given)")
 
-        for linear, name, activation, derivative_activation in zip(
-                self.linears, self.activation_names,
-                self.activations, self.derivative_activations):
-            if name == 'identity':
-                neumann = torch.einsum(
-                    'i...f,fg->i...g', neumann, linear.weight.T)
-            else:
-                lineared_h = linear(h)
-                derivative_h = derivative_activation(lineared_h)
-                neumann = torch.einsum(
-                    'ig,i...g->i...g', derivative_h, torch.einsum(
-                        'i...f,fg->i...g', neumann, linear.weight.T))
-                h = activation(lineared_h)
+        with torch.no_grad():
+            for linear, name, activation, derivative_activation in zip(
+                    self.linears, self.activation_names,
+                    self.activations, self.derivative_activations):
+                if name == 'identity':
+                    neumann = torch.einsum(
+                        'i...f,fg->i...g', neumann, linear.weight.T)
+                else:
+                    lineared_h = linear(h)
+                    derivative_h = derivative_activation(lineared_h)
+                    neumann = torch.einsum(
+                        'ig,i...g->i...g', derivative_h, torch.einsum(
+                            'i...f,fg->i...g', neumann, linear.weight.T))
+                    h = activation(lineared_h)
 
         if len(xs) == 2:
             return neumann
@@ -294,5 +299,7 @@ class NeumannEncoder(siml_module.SimlModule):
             return activations.one
         elif name == 'tanh':
             return activations.derivative_tanh
+        elif name == 'leaky_relu':
+            return activations.DerivativeLeakyReLU()
         else:
             raise ValueError(f"Unsupported activation name: {name}")

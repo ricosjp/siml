@@ -1,0 +1,66 @@
+Info    : Running '/usr/local/var/pyenv/versions/3.9.5/lib/python3.9/site-packages/gmsh-4.8.4-MacOSX-sdk/lib/../bin/gmsh tests/data/simple/external/cylinder/cylinder.step -o tests/data/simple/nl_tensor_boundary_experiment/raw/cylinder/clscale0.3/mesh.vtk -format vtk -order 1 -0 -3 -clscale 0.3 -nt 1' [Gmsh 4.8.4, 1 node, max. 1 thread]
+Info    : Started on Sun Nov 14 18:44:57 2021
+Info    : Reading 'tests/data/simple/external/cylinder/cylinder.step'...
+Info    :  - Label 'Shapes/ASSEMBLY/=>[0:1:1:2]/Cylinder' (3D)
+Info    :  - Color (0.603827, 0.603827, 0.603827) (3D & Surfaces)
+Info    : Done reading 'tests/data/simple/external/cylinder/cylinder.step'
+Info    : Meshing 1D...
+Info    : [  0%] Meshing curve 1 (Circle)
+Info    : [ 40%] Meshing curve 2 (Line)
+Info    : [ 70%] Meshing curve 3 (Circle)
+Info    : Done meshing 1D (Wall 0.000430268s, CPU 0.000393s)
+Info    : Meshing 2D...
+Info    : [  0%] Meshing surface 1 (Cylinder, Frontal-Delaunay)
+Info    : [ 40%] Meshing surface 2 (Plane, Frontal-Delaunay)
+Info    : [ 70%] Meshing surface 3 (Plane, Frontal-Delaunay)
+Info    : Done meshing 2D (Wall 0.118887s, CPU 0.116965s)
+Info    : Meshing 3D...
+Info    : 3D Meshing 1 volume with 1 connected component
+Info    : Tetrahedrizing 1572 nodes...
+Info    : Done tetrahedrizing 1580 nodes (Wall 0.0217656s, CPU 0.020299s)
+Info    : Reconstructing mesh...
+Info    :  - Creating surface mesh
+Info    :  - Identifying boundary edges
+Info    :  - Recovering boundary
+Info    : Done reconstructing mesh (Wall 0.0747505s, CPU 0.070091s)
+Info    : Found volume 1
+Info    : It. 0 - 0 nodes created - worst tet radius 6.33994 (nodes removed 0 0)
+Info    : It. 500 - 500 nodes created - worst tet radius 1.42565 (nodes removed 0 0)
+Info    : It. 1000 - 1000 nodes created - worst tet radius 1.16826 (nodes removed 0 0)
+Info    : It. 1500 - 1500 nodes created - worst tet radius 1.03735 (nodes removed 0 0)
+Info    : 3D refinement terminated (3284 nodes total):
+Info    :  - 2 Delaunay cavities modified for star shapeness
+Info    :  - 0 nodes could not be inserted
+Info    :  - 15530 tetrahedra created in 0.109089 sec. (142360 tets/s)
+Info    : Done meshing 3D (Wall 0.264388s, CPU 0.249445s)
+Info    : Optimizing mesh...
+Info    : Optimizing volume 1
+Info    : Optimization starts (volume = 125.218) with worst = 0.0127103 / average = 0.777081:
+Info    : 0.00 < quality < 0.10 :        40 elements
+Info    : 0.10 < quality < 0.20 :       115 elements
+Info    : 0.20 < quality < 0.30 :       174 elements
+Info    : 0.30 < quality < 0.40 :       253 elements
+Info    : 0.40 < quality < 0.50 :       431 elements
+Info    : 0.50 < quality < 0.60 :       691 elements
+Info    : 0.60 < quality < 0.70 :      1520 elements
+Info    : 0.70 < quality < 0.80 :      3791 elements
+Info    : 0.80 < quality < 0.90 :      5787 elements
+Info    : 0.90 < quality < 1.00 :      2728 elements
+Info    : 324 edge swaps, 10 node relocations (volume = 125.218): worst = 0.272591 / average = 0.79067 (Wall 0.0100868s, CPU 0.009671s)
+Info    : 325 edge swaps, 10 node relocations (volume = 125.218): worst = 0.300083 / average = 0.790707 (Wall 0.0116262s, CPU 0.011186s)
+Info    : No ill-shaped tets in the mesh :-)
+Info    : 0.00 < quality < 0.10 :         0 elements
+Info    : 0.10 < quality < 0.20 :         0 elements
+Info    : 0.20 < quality < 0.30 :         0 elements
+Info    : 0.30 < quality < 0.40 :       257 elements
+Info    : 0.40 < quality < 0.50 :       406 elements
+Info    : 0.50 < quality < 0.60 :       653 elements
+Info    : 0.60 < quality < 0.70 :      1513 elements
+Info    : 0.70 < quality < 0.80 :      3839 elements
+Info    : 0.80 < quality < 0.90 :      5841 elements
+Info    : 0.90 < quality < 1.00 :      2725 elements
+Info    : Done optimizing mesh (Wall 0.0333055s, CPU 0.030429s)
+Info    : 3284 nodes 18480 elements
+Info    : Writing 'tests/data/simple/nl_tensor_boundary_experiment/raw/cylinder/clscale0.3/mesh.vtk'...
+Info    : Done writing 'tests/data/simple/nl_tensor_boundary_experiment/raw/cylinder/clscale0.3/mesh.vtk'
+Info    : Stopped on Sun Nov 14 18:44:57 2021 (From start: Wall 0.471806s, CPU 0.467486s)

@@ -66,6 +66,7 @@ blocks = [
     set_transformer.SetTransformerDecoder,
     share.Share,
     tcn.TCN,
+    tensor_operations.EquivariantMLP,
 ]
 
 for block in blocks:

@@ -76,6 +76,7 @@ class Group(siml_module.SimlModule):
         self.group = self._create_group(block_setting, model_setting)
         self.loop = self.group_setting.repeat > 1
         self.mode = self.group_setting.mode
+        self.debug = self.group_setting.debug
 
         if self.loop:
             input_is_dict = isinstance(
@@ -96,6 +97,10 @@ class Group(siml_module.SimlModule):
                 dims=self.group_setting.inputs.dims,
                 is_dict=output_is_dict)
             if self.mode == 'implicit':
+                if self.group_setting.convergence_threshold is None:
+                    raise ValueError(
+                        'Feed convergence_threshold to the GroupSetting '
+                        'when mode == "implicit"')
                 self.forward = self.forward_implicit
             elif self.mode == 'steady':
                 raise NotImplementedError
@@ -130,13 +135,16 @@ class Group(siml_module.SimlModule):
             if self.group_setting.convergence_threshold is not None:
                 residual = self.calculate_residual(
                     self.mask_function(h)[0], h_previous)
-                # print(f"{i_repeat} {residual}")
+                if self.debug:
+                    print(f"{i_repeat} {residual}")
                 if residual < self.group_setting.convergence_threshold:
-                    # print(f"Convergent ({i_repeat}: {residual})")
+                    if self.debug:
+                        print(f"Convergent ({i_repeat}: {residual})")
                     break
 
                 if residual > 10:
-                    # print(f"Divergent ({i_repeat}: {residual})")
+                    if self.debug:
+                        print(f"Divergent ({i_repeat}: {residual})")
                     break
 
         else:
@@ -176,24 +184,24 @@ class Group(siml_module.SimlModule):
             h.update({k: masked_h[i] for i, k in enumerate(
                 [k for k, v in self.skips.items() if ~np.all(v)])})
 
-            if self.group_setting.convergence_threshold is not None:
-                residual = self.calculate_residual(
-                    masked_h, masked_h_previous)
-                # print(f"{i_repeat} {residual}")
-                if residual < self.group_setting.convergence_threshold:
-                    # print(f"Convergent ({i_repeat}: {residual})")
-                    break
+            residual = self.calculate_residual(
+                masked_h, masked_h_previous)
+            if self.debug:
+                print(f"{i_repeat} {residual}")
+            if residual < self.group_setting.convergence_threshold:
+                if self.debug:
+                    print(f"Convergent ({i_repeat}: {residual})")
+                break
 
-                if residual > 10:
-                    print(f"Divergent ({i_repeat}: {residual})")
-                    break
+            if residual > 10:
+                print(f"Divergent ({i_repeat}: {residual})")
+                break
 
         else:
-            if self.group_setting.convergence_threshold is not None:
-                print(
-                    f"Not converged at in {self.group_setting.name} "
-                    f"(residual = {residual})")
-                pass
+            print(
+                f"Not converged at in {self.group_setting.name} "
+                f"(residual = {residual})")
+            pass
         return h
 
     def _calculate_nabla_f(

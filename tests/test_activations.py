@@ -59,14 +59,14 @@ class TestActivations(unittest.TestCase):
     def test_derivative_leaky_relu(self):
         tensor = torch.linspace(-1, 0, 1000)
         leaky_relu = torch.nn.LeakyReLU()
-        derivative_leaky_relu = activations.DerivativeLeakyRELU(leaky_relu)
+        derivative_leaky_relu = activations.DerivativeLeakyReLU(leaky_relu)
         h_derivative = derivative_leaky_relu(tensor)
         np.testing.assert_almost_equal(
             h_derivative.detach().numpy()[:-1], leaky_relu.negative_slope)
 
         tensor = torch.linspace(0, 1, 1000)
         leaky_relu = torch.nn.LeakyReLU()
-        derivative_leaky_relu = activations.DerivativeLeakyRELU(leaky_relu)
+        derivative_leaky_relu = activations.DerivativeLeakyReLU(leaky_relu)
         h_derivative = derivative_leaky_relu(tensor)
         np.testing.assert_almost_equal(
             h_derivative.detach().numpy()[1:], 1.)
