@@ -20,7 +20,7 @@ inferer:
   write_simulation_base: tests/data/heat_boundary/raw
   write_simulation_type: 'ucd'
 trainer:
-  output_directory: tests/data/heat_boundary/boundary_isogcn
+  output_directory: tests/data/heat_boundary/repeat
   inputs:
     rank0:
       - name: nodal_t_0
@@ -168,9 +168,8 @@ model:
   groups:
     - name: GROUP1
       debug: false
-      repeat: 100
-      mode: implicit
-      convergence_threshold: 1.0e-5
+      repeat: 2
+      mode: simple
       inputs:
         grank0:
           - name: IN_RANK0
@@ -222,6 +221,7 @@ model:
             - IN_DIRICHLET
           destinations:
             - ISO_GCN_RANK0_RANK1_1
+            - ADD
         - name: IN_NEUMANN
           type: identity
           is_first: true
@@ -287,11 +287,10 @@ model:
           destinations: ISO_GCN_RANK1_RANK0_1
         - name: ISO_GCN_RANK1_RANK0_1
           type: iso_gcn
-          # destinations:
-          #   - ADD
+          destinations:
+            - ADD
           residual: false
           bias: false
-          output_key: grank0
           support_input_indices:
             - 0
             - 1
@@ -305,9 +304,9 @@ model:
             propagations:
               - contraction
             ah_w: true
-        #   coeff: 1.e-2
-        # - name: ADD
-        #   type: reducer
-        #   output_key: grank0
-        #   optional:
-        #     operator: add
+          coeff: .5
+        - name: ADD
+          type: reducer
+          output_key: grank0
+          optional:
+            operator: add

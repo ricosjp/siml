@@ -118,6 +118,8 @@ class NeumannIsoGCN(siml_module.SimlModule):
         self.reference_block = reference_block
         self.create_linear = self.block_setting.optional.pop(
             'create_linear', False)
+        self.neumann_factor = self.block_setting.optional.pop(
+            'neumann_factor', 1.)
         self.create_ratio = self.block_setting.optional.pop(
             'create_ratio', False)
         if self.reference_block is None:
@@ -129,12 +131,14 @@ class NeumannIsoGCN(siml_module.SimlModule):
                     'Subchain setting incorrect for '
                     f"{self.reference_block.block_setting} "
                     f"(referenced from: {self.block_setting})")
+
             if self.create_linear:
                 self.linear = torch.nn.Linear(
                     *self.reference_block.subchains[0][0].weight.shape,
                     bias=False)
             else:
                 self.linear = self.reference_block.subchains[0][0]
+
             if self.linear.bias is not None:
                 raise ValueError(
                     'Reference IsoGCN should have no bias: '
@@ -172,7 +176,7 @@ class NeumannIsoGCN(siml_module.SimlModule):
         neumann = torch.einsum(
             'ikl,il...f->ik...f',
             inversed_moment_tensors[..., 0],
-            self.linear(directed_neumann))
+            self.linear(directed_neumann)) * self.neumann_factor
         if self.create_ratio:
             sigmoid_coeff = torch.sigmoid(self.coeff.weight[0, 0])
             return (sigmoid_coeff * grad + (1 - sigmoid_coeff) * neumann) * 2
