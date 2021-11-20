@@ -173,7 +173,6 @@ class EquivariantMLP(siml_module.SimlModule):
             Output of the NN.
         """
         h = self.contraction(x)
-        print(x.shape, h.shape)
         linear_x = self.linear_weight(x)
         for linear, dropout_ratio, activation in zip(
                 self.linears, self.dropout_ratios, self.activations):

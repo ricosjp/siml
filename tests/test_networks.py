@@ -352,7 +352,7 @@ class TestNetworks(unittest.TestCase):
         s = [torch.sparse_coo_tensor(
             torch.stack([torch.from_numpy(_s.row), torch.from_numpy(_s.col)]),
             torch.from_numpy(_s.data), _s.shape)]
-        y = tr.model.dict_block['RES_GCN'](x, s)
+        y = tr.model.dict_block['RES_GCN'](x, supports=s)
         abs_residual = np.abs((y - x).detach().numpy())
         zero_fraction = np.sum(abs_residual < 1e-5) / abs_residual.size
         self.assertLess(.3, zero_fraction)

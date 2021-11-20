@@ -18,7 +18,7 @@ inferer:
   read_simulation_type: ucd
 
 trainer:
-  output_directory: tests/data/grad/nonlinear
+  output_directory: tests/data/grad/nonlinear_merged
   inputs:
     rank0:
       - name: phi
@@ -40,7 +40,7 @@ trainer:
     - name: grad
       dim: 1
   prune: false
-  n_epoch: 1000
+  n_epoch: 100
   log_trigger_epoch: 10
   stop_trigger_epoch: 10
   seed: 0
@@ -62,11 +62,7 @@ model:
       nodes:
         - -1
         - 16
-        - 16
-        - 16
       activations:
-        - tanh
-        - tanh
         - identity
     - name: ID_RANK0
       type: identity
@@ -96,7 +92,7 @@ model:
         - IN_NEUMANN
         - IN_NORMAL
       destinations:
-        - NEUMANN_ISOGCN_1
+        - ISOGCN_1
       reference_block_name: IN_MLP
     - name: IN_MOMENT
       type: identity
@@ -104,18 +100,26 @@ model:
       input_keys:
         - inversed_moment
       destinations:
-        - NEUMANN_ISOGCN_1
+        - ISOGCN_1
 
     # Processor 1
     - name: ISOGCN_1
       type: iso_gcn
+      input_names:
+        - IN_MLP
+        - NEUMANN_ENCODER
+        - IN_MOMENT
       destinations:
-        - NEUMANN_ISOGCN_1
+        - OUT_MLP
       bias: false
       nodes:
         - -1
         - 16
+        - 16
+        - 16
       activations:
+        - tanh
+        - tanh
         - identity
       support_input_indices:
         - 0
@@ -125,40 +129,7 @@ model:
         propagations:
           - convolution
         ah_w: true
-    - name: NEUMANN_ISOGCN_1
-      type: neumann_isogcn
-      input_names:
-        - ISOGCN_1
-        - NEUMANN_ENCODER
-        - IN_MOMENT
-      reference_block_name: ISOGCN_1
-      destinations:
-        - MUL
-        - NORM
-      optional:
         create_neumann_linear: false
-
-    - name: NORM
-      type: contraction
-      destinations:
-        - NORM_MLP
-    - name: NORM_MLP
-      type: mlp
-      destinations:
-        - MUL
-      nodes:
-        - -1
-        - 16
-        - 16
-      activations:
-        - tanh
-        - tanh
-    - name: MUL
-      type: reducer
-      destinations:
-        - OUT_MLP
-      optional:
-        operator: mul
 
     # Decoder
     - name: OUT_MLP

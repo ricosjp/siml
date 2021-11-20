@@ -1,6 +1,7 @@
 
 from pathlib import Path
 import shutil
+import sys
 import unittest
 
 import femio
@@ -15,6 +16,9 @@ import siml.networks.iso_gcn as iso_gcn
 import siml.networks.mlp as mlp
 import siml.setting as setting
 import siml.trainer as trainer
+
+sys.path.append('tests')
+import preprocess  # NOQA
 
 
 PLOT = False
@@ -76,7 +80,7 @@ class TestBoundary(unittest.TestCase):
             + np.einsum('ijkf,ikf->ijf', np_minv, directed_neumann)
         plain_desired_grad_w_neumann = plain_desired_grad_wo_neumann \
             + np.einsum('ijkf,ikf->ijf', np_minv, directed_neumann)
-        plain_actual_grad_wo_neumann = iso_gcn_(phi, supports)
+        plain_actual_grad_wo_neumann = iso_gcn_(phi, supports=supports)
         plain_actual_grad_w_neumann = neumann_iso_gcn(
             plain_actual_grad_wo_neumann, directed_neumann,
             minv).detach().numpy()
@@ -114,7 +118,7 @@ class TestBoundary(unittest.TestCase):
         lineared_phi = linear(phi)
         encoded_neumann = neumann_encoder(
             phi, directed_neumann)
-        grad_wo_neumann = iso_gcn_(lineared_phi, supports)
+        grad_wo_neumann = iso_gcn_(lineared_phi, supports=supports)
         np_grad_wo_neumann = grad_wo_neumann.detach().numpy()
         np_grad_w_neumann = neumann_iso_gcn(
             grad_wo_neumann, encoded_neumann, minv).detach().numpy()
@@ -175,7 +179,7 @@ class TestBoundary(unittest.TestCase):
             np.linalg.norm(np_surface_normal[boundary_filter, ..., 0], axis=1),
             1.)
 
-        grad_wo_neumann = iso_gcn_(phi, supports)
+        grad_wo_neumann = iso_gcn_(phi, supports=supports)
         np_grad_wo_neumann = grad_wo_neumann.detach().numpy()
         np_grad_w_neumann = neumann_iso_gcn(
             grad_wo_neumann, directed_neumann, minv).detach().numpy()
@@ -264,7 +268,7 @@ class TestBoundary(unittest.TestCase):
         encoded_phi = mlp_(phi)
         encoded_neumann = neumann_encoder(
             encoded_phi, neumann, weighted_normal)
-        grad_wo_neumann = iso_gcn_(encoded_phi, supports)
+        grad_wo_neumann = iso_gcn_(encoded_phi, supports=supports)
         np_grad_wo_neumann = grad_wo_neumann.detach().numpy()
         np_grad_w_neumann = neumann_iso_gcn(
             grad_wo_neumann, encoded_neumann, minv).detach().numpy()
@@ -438,6 +442,40 @@ class TestBoundary(unittest.TestCase):
 
         self.assertLess(error_boundary, error_wo_boundary)
 
+    def test_grad_neumann_identity_equivariance(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/grad/identity.yml'))
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, .5)
+
+        # Test equivariance
+        ir = inferer.Inferer(
+            main_setting,
+            conversion_function=preprocess.conversion_function_grad,
+            converter_parameters_pkl=main_setting.data.preprocessed_root
+            / 'preprocessors.pkl')
+        results = ir.infer(
+            model=main_setting.trainer.output_directory,
+            output_directory_base=tr.setting.trainer.output_directory,
+            data_directories=Path('tests/data/grad/raw/test/0'),
+            perform_preprocess=True)
+        y = results[0]['dict_y']['grad']
+
+        rotated_test_directory = Path('tests/data/grad/raw/rotated_test/0')
+        rotated_results = ir.infer(
+            model=main_setting.trainer.output_directory,
+            output_directory_base=tr.setting.trainer.output_directory,
+            data_directories=rotated_test_directory,
+            perform_preprocess=True)
+        rotated_y = rotated_results[0]['dict_y']['grad']
+
+        rotation = np.load(rotated_test_directory / 'rotation.npy')
+        np.testing.assert_almost_equal(
+            np.einsum('kl,ilf->ikf', rotation, y), rotated_y, decimal=6)
+
     def test_grad_neumann_nonlinear(self):
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/grad/nonlinear.yml'))
@@ -500,3 +538,77 @@ class TestBoundary(unittest.TestCase):
             / np.mean(answer_boundary**2)**.5
 
         self.assertLess(error_boundary, error_wo_boundary)
+
+    def test_grad_neumann_nonlinear_merged(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/grad/nonlinear_merged.yml'))
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, .05)
+
+        ir = inferer.Inferer(
+            main_setting,
+            converter_parameters_pkl=main_setting.data.preprocessed_root
+            / 'preprocessors.pkl')
+        results = ir.infer(
+            model=main_setting.trainer.output_directory,
+            output_directory_base=tr.setting.trainer.output_directory,
+            data_directories=main_setting.data.test[0])
+        y = results[0]['dict_y']
+
+        ref_main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/grad/nonlinear.yml'))
+        ref_tr = trainer.Trainer(ref_main_setting)
+        if ref_tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(ref_tr.setting.trainer.output_directory)
+        ref_loss = ref_tr.train()
+
+        np.testing.assert_almost_equal(loss, ref_loss)
+
+        ref_ir = inferer.Inferer(
+            ref_main_setting,
+            converter_parameters_pkl=ref_main_setting.data.preprocessed_root
+            / 'preprocessors.pkl')
+        ref_results = ref_ir.infer(
+            model=ref_main_setting.trainer.output_directory,
+            output_directory_base=ref_tr.setting.trainer.output_directory,
+            data_directories=ref_main_setting.data.test[0])
+        ref_y = ref_results[0]['dict_y']
+
+        np.testing.assert_almost_equal(y['grad'], ref_y['grad'])
+
+    def test_grad_neumann_nonlinear_coeff(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/grad/nonlinear_merged_coeff.yml'))
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, .05)
+
+        # Test equivariance
+        ir = inferer.Inferer(
+            main_setting,
+            conversion_function=preprocess.conversion_function_grad,
+            converter_parameters_pkl=main_setting.data.preprocessed_root
+            / 'preprocessors.pkl')
+        results = ir.infer(
+            model=main_setting.trainer.output_directory,
+            output_directory_base=tr.setting.trainer.output_directory,
+            data_directories=Path('tests/data/grad/raw/test/0'),
+            perform_preprocess=True)
+        y = results[0]['dict_y']['grad']
+
+        rotated_test_directory = Path('tests/data/grad/raw/rotated_test/0')
+        rotated_results = ir.infer(
+            model=main_setting.trainer.output_directory,
+            output_directory_base=tr.setting.trainer.output_directory,
+            data_directories=rotated_test_directory,
+            perform_preprocess=True)
+        rotated_y = rotated_results[0]['dict_y']['grad']
+
+        rotation = np.load(rotated_test_directory / 'rotation.npy')
+        np.testing.assert_almost_equal(
+            np.einsum('kl,ilf->ikf', rotation, y), rotated_y, decimal=2)

@@ -57,6 +57,7 @@ class SimlManager():
         else:
             raise ValueError(
                 f"Unknown type for settings: {settings.__class__}")
+        self.inference_mode = False
 
         self._update_setting_if_needed()
         self.optuna_trial = optuna_trial
@@ -138,12 +139,14 @@ class SimlManager():
                 yaml_file).model
         else:
             self.setting = setting.MainSetting.read_settings_yaml(yaml_file)
-        if self.setting.trainer.output_directory.exists():
-            print(
-                f"{self.setting.trainer.output_directory} exists "
-                'so reset output directory.')
-            self.setting.trainer.output_directory = \
-                setting.TrainerSetting([], []).output_directory
+
+        if not self.inference_mode:
+            if self.setting.trainer.output_directory.exists():
+                print(
+                    f"{self.setting.trainer.output_directory} exists "
+                    'so reset output directory.')
+                self.setting.trainer.output_directory = \
+                    setting.TrainerSetting([], []).output_directory
         return
 
     def _update_setting_if_needed(self):
