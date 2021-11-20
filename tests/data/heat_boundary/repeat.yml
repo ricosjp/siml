@@ -279,8 +279,8 @@ model:
             - CONTRACTION_1
           reference_block_name: ISO_GCN_RANK0_RANK1_1
           optional:
-            # create_linear: true
-            # create_ratio: true
+            # create_neumann_linear: true
+            # create_neumann_ratio: true
             neumann_factor: -1.
         - name: CONTRACTION_1
           type: contraction

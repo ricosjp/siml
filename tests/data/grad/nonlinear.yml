@@ -136,7 +136,7 @@ model:
         - MUL
         - NORM
       optional:
-        create_linear: false
+        create_neumann_linear: false
 
     - name: NORM
       type: contraction
