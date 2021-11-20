@@ -57,10 +57,10 @@ class SimlManager():
         else:
             raise ValueError(
                 f"Unknown type for settings: {settings.__class__}")
+        self.inference_mode = False
 
         self._update_setting_if_needed()
         self.optuna_trial = optuna_trial
-        self.inference_mode = False
         return
 
     def _select_device(self):
