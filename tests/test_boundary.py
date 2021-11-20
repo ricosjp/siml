@@ -80,7 +80,7 @@ class TestBoundary(unittest.TestCase):
             + np.einsum('ijkf,ikf->ijf', np_minv, directed_neumann)
         plain_desired_grad_w_neumann = plain_desired_grad_wo_neumann \
             + np.einsum('ijkf,ikf->ijf', np_minv, directed_neumann)
-        plain_actual_grad_wo_neumann = iso_gcn_(phi, supports)
+        plain_actual_grad_wo_neumann = iso_gcn_(phi, supports=supports)
         plain_actual_grad_w_neumann = neumann_iso_gcn(
             plain_actual_grad_wo_neumann, directed_neumann,
             minv).detach().numpy()
@@ -118,7 +118,7 @@ class TestBoundary(unittest.TestCase):
         lineared_phi = linear(phi)
         encoded_neumann = neumann_encoder(
             phi, directed_neumann)
-        grad_wo_neumann = iso_gcn_(lineared_phi, supports)
+        grad_wo_neumann = iso_gcn_(lineared_phi, supports=supports)
         np_grad_wo_neumann = grad_wo_neumann.detach().numpy()
         np_grad_w_neumann = neumann_iso_gcn(
             grad_wo_neumann, encoded_neumann, minv).detach().numpy()
@@ -179,7 +179,7 @@ class TestBoundary(unittest.TestCase):
             np.linalg.norm(np_surface_normal[boundary_filter, ..., 0], axis=1),
             1.)
 
-        grad_wo_neumann = iso_gcn_(phi, supports)
+        grad_wo_neumann = iso_gcn_(phi, supports=supports)
         np_grad_wo_neumann = grad_wo_neumann.detach().numpy()
         np_grad_w_neumann = neumann_iso_gcn(
             grad_wo_neumann, directed_neumann, minv).detach().numpy()
@@ -268,7 +268,7 @@ class TestBoundary(unittest.TestCase):
         encoded_phi = mlp_(phi)
         encoded_neumann = neumann_encoder(
             encoded_phi, neumann, weighted_normal)
-        grad_wo_neumann = iso_gcn_(encoded_phi, supports)
+        grad_wo_neumann = iso_gcn_(encoded_phi, supports=supports)
         np_grad_wo_neumann = grad_wo_neumann.detach().numpy()
         np_grad_w_neumann = neumann_iso_gcn(
             grad_wo_neumann, encoded_neumann, minv).detach().numpy()
