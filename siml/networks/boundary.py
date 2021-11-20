@@ -116,12 +116,12 @@ class NeumannIsoGCN(siml_module.SimlModule):
         super().__init__(
             block_setting, no_parameter=True, create_activations=False)
         self.reference_block = reference_block
-        self.create_linear = self.block_setting.optional.pop(
-            'create_linear', False)
+        self.create_neumann_linear = self.block_setting.optional.pop(
+            'create_neumann_linear', False)
         self.neumann_factor = self.block_setting.optional.pop(
             'neumann_factor', 1.)
-        self.create_ratio = self.block_setting.optional.pop(
-            'create_ratio', False)
+        self.create_neumann_ratio = self.block_setting.optional.pop(
+            'create_neumann_ratio', False)
         if self.reference_block is None:
             raise ValueError(f"Feed reference_block for: {block_setting}")
         if self.reference_block.create_subchain:
@@ -132,7 +132,7 @@ class NeumannIsoGCN(siml_module.SimlModule):
                     f"{self.reference_block.block_setting} "
                     f"(referenced from: {self.block_setting})")
 
-            if self.create_linear:
+            if self.create_neumann_linear:
                 self.linear = torch.nn.Linear(
                     *self.reference_block.subchains[0][0].weight.shape,
                     bias=False)
@@ -146,7 +146,7 @@ class NeumannIsoGCN(siml_module.SimlModule):
         else:
             self.linear = activations.identity
 
-        if self.create_ratio:
+        if self.create_neumann_ratio:
             self.coeff = torch.nn.Linear(1, 1, bias=False)
         return
 
@@ -177,7 +177,7 @@ class NeumannIsoGCN(siml_module.SimlModule):
             'ikl,il...f->ik...f',
             inversed_moment_tensors[..., 0],
             self.linear(directed_neumann)) * self.neumann_factor
-        if self.create_ratio:
+        if self.create_neumann_ratio:
             sigmoid_coeff = torch.sigmoid(self.coeff.weight[0, 0])
             return (sigmoid_coeff * grad + (1 - sigmoid_coeff) * neumann) * 2
         else:
@@ -211,7 +211,7 @@ class NeumannEncoder(siml_module.SimlModule):
 
     def __init__(self, block_setting, reference_block):
         super().__init__(
-            block_setting, create_linears=False,
+            block_setting, create_neumann_linears=False,
             create_activations=False, create_dropouts=False,
             no_parameter=True)
         self.epsilon = self.block_setting.optional.get('epsilon', 1.e-5)

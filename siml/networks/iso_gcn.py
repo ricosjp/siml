@@ -16,6 +16,10 @@ class IsoGCN(abstract_gcn.AbstractGCN):
     def get_name():
         return 'iso_gcn'
 
+    @staticmethod
+    def accepts_multiple_inputs():
+        return True
+
     def __init__(self, block_setting):
         self.is_first = True  # For block setting validation
 
@@ -95,6 +99,40 @@ class IsoGCN(abstract_gcn.AbstractGCN):
 
         self.propagation_functions = self._create_propagation_functions()
 
+        # Setting for Neumann BC
+        if self.block_setting.input_names is not None:
+            if len(self.block_setting.input_names) != 3:
+                raise ValueError(
+                    f"# of input names invalid for {self.block_setting}")
+            self.has_neumann = True
+            self._init_neumann()
+        else:
+            self.has_neumann = False
+        return
+
+    def _init_neumann(self):
+        self.create_neumann_linear = self.block_setting.optional.pop(
+            'create_neumann_linear', False)
+        self.neumann_factor = self.block_setting.optional.pop(
+            'neumann_factor', 1.)
+        self.create_neumann_ratio = self.block_setting.optional.pop(
+            'create_neumann_ratio', False)
+
+        if self.create_neumann_linear:
+            self.neumann_linear = torch.nn.Linear(
+                *self.subchains[0][0].weight.shape,
+                bias=False)
+        else:
+            self.neumann_linear = self.subchains[0][0]
+
+        if self.neumann_linear.bias is not None:
+            raise ValueError(
+                'IsoGCN with Neumann should have no bias: '
+                f"{self.block_setting}")
+
+        if self.create_neumann_ratio:
+            self.neumann_ratio = torch.nn.Linear(1, 1, bias=False)
+
         return
 
     def _validate_block(self, x, supports):
@@ -150,16 +188,23 @@ class IsoGCN(abstract_gcn.AbstractGCN):
                         f"{self.block_setting}")
         return
 
-    def _forward_single(self, x, support):
+    def _forward_single(self, x, *args, supports=None):
         if self.is_first:
-            self._validate_block(x, support)
+            self._validate_block(x, supports)
             self.is_first = False
         if self.residual:
             shortcut = self.shortcut(x)
         else:
             shortcut = 0.
+        h_res = self._propagate(x, supports)
 
-        h_res = self._propagate(x, support)
+        if self.has_neumann:
+            directed_neumann = args[0]
+            inversed_moment_tensors = args[1]
+            h_res = self._add_neumann(
+                h_res, directed_neumann=directed_neumann,
+                inversed_moment_tensors=inversed_moment_tensors)
+
         if self.has_coefficient_network:
             if self.x_tensor_rank == 0:
                 coeff = self.coefficient_network(x)
@@ -173,6 +218,17 @@ class IsoGCN(abstract_gcn.AbstractGCN):
             h_res = self.activations[-1](h_res) + shortcut
 
         return h_res
+
+    def _add_neumann(self, grad, directed_neumann, inversed_moment_tensors):
+        neumann = torch.einsum(
+            'ikl,il...f->ik...f',
+            inversed_moment_tensors[..., 0],
+            self.neumann_linear(directed_neumann)) * self.neumann_factor
+        if self.create_neumann_ratio:
+            sigmoid_coeff = torch.sigmoid(self.coeff.weight[0, 0])
+            return (sigmoid_coeff * grad + (1 - sigmoid_coeff) * neumann) * 2
+        else:
+            return grad + neumann
 
     def _propagate(self, x, support):
         h = x
