@@ -4,6 +4,7 @@ import unittest
 
 import numpy as np
 import scipy.sparse as sp
+from scipy.stats import ortho_group
 import torch
 
 import siml.inferer as inferer
@@ -659,3 +660,55 @@ class TestNetworks(unittest.TestCase):
                     y_wo_permutation[:2].detach().numpy()],
                 axis=0),
             y_w_permutation.detach().numpy(), decimal=6)
+
+    def test_equivariant_mlp_rank1(self):
+        equivariant_mlp = tensor_operations.EquivariantMLP(
+            setting.BlockSetting(
+                nodes=[2, 4, 8], activations=['tanh', 'identity']))
+        equivariant_mlp.eval()
+
+        x = np.random.rand(200, 3, 2).astype(np.float32)
+        with torch.no_grad():
+            y = equivariant_mlp(torch.from_numpy(x)).detach().numpy()
+
+        s = ortho_group.rvs(3).astype(np.float32)
+        rotated_x = np.einsum('kl,ilf->ikf', s, x).astype(np.float32)
+        with torch.no_grad():
+            rotated_y = equivariant_mlp(
+                torch.from_numpy(rotated_x)).detach().numpy()
+
+        equivariant_y = np.einsum('kl,ilf->ikf', s, y)
+        print(rotated_y[:5, :, 0])
+        print(equivariant_y[:5, :, 0])
+        np.testing.assert_almost_equal(
+            np.mean((rotated_y - equivariant_y)**2)**.5
+            / (np.mean(rotated_y**2)**.5 + 1e-5),
+            0.)
+        np.testing.assert_almost_equal(rotated_y, equivariant_y, decimal=6)
+
+    def test_equivariant_mlp_rank2(self):
+        equivariant_mlp = tensor_operations.EquivariantMLP(
+            setting.BlockSetting(
+                nodes=[2, 4, 8], activations=['tanh', 'identity']))
+        equivariant_mlp.eval()
+
+        x = np.random.rand(200, 3, 3, 2).astype(np.float32)
+        with torch.no_grad():
+            y = equivariant_mlp(torch.from_numpy(x)).detach().numpy()
+
+        s = ortho_group.rvs(3).astype(np.float32)
+        rotated_x = np.einsum(
+            'nm,ikmf->iknf', s, np.einsum('kl,ilmf->ikmf', s, x)
+        ).astype(np.float32)
+        with torch.no_grad():
+            rotated_y = equivariant_mlp(
+                torch.from_numpy(rotated_x)).detach().numpy()
+
+        equivariant_y = np.einsum(
+            'nm,ikmf->iknf', s, np.einsum('kl,ilmf->ikmf', s, y))
+        print(rotated_y[:5, :, :, 0])
+        print(equivariant_y[:5, :, :, 0])
+        np.testing.assert_almost_equal(
+            np.mean((rotated_y - equivariant_y)**2)**.5
+            / (np.mean(rotated_y**2)**.5 + 1e-5), 0., decimal=6)
+        np.testing.assert_almost_equal(rotated_y, equivariant_y, decimal=6)
