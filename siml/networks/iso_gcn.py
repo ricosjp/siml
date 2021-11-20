@@ -2,8 +2,11 @@
 import einops
 import torch
 
+from .. import setting
 from . import abstract_gcn
 from . import identity
+from . import mlp
+from . import tensor_operations
 
 
 class IsoGCN(abstract_gcn.AbstractGCN):
@@ -25,15 +28,39 @@ class IsoGCN(abstract_gcn.AbstractGCN):
         self.create_subchain = block_setting.optional.get(
             'create_subchain', True)
         super().__init__(
-            block_setting, create_subchain=self.create_subchain,
+            block_setting, create_subchain=False,
             multiple_networks=False, residual=block_setting.residual)
-        if not self.create_subchain:
+        if self.create_subchain:
+            n_layer = len(self.block_setting.nodes) - 1
+            if n_layer == 0:
+                raise ValueError(
+                    f"# of layers is zero for: {block_setting}")
+
+            if n_layer == 1:
+                self.subchains = torch.nn.ModuleList([
+                    torch.nn.ModuleList([
+                        torch.nn.Linear(
+                            self.block_setting.nodes[0],
+                            self.block_setting.nodes[-1],
+                            bias=self.block_setting.bias)])])
+                self.has_coefficient_network = False
+            else:
+                self.subchains = torch.nn.ModuleList([
+                    torch.nn.ModuleList([
+                        torch.nn.Linear(
+                            self.block_setting.nodes[0],
+                            self.block_setting.nodes[-1],
+                            bias=False)])])
+                self.coefficient_network = mlp.MLP(self.block_setting)
+                print(f"Coefficient network created for: {block_setting.name}")
+                self.has_coefficient_network = True
+                self.contraction = tensor_operations.Contraction(
+                    setting.BlockSetting())
+
+        else:
             print(f"Skip subchain creation for: {block_setting.name}")
             self.subchains = [[identity.Identity(block_setting)]]
-
-        if len(self.subchains[0]) > 1:
-            raise ValueError(
-                f"# of layers should be 0 or 1 for: {block_setting}")
+            self.has_coefficient_network = True
 
         self.dim = block_setting.optional.get('dim', 3)
         self.support_tensor_rank = block_setting.optional.get(
@@ -92,10 +119,13 @@ class IsoGCN(abstract_gcn.AbstractGCN):
             self.x_tensor_rank - n_contraction + n_rank_raise_propagation
 
         if estimated_output_tensor_rank > 0 \
-                and self.block_setting.activations[0] != 'identity':
+                and self.block_setting.activations[-1] != 'identity':
             raise ValueError(
                 'Set identity activation for rank '
                 f"{estimated_output_tensor_rank} output: {self.block_setting}")
+
+        if self.has_coefficient_network:
+            return
 
         if self.x_tensor_rank == 0:
             if estimated_output_tensor_rank > 0:
@@ -130,6 +160,13 @@ class IsoGCN(abstract_gcn.AbstractGCN):
             shortcut = 0.
 
         h_res = self._propagate(x, support)
+        if self.has_coefficient_network:
+            if self.x_tensor_rank == 0:
+                coeff = self.coefficient_network(x)
+            else:
+                coeff = self.coefficient_network(self.contraction(x))
+            h_res = torch.einsum('i...f,if->i...f', h_res, coeff)
+
         if self.block_setting.activation_after_residual:
             h_res = self.activations[-1](h_res + shortcut)
         else:
