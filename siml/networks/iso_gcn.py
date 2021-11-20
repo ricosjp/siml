@@ -64,7 +64,7 @@ class IsoGCN(abstract_gcn.AbstractGCN):
         else:
             print(f"Skip subchain creation for: {block_setting.name}")
             self.subchains = [[identity.Identity(block_setting)]]
-            self.has_coefficient_network = True
+            self.has_coefficient_network = False
 
         self.dim = block_setting.optional.get('dim', 3)
         self.support_tensor_rank = block_setting.optional.get(

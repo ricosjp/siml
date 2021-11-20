@@ -236,10 +236,10 @@ class TestIsoGCN(unittest.TestCase):
         torch_mirrored_genam = self.load_genam(mirrored_path, mode='torch')
 
         torch_original_conv = ig(
-            torch.from_numpy(h), torch_original_genam).numpy()
+            torch.from_numpy(h), supports=torch_original_genam).numpy()
 
         torch_rotated_conv = ig(
-            torch.from_numpy(rotated_h), torch_rotated_genam).numpy()
+            torch.from_numpy(rotated_h), supports=torch_rotated_genam).numpy()
         self.print_vec(torch_original_conv, 'rotation x IsoGCN', 10)
         self.print_vec(torch_rotated_conv, 'IsoGCN x rotation', 10)
         self.print_vec(
@@ -248,7 +248,8 @@ class TestIsoGCN(unittest.TestCase):
             torch_original_conv / 100, torch_rotated_conv / 100, decimal=5)
 
         torch_mirrored_conv = ig(
-            torch.from_numpy(mirrored_h), torch_mirrored_genam).numpy()
+            torch.from_numpy(mirrored_h),
+            supports=torch_mirrored_genam).numpy()
         self.print_vec(torch_original_conv, 'mirror x IsoGCN', 10)
         self.print_vec(torch_mirrored_conv, 'IsoGCN x mirror', 10)
         self.print_vec(
@@ -308,12 +309,12 @@ class TestIsoGCN(unittest.TestCase):
         torch_mirrored_genam = self.load_genam(mirrored_path, mode='torch')
 
         torch_original_conv = ig(
-            torch.from_numpy(h), torch_original_genam).numpy()
+            torch.from_numpy(h), supports=torch_original_genam).numpy()
 
         torch_rotated_original_conv = self.transform_rank2(
             rotation_matrix, torch_original_conv)
         torch_rotated_conv = ig(
-            torch.from_numpy(h), torch_rotated_genam).numpy()
+            torch.from_numpy(h), supports=torch_rotated_genam).numpy()
         self.print_vec(torch_rotated_original_conv, 'rotation x IsoGCN', 10)
         self.print_vec(torch_rotated_conv, 'IsoGCN x rotation', 10)
         self.print_vec(
@@ -324,7 +325,7 @@ class TestIsoGCN(unittest.TestCase):
         torch_mirrored_original_conv = self.transform_rank2(
             mirror_matrix, torch_original_conv)
         torch_mirrored_conv = ig(
-            torch.from_numpy(h), torch_mirrored_genam).numpy()
+            torch.from_numpy(h), supports=torch_mirrored_genam).numpy()
         self.print_vec(torch_mirrored_original_conv, 'mirror x IsoGCN', 10)
         self.print_vec(torch_mirrored_conv, 'IsoGCN x mirror', 10)
         self.print_vec(
@@ -416,7 +417,8 @@ class TestIsoGCN(unittest.TestCase):
         else:
             raise NotImplementedError
 
-        torch_res = iso_gcn_._forward_single(torch.from_numpy(h), gs).numpy()
+        torch_res = iso_gcn_._forward_single(
+            torch.from_numpy(h), supports=gs).numpy()
         if einstring is not None:
             np.testing.assert_almost_equal(
                 torch_res, np.einsum(einstring, g_tilde, h))
