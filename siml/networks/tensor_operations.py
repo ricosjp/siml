@@ -173,6 +173,7 @@ class EquivariantMLP(siml_module.SimlModule):
             Output of the NN.
         """
         h = self.contraction(x)
+        print(x.shape, h.shape)
         linear_x = self.linear_weight(x)
         for linear, dropout_ratio, activation in zip(
                 self.linears, self.dropout_ratios, self.activations):
@@ -180,4 +181,4 @@ class EquivariantMLP(siml_module.SimlModule):
             h = torch.nn.functional.dropout(
                 h, p=dropout_ratio, training=self.training)
             h = activation(h)
-        return self.mul(linear_x, h)
+        return torch.einsum('i...f,if->i...f', linear_x, h)
