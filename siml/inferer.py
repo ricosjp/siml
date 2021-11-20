@@ -126,6 +126,7 @@ class Inferer(siml_manager.SimlManager):
         self.postprocess_function = postprocess_function
         self.save_function = save_function
 
+        self.inference_mode = True
         if model is not None:
             self.setting.inferer.model = model
         if converter_parameters_pkl is not None:
