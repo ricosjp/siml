@@ -236,7 +236,22 @@ class Network(torch.nn.Module):
                         block_setting.output_key: hidden}
                 else:
                     dict_hidden[graph_node] = hidden
-                # print(graph_node, hidden.shape)
+
+            # if isinstance(dict_hidden[graph_node], dict):
+            #     if 'rank0' in dict_hidden[graph_node]:
+            #         print(
+            #             f"{graph_node}\t"
+            #             f"{torch.linalg.norm(dict_hidden[graph_node]['rank0'])}")
+            #     elif 'grank0' in dict_hidden[graph_node]:
+            #         print(
+            #             f"{graph_node}\t"
+            #             f"{torch.linalg.norm(dict_hidden[graph_node]['grank0'])}")
+            #     else:
+            #         pass
+            # else:
+            #     print(
+            #         f"{graph_node}\t"
+            #         f"{torch.linalg.norm(dict_hidden[graph_node])}")
 
         if self.y_dict_mode:
             return_dict = {}

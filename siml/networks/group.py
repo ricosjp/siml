@@ -159,48 +159,111 @@ class Group(siml_module.SimlModule):
         masked_x = self.mask_function(x, keep_empty_data=False)[0]
         h = x
         masked_h = self.mask_function(h, keep_empty_data=False)[0]
-        nabla_f = self._calculate_nabla_f(
-            h, masked_h, masked_x, supports, original_shapes)
+        masked_h_previous = masked_h
+        # masked_nabla_f = self._calculate_nabla_f(
+        #     h, masked_h, masked_x, supports, original_shapes)
+        operator = self.group({
+            'x': h, 'supports': supports,
+            'original_shapes': original_shapes})
+        masked_operator = self.mask_function(
+            operator, keep_empty_data=False)[0]
+        masked_nabla_f = self.operate(self.operate(
+            masked_h, masked_x, torch.sub), masked_operator, torch.sub)
+        # print('\ngrank0')
+        # print(h['grank0'])
 
+        masked_nabla_f_previous = masked_nabla_f
+        # masked_nabla_f_previous = masked_nabla_f = torch.zeros(1)
+
+        if self.debug:
+            print('\n--\ni_repeat\tresidual\talpha')
         for i_repeat in range(self.group_setting.repeat):
-            masked_h_previous = self.mask_function(h, keep_empty_data=False)[0]
-            nabla_f_previous = nabla_f
+            # masked_h_previous = self.mask_function(
+            #     h, keep_empty_data=False)[0]
+            # nabla_f_previous = nabla_f
             operator = self.group({
                 'x': h, 'supports': supports,
                 'original_shapes': original_shapes})
+            # print(
+            #     torch.linalg.norm(h['grank0']),
+            #     torch.linalg.norm(operator['grank0']))
             masked_operator = self.mask_function(
                 operator, keep_empty_data=False)[0]
+            # print('D u')
+            # print(masked_operator)
+            # print(torch.linalg.norm(masked_operator[0]))
 
-            # Ignore higher order derivatives
-            nabla_f = self.operate(self.operate(
+            # R(u) = u - u(t) - D u dt
+            masked_nabla_f = self.operate(self.operate(
                 masked_h, masked_x, torch.sub), masked_operator, torch.sub)
 
+            # print('nabla_f_id')
+            # print(id(masked_nabla_f))
+            # print(id(masked_nabla_f_previous))
+            # print('masked_nabla_f')
+            # print(masked_nabla_f)
+            # print('masked_nabla_f_previous')
+            # print(masked_nabla_f_previous)
+            # print('id')
+            # print(id(masked_h), id(masked_h_previous))
+            # print('h_{n+1}')
+            # print(masked_h)
+            # print('h_n')
+            # print(masked_h_previous)
             alphas = self._calculate_alphas(
-                masked_h, masked_h_previous, nabla_f, nabla_f_previous)
-            masked_h = self.operate(
-                masked_h, self.operate(alphas, nabla_f, torch.mul), torch.sub)
+                masked_h, masked_h_previous,
+                masked_nabla_f, masked_nabla_f_previous)
+            # print('alpha')
+            # print(alphas)
+            # alphas = [.01]
+            # print('*****')
+
+            # - du = alpha_i R(u_i)
+            masked_negative_dh = self.operate(
+                alphas, masked_nabla_f, torch.mul)
+            # print('dh')
+            # print(masked_negative_dh)
+
+            masked_h_previous = masked_h
+            masked_nabla_f_previous = masked_nabla_f
+
+            # h_{i+1} = h_i - (- du)
+            masked_h = self.operate(masked_h, masked_negative_dh, torch.sub)
 
             # TODO: Validate with more variables
             h.update({k: masked_h[i] for i, k in enumerate(
                 [k for k, v in self.skips.items() if ~np.all(v)])})
+            # print('grank0')
+            # print(h['grank0'])
 
             residual = self.calculate_residual(
                 masked_h, masked_h_previous)
+
+            # masked_h = self.operate(
+            #     masked_h, self.operate(alphas, masked_nabla_f, torch.mul),
+            #     torch.sub)
+
             if self.debug:
-                print(f"{i_repeat} {residual}")
+                print(f"{i_repeat}\t{residual}\t{alphas}")
             if residual < self.group_setting.convergence_threshold:
                 if self.debug:
                     print(f"Convergent ({i_repeat}: {residual})")
                 break
 
-            if residual > 10:
+            if residual > 100:
                 print(f"Divergent ({i_repeat}: {residual})")
+                if self.debug:
+                    raise ValueError(f"Divergent ({i_repeat}: {residual})")
                 break
 
         else:
             print(
                 f"Not converged at in {self.group_setting.name} "
                 f"(residual = {residual})")
+            if self.debug:
+                raise ValueError(
+                    f"Not converged at in {self.group_setting.name} "
+                    f"(residual = {residual})")
             pass
         return h
 
@@ -228,7 +291,7 @@ class Group(siml_module.SimlModule):
                 for h_, h_previous_, nabla_f_, nabla_f_previous_
                 in zip(h, h_previous, nabla_f, nabla_f_previous)]
 
-        delta_h = h_previous - h
+        delta_h = h - h_previous
         delta_nabla_f = nabla_f - nabla_f_previous
         if torch.allclose(delta_h, torch.tensor(0.).to(delta_h.device)) \
                 and torch.allclose(
@@ -236,10 +299,10 @@ class Group(siml_module.SimlModule):
                         delta_nabla_f.device)):
             alpha = 1.
         else:
-            alpha = torch.einsum(
-                'n...,n...->...', delta_h, delta_nabla_f) / (
+            alpha = torch.abs(torch.einsum(
+                'n...f,n...f->...', delta_h, delta_nabla_f)) / (
                     torch.einsum(
-                        'n...,n...->...', delta_nabla_f, delta_nabla_f)
+                        'n...f,n...f->...', delta_nabla_f, delta_nabla_f)
                     + 1.e-5)
         return alpha
 
