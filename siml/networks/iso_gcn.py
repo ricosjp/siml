@@ -111,11 +111,11 @@ class IsoGCN(abstract_gcn.AbstractGCN):
         return
 
     def _init_neumann(self):
-        self.create_neumann_linear = self.block_setting.optional.pop(
+        self.create_neumann_linear = self.block_setting.optional.get(
             'create_neumann_linear', False)
-        self.neumann_factor = self.block_setting.optional.pop(
+        self.neumann_factor = self.block_setting.optional.get(
             'neumann_factor', 1.)
-        self.create_neumann_ratio = self.block_setting.optional.pop(
+        self.create_neumann_ratio = self.block_setting.optional.get(
             'create_neumann_ratio', False)
 
         if self.create_neumann_linear:
