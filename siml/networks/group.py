@@ -77,6 +77,8 @@ class Group(siml_module.SimlModule):
         self.loop = self.group_setting.repeat > 1
         self.mode = self.group_setting.mode
         self.debug = self.group_setting.debug
+        self.componentwise_alpha = self.group_setting.optional.get(
+            'componentwise_alpha', False)
 
         if self.loop:
             input_is_dict = isinstance(
@@ -260,11 +262,18 @@ class Group(siml_module.SimlModule):
                         delta_nabla_f.device)):
             alpha = 1.
         else:
-            alpha = torch.abs(torch.einsum(
-                'n...f,n...f->...', delta_h, delta_nabla_f)) / (
-                    torch.einsum(
-                        'n...f,n...f->...', delta_nabla_f, delta_nabla_f)
-                    + 1.e-5)
+            if self.componentwise_alpha:
+                alpha = torch.abs(torch.einsum(
+                    'n...,n...->...', delta_h, delta_nabla_f)) / (
+                        torch.einsum(
+                            'n...,n...->...', delta_nabla_f, delta_nabla_f)
+                        + 1.e-5)
+            else:
+                alpha = torch.abs(torch.einsum(
+                    'n...f,n...f->...', delta_h, delta_nabla_f)) / (
+                        torch.einsum(
+                            'n...f,n...f->...', delta_nabla_f, delta_nabla_f)
+                        + 1.e-5)
         return alpha
 
     def operate(self, x, y, operator):

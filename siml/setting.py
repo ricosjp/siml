@@ -787,6 +787,7 @@ class GroupSetting(TypedDataClass):
         default=None, metadata={'allow_none': True})
     mode: str = 'simple'
     debug: bool = False
+    optional: dict = dc.field(default_factory=dict)
 
     def __post_init__(self):
         self.blocks = [
@@ -1158,6 +1159,8 @@ def dump_yaml(data_class, stream):
     """
     dict_data = dc.asdict(data_class)
     standardized_dict_data = _standardize_data(dict_data)
+
+    # Remove keys
     if 'encrypt_key' in standardized_dict_data:
         standardized_dict_data.pop('encrypt_key')
     if 'decrypt_key' in standardized_dict_data:
