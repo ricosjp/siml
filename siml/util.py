@@ -1019,7 +1019,7 @@ class VariableMask:
     def _identity_mask(self, *xs):
         return xs
 
-    def _dict_identity_mask(self, *xs):
+    def _dict_identity_mask(self, *xs, keep_empty_data=None):
         return [
             [x[key] for key in xs[0].keys()] for x in xs]
 

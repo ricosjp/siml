@@ -116,11 +116,11 @@ class NeumannIsoGCN(siml_module.SimlModule):
         super().__init__(
             block_setting, no_parameter=True, create_activations=False)
         self.reference_block = reference_block
-        self.create_neumann_linear = self.block_setting.optional.pop(
+        self.create_neumann_linear = self.block_setting.optional.get(
             'create_neumann_linear', False)
-        self.neumann_factor = self.block_setting.optional.pop(
+        self.neumann_factor = self.block_setting.optional.get(
             'neumann_factor', 1.)
-        self.create_neumann_ratio = self.block_setting.optional.pop(
+        self.create_neumann_ratio = self.block_setting.optional.get(
             'create_neumann_ratio', False)
         if self.reference_block is None:
             raise ValueError(f"Feed reference_block for: {block_setting}")

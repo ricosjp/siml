@@ -236,7 +236,6 @@ class Network(torch.nn.Module):
                         block_setting.output_key: hidden}
                 else:
                     dict_hidden[graph_node] = hidden
-                # print(graph_node, hidden.shape)
 
         if self.y_dict_mode:
             return_dict = {}

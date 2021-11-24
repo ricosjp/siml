@@ -142,11 +142,11 @@ class PreprocessDataset(BaseDataset):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.prepost_converter = kwargs.pop('prepost_converter')
-        self.raw_data_stem = kwargs.pop('raw_data_stem', None)
-        self.conversion_function = kwargs.pop('conversion_function', None)
-        self.load_function = kwargs.pop('load_function', None)
-        self.conversion_setting = kwargs.pop('conversion_setting', None)
+        self.prepost_converter = kwargs.get('prepost_converter')
+        self.raw_data_stem = kwargs.get('raw_data_stem', None)
+        self.conversion_function = kwargs.get('conversion_function', None)
+        self.load_function = kwargs.get('load_function', None)
+        self.conversion_setting = kwargs.get('conversion_setting', None)
         return
 
     def __getitem__(self, i):
@@ -455,7 +455,7 @@ class CollateFunctionGenerator():
             t = self.convert_output_dense(batch, 't')
         supports = self.convert_sparse(batch, 'supports')
         original_shapes = self.extract_original_shapes(batch)
-        data_directories = [b.pop('data_directory', None) for b in batch]
+        data_directories = [b.get('data_directory', None) for b in batch]
         return {
             'x': x, 't': t, 'supports': supports,
             'original_shapes': original_shapes,
