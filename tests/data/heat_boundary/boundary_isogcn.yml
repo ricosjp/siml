@@ -168,7 +168,7 @@ model:
   groups:
     - name: GROUP1
       debug: false
-      repeat: 100
+      repeat: 10
       mode: implicit
       convergence_threshold: 1.0e-5
       inputs:
