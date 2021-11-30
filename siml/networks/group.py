@@ -112,6 +112,13 @@ class Group(siml_module.SimlModule):
                 raise ValueError(f"Unexpected mode: {self.mode}")
         else:
             self.forward = self.forward_wo_loop
+
+        if 'residual' in self.block_setting.losses:
+            self.residual_loss = True
+            self.losses = {'residual': []}
+        else:
+            self.residual_loss = False
+
         return
 
     def _create_group(self, block_setting, model_setting):
@@ -228,6 +235,9 @@ class Group(siml_module.SimlModule):
                     f"Not converged at in {self.group_setting.name} "
                     f"(residual = {residual})")
             pass
+
+        if self.residual_loss:
+            self.losses['residual'].append(residual)
         return h
 
     def _calculate_nabla_f(

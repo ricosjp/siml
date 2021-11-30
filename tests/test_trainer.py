@@ -603,3 +603,12 @@ class TestTrainer(unittest.TestCase):
 
         print(t_mse_wo_skip, t_mse_w_skip)
         self.assertLess(t_mse_wo_skip, t_mse_w_skip)
+
+    def test_residual_loss(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/heat_boundary/residual_loss.yml'))
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss_implicit = tr.train()
+        np.testing.assert_array_less(loss_implicit, 5.e-2)

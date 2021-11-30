@@ -44,6 +44,9 @@ class Network(torch.nn.Module):
             for block_information in self.dict_block_information.values()])
         self.merge_sparses = False
 
+        self.loss_blocks = [
+            key for key, value in self.dict_block_setting.items()
+            if len(value.losses) > 0]
         return
 
     def _create_call_graph(self):
@@ -142,6 +145,23 @@ class Network(torch.nn.Module):
             if block_setting.type == 'group'
         }))
         return dict_block
+
+    def get_loss_keys(self):
+        return [
+            f"{loss_block}/{k}"
+            for loss_block in self.loss_blocks
+            for k in self.dict_block[loss_block].losses.keys()]
+
+    def get_losses(self):
+        return {
+            f"{loss_block}/{k}": v
+            for loss_block in self.loss_blocks
+            for k, v in self.dict_block[loss_block].losses.items()}
+
+    def reset(self):
+        for loss_block in self.loss_blocks:
+            self.dict_block[loss_block].reset()
+        return
 
     def forward(self, x_):
         x = x_['x']

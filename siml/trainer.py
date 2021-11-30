@@ -384,8 +384,11 @@ class Trainer(siml_manager.SimlManager):
             for syp, sy in zip(split_y_pred, split_y):
                 optimizer.zero_grad()
                 loss = self.loss(y_pred, y)
+                other_loss = self._calculate_other_loss(model, y_pred, y)
+                (loss + other_loss).backward(retain_graph=True)
                 loss.backward(retain_graph=True)
             self.optimizer.step()
+            model.reset()
 
             loss = self.loss(y_pred, y)
             return loss
@@ -394,8 +397,11 @@ class Trainer(siml_manager.SimlManager):
             optimizer.zero_grad()
             y_pred = model(x)
             loss = self.loss(y_pred, y, x['original_shapes'])
-            loss.backward()
+            other_loss = self._calculate_other_loss(
+                model, y_pred, y, x['original_shapes'])
+            (loss + other_loss).backward()
             self.optimizer.step()
+            model.reset()
             return loss
 
         if not self.element_wise \
@@ -416,6 +422,18 @@ class Trainer(siml_manager.SimlManager):
 
         return ignite.engine.Engine(update_model)
 
+    def _calculate_other_loss(self, model, y_pred, y, original_shapes=None):
+        if original_shapes is None:
+            original_shapes = [y_pred.shape]
+        loss = 0.
+        for loss_key, loss_value in model.get_losses().items():
+            if 'residual' in loss_key:
+                for lv in loss_value:
+                    loss += lv
+            else:
+                raise ValueError(f"Unexpected loss_key: {loss_key}")
+        return loss
+
     def _create_supervised_evaluator(self):
 
         def _inference(engine, batch):
@@ -431,10 +449,19 @@ class Trainer(siml_manager.SimlManager):
         evaluator_engine = ignite.engine.Engine(_inference)
 
         metrics = {'loss': ignite.metrics.Loss(self.loss)}
+        # for loss_key in self.model.get_loss_keys():
+        #     metrics.update({loss_key: self._generate_metric(loss_key)})
 
         for name, metric in metrics.items():
             metric.attach(evaluator_engine, name)
         return evaluator_engine
+
+    def _generate_metric(self, loss_key):
+        if 'residual' in loss_key:
+            metric = ignite.metrics.Average()
+        else:
+            raise ValueError(f"Unexpected loss type: {loss_key}")
+        return metric
 
     def _get_data_loaders(
             self, dataset_generator, batch_size, validation_batch_size=None,

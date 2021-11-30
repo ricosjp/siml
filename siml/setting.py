@@ -715,6 +715,7 @@ class BlockSetting(TypedDataClass):
     time_series: bool = False
     no_grad: bool = False
     weight_norm: bool = False
+    losses: list[str] = dc.field(default_factory=list)
 
     optional: dict = dc.field(default_factory=dict)
 
