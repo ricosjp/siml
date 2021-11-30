@@ -612,3 +612,11 @@ class TestTrainer(unittest.TestCase):
             shutil.rmtree(tr.setting.trainer.output_directory)
         loss_implicit = tr.train()
         np.testing.assert_array_less(loss_implicit, 5.e-2)
+
+        ref_main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/heat_boundary/boundary_isogcn.yml'))
+        ref_tr = trainer.Trainer(ref_main_setting)
+        if ref_tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(ref_tr.setting.trainer.output_directory)
+        ref_loss_implicit = ref_tr.train()
+        self.assertLess(loss_implicit, ref_loss_implicit)
