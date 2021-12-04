@@ -281,7 +281,7 @@ class LossFunction:
 
         return
 
-    def __call__(self, y_pred, y, original_shapes=None):
+    def __call__(self, y_pred, y, original_shapes=None, **kwargs):
         return self.loss(y_pred, y, original_shapes)
 
     def loss_function_dict(self, y_pred, y, original_shapes=None):

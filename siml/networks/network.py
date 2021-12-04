@@ -148,15 +148,25 @@ class Network(torch.nn.Module):
 
     def get_loss_keys(self):
         return [
-            f"{loss_block}/{k}"
+            f"{loss_block}/{loss_name}"
             for loss_block in self.loss_blocks
-            for k in self.dict_block[loss_block].losses.keys()]
+            for loss_name
+            in self.dict_block[loss_block].block_setting.loss_names]
 
     def get_losses(self):
         return {
-            f"{loss_block}/{k}": v
+            f"{loss_block}/{loss_setting['name']}":
+            self.dict_block[loss_block].losses[loss_setting['name']]
             for loss_block in self.loss_blocks
-            for k, v in self.dict_block[loss_block].losses.items()}
+            for loss_setting
+            in self.dict_block[loss_block].block_setting.losses}
+
+    def get_loss_coeffs(self):
+        return {
+            f"{loss_block}/{loss_setting['name']}": loss_setting['coeff']
+            for loss_block in self.loss_blocks
+            for loss_setting
+            in self.dict_block[loss_block].block_setting.losses}
 
     def reset(self):
         for loss_block in self.loss_blocks:

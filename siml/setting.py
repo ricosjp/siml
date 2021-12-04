@@ -494,7 +494,7 @@ class TrainerSetting(TypedDataClass):
     lazy: bool = True
     num_workers: int = dc.field(
         default=None, metadata={'allow_none': True})
-    display_mergin: int = 5
+    display_mergin: int = 4
     non_blocking: bool = True
 
     data_parallel: bool = False
@@ -715,7 +715,7 @@ class BlockSetting(TypedDataClass):
     time_series: bool = False
     no_grad: bool = False
     weight_norm: bool = False
-    losses: list[str] = dc.field(default_factory=list)
+    losses: list[dict] = dc.field(default_factory=list)
 
     optional: dict = dc.field(default_factory=dict)
 
@@ -757,6 +757,9 @@ class BlockSetting(TypedDataClass):
                     f"len(kernel_sizes) should be {len(self.nodes)-1} but "
                     f"{len(self.kernel_sizes)} for {self}")
 
+        for i, _ in enumerate(self.losses):
+            if isinstance(self.losses[i], str):
+                self.losses[i] = {'name': self.losses[i], 'coeff': 1.}
         super().__post_init__()
 
         if self.input_indices is not None:
@@ -771,6 +774,10 @@ class BlockSetting(TypedDataClass):
                 self.support_input_indices = [self.support_input_index]
 
         return
+
+    @property
+    def loss_names(self):
+        return [loss_setting['name'] for loss_setting in self.losses]
 
 
 @dc.dataclass
