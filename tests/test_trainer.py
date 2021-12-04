@@ -611,12 +611,26 @@ class TestTrainer(unittest.TestCase):
         if tr.setting.trainer.output_directory.exists():
             shutil.rmtree(tr.setting.trainer.output_directory)
         loss_implicit = tr.train()
-        np.testing.assert_array_less(loss_implicit, 5.e-2)
+
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/heat_boundary/residual_loss_coeff0.yml'))
+        tr0 = trainer.Trainer(main_setting)
+        if tr0.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss0 = tr0.train()
 
         ref_main_setting = setting.MainSetting.read_settings_yaml(
-            Path('tests/data/heat_boundary/boundary_isogcn.yml'))
+            Path('tests/data/heat_boundary/boundary.yml'))
         ref_tr = trainer.Trainer(ref_main_setting)
         if ref_tr.setting.trainer.output_directory.exists():
             shutil.rmtree(ref_tr.setting.trainer.output_directory)
         ref_loss_implicit = ref_tr.train()
-        self.assertLess(loss_implicit, ref_loss_implicit)
+
+        np.testing.assert_raises(
+            AssertionError, np.testing.assert_almost_equal,
+            loss_implicit, loss0, decimal=5)  # Assert almost not equal
+        self.assertLess(
+            tr.evaluator.state.metrics['GROUP1/residual'],
+            tr0.evaluator.state.metrics['GROUP1/residual'])
+        np.testing.assert_almost_equal(
+            loss0, ref_loss_implicit, decimal=5)
