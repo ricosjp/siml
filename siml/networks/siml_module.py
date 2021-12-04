@@ -181,6 +181,8 @@ class SimlModule(torch.nn.Module, metaclass=abc.ABCMeta):
                     raise ValueError(
                         'Residual input and output sizes differs for: '
                         f"{self.block_setting}")
+
+        self.losses = {}
         return
 
     def create_linears(self, nodes=None, bias=None):
@@ -235,6 +237,17 @@ class SimlModule(torch.nn.Module, metaclass=abc.ABCMeta):
         dropout_ratios = [
             dropout_ratio for dropout_ratio in dropouts]
         return dropout_ratios
+
+    def reset(self):
+        keys = list(self.losses.keys())
+        for k in keys:
+            if isinstance(self.losses[k], list):
+                self.losses[k] = []
+            elif isinstance(self.losses[k], torch.Tensor):
+                self.losses[k] = 0.
+            else:
+                raise ValueError(f"Unexpected loss type: {self.losses[k]}")
+        return
 
     def forward(self, x, supports=None, original_shapes=None):
         if self.block_setting.no_grad:
