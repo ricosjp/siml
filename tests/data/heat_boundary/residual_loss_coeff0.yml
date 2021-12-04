@@ -148,7 +148,8 @@ model:
       destinations:
         - ID_GROUP
       losses:
-        - residual
+        - name: residual
+          coeff: 0.
     - name: ID_GROUP
       type: identity
       input_keys:
