@@ -259,9 +259,9 @@ def conversion_function_heat_interaction(fem_data, raw_directory=None):
     dict_data.update(_load_mesh(raw_directory / 'mesh_2.inp', '_2'))
     dict_data.update({
         'incidence_2to1':
-        sp.load_npz('tests/data/heat_interaction/incidence_2to1.npz'),
+        sp.load_npz('tests/data/heat_interaction/raw/incidence_2to1.npz'),
         'periodic_2':
-        sp.load_npz('tests/data/heat_interaction/periodic_2.npz'),
+        sp.load_npz('tests/data/heat_interaction/raw/periodic_2.npz'),
         'coeff':
         np.load(raw_directory / 'coeff.npy')[None, None],
         'heat_transfer':
