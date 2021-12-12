@@ -113,6 +113,8 @@ model:
       type: reducer
       destinations:
         - OUT_RES_GCN
+      optional:
+        operator: add
     - name: OUT_RES_GCN
       type: gcn
       destinations:
@@ -133,3 +135,5 @@ model:
     - name: OUT_REDUCER
       is_last: true
       type: reducer
+      optional:
+        operator: add
