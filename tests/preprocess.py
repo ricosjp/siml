@@ -849,7 +849,6 @@ def generate_large():
 
 if __name__ == '__main__':
     preprocess_heat_interaction()
-    raise ValueError
     preprocess_heat_boundary()
     preprocess_grad()
     preprocess_deform()
