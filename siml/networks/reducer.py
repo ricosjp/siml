@@ -60,7 +60,10 @@ class Reducer(siml_module.SimlModule):
             else:
                 raise ValueError(f"Unknown operator for reducer: {str_op}")
         else:
-            raise ValueError(f"Feed optional.operator for: {block_setting}")
+            self.op = torch.add
+            self.block_setting.optional['operator'] = 'add'
+            print(f"optional.operator = add is set for: {block_setting}")
+
         self.split_keys = block_setting.optional.get('split_keys', None)
 
         return
