@@ -612,3 +612,25 @@ class TestBoundary(unittest.TestCase):
         rotation = np.load(rotated_test_directory / 'rotation.npy')
         np.testing.assert_almost_equal(
             np.einsum('kl,ilf->ikf', rotation, y), rotated_y, decimal=2)
+
+    def test_heat_interaction(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/heat_interaction/isogcn.yml'))
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, .05)
+
+        ir = inferer.Inferer(
+            main_setting,
+            conversion_function=preprocess.conversion_function_grad,
+            converter_parameters_pkl=main_setting.data.preprocessed_root
+            / 'preprocessors.pkl')
+        results = ir.infer(
+            model=main_setting.trainer.output_directory,
+            output_directory_base=tr.setting.trainer.output_directory,
+            data_directories=Path('tests/data/grad/raw/test/0'),
+            perform_preprocess=True)
+        # y = results[0]['dict_y']['grad']
+        np.testing.assert_array_less(results[0]['loss'], .05)

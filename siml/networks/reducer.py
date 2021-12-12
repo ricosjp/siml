@@ -60,7 +60,8 @@ class Reducer(siml_module.SimlModule):
             else:
                 raise ValueError(f"Unknown operator for reducer: {str_op}")
         else:
-            self.op = torch.add
+            raise ValueError(f"Feed optional.operator for: {block_setting}")
+        self.split_keys = block_setting.optional.get('split_keys', None)
 
         return
 
@@ -69,36 +70,43 @@ class Reducer(siml_module.SimlModule):
             raise ValueError(f"At least 2 inputs expected. Given: {len(xs)}")
 
         x = xs[0]
-        for other in xs[1:]:
+        for i_other, other in zip(range(1, len(xs)), xs[1:]):
             len_x = len(x.shape)
             len_other = len(other.shape)
-            if len_x == len_other:
-                if x.shape[0] == other.shape[0]:
+
+            if x.shape[0] == other.shape[0]:
+                if len_x == len_other:
                     x = self.op(x, other)
+                elif len_x >= len_other:
+                    axes = self._get_permute_axis(len_x, len_other)
+                    x = self.op(x.permute(axes), other)
+                    x = self._inverse_permute(x, axes)
+                else:
+                    if x.shape[0] == other.shape[0]:
+                        axes = self._get_permute_axis(len_other, len_x)
+                        x = self.op(x, other.permute(axes))
+                        x = self._inverse_permute(x, axes)
+                    else:
+                        x = self._broadcast_batchsize(
+                            self.op, x, other, original_shapes)
+
+            else:
+                if self.split_keys is None:
+                    x = self._broadcast_batchsize(
+                        self.op, x, other, original_shapes, original_shapes)
                 else:
                     x = self._broadcast_batchsize(
-                        self.op, x, other, original_shapes)
-            elif len_x >= len_other:
-                axes = self._get_permute_axis(len_x, len_other)
-                x = self.op(x.permute(axes), other)
-                x = self._inverse_permute(x, axes)
-            else:
-                axes = self._get_permute_axis(len_other, len_x)
-                x = self.op(x, other.permute(axes))
-                x = self._inverse_permute(x, axes)
+                        self.op, x, other, original_shapes[self.split_keys[0]],
+                        original_shapes[self.split_keys[i_other]])
+
         return self.activation(x)
 
-    def _broadcast_batchsize(self, op, x, other, original_shapes):
-        if x.shape[0] > other.shape[0]:
-            split_data = activations.split(x, original_shapes)
-            smaller = other
-        elif x.shape[0] < other.shape[0]:
-            split_data = activations.split(other, original_shapes)
-            smaller = x
-        else:
-            raise ValueError('Shoud not reach here')
+    def _broadcast_batchsize(
+            self, op, x, other, original_shapes, other_original_shapes):
+        split_data = activations.split(x, original_shapes)
+        other_split_data = activations.split(other, other_original_shapes)
         return torch.cat([
-            op(sd, smaller[i]) for i, sd in enumerate(split_data)])
+            op(sd, osd) for sd, osd in zip(split_data, other_split_data)])
 
     def _get_permute_axis(self, len_x, len_other):
         axes = list(range(len_other - 1, len_x - 1)) \
