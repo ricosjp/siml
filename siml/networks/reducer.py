@@ -96,7 +96,7 @@ class Reducer(siml_module.SimlModule):
             else:
                 if self.split_keys is None:
                     x = self._broadcast_batchsize(
-                        self.op, x, other, original_shapes, original_shapes)
+                        self.op, x, other, original_shapes, None)
                 else:
                     x = self._broadcast_batchsize(
                         self.op, x, other, original_shapes[self.split_keys[0]],
@@ -106,22 +106,24 @@ class Reducer(siml_module.SimlModule):
 
     def _broadcast_batchsize(
             self, op, x, other, original_shapes, other_original_shapes):
-        split_data = activations.split(x, original_shapes)
-        other_split_data = activations.split(other, other_original_shapes)
-        return torch.cat([
-            op(sd, osd) for sd, osd in zip(split_data, other_split_data)])
-        # if x.shape[0] > other.shape[0]:
-        #     split_data = activations.split(x, original_shapes)
-        #     other_split_data = activations.split(
-        #         other, other_original_shapes)
-        #     smaller = other
-        # elif x.shape[0] < other.shape[0]:
-        #     split_data = activations.split(other, original_shapes)
-        #     smaller = x
-        # else:
-        #     raise ValueError('Shoud not reach here')
-        # return torch.cat([
-        #     op(sd, smaller[i]) for i, sd in enumerate(split_data)])
+
+        if other_original_shapes is None:
+            if x.shape[0] >= other.shape[0]:
+                split_data = activations.split(x, original_shapes)
+                smaller = other
+            elif x.shape[0] < other.shape[0]:
+                split_data = activations.split(other, original_shapes)
+                smaller = x
+            else:
+                raise ValueError('Shoud not reach here')
+            return torch.cat([
+                op(sd, smaller[i]) for i, sd in enumerate(split_data)])
+
+        else:
+            split_data = activations.split(x, original_shapes)
+            other_split_data = activations.split(other, other_original_shapes)
+            return torch.cat([
+                op(sd, osd) for sd, osd in zip(split_data, other_split_data)])
 
     def _get_permute_axis(self, len_x, len_other):
         axes = list(range(len_other - 1, len_x - 1)) \
