@@ -1,0 +1,536 @@
+data:
+  preprocessed:
+    - tests/data/heat_interaction/preprocessed
+  train:
+    - tests/data/heat_interaction/preprocessed/0
+    - tests/data/heat_interaction/preprocessed/1
+    - tests/data/heat_interaction/preprocessed/2
+    - tests/data/heat_interaction/preprocessed/3
+    - tests/data/heat_interaction/preprocessed/4
+    - tests/data/heat_interaction/preprocessed/5
+    - tests/data/heat_interaction/preprocessed/6
+    - tests/data/heat_interaction/preprocessed/7
+  validation:
+    - tests/data/heat_interaction/preprocessed/8
+    - tests/data/heat_interaction/preprocessed/9
+conversion:
+  skip_femio: true
+  file_type: ucd
+  required_file_names:
+    - mesh_1.inp
+inferer:
+  write_simulation: true
+  write_simulation_base: tests/data/heat_interaction/raw
+  write_simulation_type: 'ucd'
+trainer:
+  output_directory: tests/data/heat_interaction/isogcn
+  inputs:
+    rank0_1:
+      - name: phi_0_1
+        dim: 1
+    minv_1:
+      - name: minv_1
+        dim: 1
+    wnorm_1:
+      - name: wnorm_1
+        dim: 1
+
+    rank0_2:
+      - name: phi_0_2
+        dim: 1
+    minv_2:
+      - name: minv_2
+        dim: 1
+    wnorm_2:
+      - name: wnorm_2
+        dim: 1
+
+    coeff:
+      - name: coeff
+        dim: 1
+    heat_transfer:
+      - name: heat_transfer
+        dim: 1
+  support_inputs:
+    - gx_1
+    - gy_1
+    - gz_1
+    - gx_2
+    - gy_2
+    - gz_2
+    - incidence_2to1
+    - periodic_2
+  outputs:
+    out_1:
+      - name: phi_1_1
+        dim: 1
+    out_2:
+      - name: phi_1_2
+        dim: 1
+  prune: true
+  batch_size: 3
+  n_epoch: 100
+  log_trigger_epoch: 1
+  stop_trigger_epoch: 10
+  seed: 0
+  lazy: false
+  num_workers: 0
+model:
+  blocks:
+    - name: IN_RANK0_1
+      type: mlp
+      is_first: true
+      input_keys:
+        - rank0_1
+      output_key: grank0_1
+      destinations:
+        - GROUP1
+      nodes:
+        - -1
+        - 8
+        - 16
+      activations:
+        - leaky_relu
+        - identity
+
+    - name: IN_WNORM_1
+      type: identity
+      is_first: true
+      input_keys:
+        - wnorm_1
+      destinations:
+        - GROUP1
+      output_key: gwnorm_1
+    - name: IN_MINV_1
+      type: identity
+      is_first: true
+      input_keys:
+        - minv_1
+      destinations:
+        - GROUP1
+      output_key: gminv_1
+
+    - name: IN_RANK0_2
+      type: mlp
+      is_first: true
+      input_keys:
+        - rank0_2
+      output_key: grank0_2
+      destinations:
+        - GROUP1
+      nodes:
+        - -1
+        - 8
+        - 16
+      activations:
+        - leaky_relu
+        - identity
+
+    - name: IN_WNORM_2
+      type: identity
+      is_first: true
+      input_keys:
+        - wnorm_2
+      destinations:
+        - GROUP1
+      output_key: gwnorm_2
+    - name: IN_MINV_2
+      type: identity
+      is_first: true
+      input_keys:
+        - minv_2
+      destinations:
+        - GROUP1
+      output_key: gminv_2
+
+    - name: IN_COEFF
+      type: mlp
+      is_first: true
+      input_keys:
+        - coeff
+      output_key: gcoeff
+      destinations:
+        - GROUP1
+      nodes:
+        - -1
+        - 8
+        - 16
+      activations:
+        - tanh
+        - identity
+    - name: IN_HEAT_TRANSFER
+      type: mlp
+      is_first: true
+      input_keys:
+        - heat_transfer
+      output_key: gheat_transfer
+      destinations:
+        - GROUP1
+      nodes:
+        - -1
+        - 8
+        - 16
+      activations:
+        - tanh
+        - identity
+
+    - name: GROUP1
+      type: group
+      destinations:
+        - ID_GROUP_1
+        - ID_GROUP_2
+
+    - name: ID_GROUP_1
+      type: identity
+      input_keys:
+        - grank0_1
+      destinations:
+        - PINV_DECODER_1
+    - name: PINV_DECODER_1
+      type: pinv_mlp
+      is_last: true
+      output_key: out_1
+      reference_block_name: IN_RANK0_1
+
+    - name: ID_GROUP_2
+      type: identity
+      input_keys:
+        - grank0_2
+      destinations:
+        - PINV_DECODER_2
+    - name: PINV_DECODER_2
+      type: pinv_mlp
+      is_last: true
+      output_key: out_2
+      reference_block_name: IN_RANK0_2
+
+  groups:
+    - name: GROUP1
+      debug: false
+      repeat: 2
+      mode: simple
+      inputs:
+        grank0_1:
+          - name: IN_RANK0_1
+            dim: 16
+            skip: false
+        gwnorm_1:
+          - name: IN_WNORM_1
+            dim: 1
+            skip: true
+        gminv_1:
+          - name: IN_MINV_1
+            dim: 1
+            skip: true
+
+        grank0_2:
+          - name: IN_RANK0_2
+            dim: 16
+            skip: false
+        gwnorm_2:
+          - name: IN_WNORM_2
+            dim: 1
+            skip: true
+        gminv_2:
+          - name: IN_MINV_2
+            dim: 1
+            skip: true
+
+        gcoeff:
+          - name: IN_COEFF
+            dim: 16
+            skip: true
+        gheat_transfer:
+          - name: IN_HEAT_TRANSFER
+            dim: 16
+            skip: true
+      support_inputs:
+        - gx_1
+        - gy_1
+        - gz_1
+        - gx_2
+        - gy_2
+        - gz_2
+        - incidence_2to1
+        - periodic_2
+      outputs:
+        grank0_1:
+          - name: OUT_1
+            dim: 16
+        grank0_2:
+          - name: OUT_2
+            dim: 16
+      blocks:
+        - name: IN_RANK0_1
+          type: identity
+          is_first: true
+          input_keys:
+            - grank0_1
+          destinations:
+            - ISO_GCN_RANK0_RANK1_1
+            - HEAT_2TO1
+            - HEAT_1TO2
+            - ADD_1
+        - name: IN_WNORM_1
+          type: identity
+          is_first: true
+          input_keys:
+            - gwnorm_1
+          destinations:
+            - MUL_HEAT_1
+        - name: IN_MINV_1
+          type: identity
+          is_first: true
+          input_keys:
+            - gminv_1
+          destinations:
+            - ISO_GCN_RANK0_RANK1_1
+
+        - name: IN_RANK0_2
+          type: identity
+          is_first: true
+          input_keys:
+            - grank0_2
+          destinations:
+            - ISO_GCN_RANK0_RANK1_2
+            - ADD_2
+            - HEAT_2TO1
+            - HEAT_1TO2
+        - name: IN_WNORM_2
+          type: identity
+          is_first: true
+          input_keys:
+            - gwnorm_2
+          destinations:
+            - MUL_HEAT_2
+        - name: IN_MINV_2
+          type: identity
+          is_first: true
+          input_keys:
+            - gminv_2
+          destinations:
+            - ISO_GCN_RANK0_RANK1_2
+
+        - name: IN_COEFF
+          type: identity
+          is_first: true
+          bias: false
+          input_keys:
+            - gcoeff
+          destinations:
+            - MUL_1
+            - MUL_2
+          activations:
+            - identity
+        - name: IN_HEAT_TRANSFER
+          type: identity
+          is_first: true
+          bias: false
+          input_keys:
+            - gheat_transfer
+          destinations:
+            - MUL_HEAT_1
+            - MUL_HEAT_2
+          activations:
+            - identity
+
+        - name: HEAT_2TO1
+          type: interaction
+          input_names:
+            - IN_RANK0_1
+            - IN_RANK0_2
+          destinations:
+            - MUL_HEAT_1
+          support_input_indices:
+            - 6
+          optional:
+            transpose: false
+            operator: sub
+        - name: MUL_HEAT_1
+          type: reducer
+          input_names:
+            - HEAT_2TO1
+            - IN_WNORM_1
+            - IN_HEAT_TRANSFER
+          destinations:
+            - ISO_GCN_RANK0_RANK1_1
+          optional:
+            operator: mul
+            split_keys:
+              - rank0_1
+              - wnorm_1
+              - heat_transfer
+
+        - name: HEAT_1TO2
+          type: interaction
+          input_names:
+            - IN_RANK0_2
+            - IN_RANK0_1
+          destinations:
+            - MUL_HEAT_2
+          support_input_indices:
+            - 6
+          optional:
+            transpose: true
+            operator: sub
+        - name: MUL_HEAT_2
+          type: reducer
+          input_names:
+            - HEAT_1TO2
+            - IN_WNORM_2
+            - IN_HEAT_TRANSFER
+          destinations:
+            - ISO_GCN_RANK0_RANK1_2
+          optional:
+            operator: mul
+            split_keys:
+              - rank0_2
+              - wnorm_2
+              - heat_transfer
+
+        - name: ISO_GCN_RANK0_RANK1_1
+          type: iso_gcn
+          input_names:
+            - IN_RANK0_1
+            - MUL_HEAT_1
+            - IN_MINV_1
+          destinations:
+            - MUL_1
+          residual: false
+          bias: false
+          support_input_indices:
+            - 0
+            - 1
+            - 2
+          nodes:
+            - -1
+            - 16
+          activations:
+            - identity
+          optional:
+            propagations:
+              - convolution
+            ah_w: false
+        # - name: NEUMANN_ISOGCN_1
+        #   type: neumann_isogcn
+        #   input_names:
+        #     - ISO_GCN_RANK0_RANK1_1
+        #     - IN_NEUMANN
+        #     - IN_MOMENT
+        #   destinations:
+        #     - CONTRACTION_1
+        #   reference_block_name: ISO_GCN_RANK0_RANK1_1
+        #   optional:
+        #     # create_neumann_linear: true
+        #     # create_neumann_ratio: true
+        #     neumann_factor: -1.
+        - name: MUL_1
+          type: reducer
+          destinations: ISO_GCN_RANK1_RANK0_1
+          input_names:
+            - ISO_GCN_RANK0_RANK1_1
+            - IN_COEFF
+          optional:
+            operator: mul
+            split_keys:
+              - rank0_1
+              - coeff
+        - name: ISO_GCN_RANK1_RANK0_1
+          type: iso_gcn
+          destinations:
+            - ADD_1
+          residual: false
+          bias: false
+          support_input_indices:
+            - 0
+            - 1
+            - 2
+          nodes:
+            - -1
+            - 16
+          activations:
+            - identity
+          optional:
+            propagations:
+              - contraction
+            ah_w: true
+          coeff: .5
+
+        - name: ISO_GCN_RANK0_RANK1_2
+          type: iso_gcn
+          input_names:
+            - IN_RANK0_2
+            - MUL_HEAT_2
+            - IN_MINV_2
+          destinations:
+            - MUL_2
+          residual: false
+          bias: false
+          support_input_indices:
+            - 3
+            - 4
+            - 5
+          nodes:
+            - -1
+            - 16
+          activations:
+            - identity
+          optional:
+            propagations:
+              - convolution
+            ah_w: false
+        - name: MUL_2
+          type: reducer
+          destinations: ISO_GCN_RANK1_RANK0_2
+          input_names:
+            - ISO_GCN_RANK0_RANK1_2
+            - IN_COEFF
+          optional:
+            operator: mul
+            split_keys:
+              - rank0_2
+              - coeff
+        - name: ISO_GCN_RANK1_RANK0_2
+          type: iso_gcn
+          destinations:
+            - ADD_2
+          residual: false
+          bias: false
+          support_input_indices:
+            - 3
+            - 4
+            - 5
+          nodes:
+            - -1
+            - 16
+          activations:
+            - identity
+          optional:
+            propagations:
+              - contraction
+            ah_w: true
+          coeff: .5
+
+        - name: ADD_1
+          type: reducer
+          is_last: true
+          output_key: grank0_1
+          optional:
+            operator: add
+        - name: ADD_2
+          type: reducer
+          destinations:
+            - PERIODIC
+          optional:
+            operator: add
+        - name: PERIODIC
+          type: interaction
+          is_last: true
+          output_key: grank0_2
+          support_input_indices:
+            - 7
+          optional:
+            transpose: false
+            operator: add
+            other_zero: false
+            factor: .5
