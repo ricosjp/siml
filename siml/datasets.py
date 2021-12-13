@@ -156,6 +156,7 @@ class PreprocessDataset(BaseDataset):
     def _preprocess_data(self, raw_data_directory):
         if self.conversion_setting.skip_femio:
             dict_data = {}
+            fem_data = None
         else:
             fem_data = femio.FEMData.read_directory(
                 self.conversion_setting.file_type, raw_data_directory,

@@ -843,6 +843,10 @@ class Converter:
             self.converters[variable_name].transform(data)
             for variable_name, data in dict_data_x.items()
             if variable_name in self.converters.keys()}
+        if len(converted_dict_data_x) == 0:
+            raise ValueError(
+                'No converted data found. '
+                'Check the preprocessed directory set correctly.')
         return converted_dict_data_x
 
     def postprocess(
