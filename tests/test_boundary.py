@@ -612,3 +612,37 @@ class TestBoundary(unittest.TestCase):
         rotation = np.load(rotated_test_directory / 'rotation.npy')
         np.testing.assert_almost_equal(
             np.einsum('kl,ilf->ikf', rotation, y), rotated_y, decimal=2)
+
+    def test_heat_interaction(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/heat_interaction/isogcn.yml'))
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, .05)
+
+        ir = inferer.Inferer(
+            main_setting,
+            conversion_function=preprocess
+            .conversion_function_heat_interaction,
+            converter_parameters_pkl=main_setting.data.preprocessed_root
+            / 'preprocessors.pkl')
+        results = ir.infer(
+            model=main_setting.trainer.output_directory,
+            output_directory_base=tr.setting.trainer.output_directory,
+            data_directories=Path(
+                'tests/data/heat_interaction/preprocessed/9'),
+            perform_preprocess=False)
+
+        validation_path = Path('tests/data/heat_interaction/raw/9')
+        fem_data_1 = femio.read_files('ucd', validation_path / 'mesh_1.inp')
+        fem_data_1.nodal_data.update_data(
+            fem_data_1.nodes.ids, {'pred': results[0]['dict_y']['phi_1_1']})
+        fem_data_1.write('ucd', results[0]['output_directory'] / 'mesh_1.inp')
+
+        fem_data_2 = femio.read_files('ucd', validation_path / 'mesh_2.inp')
+        fem_data_2.nodal_data.update_data(
+            fem_data_2.nodes.ids, {'pred': results[0]['dict_y']['phi_1_2']})
+        fem_data_2.write('ucd', results[0]['output_directory'] / 'mesh_2.inp')
+        np.testing.assert_array_less(results[0]['loss'], .05)

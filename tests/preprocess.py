@@ -252,6 +252,58 @@ def conversion_function_heat_boundary(fem_data, raw_directory=None):
     return dict_data
 
 
+def conversion_function_heat_interaction(fem_data, raw_directory=None):
+
+    dict_data = {}
+    dict_data.update(_load_mesh(raw_directory / 'mesh_1.inp', '_1'))
+    dict_data.update(_load_mesh(raw_directory / 'mesh_2.inp', '_2'))
+    dict_data.update({
+        'incidence_2to1':
+        sp.load_npz('tests/data/heat_interaction/raw/incidence_2to1.npz'),
+        'periodic_2':
+        sp.load_npz('tests/data/heat_interaction/raw/periodic_2.npz'),
+        'coeff':
+        np.load(raw_directory / 'coeff.npy')[None, None],
+        'heat_transfer':
+        np.load(raw_directory / 'heat_transfer.npy')[None, None],
+    })
+
+    return dict_data
+
+
+def _load_mesh(path, suffix):
+    fem_data = femio.read_files('ucd', path)
+
+    nodal_surface_normal = fem_data.calculate_surface_normals(
+        mode='effective')
+    nodal_grad_x_1, nodal_grad_y_1, nodal_grad_z_1 = \
+        fem_data.calculate_spatial_gradient_adjacency_matrices(
+            'nodal', n_hop=1, moment_matrix=True,
+            normals=nodal_surface_normal,
+            consider_volume=False, normal_weight_factor=1.)
+    inversed_moment_tensors_1 = fem_data.nodal_data.get_attribute_data(
+        'inversed_moment_tensors')[..., None]
+    weighted_surface_normal_1 = fem_data.nodal_data.get_attribute_data(
+        'weighted_surface_normals')[..., None]
+    adj = fem_data.calculate_adjacency_matrix_node()
+    nadj = prepost.normalize_adjacency_matrix(adj)
+
+    phi_0 = fem_data.nodal_data.get_attribute_data('phi_0')
+    phi_1 = fem_data.nodal_data.get_attribute_data('phi_1')
+
+    return {
+        f"adj{suffix}": adj,
+        f"nadj{suffix}": nadj,
+        f"gx{suffix}": nodal_grad_x_1,
+        f"gy{suffix}": nodal_grad_y_1,
+        f"gz{suffix}": nodal_grad_z_1,
+        f"minv{suffix}": inversed_moment_tensors_1,
+        f"wnorm{suffix}": weighted_surface_normal_1,
+        f"phi_0{suffix}": phi_0,
+        f"phi_1{suffix}": phi_1,
+    }
+
+
 def _extract_boundary(fem_data, dict_data):
     dirichlet = np.ones((len(fem_data.nodes), 1)) * np.nan
     padded_dirichlet = np.zeros((len(fem_data.nodes), 1))
@@ -541,6 +593,21 @@ def preprocess_heat_boundary():
     return
 
 
+def preprocess_heat_interaction():
+    main_setting = setting.MainSetting.read_settings_yaml(
+        pathlib.Path('tests/data/heat_interaction/data.yml'))
+
+    raw_converter = prepost.RawConverter(
+        main_setting, recursive=True, force_renew=True,
+        conversion_function=conversion_function_heat_interaction,
+        write_ucd=False)
+    raw_converter.convert()
+
+    preprocessor = prepost.Preprocessor(main_setting, force_renew=True)
+    preprocessor.preprocess_interim_data()
+    return
+
+
 def preprocess_deform_timeseries():
     main_setting = setting.MainSetting.read_settings_yaml(
         pathlib.Path('tests/data/deform_timeseries/data.yml'))
@@ -781,6 +848,7 @@ def generate_large():
 
 
 if __name__ == '__main__':
+    preprocess_heat_interaction()
     preprocess_heat_boundary()
     preprocess_grad()
     preprocess_deform()

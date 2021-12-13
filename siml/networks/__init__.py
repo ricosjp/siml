@@ -38,6 +38,7 @@ blocks = [
     array2diagmat.Array2Diagmat,
     array2symmat.Array2Symmat,
     boundary.Dirichlet,
+    boundary.Interaction,
     boundary.NeumannIsoGCN,
     boundary.NeumannEncoder,
     concatenator.Concatenator,

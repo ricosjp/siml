@@ -712,3 +712,24 @@ class TestNetworks(unittest.TestCase):
             np.mean((rotated_y - equivariant_y)**2)**.5
             / (np.mean(rotated_y**2)**.5 + 1e-5), 0., decimal=6)
         np.testing.assert_almost_equal(rotated_y, equivariant_y, decimal=6)
+
+    def test_reducer_batch_broadchast(self):
+        t1 = torch.rand(15, 3, 8)
+        t2 = torch.rand(3, 8)
+        original_shapes = {
+            't1': np.array([[10], [3], [2]]),
+            't2': np.array([[1], [1], [1]]),
+        }
+        reducer_ = reducer.Reducer(
+            setting.BlockSetting(
+                type='reducer',
+                optional={'operator': 'add', 'split_keys': ['t1', 't2']}))
+        t = reducer_(
+            t1, t2, op='add', original_shapes=original_shapes).detach().numpy()
+
+        desired_t = torch.cat([
+            t1[:10] + t2[[0]],
+            t1[10:10 + 3] + t2[[1]],
+            t1[10 + 3:] + t2[[2]],
+        ], dim=0).numpy()
+        np.testing.assert_array_almost_equal(t, desired_t)

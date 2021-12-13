@@ -150,7 +150,6 @@ class RawConverter():
 
         # Determine output directory
         raw_path = Path(raw_path)
-        print(f"Processing: {raw_path}")
         if output_directory is None:
             output_directory = determine_output_directory(
                 raw_path, conversion_setting.output_base_directory, 'raw')
@@ -174,6 +173,7 @@ class RawConverter():
                 return
 
         # Main process
+        print(f"Processing: {raw_path}")
         if conversion_setting.skip_femio:
             fem_data = None
             dict_data = {}
@@ -843,6 +843,10 @@ class Converter:
             self.converters[variable_name].transform(data)
             for variable_name, data in dict_data_x.items()
             if variable_name in self.converters.keys()}
+        if len(converted_dict_data_x) == 0:
+            raise ValueError(
+                'No converted data found. '
+                'Check the preprocessed directory set correctly.')
         return converted_dict_data_x
 
     def postprocess(

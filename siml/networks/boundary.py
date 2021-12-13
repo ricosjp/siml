@@ -303,3 +303,96 @@ class NeumannEncoder(siml_module.SimlModule):
             return activations.DerivativeLeakyReLU()
         else:
             raise ValueError(f"Unsupported activation name: {name}")
+
+
+class Interaction(siml_module.SimlModule):
+    """Interaction layer."""
+
+    @staticmethod
+    def get_name():
+        return 'interaction'
+
+    @staticmethod
+    def is_trainable():
+        return False
+
+    @staticmethod
+    def accepts_multiple_inputs():
+        return True
+
+    @staticmethod
+    def uses_support():
+        return True
+
+    @classmethod
+    def _get_n_output_node(
+            cls, input_node, block_setting, predecessors, dict_block_setting,
+            output_length, **kwargs):
+        return input_node
+
+    def __init__(self, block_setting):
+        super().__init__(
+            block_setting,
+            create_activations=False, create_dropouts=False,
+            no_parameter=True)
+        if 'operator' in block_setting.optional:
+            str_op = block_setting.optional['operator']
+            if str_op == 'add':
+                self.op = torch.add
+            elif str_op == 'mul':
+                self.op = torch.mul
+            elif str_op == 'sub':
+                self.op = torch.sub
+            else:
+                raise ValueError(f"Unknown operator for reducer: {str_op}")
+        else:
+            self.op = torch.add
+            self.block_setting.optional['operator'] = 'add'
+            print(f"optional.operator = add is set for: {block_setting}")
+
+        self.transpose = self.block_setting.optional.get('transpose', False)
+        self.other_zero = self.block_setting.optional.get('other_zero', True)
+        self.factor = self.block_setting.optional.get('factor', 1.)
+        return
+
+    def forward(
+            self, *xs, supports=None, original_shapes=None):
+        """
+        Compute interactions between two meshes.
+
+        Parameters
+        ----------
+        xs: List[torch.Tensor]
+            0: self values (length = n)
+            or
+            0: self values (length = n)
+            1: other values (lengh = m)
+        supports: List
+            0: incidence matrix from other to self (n x m matrix)
+
+        Returns
+        -------
+        ys: torch.Tensor
+            Interaction value (length = n)
+        """
+        if len(xs) == 1:
+            x = xs[0]
+            other = xs[0]
+        elif len(xs) == 2:
+            x = xs[0]
+            other = xs[1]
+        else:
+            raise ValueError(f"Feed one or two variables ({len(xs)} is fed)")
+
+        if self.other_zero:
+            ret = torch.zeros(x.shape, device=x.device)
+        else:
+            ret = x
+
+        if self.transpose:
+            incidence = supports[0].transpose(0, 1)
+        else:
+            incidence = supports[0]
+        row = incidence._indices()[0]
+        ret[row] = self.op(incidence.mm(other)[row], x[row]) * self.factor
+        return ret
