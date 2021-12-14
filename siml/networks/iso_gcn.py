@@ -433,9 +433,9 @@ class IsoGCN(abstract_gcn.AbstractGCN):
         if dim != 3:
             raise ValueError(f"Invalid dimension: {dim}")
         h = torch.stack([
-                supports[1].mm(x[:, 2]) - supports[2].mm(x[:, 1]),
-                supports[2].mm(x[:, 0]) - supports[0].mm(x[:, 2]),
-                supports[0].mm(x[:, 1]) - supports[1].mm(x[:, 0]),
-            ], dim=-2)
+            supports[1].mm(x[:, 2]) - supports[2].mm(x[:, 1]),
+            supports[2].mm(x[:, 0]) - supports[0].mm(x[:, 2]),
+            supports[0].mm(x[:, 1]) - supports[1].mm(x[:, 0]),
+        ], dim=-2)
 
         return h
