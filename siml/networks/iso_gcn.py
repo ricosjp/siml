@@ -193,6 +193,8 @@ class IsoGCN(abstract_gcn.AbstractGCN):
             return self._contraction
         elif str_propagation == 'tensor_product':
             return self._tensor_product
+        elif str_propagation == 'rotation':
+            return self._rotation
         else:
             raise ValueError(
                 f"Unexpected propagation method: {str_propagation}")
@@ -314,3 +316,33 @@ class IsoGCN(abstract_gcn.AbstractGCN):
                 for i_dim in range(self.dim)], dim=1)
         else:
             raise ValueError(f"Tensor rank is 0 (shape: {shape})")
+
+    def _rotation(self, x, supports):
+        """Calculate rotation G \\times x.
+
+        Parameters
+        ----------
+        x: torch.Tensor
+            [n_vertex, dim, n_feature]-shaped tensor.
+        supports: list[torch.Tensor]
+            List of [n_vertex, n_vertex]-shaped sparse tensor.
+
+        Returns
+        -------
+        y: torch.Tensor
+            [n_vertex, dim, n_feature]-shaped tensor.
+        """
+        shape = x.shape
+        dim = len(supports)
+        tensor_rank = len(shape) - 2
+        if tensor_rank != 1:
+            raise ValueError(f"Tensor shape invalid: {shape}")
+        if dim != 3:
+            raise ValueError(f"Invalid dimension: {dim}")
+        h = torch.stack([
+                supports[1].mm(x[:, 2]) - supports[2].mm(x[:, 1]),
+                supports[2].mm(x[:, 0]) - supports[0].mm(x[:, 2]),
+                supports[0].mm(x[:, 1]) - supports[1].mm(x[:, 0]),
+            ], dim=-2)
+
+        return h
