@@ -126,6 +126,7 @@ class Inferer(siml_manager.SimlManager):
         self.postprocess_function = postprocess_function
         self.save_function = save_function
 
+        self.inference_mode = True
         if model is not None:
             self.setting.inferer.model = model
         if converter_parameters_pkl is not None:
@@ -306,7 +307,8 @@ class Inferer(siml_manager.SimlManager):
         for column_name in column_names:
             log_dict.update({column_name: [r[column_name] for r in results]})
 
-        pd.DataFrame(log_dict).to_csv(output_directory / 'log.csv', index=None)
+        pd.DataFrame(log_dict).to_csv(
+            output_directory / 'infer.csv', index=None)
         return
 
     def deploy(self, output_directory, *, model=None, encrypt_key=None):
@@ -429,8 +431,10 @@ class Inferer(siml_manager.SimlManager):
     def _get_inferernce_loader(
             self, raw_dict_x=None, answer_raw_dict_y=None,
             allow_no_data=False):
-        input_is_dict = isinstance(self.setting.trainer.inputs, dict)
-        output_is_dict = isinstance(self.setting.trainer.outputs, dict)
+        input_is_dict = isinstance(
+            self.setting.trainer.inputs.variables, dict)
+        output_is_dict = isinstance(
+            self.setting.trainer.outputs.variables, dict)
         self.collate_fn = datasets.CollateFunctionGenerator(
             time_series=self.setting.trainer.time_series,
             dict_input=input_is_dict, dict_output=output_is_dict,
@@ -518,7 +522,8 @@ class Inferer(siml_manager.SimlManager):
         if isinstance(data, dict):
             return {
                 key:
-                self._separate_data(data[key], descriptions[key], axis=axis)
+                self._separate_data(
+                    data[key], descriptions.variables[key], axis=axis)
                 for key in data.keys()}
         if len(data) == 0:
             return {}
@@ -526,10 +531,10 @@ class Inferer(siml_manager.SimlManager):
         data_dict = {}
         index = 0
         data = np.swapaxes(data, 0, axis)
-        for description in descriptions:
-            dim = description.get('dim', 1)
+        for description in descriptions.variables:
+            dim = description.dim
             data_dict.update({
-                description['name']:
+                description.name:
                 np.swapaxes(data[index:index+dim], 0, axis)})
             index += dim
         return data_dict

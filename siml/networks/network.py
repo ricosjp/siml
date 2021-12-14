@@ -17,7 +17,8 @@ class Network(torch.nn.Module):
         super().__init__()
         self.model_setting = model_setting
         self.trainer_setting = trainer_setting
-        self.y_dict_mode = isinstance(self.trainer_setting.outputs, dict)
+        self.y_dict_mode = isinstance(
+            self.trainer_setting.outputs.variables, dict)
 
         for block in self.model_setting.blocks:
             if 'distributor' == block.type:
@@ -43,6 +44,9 @@ class Network(torch.nn.Module):
             for block_information in self.dict_block_information.values()])
         self.merge_sparses = False
 
+        self.loss_blocks = [
+            key for key, value in self.dict_block_setting.items()
+            if len(value.losses) > 0]
         return
 
     def _create_call_graph(self):
@@ -102,7 +106,8 @@ class Network(torch.nn.Module):
             input_node, output_node = block_class.get_n_nodes(
                 block_setting, predecessors, self.dict_block_setting,
                 self.trainer_setting.input_length,
-                self.trainer_setting.output_length)
+                self.trainer_setting.output_length,
+                self.model_setting)
             block_setting.nodes[0] = input_node
             block_setting.nodes[-1] = output_node
 
@@ -114,7 +119,8 @@ class Network(torch.nn.Module):
             self.dict_block_information[block_name](block_setting).to(
                 block_setting.device)
             for block_name, block_setting in self.dict_block_setting.items()
-            if block_setting.reference_block_name is None
+            if (block_setting.reference_block_name is None) and
+            (block_setting.type != 'group')
         })
 
         # Update dict_block for blocks depending on other blocks
@@ -128,7 +134,44 @@ class Network(torch.nn.Module):
             for block_name, block_setting in self.dict_block_setting.items()
             if block_setting.reference_block_name is not None
         }))
+
+        # Update dict_block for blocks depending on other groups
+        dict_block.update(torch.nn.ModuleDict({
+            block_name:
+            self.dict_block_information[block_name](
+                block_setting,
+                model_setting=self.model_setting)
+            for block_name, block_setting in self.dict_block_setting.items()
+            if block_setting.type == 'group'
+        }))
         return dict_block
+
+    def get_loss_keys(self):
+        return [
+            f"{loss_block}/{loss_name}"
+            for loss_block in self.loss_blocks
+            for loss_name
+            in self.dict_block[loss_block].block_setting.loss_names]
+
+    def get_losses(self):
+        return {
+            f"{loss_block}/{loss_setting['name']}":
+            self.dict_block[loss_block].losses[loss_setting['name']]
+            for loss_block in self.loss_blocks
+            for loss_setting
+            in self.dict_block[loss_block].block_setting.losses}
+
+    def get_loss_coeffs(self):
+        return {
+            f"{loss_block}/{loss_setting['name']}": loss_setting['coeff']
+            for loss_block in self.loss_blocks
+            for loss_setting
+            in self.dict_block[loss_block].block_setting.losses}
+
+    def reset(self):
+        for loss_block in self.loss_blocks:
+            self.dict_block[loss_block].reset()
+        return
 
     def forward(self, x_):
         x = x_['x']
@@ -145,7 +188,14 @@ class Network(torch.nn.Module):
             else:
                 device = block_setting.device
 
-                if block_setting.input_keys is None \
+                if block_setting.type == 'group':
+                    dict_predecessors = {
+                        predecessor: dict_hidden[predecessor]
+                        for predecessor
+                        in self.call_graph.predecessors(graph_node)}
+                    inputs = self.dict_block[graph_node].generate_inputs(
+                        dict_predecessors)
+                elif block_setting.input_keys is None \
                         and block_setting.input_names is None:
                     inputs = [
                         self._select_dimension(
@@ -161,6 +211,7 @@ class Network(torch.nn.Module):
                             for input_key in block_setting.input_keys], dim=-1)
                         for predecessor
                         in self.call_graph.predecessors(graph_node)]
+
                 elif block_setting.input_names is not None:
                     if set(block_setting.input_names) != set(
                             self.call_graph.predecessors(graph_node)):
@@ -175,7 +226,13 @@ class Network(torch.nn.Module):
                 else:
                     raise ValueError('Should not reach here')
 
-                if self.dict_block_information[graph_node].uses_support():
+                if block_setting.type == 'group':
+                    output = self.dict_block[graph_node](
+                        inputs, supports=supports,
+                        original_shapes=original_shapes)
+                    hidden = output
+
+                elif self.dict_block_information[graph_node].uses_support():
                     if self.merge_sparses:
                         raise ValueError(
                             'merge_sparses is no longer available')
@@ -198,21 +255,34 @@ class Network(torch.nn.Module):
                         *inputs, original_shapes=original_shapes)
 
                 if block_setting.coeff is not None:
-                    hidden = hidden * block_setting.coeff
-                if block_setting.output_key is None:
-                    dict_hidden[graph_node] = hidden
-                else:
+                    if isinstance(hidden, dict):
+                        hidden = {
+                            k: v * block_setting.coeff
+                            for k, v in hidden.items()}
+                    else:
+                        hidden = hidden * block_setting.coeff
+                if block_setting.output_key is not None:
                     dict_hidden[graph_node] = {
                         block_setting.output_key: hidden}
-                # print(graph_node, hidden.shape)
+                else:
+                    dict_hidden[graph_node] = hidden
 
         if self.y_dict_mode:
             return_dict = {}
             if isinstance(dict_hidden[config.OUTPUT_LAYER_NAME], dict):
                 return_dict.update(dict_hidden[config.OUTPUT_LAYER_NAME])
-            else:
+            elif isinstance(
+                    dict_hidden[config.OUTPUT_LAYER_NAME], (list, tuple)):
                 for h in dict_hidden[config.OUTPUT_LAYER_NAME]:
                     return_dict.update(h)
+            else:
+                if len(self.trainer_setting.outputs.variables.keys()) != 1:
+                    raise ValueError(
+                        'Invalid output setting: '
+                        f"{self.trainer_setting.outputs.variables}")
+                return_dict.update({
+                    k: dict_hidden[config.OUTPUT_LAYER_NAME] for k
+                    in self.trainer_setting.outputs.variables.keys()})
             return return_dict
         else:
             return dict_hidden[config.OUTPUT_LAYER_NAME]

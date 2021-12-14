@@ -10,12 +10,15 @@ from . import array2symmat
 from . import boundary
 from . import deepsets
 from . import gcn
+from . import group
+from . import id_mlp
 from . import identity
 from . import integration
 from . import iso_gcn
 from . import lstm
 from . import mlp
 from . import message_passing
+from . import normalized_mlp
 from . import pinv_mlp
 from . import reducer
 from . import reshape
@@ -35,6 +38,7 @@ blocks = [
     array2diagmat.Array2Diagmat,
     array2symmat.Array2Symmat,
     boundary.Dirichlet,
+    boundary.Interaction,
     boundary.NeumannIsoGCN,
     boundary.NeumannEncoder,
     concatenator.Concatenator,
@@ -44,21 +48,26 @@ blocks = [
     reducer.Reducer,
     reshape.Reshape,
     symmat2array.Symmat2Array,
+    tensor_operations.TensorProduct,
     time_norm.TimeNorm,
     translator.Translator,
 
     # Layers with weights
     deepsets.DeepSets,
     gcn.GCN,
+    group.Group,
+    id_mlp.IdMLP,
     iso_gcn.IsoGCN,
     lstm.LSTM,
     mlp.MLP,
     message_passing.MessagePassing,
+    normalized_mlp.NormalizedMLP,
     pinv_mlp.PInvMLP,
     set_transformer.SetTransformerEncoder,
     set_transformer.SetTransformerDecoder,
     share.Share,
     tcn.TCN,
+    tensor_operations.EquivariantMLP,
 ]
 
 for block in blocks:

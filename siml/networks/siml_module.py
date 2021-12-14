@@ -45,7 +45,7 @@ class SimlModule(torch.nn.Module, metaclass=abc.ABCMeta):
     @classmethod
     def get_n_nodes(
             cls, block_setting, predecessors, dict_block_setting,
-            input_length, output_length):
+            input_length, output_length, model_setting):
         """Get the number of input and output nodes.
 
         Parameters
@@ -60,6 +60,8 @@ class SimlModule(torch.nn.Module, metaclass=abc.ABCMeta):
             Input length.
         output_length: int or dict[int]
             Output length.
+        model_setting: siml.setting.ModelSetting
+            ModelSetting object.
 
         Returns
         -------
@@ -93,36 +95,29 @@ class SimlModule(torch.nn.Module, metaclass=abc.ABCMeta):
                 max_input_node = input_length
         else:
             max_input_node = cls._get_n_input_node(
-                block_setting, predecessors, dict_block_setting, input_length)
+                block_setting, predecessors, dict_block_setting, input_length,
+                model_setting=model_setting)
         if block_setting.nodes[0] == -1:
-            try:
-                input_node = len(np.arange(max_input_node)[
-                    block_setting.input_selection])
-            except:
-                raise ValueError(block_setting, max_input_node)
+            input_node = len(np.arange(max_input_node)[
+                block_setting.input_selection])
         else:
             input_node = block_setting.nodes[0]
 
         candidate_output_node = cls._get_n_output_node(
             input_node, block_setting, predecessors,
-            dict_block_setting, output_length)
+            dict_block_setting, output_length, model_setting=model_setting)
 
         if block_setting.nodes[-1] == -1:
             output_key = block_setting.output_key
-            if output_key is None:
+            if not block_setting.is_last or output_key is None:
                 if isinstance(candidate_output_node, dict):
                     raise ValueError(
                         'Output is dict. Plese specify output_key to the '
                         f"last nodes: {block_setting}")
                 output_node = int(candidate_output_node)
             else:
-                if block_setting.is_last:
-                    output_length = output_length
-                    output_node = int(output_length[output_key])
-                else:
-                    raise ValueError(
-                        'Cannot put output_key when is_last is False: '
-                        f"{block_setting}")
+                output_length = output_length
+                output_node = int(output_length[output_key])
         else:
             output_node = block_setting.nodes[-1]
 
@@ -135,13 +130,13 @@ class SimlModule(torch.nn.Module, metaclass=abc.ABCMeta):
     @classmethod
     def _get_n_input_node(
             cls, block_setting, predecessors, dict_block_setting,
-            input_length):
+            input_length, **kwargs):
         return dict_block_setting[tuple(predecessors)[0]].nodes[-1]
 
     @classmethod
     def _get_n_output_node(
             cls, input_node, block_setting, predecessors, dict_block_setting,
-            output_length):
+            output_length, **kwargs):
         if cls.is_trainable():
             return output_length
         else:
@@ -186,6 +181,8 @@ class SimlModule(torch.nn.Module, metaclass=abc.ABCMeta):
                     raise ValueError(
                         'Residual input and output sizes differs for: '
                         f"{self.block_setting}")
+
+        self.losses = {}
         return
 
     def create_linears(self, nodes=None, bias=None):
@@ -195,9 +192,15 @@ class SimlModule(torch.nn.Module, metaclass=abc.ABCMeta):
             bias = self.block_setting.bias
 
         try:
-            linears = torch.nn.ModuleList([
-                torch.nn.Linear(n1, n2, bias=bias)
-                for n1, n2 in zip(nodes[:-1], nodes[1:])])
+            if self.block_setting.weight_norm:
+                linears = torch.nn.ModuleList([
+                    torch.nn.utils.weight_norm(
+                        torch.nn.Linear(n1, n2, bias=bias), dim=None)
+                    for n1, n2 in zip(nodes[:-1], nodes[1:])])
+            else:
+                linears = torch.nn.ModuleList([
+                    torch.nn.Linear(n1, n2, bias=bias)
+                    for n1, n2 in zip(nodes[:-1], nodes[1:])])
         except RuntimeError:
             raise ValueError(f"Cannot cretate linear for {self.block_setting}")
         return linears
@@ -234,6 +237,17 @@ class SimlModule(torch.nn.Module, metaclass=abc.ABCMeta):
         dropout_ratios = [
             dropout_ratio for dropout_ratio in dropouts]
         return dropout_ratios
+
+    def reset(self):
+        keys = list(self.losses.keys())
+        for k in keys:
+            if isinstance(self.losses[k], list):
+                self.losses[k] = []
+            elif isinstance(self.losses[k], torch.Tensor):
+                self.losses[k] = 0.
+            else:
+                raise ValueError(f"Unexpected loss type: {self.losses[k]}")
+        return
 
     def forward(self, x, supports=None, original_shapes=None):
         if self.block_setting.no_grad:

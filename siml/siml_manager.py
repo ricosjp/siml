@@ -57,6 +57,7 @@ class SimlManager():
         else:
             raise ValueError(
                 f"Unknown type for settings: {settings.__class__}")
+        self.inference_mode = False
 
         self._update_setting_if_needed()
         self.optuna_trial = optuna_trial
@@ -124,19 +125,28 @@ class SimlManager():
         elif path.is_dir():
             yamls = list(path.glob('*.y*ml'))
             if len(yamls) != 1:
-                raise ValueError(f"{len(yamls)} yaml files found in {path}")
-            yaml_file = yamls[0]
+                yaml_file_candidates = [
+                    y for y in yamls if 'setting' in str(y)]
+                if len(yaml_file_candidates) == 1:
+                    yaml_file = yaml_file_candidates[0]
+                else:
+                    raise ValueError(
+                        f"{len(yamls)} yaml files found in {path}")
+            else:
+                yaml_file = yamls[0]
         if only_model:
             self.setting.model = setting.MainSetting.read_settings_yaml(
                 yaml_file).model
         else:
             self.setting = setting.MainSetting.read_settings_yaml(yaml_file)
-        if self.setting.trainer.output_directory.exists():
-            print(
-                f"{self.setting.trainer.output_directory} exists "
-                'so reset output directory.')
-            self.setting.trainer.output_directory = \
-                setting.TrainerSetting([], []).output_directory
+
+        if not self.inference_mode:
+            if self.setting.trainer.output_directory.exists():
+                print(
+                    f"{self.setting.trainer.output_directory} exists "
+                    'so reset output directory.')
+                self.setting.trainer.output_directory = \
+                    setting.TrainerSetting([], []).output_directory
         return
 
     def _update_setting_if_needed(self):
@@ -237,7 +247,8 @@ class SimlManager():
             return loss_function_with_allowing_no_answer
 
         loss_name = self.setting.trainer.loss_function.lower()
-        output_is_dict = isinstance(self.setting.trainer.outputs, dict)
+        output_is_dict = isinstance(
+            self.setting.trainer.outputs.variables, dict)
         return LossFunction(
             loss_name=loss_name, output_is_dict=output_is_dict,
             time_series=self.setting.trainer.time_series,
@@ -257,7 +268,8 @@ class LossFunction:
         self.output_is_dict = output_is_dict
         self.output_dims = output_dims
 
-        self.mask_function = self._generate_mask_function(output_skips)
+        self.mask_function = util.VariableMask(
+            output_skips, output_dims, output_is_dict)
 
         if time_series:
             self.loss = self.loss_function_time_with_padding
@@ -269,14 +281,15 @@ class LossFunction:
 
         return
 
-    def __call__(self, y_pred, y, original_shapes=None):
+    def __call__(self, y_pred, y, original_shapes=None, **kwargs):
         return self.loss(y_pred, y, original_shapes)
 
     def loss_function_dict(self, y_pred, y, original_shapes=None):
+        masked_y_pred, masked_y = self.mask_function(y_pred, y)
         return torch.mean(torch.stack([
-            self.loss_core(*self.mask_function(
-                y_pred[key].view(y[key].shape), y[key], key))
-            for key in y.keys()]))
+            self.loss_core(myp.view(my.shape), my)
+            for myp, my in zip(masked_y_pred, masked_y)
+        ]))
 
     def loss_function_without_padding(self, y_pred, y, original_shapes=None):
         return self.loss_core(*self.mask_function(y_pred.view(y.shape), y))
@@ -294,41 +307,3 @@ class LossFunction:
             for s, sy in zip(original_shapes[:, 0], split_y)])
         return self.loss_core(
             *self.mask_function(concatenated_y_pred, concatenated_y))
-
-    def _generate_mask_function(self, output_skips):
-        if isinstance(output_skips, list):
-            if not np.any(output_skips):
-                return self._identity_mask
-        elif isinstance(output_skips, dict):
-            if np.all([not np.any(v) for v in output_skips.values()]):
-                return self._identity_mask
-        else:
-            raise NotImplementedError
-
-        print(f"output_skips: {output_skips}")
-        if self.output_is_dict:
-            self.mask = {
-                key: self._generate_mask(skip_value, self.output_dims[key])
-                for key, skip_value in output_skips.items()}
-            return self._dict_mask
-        else:
-            self.mask = self._generate_mask(output_skips, self.output_dims)
-            return self._array_mask
-
-    def _generate_mask(self, skips, dims):
-        return ~np.array(np.concatenate([
-            [skip] * dim for skip, dim in zip(skips, dims)]))
-
-    def _identity_mask(self, y_pred, y, key=None):
-        return y_pred, y
-
-    def _dict_mask(self, y_pred, y, key):
-        masked_y_pred = y_pred[..., self.mask[key]]
-        masked_y = y[..., self.mask[key]]
-        if torch.numel(masked_y) == 0:
-            return torch.zeros(1).to(y.device), torch.zeros(1).to(y.device)
-        else:
-            return masked_y_pred, masked_y
-
-    def _array_mask(self, y_pred, y, key=None):
-        return y_pred[..., self.mask], y[..., self.mask]

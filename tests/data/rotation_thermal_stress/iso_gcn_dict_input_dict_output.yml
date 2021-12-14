@@ -143,10 +143,6 @@ model:
       type: iso_gcn
       destinations:
         - REDUCER
-      # destinations:
-      #   - MEAN
-      # is_last: true
-      # output_key: out_rank2
       residual: false
       activation_after_residual: false
       support_input_indices:
@@ -170,6 +166,8 @@ model:
       type: reducer
       destinations:
         - MEAN
+      optional:
+        operator: add
     - name: MEAN
       type: activation
       destinations:

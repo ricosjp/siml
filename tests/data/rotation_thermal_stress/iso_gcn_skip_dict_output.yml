@@ -1,4 +1,6 @@
 data:
+  preprocessed:
+    - tests/data/rotation_thermal_stress/preprocessed
   train:
     - tests/data/rotation_thermal_stress/preprocessed
   validation:

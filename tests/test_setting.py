@@ -59,10 +59,10 @@ class TestSetting(unittest.TestCase):
         }
         new_setting = main_setting.update_with_dict(dict_replace)
         self.assertEqual(
-            new_setting.trainer.inputs[0]['name'], 'elemental_strain')
+            new_setting.trainer.inputs[0].name, 'elemental_strain')
         self.assertEqual(
-            new_setting.trainer.inputs[0]['dim'], 6)
+            new_setting.trainer.inputs[0].dim, 6)
         self.assertEqual(
-            new_setting.trainer.inputs[1]['name'], 'something')
+            new_setting.trainer.inputs[1].name, 'something')
         self.assertEqual(
-            new_setting.trainer.inputs[1]['dim'], 100)
+            new_setting.trainer.inputs[1].dim, 100)

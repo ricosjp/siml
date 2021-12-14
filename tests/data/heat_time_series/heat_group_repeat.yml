@@ -1,0 +1,182 @@
+data:
+  preprocessed:
+    - tests/data/heat_time_series/preprocessed
+  develop:
+    - tests/data/heat_time_series/preprocessed
+inferer:
+  write_simulation: true
+  write_simulation_base: tests/data/heat_time_series/raw
+  write_simulation_type: 'ucd'
+trainer:
+  lazy: false
+  num_workers: 0
+  output_directory: tests/data/heat_time_series/models/heat_group_repeat
+  split_ratio:
+    validation: .1
+    test: .0
+  inputs:
+    rank0:
+      - name: t_0
+        dim: 1
+    mat:
+      - name: nodal_conductivity
+        dim: 3
+  support_inputs:
+    - nodal_grad_x
+    - nodal_grad_y
+    - nodal_grad_z
+  outputs:
+    - name: t_10
+      dim: 1
+  prune: true
+  batch_size: 1
+  n_epoch: 600
+  log_trigger_epoch: 10
+  stop_trigger_epoch: 100
+  seed: 0
+model:
+  blocks:
+    - name: IN_RANK0
+      type: mlp
+      is_first: true
+      input_keys:
+        - rank0
+      output_key: grank0
+      destinations:
+        - GROUP1
+      nodes:
+        - -1
+        - 8
+        - 16
+      activations:
+        - leaky_relu
+        - identity
+    - name: IN_MAT
+      type: mlp
+      is_first: true
+      input_keys:
+        - mat
+      output_key: gmat
+      destinations:
+        - GROUP1
+      nodes:
+        - -1
+        - 8
+        - 16
+      activations:
+        - tanh
+        - identity
+    - name: GROUP1
+      type: group
+      destinations:
+        - PINV_DECODER
+    - name: PINV_DECODER
+      type: pinv_mlp
+      input_keys:
+        - grank0
+      reference_block_name: IN_RANK0
+  groups:
+    - name: GROUP1
+      repeat: 2
+      mode: simple
+      # convergence_threshold: 1.0e-2
+      inputs:
+        grank0:
+          - name: IN_RANK0
+            dim: 16
+            skip: false
+        gmat:
+          - name: IN_MAT
+            dim: 16
+            skip: true
+      support_inputs:
+        - nodal_grad_x
+        - nodal_grad_y
+        - nodal_grad_z
+      outputs:
+        grank0:
+          - name: OUT_LINEAR
+            dim: 16
+      blocks:
+        - name: ID_RANK0
+          type: identity
+          is_first: true
+          input_keys:
+            - grank0
+          destinations:
+            - ISO_GCN_RANK0_TO_RANK1
+            - ADD
+        - name: ID_LINEAR
+          type: identity
+          is_first: true
+          input_keys:
+            - gmat
+          bias: false
+          destinations:
+            - MUL
+        - name: ISO_GCN_RANK0_TO_RANK1
+          type: iso_gcn
+          bias: false
+          destinations:
+            - MUL
+          residual: false
+          support_input_indices:
+            - 0
+            - 1
+            - 2
+          nodes:
+            - -1
+            - 16
+            - 16
+          activations:
+            - tanh
+            - identity
+          optional:
+            ah_w: true
+            propagations:
+              - convolution
+        - name: MUL
+          type: reducer
+          destinations:
+            - ISO_GCN_RANK1_TO_RANK0
+          optional:
+            operator: mul
+        - name: ISO_GCN_RANK1_TO_RANK0
+          type: iso_gcn
+          destinations:
+            - NL
+          bias: false
+          residual: false
+          activation_after_residual: false
+          support_input_indices:
+            - 0
+            - 1
+            - 2
+          nodes:
+            - -1
+            - 16
+            - 16
+          activations:
+            - tanh
+            - identity
+          optional:
+            propagations:
+              - contraction
+            ah_w: true
+        - name: NL
+          type: mlp
+          destinations:
+            - ADD
+          coeff: .5
+          nodes:
+            - -1
+            - 16
+            - 16
+          activations:
+            - tanh
+            - identity
+        - name: ADD
+          type: reducer
+          optional:
+            operator: add
+          output_key: grank0

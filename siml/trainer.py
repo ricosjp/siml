@@ -44,10 +44,23 @@ class Trainer(siml_manager.SimlManager):
         print(
             self._display_mergin('epoch')
             + self._display_mergin('train_loss')
+            + ''.join([
+                'train/' + self._display_mergin(k)
+                for k in self.model.get_loss_keys()])
             + self._display_mergin('validation_loss')
+            + ''.join([
+                'validation/' + self._display_mergin(k)
+                for k in self.model.get_loss_keys()])
             + self._display_mergin('elapsed_time'))
         with open(self.log_file, 'w') as f:
-            f.write('epoch, train_loss, validation_loss, elapsed_time\n')
+            f.write(
+                'epoch, train_loss, '
+                + ''.join([
+                    f"train/{k}, " for k in self.model.get_loss_keys()])
+                + 'validation_loss, '
+                + ''.join([
+                    f"validation/{k}, " for k in self.model.get_loss_keys()])
+                + 'elapsed_time\n')
         self.start_time = time.time()
 
         self.pbar = self.create_pbar(
@@ -151,7 +164,7 @@ class Trainer(siml_manager.SimlManager):
         return dict_stats
 
     def _calculate_tensor_stats(self, tensor, prefix):
-        numpy_tensor = tensor.detach().numpy()
+        numpy_tensor = tensor.detach().cpu().numpy()
         abs_numpy_tensor = np.abs(numpy_tensor)
         return {
             f"{prefix}mean": float(np.mean(numpy_tensor)),
@@ -201,8 +214,10 @@ class Trainer(siml_manager.SimlManager):
             self.setting.data.validation = validation
             self.setting.data.test = test
 
-        input_is_dict = isinstance(self.setting.trainer.inputs, dict)
-        output_is_dict = isinstance(self.setting.trainer.outputs, dict)
+        input_is_dict = isinstance(
+            self.setting.trainer.inputs.variables, dict)
+        output_is_dict = isinstance(
+            self.setting.trainer.outputs.variables, dict)
         self.collate_fn = datasets.CollateFunctionGenerator(
             time_series=self.setting.trainer.time_series,
             dict_input=input_is_dict, dict_output=output_is_dict,
@@ -275,12 +290,19 @@ class Trainer(siml_manager.SimlManager):
                 desc=self.evaluator_desc, ncols=80, ascii=True)
             self.evaluator.run(self.train_loader)
             train_loss = self.evaluator.state.metrics['loss']
+            train_other_losses = {
+                k: v for k, v in self.evaluator.state.metrics.items()
+                if k != 'loss'}
 
             if len(self.validation_loader) > 0:
                 self.evaluator.run(self.validation_loader)
                 validation_loss = self.evaluator.state.metrics['loss']
+                validation_other_losses = {
+                    k: v for k, v in self.evaluator.state.metrics.items()
+                    if k != 'loss'}
             else:
                 validation_loss = np.nan
+                validation_other_losses = {}
             self.evaluation_pbar.close()
 
             elapsed_time = time.time() - self.start_time
@@ -289,8 +311,14 @@ class Trainer(siml_manager.SimlManager):
             tqdm.write(
                 self._display_mergin(f"{engine.state.epoch}", 'epoch')
                 + self._display_mergin(f"{train_loss:.5e}", 'train_loss')
+                + ''.join([
+                    self._display_mergin(f"{v:.5e}", 'train/' + k)
+                    for k, v in train_other_losses.items()])
                 + self._display_mergin(
                     f"{validation_loss:.5e}", 'validation_loss')
+                + ''.join([
+                    self._display_mergin(f"{v:.5e}", 'validation/' + k)
+                    for k, v in validation_other_losses.items()])
                 + self._display_mergin(f"{elapsed_time:.2f}", 'elapsed_time'))
 
             self.pbar = self.create_pbar(
@@ -313,7 +341,13 @@ class Trainer(siml_manager.SimlManager):
             with open(self.log_file, 'a') as f:
                 f.write(
                     f"{engine.state.epoch}, {train_loss:.5e}, "
-                    f"{validation_loss:.5e}, {elapsed_time:.2f}\n")
+                    + ''.join([
+                        f"{v:.5e}, " for v in train_other_losses.values()])
+                    + f"{validation_loss:.5e}, "
+                    + ''.join([
+                        f"{v:.5e}, " for v
+                        in validation_other_losses.values()])
+                    + f"{elapsed_time:.2f}\n")
 
             # Plot
             fig = plt.figure(figsize=(16 / 2, 9 / 2))
@@ -322,6 +356,12 @@ class Trainer(siml_manager.SimlManager):
             plt.plot(df['epoch'], df['train_loss'], label='train loss')
             plt.plot(
                 df['epoch'], df['validation_loss'], label='validation loss')
+            for k in self.model.get_loss_keys():
+                plt.plot(df['epoch'], df[f"train/{k}"], label=f"train/{k}")
+            for k in self.model.get_loss_keys():
+                plt.plot(
+                    df['epoch'], df[f"validation/{k}"],
+                    label=f"validation/{k}")
             plt.xlabel('epoch')
             plt.ylabel('loss')
             plt.yscale('log')
@@ -382,8 +422,11 @@ class Trainer(siml_manager.SimlManager):
             for syp, sy in zip(split_y_pred, split_y):
                 optimizer.zero_grad()
                 loss = self.loss(y_pred, y)
+                other_loss = self._calculate_other_loss(model, y_pred, y)
+                (loss + other_loss).backward(retain_graph=True)
                 loss.backward(retain_graph=True)
             self.optimizer.step()
+            model.reset()
 
             loss = self.loss(y_pred, y)
             return loss
@@ -392,8 +435,11 @@ class Trainer(siml_manager.SimlManager):
             optimizer.zero_grad()
             y_pred = model(x)
             loss = self.loss(y_pred, y, x['original_shapes'])
-            loss.backward()
+            other_loss = self._calculate_other_loss(
+                model, y_pred, y, x['original_shapes'])
+            (loss + other_loss).backward()
             self.optimizer.step()
+            model.reset()
             return loss
 
         if not self.element_wise \
@@ -414,6 +460,18 @@ class Trainer(siml_manager.SimlManager):
 
         return ignite.engine.Engine(update_model)
 
+    def _calculate_other_loss(self, model, y_pred, y, original_shapes=None):
+        if original_shapes is None:
+            original_shapes = [y_pred.shape]
+        loss = 0.
+        loss_coeffs = model.get_loss_coeffs()
+        for loss_key, loss_value in model.get_losses().items():
+            if 'residual' in loss_key:
+                loss += loss_value * loss_coeffs[loss_key]
+            else:
+                raise ValueError(f"Unexpected loss_key: {loss_key}")
+        return loss
+
     def _create_supervised_evaluator(self):
 
         def _inference(engine, batch):
@@ -424,15 +482,29 @@ class Trainer(siml_manager.SimlManager):
                     output_device=self.output_device,
                     non_blocking=self.setting.trainer.non_blocking)
                 y_pred = self.model(x)
-                return y_pred, y, {'original_shapes': x['original_shapes']}
+                return y_pred, y, {
+                    'original_shapes': x['original_shapes'],
+                    'model': self.model}
 
         evaluator_engine = ignite.engine.Engine(_inference)
 
         metrics = {'loss': ignite.metrics.Loss(self.loss)}
+        for loss_key in self.model.get_loss_keys():
+            metrics.update({loss_key: self._generate_metric(loss_key)})
 
         for name, metric in metrics.items():
             metric.attach(evaluator_engine, name)
         return evaluator_engine
+
+    def _generate_metric(self, loss_key):
+        if 'residual' in loss_key:
+            def gather_loss_key(x):
+                model = x[2]['model']
+                return model.get_losses()[loss_key]
+            metric = ignite.metrics.Average(output_transform=gather_loss_key)
+        else:
+            raise ValueError(f"Unexpected loss type: {loss_key}")
+        return metric
 
     def _get_data_loaders(
             self, dataset_generator, batch_size, validation_batch_size=None,

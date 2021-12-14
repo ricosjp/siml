@@ -1,0 +1,76 @@
+data:
+  raw: tests/data/heat_boundary/raw
+  interim: tests/data/heat_boundary/interim
+  preprocessed: tests/data/heat_boundary/preprocessed
+  inferred: tests/data/heat_boundary/inferred
+  train:
+    - tests/data/heat_boundary/preprocessed
+  validation:
+    - tests/data/heat_boundary/preprocessed
+conversion:
+  required_file_names:
+    - '*.msh'
+    - '*.cnt'
+    - '*.res.0.100'
+  time_series: true
+preprocess:
+  nodal_adj: identity
+  nodal_nadj:
+    method: identity
+  nodal_grad_x_1:
+    method: isoam_scale
+    other_components:
+      - nodal_grad_y_1
+      - nodal_grad_z_1
+  nodal_grad_y_1:
+    same_as: nodal_grad_x_1
+  nodal_grad_z_1:
+    same_as: nodal_grad_x_1
+  dirichlet:
+    same_as: nodal_t_0
+  padded_dirichlet:
+    same_as: nodal_t_0
+  dirichlet_label: identity
+  neumann:
+    same_as: nodal_t_0
+  directed_neumann:
+    same_as: nodal_t_0
+  nodal_surface_normal: identity
+  weighted_surface_normal_1: identity
+  inversed_moment_tensors_1:
+    same_as: nodal_grad_x_1
+  node:
+    method: standardize
+    componentwise: false
+  nodal_thermal_conductivity:
+    method: max_abs
+    componentwise: false
+  global_thermal_conductivity:
+    method: max_abs
+    componentwise: false
+  nodal_mean_volume:
+    method: max_abs
+  nodal_effective_volume:
+    method: max_abs
+  nodal_t_0:
+    method: identity
+  nodal_t_10:
+    same_as: nodal_t_0
+  nodal_t_20:
+    same_as: nodal_t_0
+  nodal_t_30:
+    same_as: nodal_t_0
+  nodal_t_40:
+    same_as: nodal_t_0
+  nodal_t_50:
+    same_as: nodal_t_0
+  nodal_t_60:
+    same_as: nodal_t_0
+  nodal_t_70:
+    same_as: nodal_t_0
+  nodal_t_80:
+    same_as: nodal_t_0
+  nodal_t_90:
+    same_as: nodal_t_0
+  nodal_t_100:
+    same_as: nodal_t_0

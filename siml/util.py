@@ -14,6 +14,7 @@ import numpy as np
 import scipy.sparse as sp
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn import preprocessing
+import torch
 import yaml
 
 
@@ -980,3 +981,61 @@ def decrypt_file(key, file_name, return_stringio=False):
         return cipher.decrypt_and_verify(ciphertext, tag).decode('utf-8')
     else:
         return io.BytesIO(cipher.decrypt_and_verify(ciphertext, tag))
+
+
+class VariableMask:
+
+    def __init__(self, skips, dims, is_dict):
+        if isinstance(skips, list):
+            if not np.any(skips):
+                self.mask_function = self._identity_mask
+                return
+        elif isinstance(skips, dict):
+            if np.all([not np.any(v) for v in skips.values()]):
+                self.mask_function = self._dict_identity_mask
+                return
+        else:
+            raise NotImplementedError
+
+        print(f"skips: {skips}")
+        if is_dict:
+            self.mask = {
+                key: self._generate_mask(skip_value, dims[key])
+                for key, skip_value in skips.items()}
+            self.mask_function = self._dict_mask
+        else:
+            self.mask = self._generate_mask(skips, dims)
+            self.mask_function = self._array_mask
+
+        return
+
+    def __call__(self, *xs, **kwarg):
+        return self.mask_function(*xs, **kwarg)
+
+    def _generate_mask(self, skips, dims):
+        return ~np.array(np.concatenate([
+            [skip] * dim for skip, dim in zip(skips, dims)]))
+
+    def _identity_mask(self, *xs):
+        return xs
+
+    def _dict_identity_mask(self, *xs, keep_empty_data=None):
+        return [
+            [x[key] for key in xs[0].keys()] for x in xs]
+
+    def _dict_mask(self, *xs, keep_empty_data=True):
+        masked = [
+            [x[key][..., self.mask[key]] for key in xs[0].keys()] for x in xs]
+        if keep_empty_data:
+            return [
+                [
+                    torch.zeros(1).to(m_.device)
+                    if torch.numel(m_) == 0 else m_
+                    for m_ in m]
+                for m in masked]
+        else:
+            return [
+                [m_ for m_ in m if torch.numel(m_) > 0] for m in masked]
+
+    def _array_mask(self, *xs):
+        return [x[..., self.mask] for x in xs]
