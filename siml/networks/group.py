@@ -277,11 +277,11 @@ class Group(siml_module.SimlModule):
                             'n...,n...->...', delta_nabla_f, delta_nabla_f)
                         + 1.e-5)
             else:
-                alpha = torch.abs(torch.einsum(
+                alpha = torch.sum((torch.abs(torch.einsum(
                     'n...f,n...f->...', delta_h, delta_nabla_f)) / (
                         torch.einsum(
                             'n...f,n...f->...', delta_nabla_f, delta_nabla_f)
-                        + 1.e-5)
+                        + 1.e-5)))
         return alpha
 
     def operate(self, x, y, operator):
