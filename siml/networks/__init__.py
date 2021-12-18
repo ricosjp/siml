@@ -37,6 +37,7 @@ blocks = [
     activation.Activation,
     array2diagmat.Array2Diagmat,
     array2symmat.Array2Symmat,
+    boundary.Assignment,
     boundary.Dirichlet,
     boundary.Interaction,
     boundary.NeumannIsoGCN,
