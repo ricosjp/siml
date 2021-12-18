@@ -646,3 +646,27 @@ class TestBoundary(unittest.TestCase):
             fem_data_2.nodes.ids, {'pred': results[0]['dict_y']['phi_1_2']})
         fem_data_2.write('ucd', results[0]['output_directory'] / 'mesh_2.inp')
         np.testing.assert_array_less(results[0]['loss'], .05)
+
+    def test_assignment_different_shape(self):
+        x = torch.rand(10, 3)
+        y = torch.rand(10, 3)
+        np_cond = np.array([0, 0, 0, 0, 1, 1, 1, 0, 1, 1])
+        cond = torch.from_numpy(np_cond[..., None])
+        assignment = boundary.Assignment(setting.BlockSetting())
+        res = assignment(x, y, cond).detach().numpy()
+        np.testing.assert_almost_equal(
+            res[np_cond > .5], y.numpy()[np_cond > .5])
+        np.testing.assert_almost_equal(
+            res[np_cond <= .5], x.numpy()[np_cond <= .5])
+
+    def test_assignment_same_shape(self):
+        x = torch.rand(10, 3)
+        y = torch.rand(10, 3)
+        np_cond = np.random.rand(10, 3)
+        cond = torch.from_numpy(np_cond)
+        assignment = boundary.Assignment(setting.BlockSetting())
+        res = assignment(x, y, cond).detach().numpy()
+        np.testing.assert_almost_equal(
+            res[np_cond > .5], y.numpy()[np_cond > .5])
+        np.testing.assert_almost_equal(
+            res[np_cond <= .5], x.numpy()[np_cond <= .5])
