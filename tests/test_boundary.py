@@ -670,3 +670,15 @@ class TestBoundary(unittest.TestCase):
             res[np_cond > .5], y.numpy()[np_cond > .5])
         np.testing.assert_almost_equal(
             res[np_cond <= .5], x.numpy()[np_cond <= .5])
+
+    def test_assignment_broadcast(self):
+        x = torch.rand(10, 3)
+        y = torch.rand(1, 1)
+        np_cond = np.array([0, 0, 0, 0, 1, 1, 1, 0, 1, 1])
+        cond = torch.from_numpy(np_cond[..., None])
+        assignment = boundary.Assignment(setting.BlockSetting(
+            optional={'broadcast': True}))
+        res = assignment(x, y, cond).detach().numpy()
+        np.testing.assert_almost_equal(res[np_cond > .5], y.numpy()[0, 0])
+        np.testing.assert_almost_equal(
+            res[np_cond <= .5], x[np_cond <= .5].numpy())

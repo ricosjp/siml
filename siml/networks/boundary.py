@@ -428,6 +428,7 @@ class Assignment(siml_module.SimlModule):
             block_setting,
             create_activations=False, create_dropouts=False,
             no_parameter=True)
+        self.broadcast = self.block_setting.optional.get('broadcast', False)
 
     def forward(
             self, *xs, supports=None, original_shapes=None):
@@ -458,5 +459,9 @@ class Assignment(siml_module.SimlModule):
         else:
             cond = cond_val > .5
 
-        x[cond] = other[cond]
+        if self.broadcast:
+            x[cond] = other
+        else:
+            x[cond] = other[cond]
+
         return x
