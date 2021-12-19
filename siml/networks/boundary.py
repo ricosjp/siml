@@ -429,6 +429,8 @@ class Assignment(siml_module.SimlModule):
             create_activations=False, create_dropouts=False,
             no_parameter=True)
         self.broadcast = self.block_setting.optional.get('broadcast', False)
+        self.dict_key = self.block_setting.optional.get('dict_key', None)
+        return
 
     def forward(
             self, *xs, supports=None, original_shapes=None):
@@ -460,8 +462,21 @@ class Assignment(siml_module.SimlModule):
             cond = cond_val > .5
 
         if self.broadcast:
-            x[cond] = other
+            if self.dict_key is None:
+                split_data = activations.split(x, original_shapes)
+                split_cond = activations.split(cond, original_shapes)
+            else:
+                split_data = activations.split(
+                    x, original_shapes[self.dict_key])
+                split_cond = activations.split(
+                    cond, original_shapes[self.dict_key])
+            y = torch.cat([
+                split_data[i_other] * ~split_cond[i_other][..., None]
+                + other[[i_other]] * split_cond[i_other][..., None]
+                for i_other in range(len(other))], dim=0)
+
         else:
             x[cond] = other[cond]
+            y = x
 
-        return x
+        return y

@@ -307,11 +307,19 @@ class Group(siml_module.SimlModule):
             return torch.cat([
                 dict_predecessors[k] for k in self.input_names], dim=-1)
         else:
-            return {
-                k: torch.cat([
-                    dict_predecessors[v_][k] for v_ in v
-                    if k in dict_predecessors[v_]], dim=-1)
-                for k, v in self.input_names.items()}
+            try:
+                return {
+                    k: torch.cat([
+                        dict_predecessors[v_][k] for v_ in v
+                        if k in dict_predecessors[v_]], dim=-1)
+                    for k, v in self.input_names.items()}
+            except:
+                dict_shapes = {
+                    k: [
+                        dict_predecessors[v_][k].shape for v_ in v
+                        if k in dict_predecessors[v_]]
+                    for k, v in self.input_names.items()}
+                raise ValueError(f"Input generation failed with:{dict_shapes}")
 
     def generate_outputs(self, y):
         if isinstance(self.output_names, (list, tuple)):
