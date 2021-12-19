@@ -700,3 +700,22 @@ class TestBoundary(unittest.TestCase):
             res[7:][np_cond[7:] > .5], y.numpy()[2, 0])
         np.testing.assert_almost_equal(
             res[np_cond <= .5], x[np_cond <= .5].numpy())
+
+    def test_assignment_broadcast_multi_batch_dict_input(self):
+        x = torch.rand(10, 3)
+        y = torch.rand(3, 1)
+        np_cond = np.array([0, 1, 0, 0, 1, 1, 1, 0, 1, 1])
+        cond = torch.from_numpy(np_cond[..., None])
+        assignment = boundary.Assignment(setting.BlockSetting(
+            optional={'broadcast': True, 'dict_key': 'x'}))
+        res = assignment(
+            x, y, cond, original_shapes={'x': [[4], [3], [3]]}
+        ).detach().numpy()
+        np.testing.assert_almost_equal(
+            res[:4][np_cond[:4] > .5], y.numpy()[0, 0])
+        np.testing.assert_almost_equal(
+            res[4:4+3][np_cond[4:4+3] > .5], y.numpy()[1, 0])
+        np.testing.assert_almost_equal(
+            res[7:][np_cond[7:] > .5], y.numpy()[2, 0])
+        np.testing.assert_almost_equal(
+            res[np_cond <= .5], x[np_cond <= .5].numpy())
