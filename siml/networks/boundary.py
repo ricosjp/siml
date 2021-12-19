@@ -460,7 +460,12 @@ class Assignment(siml_module.SimlModule):
             cond = cond_val > .5
 
         if self.broadcast:
-            x[cond] = other
+            split_data = activations.split(x, original_shapes)
+            split_cond = activations.split(cond, original_shapes)
+            for i_other in range(len(other)):
+                split_data[i_other][split_cond[i_other]] = other[i_other]
+            x = torch.cat(split_data, dim=0)
+
         else:
             x[cond] = other[cond]
 
