@@ -479,4 +479,4 @@ class Assignment(siml_module.SimlModule):
             x[cond] = other[cond]
             y = x
 
-        return x
+        return y
