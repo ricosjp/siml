@@ -968,6 +968,12 @@ class Converter:
                     convert_to_order1=convert_to_order1,
                     required_file_names=required_file_names)
             except ValueError:
+                print(
+                    'Could not read FEMData object, set None\n'
+                    f"write_simulation_base: {write_simulation_base}\n"
+                    f"write_simulation_stem: {write_simulation_stem}\n"
+                    f"read_simulation_type: {read_simulation_type}\n"
+                )
                 fem_data = None
                 write_simulation_base = None
                 write_simulation = False

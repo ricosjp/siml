@@ -595,7 +595,7 @@ class Trainer(siml_manager.SimlManager):
             return
         snapshot = self._select_snapshot(
             self.setting.trainer.restart_directory, method='latest')
-        checkpoint = torch.load(snapshot)
+        checkpoint = torch.load(snapshot, map_location=self.device)
         self.model.load_state_dict(checkpoint['model_state_dict'])
         self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         self.trainer.load_state_dict({
