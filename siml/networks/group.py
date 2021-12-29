@@ -42,8 +42,11 @@ class Group(siml_module.SimlModule):
 
     @staticmethod
     def create_group_setting(block_setting, model_setting):
-        list_group_setting = [
-            g for g in model_setting.groups if g.name == block_setting.name]
+        try:
+            list_group_setting = [
+                g for g in model_setting.groups if g.name == block_setting.name]
+        except:
+            raise ValueError(model_setting)
         if len(list_group_setting) != 1:
             raise ValueError(
                 f"{len(list_group_setting)} group setting found. "
@@ -122,12 +125,13 @@ class Group(siml_module.SimlModule):
         return
 
     def _create_group(self, block_setting, model_setting):
-        model_setting = setting.ModelSetting(blocks=self.group_setting.blocks)
+        group_model_setting = setting.ModelSetting(
+            blocks=self.group_setting.blocks, groups=model_setting.groups)
         trainer_setting = setting.TrainerSetting(
             inputs=self.group_setting.inputs,
             outputs=self.group_setting.outputs,
             support_input=self.group_setting.support_inputs)
-        return network.Network(model_setting, trainer_setting)
+        return network.Network(group_model_setting, trainer_setting)
 
     def forward_wo_loop(self, x, supports, original_shapes=None):
         return self.group({

@@ -841,7 +841,10 @@ class ModelSetting(TypedDataClass):
     blocks: list[BlockSetting]
     groups: list[GroupSetting] = None
 
-    def __init__(self, setting=None, blocks=None):
+    def __init__(self, setting=None, blocks=None, groups=None):
+        if groups is not None:
+            self.groups = groups
+
         if blocks is not None:
             self.blocks = blocks
         else:
@@ -852,17 +855,26 @@ class ModelSetting(TypedDataClass):
                     BlockSetting(**block) for block in setting['blocks']]
                 if 'groups' in setting:
                     if setting['groups'] is None:
-                        self.groups = []
+                        if groups is None:
+                            self.groups = []
                     else:
-                        self.groups = [
-                            GroupSetting(**group)
-                            for group in setting['groups']]
+                        if groups is None:
+                            self.groups = [
+                                GroupSetting(**group)
+                                for group in setting['groups']]
+                        else:
+                            raise ValueError(
+                                f"groups found in the setting for: {setting}")
                 else:
-                    self.groups = []
+                    if groups is None:
+                        self.groups = []
+
         if np.all(b.is_first is False for b in self.blocks):
             self.blocks[0].is_first = True
         if np.all(b.is_last is False for b in self.blocks):
             self.blocks[-1].is_last = True
+
+        return
 
 
 @dc.dataclass
