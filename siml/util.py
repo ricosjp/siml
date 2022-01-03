@@ -1025,7 +1025,10 @@ class VariableMask:
 
     def _dict_mask(self, *xs, keep_empty_data=True):
         masked = [
-            [x[key][..., self.mask[key]] for key in xs[0].keys()] for x in xs]
+            [
+                x[key][..., self.mask[key]] for key in self.mask.keys()
+                if key in x]
+            for x in xs]
         if keep_empty_data:
             return [
                 [
