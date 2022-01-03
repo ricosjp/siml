@@ -42,11 +42,8 @@ class Group(siml_module.SimlModule):
 
     @staticmethod
     def create_group_setting(block_setting, model_setting):
-        try:
-            list_group_setting = [
-                g for g in model_setting.groups if g.name == block_setting.name]
-        except:
-            raise ValueError(model_setting)
+        list_group_setting = [
+            g for g in model_setting.groups if g.name == block_setting.name]
         if len(list_group_setting) != 1:
             raise ValueError(
                 f"{len(list_group_setting)} group setting found. "
@@ -319,7 +316,7 @@ class Group(siml_module.SimlModule):
                         dict_predecessors[v_][k] for v_ in v
                         if k in dict_predecessors[v_]], dim=-1)
                     for k, v in self.input_names.items()}
-            except:
+            except:  # NOQA
                 dict_shapes = {
                     k: [
                         dict_predecessors[v_][k].shape for v_ in v
