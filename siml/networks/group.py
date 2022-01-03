@@ -82,6 +82,8 @@ class Group(siml_module.SimlModule):
         self.debug = self.group_setting.debug
         self.componentwise_alpha = self.group_setting.optional.get(
             'componentwise_alpha', False)
+        self.divergent_threshold = self.group_setting.optional.get(
+            'divergent_threshold', 100)
 
         if self.loop:
             input_is_dict = isinstance(
@@ -225,7 +227,7 @@ class Group(siml_module.SimlModule):
                     print(f"Convergent ({i_repeat}: {residual})")
                 break
 
-            if residual > 100:
+            if residual > self.divergent_threshold:
                 print(f"Divergent ({i_repeat}: {residual})")
                 if self.debug:
                     raise ValueError(f"Divergent ({i_repeat}: {residual})")
