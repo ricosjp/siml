@@ -287,6 +287,23 @@ class Network(torch.nn.Module):
         else:
             return dict_hidden[config.OUTPUT_LAYER_NAME]
 
+    def clip_if_needed(self):
+        for graph_node in self.sorted_graph_nodes:
+            block_setting = self.dict_block_setting[graph_node]
+
+            if block_setting.type == 'group':
+                self.dict_block[graph_node].group.clip_if_needed()
+
+            if block_setting.clip_grad_value is not None:
+                torch.nn.utils.clip_grad_value_(
+                    self.dict_block[graph_node].parameters(),
+                    block_setting.clip_grad_value)
+            if block_setting.clip_grad_norm is not None:
+                torch.nn.utils.clip_grad_norm_(
+                    self.dict_block[graph_node].parameters(),
+                    block_setting.clip_grad_norm)
+        return
+
     def _select_dimension(self, x, input_selection, device):
         if isinstance(x, dict):
             if input_selection != slice(0, None, 1):

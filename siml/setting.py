@@ -446,6 +446,10 @@ class TrainerSetting(TypedDataClass):
         {'validation': float, 'test': float} dict.
     figure_format: str
         The format of the figure. The default is 'pdf'.
+    clip_grad_value: float
+        If fed, apply gradient clipping by value.
+    clip_grad_norm: float
+        If fed, apply gradient clipping with norm.
     """
 
     inputs: CollectionVariableSetting = dc.field(
@@ -496,6 +500,10 @@ class TrainerSetting(TypedDataClass):
         default=None, metadata={'allow_none': True})
     display_mergin: int = 4
     non_blocking: bool = True
+    clip_grad_value: float = dc.field(
+        default=None, metadata={'allow_none': True})
+    clip_grad_norm: float = dc.field(
+        default=None, metadata={'allow_none': True})
 
     data_parallel: bool = False
     model_parallel: bool = False
@@ -716,6 +724,10 @@ class BlockSetting(TypedDataClass):
     no_grad: bool = False
     weight_norm: bool = False
     losses: list[dict] = dc.field(default_factory=list)
+    clip_grad_value: float = dc.field(
+        default=None, metadata={'allow_none': True})
+    clip_grad_norm: float = dc.field(
+        default=None, metadata={'allow_none': True})
 
     optional: dict = dc.field(default_factory=dict)
 

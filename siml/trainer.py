@@ -411,6 +411,16 @@ class Trainer(siml_manager.SimlManager):
 
     def _create_supervised_trainer(self):
 
+        def _clip_if_needed(model):
+            model.clip_if_needed()
+            if self.setting.trainer.clip_grad_value is not None:
+                torch.nn.utils.clip_grad_value_(
+                    model.parameters(), self.setting.trainer.clip_grad_value)
+            if self.setting.trainer.clip_grad_norm is not None:
+                torch.nn.utils.clip_grad_norm_(
+                    model.parameters(), self.setting.trainer.clip_grad_norm)
+            return model
+
         def update_with_element_batch(x, y, model, optimizer):
             y_pred = model(x)
 
@@ -425,6 +435,7 @@ class Trainer(siml_manager.SimlManager):
                 other_loss = self._calculate_other_loss(model, y_pred, y)
                 (loss + other_loss).backward(retain_graph=True)
                 loss.backward(retain_graph=True)
+            model = _clip_if_needed(model)
             self.optimizer.step()
             model.reset()
 
@@ -438,6 +449,7 @@ class Trainer(siml_manager.SimlManager):
             other_loss = self._calculate_other_loss(
                 model, y_pred, y, x['original_shapes'])
             (loss + other_loss).backward()
+            model = _clip_if_needed(model)
             self.optimizer.step()
             model.reset()
             return loss
