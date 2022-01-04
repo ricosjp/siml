@@ -4,6 +4,7 @@ import torch
 
 from .. import setting
 from .. import util
+from . import mlp
 from . import network
 from . import siml_module
 
@@ -79,8 +80,12 @@ class Group(siml_module.SimlModule):
         self.debug = self.group_setting.debug
         self.componentwise_alpha = self.group_setting.optional.get(
             'componentwise_alpha', False)
+        self.alpha_denominator_norm = self.group_setting.optional.get(
+            'alpha_denominator_norm', True)
         self.divergent_threshold = self.group_setting.optional.get(
             'divergent_threshold', 100)
+        self.learn_alpha = self.group_setting.optional.get(
+            'learn_alpha', False)
 
         if self.loop:
             input_is_dict = isinstance(
@@ -100,6 +105,10 @@ class Group(siml_module.SimlModule):
                 skips=self.skips,
                 dims=self.group_setting.inputs.dims,
                 is_dict=output_is_dict)
+
+            if self.learn_alpha:
+                self.alpha_model = self._init_alpha_model()
+
             if self.mode == 'implicit':
                 if self.group_setting.convergence_threshold is None:
                     raise ValueError(
@@ -122,6 +131,21 @@ class Group(siml_module.SimlModule):
             self.residual_loss = False
 
         return
+
+    def _init_alpha_model(self):
+        if self.componentwise_alpha:
+            alpha_model = {
+                k:
+                mlp.MLP(setting.BlockSetting(
+                    nodes=[np.sum(v) * 3, np.sum(v)], activations=['sigmoid']))
+                for k, v in self.mask_function.mask.items() if np.sum(v) > 0}
+        else:
+            alpha_model = {
+                k:
+                mlp.MLP(setting.BlockSetting(
+                    nodes=[np.sum(v) * 3, 1], activations=['sigmoid']))
+                for k, v in self.mask_function.mask.items() if np.sum(v) > 0}
+        return torch.nn.ModuleDict(alpha_model)
 
     def _create_group(self, block_setting, model_setting):
         group_model_setting = setting.ModelSetting(
@@ -254,37 +278,94 @@ class Group(siml_module.SimlModule):
             masked_h, masked_x, torch.sub), masked_operator, torch.sub)
         return nabla_f
 
-    def _calculate_alphas(self, h, h_previous, nabla_f, nabla_f_previous):
+    def _calculate_alphas(
+            self, h, h_previous, nabla_f, nabla_f_previous, alpha_model=None):
         """Compute the coefficient in the steepest gradient method based on
         Barzilai-Borwein method.
         """
         if isinstance(h, list):
-            return [
-                self._calculate_alphas(
-                    h_, h_previous_, nabla_f_, nabla_f_previous_)
-                for h_, h_previous_, nabla_f_, nabla_f_previous_
-                in zip(h, h_previous, nabla_f, nabla_f_previous)]
+            if self.learn_alpha:
+                list_alpha_model = [
+                    self.alpha_model[k] for k in self.mask_function.mask.keys()
+                    if k in self.alpha_model]
+                return [
+                    self._calculate_alphas(
+                        h_, h_previous_, nabla_f_, nabla_f_previous_,
+                        alpha_model=a)
+                    for h_, h_previous_, nabla_f_, nabla_f_previous_, a
+                    in zip(
+                        h, h_previous, nabla_f, nabla_f_previous,
+                        list_alpha_model)]
+            else:
+                return [
+                    self._calculate_alphas(
+                        h_, h_previous_, nabla_f_, nabla_f_previous_)
+                    for h_, h_previous_, nabla_f_, nabla_f_previous_
+                    in zip(h, h_previous, nabla_f, nabla_f_previous)]
 
         delta_h = h - h_previous
         delta_nabla_f = nabla_f - nabla_f_previous
-        if torch.allclose(delta_h, torch.tensor(0.).to(delta_h.device)) \
+        if not self.learn_alpha \
                 and torch.allclose(
-                    delta_nabla_f, torch.tensor(0.).to(
-                        delta_nabla_f.device)):
+                    delta_h, torch.tensor(0.).to(delta_h.device)) \
+                and torch.allclose(
+                    delta_nabla_f, torch.tensor(0.).to(delta_nabla_f.device)):
             alpha = 1.
         else:
-            if self.componentwise_alpha:
-                alpha = torch.abs(torch.einsum(
-                    'n...,n...->...', delta_h, delta_nabla_f)) / (
+            if self.learn_alpha:
+                alpha = alpha_model(
+                    torch.cat([
                         torch.einsum(
-                            'n...,n...->...', delta_nabla_f, delta_nabla_f)
-                        + 1.e-5)
+                            'n...f,n...f->f', delta_h, delta_h),
+                        torch.einsum(
+                            'n...f,n...f->f', delta_nabla_f, delta_nabla_f),
+                        torch.einsum(
+                            'n...f,n...f->f', delta_h, delta_nabla_f),
+                    ], dim=-1))
             else:
-                alpha = torch.sum((torch.abs(torch.einsum(
-                    'n...f,n...f->...', delta_h, delta_nabla_f)) / (
-                        torch.einsum(
-                            'n...f,n...f->...', delta_nabla_f, delta_nabla_f)
-                        + 1.e-5)))
+                if self.componentwise_alpha:
+                    if self.alpha_denominator_norm:
+                        alpha = torch.abs(torch.einsum(
+                            'n...f,n...f->f', delta_h, delta_nabla_f)) / (
+                                torch.einsum(
+                                    'n...f,n...f->f',
+                                    delta_nabla_f, delta_nabla_f)
+                                + 1.e-5)
+                    else:
+                        alpha = torch.einsum(
+                            'n...f,n...f->f', delta_h, delta_h) / (
+                                torch.abs(torch.einsum(
+                                    'n...f,n...f->f', delta_h, delta_nabla_f))
+                                + 1.e-5)
+                else:
+                    # if self.alpha_denominator_norm:
+                    #     alpha = torch.sum((torch.abs(torch.einsum(
+                    #         'n...f,n...f->...', delta_h, delta_nabla_f)) / (
+                    #             torch.einsum(
+                    #                 'n...f,n...f->...',
+                    #                 delta_nabla_f, delta_nabla_f)
+                    #             + 1.e-5)))
+                    # else:
+                    #     alpha = torch.sum((torch.einsum(
+                    #         'n...f,n...f->...', delta_h, delta_h) / (
+                    #             torch.abs(torch.einsum(
+                    #                 'n...f,n...f->...',
+                    #                 delta_h, delta_nabla_f))
+                    #             + 1.e-5)))
+                    if self.alpha_denominator_norm:
+                        alpha = torch.abs(torch.mean(torch.einsum(
+                            'n...f,n...f->f', delta_h, delta_nabla_f))) / (
+                                torch.mean(torch.einsum(
+                                    'n...f,n...f->f',
+                                    delta_nabla_f, delta_nabla_f))
+                                + 1.e-5)
+                    else:
+                        alpha = torch.mean(torch.einsum(
+                            'n...f,n...f->f', delta_h, delta_h)) / (
+                                torch.abs(torch.mean(torch.einsum(
+                                    'n...f,n...f->f',
+                                    delta_h, delta_nabla_f)))
+                                + 1.e-5)
         return alpha
 
     def operate(self, x, y, operator):
