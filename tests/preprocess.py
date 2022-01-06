@@ -1,6 +1,7 @@
 import glob
 import multiprocessing as multi
 import pathlib
+import random
 import shutil
 
 import femio
@@ -9,9 +10,15 @@ import numpy as np
 import scipy.sparse as sp
 import siml.prepost as prepost
 import siml.setting as setting
+import torch
 
 
 PLOT = False
+
+SEED = 1
+random.seed(SEED)
+np.random.seed(SEED)
+torch.manual_seed(SEED)
 
 
 def conversion_function(fem_data, data_directory):
