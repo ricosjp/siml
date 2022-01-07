@@ -116,7 +116,12 @@ test_trainer_long:
 test_other:
   extends: .test
   script:
-    - python3.9 -m pytest tests/test_prepost.py tests/test_setting.py tests/test_util.py tests/test_inferer.py tests/test_activations.py tests/test_groups.py --capture=no
+    - python3.9 -m pytest tests/test_prepost.py tests/test_setting.py tests/test_util.py tests/test_inferer.py tests/test_activations.py --capture=no
+
+test_group:
+  extends: .test
+  script:
+    - python3.9 -m pytest tests/test_groups.py --capture=no
 
 pages:
   stage: deploy

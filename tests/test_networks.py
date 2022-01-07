@@ -745,6 +745,6 @@ class TestNetworks(unittest.TestCase):
         y = to_ts(torch.from_numpy(x)).detach().numpy()
         np.testing.assert_almost_equal(y, desired_y)
 
-        to_f = reshape.TimeSeriesToFeatures(setting.BlockSetting())
+        to_f = reshape.TimeSeriesToFeatures(setting.BlockSetting(is_last=True))
         reversed_y = to_f(torch.from_numpy(y)).detach().numpy()
         np.testing.assert_almost_equal(reversed_y, x)
