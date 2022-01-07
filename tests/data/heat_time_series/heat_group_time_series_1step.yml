@@ -10,7 +10,7 @@ inferer:
 trainer:
   lazy: false
   num_workers: 0
-  output_directory: tests/data/heat_time_series/models/heat_group_nl_repeat
+  output_directory: tests/data/heat_time_series/models/heat_group_time_series_1step
   split_ratio:
     validation: .1
     test: .0
@@ -75,10 +75,15 @@ model:
       type: pinv_mlp
       input_keys:
         - grank0
-      output_key: rank0
+      destinations:
+        - TS2F
       reference_block_name: IN_RANK0
+    - name: TS2F
+      output_key: rank0
+      type: time_series_to_features
   groups:
     - name: GROUP1
+      time_series_length: 1
       repeat: 2
       mode: implicit
       convergence_threshold: 1.0e-5

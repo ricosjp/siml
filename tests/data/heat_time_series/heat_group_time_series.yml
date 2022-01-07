@@ -8,9 +8,10 @@ inferer:
   write_simulation_base: tests/data/heat_time_series/raw
   write_simulation_type: 'ucd'
 trainer:
+  output_stats: true
   lazy: false
   num_workers: 0
-  output_directory: tests/data/heat_time_series/models/heat_group_nl_repeat
+  output_directory: tests/data/heat_time_series/models/heat_group_time_series
   split_ratio:
     validation: .1
     test: .0
@@ -27,11 +28,29 @@ trainer:
     - nodal_grad_z
   outputs:
     rank0:
+      # - name: t_1
+      #   dim: 1
+      # - name: t_2
+      #   dim: 1
+      # - name: t_3
+      #   dim: 1
+      # - name: t_4
+      #   dim: 1
+      - name: t_5
+        dim: 1
+      # - name: t_6
+      #   dim: 1
+      # - name: t_7
+      #   dim: 1
+      # - name: t_8
+      #   dim: 1
+      # - name: t_9
+      #   dim: 1
       - name: t_10
         dim: 1
   prune: true
   batch_size: 1
-  n_epoch: 600
+  n_epoch: 1000
   log_trigger_epoch: 10
   stop_trigger_epoch: 100
   seed: 0
@@ -75,10 +94,15 @@ model:
       type: pinv_mlp
       input_keys:
         - grank0
-      output_key: rank0
+      destinations:
+        - TS2F
       reference_block_name: IN_RANK0
+    - name: TS2F
+      output_key: rank0
+      type: time_series_to_features
   groups:
     - name: GROUP1
+      time_series_length: 2
       repeat: 2
       mode: implicit
       convergence_threshold: 1.0e-5

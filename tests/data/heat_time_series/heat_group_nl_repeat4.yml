@@ -10,7 +10,7 @@ inferer:
 trainer:
   lazy: false
   num_workers: 0
-  output_directory: tests/data/heat_time_series/models/heat_group_nl_repeat
+  output_directory: tests/data/heat_time_series/models/heat_group_nl_repeat4
   split_ratio:
     validation: .1
     test: .0
@@ -31,7 +31,7 @@ trainer:
         dim: 1
   prune: true
   batch_size: 1
-  n_epoch: 600
+  n_epoch: 1000
   log_trigger_epoch: 10
   stop_trigger_epoch: 100
   seed: 0
@@ -79,7 +79,7 @@ model:
       reference_block_name: IN_RANK0
   groups:
     - name: GROUP1
-      repeat: 2
+      repeat: 4
       mode: implicit
       convergence_threshold: 1.0e-5
       optional:
