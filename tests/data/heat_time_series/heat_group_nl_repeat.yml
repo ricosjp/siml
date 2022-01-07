@@ -33,7 +33,7 @@ trainer:
   batch_size: 1
   n_epoch: 600
   log_trigger_epoch: 10
-  stop_trigger_epoch: 100
+  stop_trigger_epoch: 600
   seed: 0
 model:
   blocks:

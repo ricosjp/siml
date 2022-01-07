@@ -30,9 +30,9 @@ trainer:
       dim: 1
   prune: true
   batch_size: 1
-  n_epoch: 1000
+  n_epoch: 600
   log_trigger_epoch: 10
-  stop_trigger_epoch: 10
+  stop_trigger_epoch: 600
   seed: 0
 model:
   blocks:
@@ -49,7 +49,7 @@ model:
         - 8
         - 16
       activations:
-        - tanh
+        - leaky_relu
         - identity
     - name: IN_MAT
       type: mlp
@@ -69,17 +69,12 @@ model:
     - name: GROUP1
       type: group
       destinations:
-        - OUT_LINEAR
-    - name: OUT_LINEAR
-      type: mlp
-      input_keys: grank0
-      nodes:
-        - -1
-        - 8
-        - -1
-      activations:
-        - tanh
-        - identity
+        - PINV_DECODER
+    - name: PINV_DECODER
+      type: pinv_mlp
+      input_keys:
+        - grank0
+      reference_block_name: IN_RANK0
   groups:
     - name: GROUP1
       inputs:
@@ -129,7 +124,9 @@ model:
           nodes:
             - -1
             - 16
+            - 16
           activations:
+            - tanh
             - identity
           optional:
             ah_w: true
@@ -155,7 +152,9 @@ model:
           nodes:
             - -1
             - 16
+            - 16
           activations:
+            - tanh
             - identity
           optional:
             propagations:
@@ -165,7 +164,7 @@ model:
           type: mlp
           destinations:
             - ADD
-          coeff: 1.0e-3
+          coeff: 1.
           nodes:
             - -1
             - 16
