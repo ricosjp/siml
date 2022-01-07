@@ -48,6 +48,8 @@ blocks = [
     integration.Integration,
     reducer.Reducer,
     reshape.Reshape,
+    reshape.TimeSeriesToFeatures,
+    reshape.FeaturesToTimeSeries,
     symmat2array.Symmat2Array,
     tensor_operations.TensorProduct,
     time_norm.TimeNorm,

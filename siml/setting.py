@@ -807,6 +807,9 @@ class GroupSetting(TypedDataClass):
         default=None, metadata={'allow_none': True})
     mode: str = 'simple'
     debug: bool = False
+    time_series_length: int = dc.field(
+        default=None, metadata={'allow_none': True})
+
     optional: dict = dc.field(default_factory=dict)
 
     def __post_init__(self):

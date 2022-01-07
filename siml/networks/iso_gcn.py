@@ -4,6 +4,7 @@ import torch
 
 from .. import setting
 from . import abstract_gcn
+from . import activations
 from . import identity
 from . import mlp
 from . import tensor_operations
@@ -65,6 +66,11 @@ class IsoGCN(abstract_gcn.AbstractGCN):
             print(f"Skip subchain creation for: {block_setting.name}")
             self.subchains = [[identity.Identity(block_setting)]]
             self.has_coefficient_network = False
+
+        if self.has_coefficient_network:
+            self.last_activation = activations.identity
+        else:
+            self.last_activation = self.activations[-1]
 
         self.dim = block_setting.optional.get('dim', 3)
         self.support_tensor_rank = block_setting.optional.get(
@@ -156,14 +162,14 @@ class IsoGCN(abstract_gcn.AbstractGCN):
         estimated_output_tensor_rank = \
             self.x_tensor_rank - n_contraction + n_rank_raise_propagation
 
+        if self.has_coefficient_network:
+            return
+
         if estimated_output_tensor_rank > 0 \
                 and self.block_setting.activations[-1] != 'identity':
             raise ValueError(
                 'Set identity activation for rank '
                 f"{estimated_output_tensor_rank} output: {self.block_setting}")
-
-        if self.has_coefficient_network:
-            return
 
         if self.x_tensor_rank == 0:
             if estimated_output_tensor_rank > 0:
@@ -213,9 +219,9 @@ class IsoGCN(abstract_gcn.AbstractGCN):
             h_res = torch.einsum('i...f,if->i...f', h_res, coeff)
 
         if self.block_setting.activation_after_residual:
-            h_res = self.activations[-1](h_res + shortcut)
+            h_res = self.last_activation(h_res + shortcut)
         else:
-            h_res = self.activations[-1](h_res) + shortcut
+            h_res = self.last_activation(h_res) + shortcut
 
         return h_res
 

@@ -4,6 +4,7 @@ import torch
 
 from .. import setting
 from .. import util
+from . import activations
 from . import mlp
 from . import network
 from . import siml_module
@@ -77,7 +78,9 @@ class Group(siml_module.SimlModule):
         self.group = self._create_group(block_setting, model_setting)
         self.loop = self.group_setting.repeat > 1
         self.mode = self.group_setting.mode
+        self.time_series_length = self.group_setting.time_series_length
         self.debug = self.group_setting.debug
+
         self.componentwise_alpha = self.group_setting.optional.get(
             'componentwise_alpha', False)
         self.alpha_denominator_norm = self.group_setting.optional.get(
@@ -86,6 +89,13 @@ class Group(siml_module.SimlModule):
             'divergent_threshold', 100)
         self.learn_alpha = self.group_setting.optional.get(
             'learn_alpha', False)
+        self.abs_alpha = self.group_setting.optional.get(
+            'abs_alpha', True)
+
+        if self.abs_alpha:
+            self.alpha_filter = torch.abs
+        else:
+            self.alpha_filter = activations.identity
 
         if self.loop:
             input_is_dict = isinstance(
@@ -114,15 +124,21 @@ class Group(siml_module.SimlModule):
                     raise ValueError(
                         'Feed convergence_threshold to the GroupSetting '
                         'when mode == "implicit"')
-                self.forward = self.forward_implicit
+                forward = self.forward_implicit
             elif self.mode == 'steady':
                 raise NotImplementedError
             elif self.mode == 'simple':
-                self.forward = self.forward_w_loop
+                forward = self.forward_w_loop
             else:
                 raise ValueError(f"Unexpected mode: {self.mode}")
         else:
-            self.forward = self.forward_wo_loop
+            forward = self.forward_wo_loop
+
+        if self.time_series_length is None:
+            self.forward = forward
+        else:
+            self.forward = self.forward_time_series
+            self.forward_step = forward
 
         if 'residual' in self.block_setting.loss_names:
             self.residual_loss = True
@@ -156,10 +172,35 @@ class Group(siml_module.SimlModule):
             support_input=self.group_setting.support_inputs)
         return network.Network(group_model_setting, trainer_setting)
 
+    def forward_time_series(self, x, supports, original_shapes=None):
+        ts = [x]
+        for i_time in range(self.time_series_length):
+            ts.append(self.forward_step(
+                self._clone(ts[-1]), supports,
+                original_shapes=original_shapes))
+        return self._stack(ts[1:])
+
+    def _clone(self, x):
+        if isinstance(x, dict):
+            return {k: v.clone() for k, v in x.items()}
+        else:
+            raise NotImplementedError
+
+    def _stack(self, xs):
+        if isinstance(xs[0], dict):
+            return {
+                k: torch.stack([x[k] for x in xs], dim=0)
+                for k in xs[0].keys()}
+        else:
+            raise NotImplementedError
+
     def forward_wo_loop(self, x, supports, original_shapes=None):
-        return self.group({
+        h = self.group({
             'x': x, 'supports': supports,
             'original_shapes': original_shapes})
+
+        # Make output dict structure the same for time loop
+        return {k: h[k] if k in h else x[k] for k in x.keys()}
 
     def forward_w_loop(self, x, supports, original_shapes=None):
         h = x
@@ -273,7 +314,6 @@ class Group(siml_module.SimlModule):
         masked_operator = self.mask_function(
             operator, keep_empty_data=False)[0]
 
-        # Ignore higher order derivatives
         nabla_f = self.operate(self.operate(
             masked_h, masked_x, torch.sub), masked_operator, torch.sub)
         return nabla_f
@@ -310,7 +350,7 @@ class Group(siml_module.SimlModule):
                     delta_h, torch.tensor(0.).to(delta_h.device)) \
                 and torch.allclose(
                     delta_nabla_f, torch.tensor(0.).to(delta_nabla_f.device)):
-            alpha = 1.
+            return 1.
         else:
             if self.learn_alpha:
                 alpha = alpha_model(
@@ -325,8 +365,8 @@ class Group(siml_module.SimlModule):
             else:
                 if self.componentwise_alpha:
                     if self.alpha_denominator_norm:
-                        alpha = torch.abs(torch.einsum(
-                            'n...f,n...f->f', delta_h, delta_nabla_f)) / (
+                        alpha = torch.einsum(
+                            'n...f,n...f->f', delta_h, delta_nabla_f) / (
                                 torch.einsum(
                                     'n...f,n...f->f',
                                     delta_nabla_f, delta_nabla_f)
@@ -334,39 +374,23 @@ class Group(siml_module.SimlModule):
                     else:
                         alpha = torch.einsum(
                             'n...f,n...f->f', delta_h, delta_h) / (
-                                torch.abs(torch.einsum(
-                                    'n...f,n...f->f', delta_h, delta_nabla_f))
+                                torch.einsum(
+                                    'n...f,n...f->f', delta_h, delta_nabla_f)
                                 + 1.e-5)
                 else:
-                    # if self.alpha_denominator_norm:
-                    #     alpha = torch.sum((torch.abs(torch.einsum(
-                    #         'n...f,n...f->...', delta_h, delta_nabla_f)) / (
-                    #             torch.einsum(
-                    #                 'n...f,n...f->...',
-                    #                 delta_nabla_f, delta_nabla_f)
-                    #             + 1.e-5)))
-                    # else:
-                    #     alpha = torch.sum((torch.einsum(
-                    #         'n...f,n...f->...', delta_h, delta_h) / (
-                    #             torch.abs(torch.einsum(
-                    #                 'n...f,n...f->...',
-                    #                 delta_h, delta_nabla_f))
-                    #             + 1.e-5)))
                     if self.alpha_denominator_norm:
-                        alpha = torch.abs(torch.mean(torch.einsum(
-                            'n...f,n...f->f', delta_h, delta_nabla_f))) / (
-                                torch.mean(torch.einsum(
-                                    'n...f,n...f->f',
-                                    delta_nabla_f, delta_nabla_f))
-                                + 1.e-5)
+                        alpha = torch.einsum(
+                            '...,...->', delta_h, delta_nabla_f) / (
+                                torch.einsum(
+                                    '...,...->',
+                                    delta_nabla_f, delta_nabla_f) + 1.e-5)
                     else:
-                        alpha = torch.mean(torch.einsum(
-                            'n...f,n...f->f', delta_h, delta_h)) / (
-                                torch.abs(torch.mean(torch.einsum(
-                                    'n...f,n...f->f',
-                                    delta_h, delta_nabla_f)))
+                        alpha = torch.einsum(
+                            '...,...->', delta_h, delta_h) / (
+                                torch.einsum(
+                                    '...,...->', delta_h, delta_nabla_f)
                                 + 1.e-5)
-        return alpha
+        return self.alpha_filter(alpha)
 
     def operate(self, x, y, operator):
         if isinstance(x, list):
