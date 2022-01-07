@@ -124,3 +124,64 @@ class TestGroups(unittest.TestCase):
             model=main_setting.trainer.output_directory,
             output_directory_base=tr.setting.trainer.output_directory,
             data_directories=main_setting.data.preprocessed_root)
+
+    def test_heat_timeseries_better(self):
+        main_setting = setting.MainSetting.read_settings_yaml(Path(
+            'tests/data/heat_time_series/heat_group_time_series.yml'))
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, 5.e-2)
+
+        ir = inferer.Inferer(
+            main_setting,
+            converter_parameters_pkl=main_setting.data.preprocessed_root
+            / 'preprocessors.pkl')
+        results = ir.infer(
+            model=main_setting.trainer.output_directory,
+            output_directory_base=tr.setting.trainer.output_directory,
+            data_directories=Path(
+                'tests/data/heat_time_series/preprocessed/2'))
+        mse = np.mean((
+            results[0]['dict_y']['t_10'] - results[0]['dict_x']['t_10'])**2)
+
+        ref_main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/heat_time_series/heat_group_nl_repeat4.yml'))
+        ref_tr = trainer.Trainer(ref_main_setting)
+        if ref_tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(ref_tr.setting.trainer.output_directory)
+        ref_tr.train()
+
+        ref_ir = inferer.Inferer(
+            ref_main_setting,
+            converter_parameters_pkl=main_setting.data.preprocessed_root
+            / 'preprocessors.pkl')
+        ref_results = ref_ir.infer(
+            model=ref_main_setting.trainer.output_directory,
+            output_directory_base=ref_tr.setting.trainer.output_directory,
+            data_directories=Path(
+                'tests/data/heat_time_series/preprocessed/2'))
+        ref_mse = np.mean((
+            ref_results[0]['dict_y']['t_10']
+            - ref_results[0]['dict_x']['t_10'])**2)
+
+        self.assertLess(mse, ref_mse)
+
+    def test_heat_timeseries_1step(self):
+        main_setting_1step = setting.MainSetting.read_settings_yaml(Path(
+            'tests/data/heat_time_series/heat_group_time_series_1step.yml'))
+        tr_1step = trainer.Trainer(main_setting_1step)
+        if tr_1step.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr_1step.setting.trainer.output_directory)
+        loss_1step = tr_1step.train()
+        np.testing.assert_array_less(loss_1step, 5.e-2)
+
+        ref_main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/heat_time_series/heat_group_nl_repeat.yml'))
+        ref_tr = trainer.Trainer(ref_main_setting)
+        if ref_tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(ref_tr.setting.trainer.output_directory)
+        ref_loss = ref_tr.train()
+
+        np.testing.assert_almost_equal(loss_1step, ref_loss)

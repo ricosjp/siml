@@ -11,6 +11,7 @@ import siml.inferer as inferer
 import siml.networks.array2diagmat as array2diagmat
 import siml.networks.array2symmat as array2symmat
 import siml.networks.reducer as reducer
+import siml.networks.reshape as reshape
 import siml.networks.symmat2array as symmat2array
 import siml.networks.tensor_operations as tensor_operations
 import siml.networks.translator as translator
@@ -733,3 +734,17 @@ class TestNetworks(unittest.TestCase):
             t1[10 + 3:] + t2[[2]],
         ], dim=0).numpy()
         np.testing.assert_array_almost_equal(t, desired_t)
+
+    def test_features_to_time_series(self):
+        r = np.random.rand(10, 3, 1)
+        x = np.concatenate([
+            r, 10 * r, 100 * r, 1000 * r, 10000 * r], axis=-1)
+        desired_y = np.stack([
+            r, 10 * r, 100 * r, 1000 * r, 10000 * r], axis=0)
+        to_ts = reshape.FeaturesToTimeSeries(setting.BlockSetting())
+        y = to_ts(torch.from_numpy(x)).detach().numpy()
+        np.testing.assert_almost_equal(y, desired_y)
+
+        to_f = reshape.TimeSeriesToFeatures(setting.BlockSetting())
+        reversed_y = to_f(torch.from_numpy(y)).detach().numpy()
+        np.testing.assert_almost_equal(reversed_y, x)
