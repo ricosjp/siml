@@ -3,10 +3,17 @@ import shutil
 import unittest
 
 import numpy as np
+import torch
 
 import siml.inferer as inferer
 import siml.setting as setting
 import siml.trainer as trainer
+
+
+if torch.cuda.is_available():
+    GPU_ID = 0
+else:
+    GPU_ID = -1
 
 
 class TestGroups(unittest.TestCase):
@@ -14,6 +21,7 @@ class TestGroups(unittest.TestCase):
     def test_group_simple(self):
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/rotation_thermal_stress/group_simple.yml'))
+        main_setting.trainer.gpu_id = GPU_ID
         tr = trainer.Trainer(main_setting)
         if tr.setting.trainer.output_directory.exists():
             shutil.rmtree(tr.setting.trainer.output_directory)
@@ -23,6 +31,7 @@ class TestGroups(unittest.TestCase):
     def test_group_repeat(self):
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/rotation_thermal_stress/group_repeat.yml'))
+        main_setting.trainer.gpu_id = GPU_ID
         tr = trainer.Trainer(main_setting)
         if tr.setting.trainer.output_directory.exists():
             shutil.rmtree(tr.setting.trainer.output_directory)
@@ -33,6 +42,7 @@ class TestGroups(unittest.TestCase):
         # NL solver repeat
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/heat_time_series/heat_group_nl_repeat.yml'))
+        main_setting.trainer.gpu_id = GPU_ID
         tr = trainer.Trainer(main_setting)
         if tr.setting.trainer.output_directory.exists():
             shutil.rmtree(tr.setting.trainer.output_directory)
@@ -51,6 +61,7 @@ class TestGroups(unittest.TestCase):
         # Simple repeat
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/heat_time_series/heat_group_repeat.yml'))
+        main_setting.trainer.gpu_id = GPU_ID
         tr = trainer.Trainer(main_setting)
         if tr.setting.trainer.output_directory.exists():
             shutil.rmtree(tr.setting.trainer.output_directory)
@@ -69,6 +80,7 @@ class TestGroups(unittest.TestCase):
         # No repeat
         main_setting_wo_repeat = setting.MainSetting.read_settings_yaml(
             Path('tests/data/heat_time_series/heat.yml'))
+        main_setting_wo_repeat.trainer.gpu_id = GPU_ID
         tr_wo_repeat = trainer.Trainer(main_setting_wo_repeat)
         if tr_wo_repeat.setting.trainer.output_directory.exists():
             shutil.rmtree(tr_wo_repeat.setting.trainer.output_directory)
@@ -92,6 +104,7 @@ class TestGroups(unittest.TestCase):
     def test_heat_boundary_repeat(self):
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/heat_boundary/repeat.yml'))
+        main_setting.trainer.gpu_id = GPU_ID
         tr = trainer.Trainer(main_setting)
         if tr.setting.trainer.output_directory.exists():
             shutil.rmtree(tr.setting.trainer.output_directory)
@@ -110,6 +123,7 @@ class TestGroups(unittest.TestCase):
     def test_heat_boundary_implicit(self):
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/heat_boundary/boundary_isogcn.yml'))
+        main_setting.trainer.gpu_id = GPU_ID
         tr = trainer.Trainer(main_setting)
         if tr.setting.trainer.output_directory.exists():
             shutil.rmtree(tr.setting.trainer.output_directory)
@@ -128,6 +142,7 @@ class TestGroups(unittest.TestCase):
     def test_heat_timeseries_better(self):
         main_setting = setting.MainSetting.read_settings_yaml(Path(
             'tests/data/heat_time_series/heat_group_time_series.yml'))
+        main_setting.trainer.gpu_id = GPU_ID
         tr = trainer.Trainer(main_setting)
         if tr.setting.trainer.output_directory.exists():
             shutil.rmtree(tr.setting.trainer.output_directory)
@@ -148,6 +163,7 @@ class TestGroups(unittest.TestCase):
 
         ref_main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/heat_time_series/heat_group_nl_repeat4.yml'))
+        ref_main_setting.trainer.gpu_id = GPU_ID
         ref_tr = trainer.Trainer(ref_main_setting)
         if ref_tr.setting.trainer.output_directory.exists():
             shutil.rmtree(ref_tr.setting.trainer.output_directory)
@@ -171,6 +187,7 @@ class TestGroups(unittest.TestCase):
     def test_heat_timeseries_1step(self):
         main_setting_1step = setting.MainSetting.read_settings_yaml(Path(
             'tests/data/heat_time_series/heat_group_time_series_1step.yml'))
+        main_setting_1step.trainer.gpu_id = GPU_ID
         tr_1step = trainer.Trainer(main_setting_1step)
         if tr_1step.setting.trainer.output_directory.exists():
             shutil.rmtree(tr_1step.setting.trainer.output_directory)
@@ -179,6 +196,7 @@ class TestGroups(unittest.TestCase):
 
         ref_main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/heat_time_series/heat_group_nl_repeat.yml'))
+        ref_main_setting.trainer.gpu_id = GPU_ID
         ref_tr = trainer.Trainer(ref_main_setting)
         if ref_tr.setting.trainer.output_directory.exists():
             shutil.rmtree(ref_tr.setting.trainer.output_directory)
