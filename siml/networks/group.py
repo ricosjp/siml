@@ -182,7 +182,11 @@ class Group(siml_module.SimlModule):
 
     def _clone(self, x):
         if isinstance(x, dict):
-            return {k: v.clone() for k, v in x.items()}
+            y = {k: v.clone() for k, v in x.items()}
+            # for v in y.values():
+            #     if v.requires_grad:
+            #         v.retain_grad()
+            return y
         else:
             raise NotImplementedError
 
