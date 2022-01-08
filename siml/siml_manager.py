@@ -155,10 +155,11 @@ class SimlManager():
             self._update_setting(self.setting.trainer.restart_directory)
             self.setting.trainer.restart_directory = restart_directory
         elif self.setting.trainer.pretrain_directory is not None:
-            pretrain_directory = self.setting.trainer.pretrain_directory
-            self._update_setting(
-                self.setting.trainer.pretrain_directory, only_model=True)
-            self.setting.trainer.pretrain_directory = pretrain_directory
+            pass
+            # pretrain_directory = self.setting.trainer.pretrain_directory
+            # self._update_setting(
+            #     self.setting.trainer.pretrain_directory, only_model=True)
+            # self.setting.trainer.pretrain_directory = pretrain_directory
         elif self.setting.trainer.restart_directory is not None \
                 and self.setting.trainer.pretrain_directory is not None:
             raise ValueError(

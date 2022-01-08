@@ -70,7 +70,7 @@ class Dirichlet(siml_module.SimlModule):
         x = xs[0]
         dirichlet = xs[1]
         filter_not_nan = ~ torch.isnan(dirichlet)
-        x[filter_not_nan] = dirichlet[filter_not_nan]
+        x[..., filter_not_nan] = dirichlet[filter_not_nan]
         return x
 
 
