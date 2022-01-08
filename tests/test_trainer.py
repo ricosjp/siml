@@ -443,9 +443,13 @@ class TestTrainer(unittest.TestCase):
             shutil.rmtree(tr_wo_pretrain.setting.trainer.output_directory)
         loss_wo_pretrain = tr_wo_pretrain.train()
 
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/linear/linear_short.yml'))
         main_setting.trainer.pretrain_directory \
             = tr_wo_pretrain.setting.trainer.output_directory
         tr_w_pretrain = trainer.Trainer(main_setting)
+        tr_w_pretrain.setting.trainer.output_directory = Path(
+            'tests/data/linear/pretrained_tmp')
         if tr_w_pretrain.setting.trainer.output_directory.exists():
             shutil.rmtree(tr_w_pretrain.setting.trainer.output_directory)
         loss_w_pretrain = tr_w_pretrain.train()
@@ -525,7 +529,7 @@ class TestTrainer(unittest.TestCase):
             main_setting,
             model=main_setting.trainer.output_directory,
             converter_parameters_pkl=main_setting.data.preprocessed[0]
-            / 'preprocessed/preprocessors.pkl', save=False)
+            / 'preprocessors.pkl', save=False)
         ir.setting.inferer.perform_inverse = False
         results = ir.infer(
             data_directories=Path(
@@ -537,7 +541,11 @@ class TestTrainer(unittest.TestCase):
             - results[0]['dict_x']['cnt_temperature'])**2)
 
         # Traiing without skip
-        main_setting.trainer.outputs['out_rank0'][0]['skip'] = False
+        main_setting = setting.MainSetting.read_settings_yaml(Path(
+            'tests/data/rotation_thermal_stress/iso_gcn_skip_dict_output.yml'))
+        shutil.rmtree(
+            main_setting.trainer.output_directory, ignore_errors=True)
+        main_setting.trainer.outputs['out_rank0'][0].skip = False
         tr = trainer.Trainer(main_setting)
         loss = tr.train()
         np.testing.assert_array_less(loss, 1.)
@@ -546,7 +554,7 @@ class TestTrainer(unittest.TestCase):
             main_setting,
             model=main_setting.trainer.output_directory,
             converter_parameters_pkl=main_setting.data.preprocessed[0]
-            / 'preprocessed/preprocessors.pkl', save=False)
+            / 'preprocessors.pkl', save=False)
         ir.setting.inferer.perform_inverse = False
         results = ir.infer(
             data_directories=Path(
@@ -571,7 +579,7 @@ class TestTrainer(unittest.TestCase):
             main_setting,
             model=main_setting.trainer.output_directory,
             converter_parameters_pkl=main_setting.data.preprocessed[0]
-            / 'preprocessed/preprocessors.pkl', save=False)
+            / 'preprocessors.pkl', save=False)
         ir.setting.inferer.perform_inverse = False
         results = ir.infer(
             data_directories=Path(
@@ -583,7 +591,11 @@ class TestTrainer(unittest.TestCase):
             - results[0]['dict_x']['cnt_temperature'])**2)
 
         # Traiing without skip
-        main_setting.trainer.outputs[0]['skip'] = False
+        main_setting = setting.MainSetting.read_settings_yaml(Path(
+            'tests/data/rotation_thermal_stress/gcn_skip_list_output.yml'))
+        shutil.rmtree(
+            main_setting.trainer.output_directory, ignore_errors=True)
+        main_setting.trainer.outputs[0].skip = False
         tr = trainer.Trainer(main_setting)
         tr.train()
 
@@ -591,7 +603,7 @@ class TestTrainer(unittest.TestCase):
             main_setting,
             model=main_setting.trainer.output_directory,
             converter_parameters_pkl=main_setting.data.preprocessed[0]
-            / 'preprocessed/preprocessors.pkl', save=False)
+            / 'preprocessors.pkl', save=False)
         ir.setting.inferer.perform_inverse = False
         results = ir.infer(
             data_directories=Path(
@@ -603,3 +615,34 @@ class TestTrainer(unittest.TestCase):
 
         print(t_mse_wo_skip, t_mse_w_skip)
         self.assertLess(t_mse_wo_skip, t_mse_w_skip)
+
+    def test_residual_loss(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/heat_boundary/residual_loss.yml'))
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss_implicit = tr.train()
+
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/heat_boundary/residual_loss_coeff0.yml'))
+        tr0 = trainer.Trainer(main_setting)
+        if tr0.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss0 = tr0.train()
+
+        ref_main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/heat_boundary/boundary.yml'))
+        ref_tr = trainer.Trainer(ref_main_setting)
+        if ref_tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(ref_tr.setting.trainer.output_directory)
+        ref_loss_implicit = ref_tr.train()
+
+        np.testing.assert_raises(
+            AssertionError, np.testing.assert_almost_equal,
+            loss_implicit, loss0, decimal=5)  # Assert almost not equal
+        self.assertLess(
+            tr.evaluator.state.metrics['GROUP1/residual'],
+            tr0.evaluator.state.metrics['GROUP1/residual'])
+        np.testing.assert_almost_equal(
+            loss0, ref_loss_implicit, decimal=5)

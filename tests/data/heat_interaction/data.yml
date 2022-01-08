@@ -1,0 +1,39 @@
+data:
+  raw: tests/data/heat_interaction/raw
+  interim: tests/data/heat_interaction/interim
+  preprocessed: tests/data/heat_interaction/preprocessed
+  inferred: tests/data/heat_interaction/inferred
+  train:
+    - tests/data/heat_interaction/preprocessed
+  validation:
+    - tests/data/heat_interaction/preprocessed
+conversion:
+  skip_femio: true
+  file_type: ucd
+  required_file_names:
+    - mesh_1.inp
+preprocess:
+  adj_1: identity
+  adj_2: identity
+  nadj_1: identity
+  nadj_2: identity
+  incidence_2to1: identity
+  periodic_2: identity
+
+  gx_1: identity
+  gy_1: identity
+  gz_1: identity
+  gx_2: identity
+  gy_2: identity
+  gz_2: identity
+  wnorm_1: identity
+  wnorm_2: identity
+  minv_1: identity
+  minv_2: identity
+
+  coeff: std_scale
+  heat_transfer: std_scale
+  phi_0_1: identity
+  phi_0_2: identity
+  phi_1_1: identity
+  phi_1_2: identity

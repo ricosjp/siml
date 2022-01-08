@@ -3,23 +3,20 @@ import shutil
 import unittest
 
 import numpy as np
-import matplotlib.pyplot as plt
 import scipy.sparse as sp
+from scipy.stats import ortho_group
 import torch
 
 import siml.inferer as inferer
-import siml.networks.activations as activations
 import siml.networks.array2diagmat as array2diagmat
 import siml.networks.array2symmat as array2symmat
 import siml.networks.reducer as reducer
+import siml.networks.reshape as reshape
 import siml.networks.symmat2array as symmat2array
 import siml.networks.tensor_operations as tensor_operations
 import siml.networks.translator as translator
 import siml.setting as setting
 import siml.trainer as trainer
-
-
-PLOT = False
 
 
 class TestNetworks(unittest.TestCase):
@@ -244,30 +241,6 @@ class TestNetworks(unittest.TestCase):
         loss = tr.train()
         self.assertLess(loss, 1.)
 
-    def test_activations(self):
-        main_setting = setting.MainSetting.read_settings_yaml(
-            Path('tests/data/deform/activations.yml'))
-
-        if main_setting.trainer.output_directory.exists():
-            shutil.rmtree(main_setting.trainer.output_directory)
-        tr = trainer.Trainer(main_setting)
-        loss = tr.train()
-        self.assertLess(loss, 1.)
-
-    def test_mish(self):
-        np.testing.assert_almost_equal(
-            activations.mish(torch.Tensor([100.])), [100.])
-        np.testing.assert_almost_equal(
-            activations.mish(torch.Tensor([-100.])), [0.])
-        np.testing.assert_almost_equal(
-            activations.mish(torch.Tensor([1.])),
-            [1. * np.tanh(np.log(1 + np.exp(1.)))])
-        if PLOT:
-            x = np.linspace(-10., 10., 100)
-            mish = activations.mish(torch.from_numpy(x))
-            plt.plot(x, mish.numpy())
-            plt.show()
-
     def test_no_bias(self):
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/linear/no_bias.yml'))
@@ -380,7 +353,7 @@ class TestNetworks(unittest.TestCase):
         s = [torch.sparse_coo_tensor(
             torch.stack([torch.from_numpy(_s.row), torch.from_numpy(_s.col)]),
             torch.from_numpy(_s.data), _s.shape)]
-        y = tr.model.dict_block['RES_GCN'](x, s)
+        y = tr.model.dict_block['RES_GCN'](x, supports=s)
         abs_residual = np.abs((y - x).detach().numpy())
         zero_fraction = np.sum(abs_residual < 1e-5) / abs_residual.size
         self.assertLess(.3, zero_fraction)
@@ -463,6 +436,16 @@ class TestNetworks(unittest.TestCase):
             contraction(torch.from_numpy(a)).numpy(),
             desired)
 
+    def test_tensor_product(self):
+        tensor_product = tensor_operations.TensorProduct(
+            setting.BlockSetting())
+        a = np.random.rand(10, 3, 3, 3, 3, 5)
+        b = np.random.rand(10, 2, 2, 5)
+        desired = np.einsum('ijklmf,inof->ijklmnof', a, b)
+        np.testing.assert_almost_equal(
+            tensor_product(torch.from_numpy(a), torch.from_numpy(b)).numpy(),
+            desired)
+
     def test_translator_min_component_0_2(self):
         tor = translator.Translator(setting.BlockSetting(
             optional={'method': 'min', 'components': [0, 2]}))
@@ -521,11 +504,101 @@ class TestNetworks(unittest.TestCase):
         np.testing.assert_almost_equal(np.min(t[:, 0]), 0.)
         np.testing.assert_almost_equal(np.min(t[:, -1]), 0.)
 
-    def test_normalize(self):
-        a = np.random.rand(10, 3)
-        normalized_a = activations.normalize(torch.from_numpy(a)).numpy()
+    def test_pinv_mlp(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/deform/pinv_mlp.yml'))
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        tr.train()
+
+        for l_ref, l_inv in zip(
+                tr.model.dict_block['MLP'].linears,
+                tr.model.dict_block['PINV_MLP'].linears[-1::-1]):
+            np.testing.assert_almost_equal(
+                l_inv.weight.detach().numpy(), l_ref.weight.detach().numpy())
+            np.testing.assert_almost_equal(
+                l_inv.bias.detach().numpy(), l_ref.bias.detach().numpy())
+
+        x = torch.rand(100, 3, 3, 6)
+        y = tr.model.dict_block['MLP'](x)
+        x_ = tr.model.dict_block['PINV_MLP'](y)
         np.testing.assert_almost_equal(
-            normalized_a, a / (np.linalg.norm(a, axis=1)[..., None] + 1e-5))
+            x_.detach().numpy(), x.detach().numpy(),
+            decimal=5)
+
+        x = torch.rand(100, 3, 3, 6) * 1e-2
+        y = tr.model.dict_block['MLP'](x)
+        x_ = tr.model.dict_block['PINV_MLP'](y)
+        np.testing.assert_almost_equal(
+            x_.detach().numpy() / 1e-2, x.detach().numpy() / 1e-2,
+            decimal=3)
+
+        x = torch.rand(100, 3, 3, 6) * 100
+        y = tr.model.dict_block['MLP'](x)
+        x_ = tr.model.dict_block['PINV_MLP'](y)
+        np.testing.assert_almost_equal(
+            x_.detach().numpy() / 100, x.detach().numpy() / 100,
+            decimal=5)
+
+    def test_pinv_mlp_no_bias(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/deform/pinv_mlp_no_bias.yml'))
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        tr.train()
+
+        for l_ref, l_inv in zip(
+                tr.model.dict_block['MLP'].linears,
+                tr.model.dict_block['PINV_MLP'].linears[-1::-1]):
+            np.testing.assert_almost_equal(
+                l_inv.weight.detach().numpy(), l_ref.weight.detach().numpy())
+            self.assertIsNone(l_inv.bias)
+            self.assertIsNone(l_ref.bias)
+
+        x = torch.rand(100, 3, 3, 6)
+        y = tr.model.dict_block['MLP'](x)
+        x_ = tr.model.dict_block['PINV_MLP'](y)
+        np.testing.assert_almost_equal(
+            x_.detach().numpy(), x.detach().numpy(),
+            decimal=5)
+
+        x = torch.rand(100, 3, 3, 6) * 1e-2
+        y = tr.model.dict_block['MLP'](x)
+        x_ = tr.model.dict_block['PINV_MLP'](y)
+        np.testing.assert_almost_equal(
+            x_.detach().numpy() / 1e-2, x.detach().numpy() / 1e-2,
+            decimal=3)
+
+        x = torch.rand(100, 3, 3, 6) * 100
+        y = tr.model.dict_block['MLP'](x)
+        x_ = tr.model.dict_block['PINV_MLP'](y)
+        np.testing.assert_almost_equal(
+            x_.detach().numpy() / 100, x.detach().numpy() / 100,
+            decimal=5)
+
+    def test_share(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/deform/share.yml'))
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        tr.train()
+
+        for l_ref, l_inv in zip(
+                tr.model.dict_block['MLP'].linears,
+                tr.model.dict_block['SHARE'].linears):
+            np.testing.assert_almost_equal(
+                l_inv.weight.detach().numpy(), l_ref.weight.detach().numpy())
+            np.testing.assert_almost_equal(
+                l_inv.bias.detach().numpy(), l_ref.bias.detach().numpy())
+
+        x = torch.rand(100, 3, 3, 1)
+        y = tr.model.dict_block['MLP'](x)
+        y_ = tr.model.dict_block['SHARE'](x)
+        np.testing.assert_almost_equal(
+            y_.detach().numpy(), y.detach().numpy())
 
     def test_set_transformer_full(self):
         main_setting = setting.MainSetting.read_settings_yaml(
@@ -588,3 +661,90 @@ class TestNetworks(unittest.TestCase):
                     y_wo_permutation[:2].detach().numpy()],
                 axis=0),
             y_w_permutation.detach().numpy(), decimal=6)
+
+    def test_equivariant_mlp_rank1(self):
+        equivariant_mlp = tensor_operations.EquivariantMLP(
+            setting.BlockSetting(
+                nodes=[2, 4, 8], activations=['tanh', 'identity']))
+        equivariant_mlp.eval()
+
+        x = np.random.rand(200, 3, 2).astype(np.float32)
+        with torch.no_grad():
+            y = equivariant_mlp(torch.from_numpy(x)).detach().numpy()
+
+        s = ortho_group.rvs(3).astype(np.float32)
+        rotated_x = np.einsum('kl,ilf->ikf', s, x).astype(np.float32)
+        with torch.no_grad():
+            rotated_y = equivariant_mlp(
+                torch.from_numpy(rotated_x)).detach().numpy()
+
+        equivariant_y = np.einsum('kl,ilf->ikf', s, y)
+        print(rotated_y[:5, :, 0])
+        print(equivariant_y[:5, :, 0])
+        np.testing.assert_almost_equal(
+            np.mean((rotated_y - equivariant_y)**2)**.5
+            / (np.mean(rotated_y**2)**.5 + 1e-5),
+            0.)
+        np.testing.assert_almost_equal(rotated_y, equivariant_y, decimal=6)
+
+    def test_equivariant_mlp_rank2(self):
+        equivariant_mlp = tensor_operations.EquivariantMLP(
+            setting.BlockSetting(
+                nodes=[2, 4, 8], activations=['tanh', 'identity']))
+        equivariant_mlp.eval()
+
+        x = np.random.rand(200, 3, 3, 2).astype(np.float32)
+        with torch.no_grad():
+            y = equivariant_mlp(torch.from_numpy(x)).detach().numpy()
+
+        s = ortho_group.rvs(3).astype(np.float32)
+        rotated_x = np.einsum(
+            'nm,ikmf->iknf', s, np.einsum('kl,ilmf->ikmf', s, x)
+        ).astype(np.float32)
+        with torch.no_grad():
+            rotated_y = equivariant_mlp(
+                torch.from_numpy(rotated_x)).detach().numpy()
+
+        equivariant_y = np.einsum(
+            'nm,ikmf->iknf', s, np.einsum('kl,ilmf->ikmf', s, y))
+        print(rotated_y[:5, :, :, 0])
+        print(equivariant_y[:5, :, :, 0])
+        np.testing.assert_almost_equal(
+            np.mean((rotated_y - equivariant_y)**2)**.5
+            / (np.mean(rotated_y**2)**.5 + 1e-5), 0., decimal=6)
+        np.testing.assert_almost_equal(rotated_y, equivariant_y, decimal=6)
+
+    def test_reducer_batch_broadchast(self):
+        t1 = torch.rand(15, 3, 8)
+        t2 = torch.rand(3, 8)
+        original_shapes = {
+            't1': np.array([[10], [3], [2]]),
+            't2': np.array([[1], [1], [1]]),
+        }
+        reducer_ = reducer.Reducer(
+            setting.BlockSetting(
+                type='reducer',
+                optional={'operator': 'add', 'split_keys': ['t1', 't2']}))
+        t = reducer_(
+            t1, t2, op='add', original_shapes=original_shapes).detach().numpy()
+
+        desired_t = torch.cat([
+            t1[:10] + t2[[0]],
+            t1[10:10 + 3] + t2[[1]],
+            t1[10 + 3:] + t2[[2]],
+        ], dim=0).numpy()
+        np.testing.assert_array_almost_equal(t, desired_t)
+
+    def test_features_to_time_series(self):
+        r = np.random.rand(10, 3, 1)
+        x = np.concatenate([
+            r, 10 * r, 100 * r, 1000 * r, 10000 * r], axis=-1)
+        desired_y = np.stack([
+            r, 10 * r, 100 * r, 1000 * r, 10000 * r], axis=0)
+        to_ts = reshape.FeaturesToTimeSeries(setting.BlockSetting())
+        y = to_ts(torch.from_numpy(x)).detach().numpy()
+        np.testing.assert_almost_equal(y, desired_y)
+
+        to_f = reshape.TimeSeriesToFeatures(setting.BlockSetting(is_last=True))
+        reversed_y = to_f(torch.from_numpy(y)).detach().numpy()
+        np.testing.assert_almost_equal(reversed_y, x)

@@ -1,0 +1,33 @@
+data:
+  raw: tests/data/grad/raw
+  interim: tests/data/grad/interim
+  preprocessed: tests/data/grad/preprocessed
+  inferred: tests/data/grad/inferred
+conversion:
+  file_type: 'ucd'
+  required_file_names:
+    - '*.inp'
+
+preprocess:
+  node: std_scale
+  phi: std_scale
+  grad:
+    same_as: phi
+  nodal_nadj: identity
+  nodal_grad_x:
+    method: isoam_scale
+    other_components:
+      - nodal_grad_y
+      - nodal_grad_z
+  nodal_grad_y:
+    same_as: nodal_grad_x
+  nodal_grad_z:
+    same_as: nodal_grad_x
+  inversed_moment_tensor:
+    same_as: nodal_grad_x
+  directed_neumann:
+    same_as: phi
+  neumann:
+    same_as: phi
+  nodal_surface_normal: identity
+  nodal_weighted_normal: identity

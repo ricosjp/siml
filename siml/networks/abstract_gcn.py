@@ -113,7 +113,7 @@ class AbstractGCN(siml_module.SimlModule):
             torch.nn.Linear(*node_tuple, bias=bias)
             for node_tuple in node_tuples])
 
-    def forward(self, x, supports, original_shapes=None):
+    def forward(self, x, *args, supports=None, original_shapes=None):
         """Execute the NN's forward computation.
 
         Parameters
@@ -130,12 +130,13 @@ class AbstractGCN(siml_module.SimlModule):
         """
         if self.block_setting.time_series:
             hs = torch.stack([
-                self._forward_single(_x, supports) for _x in x])
+                self._forward_single(
+                    _x, *args, supports=supports) for _x in x])
         else:
-            hs = self._forward_single(x, supports)
+            hs = self._forward_single(x, *args, supports=supports)
         return hs
 
-    def _forward_single(self, x, supports):
+    def _forward_single(self, x, *args, supports=None):
         if self.residual:
             if self.gather_function == 'sum':
                 h_res = torch.sum(torch.stack([

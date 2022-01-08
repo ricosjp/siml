@@ -4,7 +4,8 @@ default:
   before_script:
     - poetry config virtualenvs.create false
     - poetry build
-    - python3.9 -m pip install -U femio --pre
+    - python3.9 -m pip uninstall -y femio pysiml
+    - python3.9 -m pip install femio --pre
     - python3.9 -m pip install dist/pysiml-*.whl  # Only install root project, not dependencies
     # - poetry install
 
@@ -35,17 +36,7 @@ preprocess:
   script: python3.9 tests/preprocess.py
   artifacts:
     paths:
-      - tests/data/deform/interim
-      - tests/data/deform/preprocessed
-      - tests/data/deform_timeseries/preprocessed
-      - tests/data/rotation/preprocessed
-      - tests/data/large/preprocessed
-      - tests/data/ode/interim
-      - tests/data/ode/preprocessed
-      - tests/data/ode/preprocessed
-      - tests/data/rotation_thermal_stress/preprocessed
-      - tests/data/rotation_thermal_stress/interim/cube/original
-      - tests/data/heat_time_series/preprocessed
+      - tests/data
     expire_in: 60min
 
 autopep8:
@@ -98,7 +89,7 @@ test_geo:
 
 test_iso_gcn:
   extends: .test
-  script: python3.9 -m pytest tests/test_iso_gcn.py --capture=no
+  script: python3.9 -m pytest tests/test_iso_gcn.py tests/test_boundary.py --capture=no
 
 test_optimize:
   extends: .test
@@ -125,7 +116,15 @@ test_trainer_long:
 test_other:
   extends: .test
   script:
-    - python3.9 -m pytest tests/test_prepost.py tests/test_setting.py tests/test_util.py tests/test_inferer.py --capture=no
+    - python3.9 -m pytest tests/test_prepost.py tests/test_setting.py tests/test_util.py tests/test_inferer.py tests/test_activations.py --capture=no
+
+test_group:
+  extends: .test
+  script:
+    - python3.9 -m pytest tests/test_groups.py --capture=no
+  # tags:
+  #   - avx
+  #   - gpu
 
 pages:
   stage: deploy

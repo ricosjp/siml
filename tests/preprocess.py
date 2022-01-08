@@ -1,6 +1,7 @@
 import glob
 import multiprocessing as multi
 import pathlib
+import random
 import shutil
 
 import femio
@@ -9,9 +10,15 @@ import numpy as np
 import scipy.sparse as sp
 import siml.prepost as prepost
 import siml.setting as setting
+import torch
 
 
 PLOT = False
+
+SEED = 1
+random.seed(SEED)
+np.random.seed(SEED)
+torch.manual_seed(SEED)
 
 
 def conversion_function(fem_data, data_directory):
@@ -60,6 +67,48 @@ def conversion_function(fem_data, data_directory):
         'tensor_gauss_strain3': tensor_gauss_strain3,
         'tensor_gauss_strain4': tensor_gauss_strain4,
     }
+
+
+def conversion_function_grad(fem_data, raw_directory=None):
+    fem_data.nodes.data = fem_data.nodes.data
+    node = fem_data.nodes.data
+
+    phi = fem_data.nodal_data.get_attribute_data('phi')
+    grad = fem_data.nodal_data.get_attribute_data('grad')[..., None]
+
+    nodal_adj = fem_data.calculate_adjacency_matrix_node()
+    nodal_nadj = prepost.normalize_adjacency_matrix(nodal_adj)
+
+    nodal_surface_normal = fem_data.calculate_surface_normals(
+        mode='effective')
+    nodal_grad_x, nodal_grad_y, nodal_grad_z = \
+        fem_data.calculate_spatial_gradient_adjacency_matrices(
+            'nodal', n_hop=1, moment_matrix=True, normals=nodal_surface_normal,
+            normal_weight_factor=1., consider_volume=False)
+    inversed_moment_tensor = fem_data.nodal_data.get_attribute_data(
+        'inversed_moment_tensors')[..., None]
+    weighted_normal = fem_data.nodal_data.get_attribute_data(
+        'weighted_surface_normals')
+
+    neumann = np.einsum('ij,ij->i', nodal_surface_normal, grad[..., 0])
+    directed_neumann = np.einsum(
+        'ij,i->ij', weighted_normal, neumann)[..., None]
+
+    dict_data = {
+        'node': node,
+        'phi': phi,
+        'grad': grad,
+        'nodal_nadj': nodal_nadj,
+        'nodal_grad_x': nodal_grad_x,
+        'nodal_grad_y': nodal_grad_y,
+        'nodal_grad_z': nodal_grad_z,
+        'inversed_moment_tensor': inversed_moment_tensor,
+        'directed_neumann': directed_neumann,
+        'neumann': neumann[..., None],
+        'nodal_surface_normal': nodal_surface_normal[..., None],
+        'nodal_weighted_normal': weighted_normal[..., None],
+    }
+    return dict_data
 
 
 def conversion_function_heat_time_series(fem_data, raw_directory=None):
@@ -112,6 +161,189 @@ def conversion_function_heat_time_series(fem_data, raw_directory=None):
         'nodal_conductivity': nodal_conductivity,
         'global_conductivity': global_conductivity})
     return dict_data
+
+
+def conversion_function_heat_boundary(fem_data, raw_directory=None):
+
+    node = fem_data.nodal_data.get_attribute_data('node')
+    elemental_volume = fem_data.calculate_element_volumes(
+        raise_negative_volume=False, return_abs_volume=False)
+
+    nodal_mean_volume = fem_data.convert_elemental2nodal(
+        elemental_volume, mode='mean', raise_negative_volume=False)
+    nodal_effective_volume = fem_data.convert_elemental2nodal(
+        elemental_volume, mode='effective', raise_negative_volume=False)
+
+    nodal_surface_normal = fem_data.calculate_surface_normals(
+        mode='effective')
+    nodal_grad_x_1, nodal_grad_y_1, nodal_grad_z_1 = \
+        fem_data.calculate_spatial_gradient_adjacency_matrices(
+            'nodal', n_hop=1, moment_matrix=True,
+            normals=nodal_surface_normal,
+            consider_volume=False, normal_weight_factor=1.)
+    inversed_moment_tensors_1 = fem_data.nodal_data.get_attribute_data(
+        'inversed_moment_tensors')[..., None]
+    weighted_surface_normal_1 = fem_data.nodal_data.get_attribute_data(
+        'weighted_surface_normals')[..., None]
+
+    dict_data = {
+        'node': node,
+        'nodal_mean_volume': nodal_mean_volume,
+        'elemental_volume': elemental_volume,
+        'nodal_effective_volume': nodal_effective_volume,
+        'nodal_grad_x_1': nodal_grad_x_1,
+        'nodal_grad_y_1': nodal_grad_y_1,
+        'nodal_grad_z_1': nodal_grad_z_1,
+        'inversed_moment_tensors_1': inversed_moment_tensors_1,
+        'weighted_surface_normal_1': weighted_surface_normal_1,
+    }
+
+    raw_conductivity = fem_data.elemental_data.get_attribute_data(
+        'thermal_conductivity_full')
+    elemental_thermal_conductivity_array = np.stack([
+        c[0, :-1] for c in raw_conductivity[:, 0]])
+    elemental_thermal_conductivity \
+        = fem_data.convert_array2symmetric_matrix(
+            elemental_thermal_conductivity_array,
+            from_engineering=False)[:, :, :, None]
+    nodal_thermal_conductivity_array \
+        = fem_data.convert_elemental2nodal(
+            elemental_thermal_conductivity_array, mode='mean',
+            raise_negative_volume=False)
+    nodal_thermal_conductivity \
+        = fem_data.convert_array2symmetric_matrix(
+            nodal_thermal_conductivity_array, from_engineering=False)[
+                :, :, :, None]
+
+    nodal_t_0 = fem_data.nodal_data.get_attribute_data(
+        'INITIAL_TEMPERATURE')
+    global_thermal_conductivity = np.mean(
+        elemental_thermal_conductivity, keepdims=True, axis=0)
+
+    dict_data.update({
+        'nodal_thermal_conductivity': nodal_thermal_conductivity,
+        'nodal_t_0': nodal_t_0,
+        'global_thermal_conductivity': global_thermal_conductivity,
+    })
+    temperatures = fem_data.nodal_data.get_attribute_data(
+        'TEMPERATURE')
+    if len(temperatures.shape) != 3:
+        raise ValueError(
+            'Temperature is not time series '
+            f"(shape: {temperatures.shape}).\n"
+            'Set conversion.time_series = true in the YAML file.')
+    if 'time_steps' not in fem_data.settings:
+        raise ValueError(fem_data.settings)
+    dict_t_data = {
+        f"nodal_t_{step}": t for step, t in zip(
+            fem_data.settings['time_steps'], temperatures)}
+    max_timestep = max(fem_data.settings['time_steps'])
+    dict_data.update(dict_t_data)
+    dict_data.update({
+        'nodal_t_diff':
+        dict_data[f"nodal_t_{max_timestep}"] - dict_data['nodal_t_0']})
+
+    nodal_adj = fem_data.calculate_adjacency_matrix_node()
+    nodal_nadj = prepost.normalize_adjacency_matrix(nodal_adj)
+    dict_data.update({
+        'nodal_adj': nodal_adj, 'nodal_nadj': nodal_nadj,
+        'nodal_grad_x_1': nodal_grad_x_1,
+        'nodal_grad_y_1': nodal_grad_y_1,
+        'nodal_grad_z_1': nodal_grad_z_1,
+        'inversed_moment_tensors_1': inversed_moment_tensors_1,
+        'weighted_surface_normal_1': weighted_surface_normal_1,
+        'nodal_surface_normal': nodal_surface_normal[..., None],
+    })
+
+    dict_data.update(_extract_boundary(fem_data, dict_data))
+    return dict_data
+
+
+def conversion_function_heat_interaction(fem_data, raw_directory=None):
+
+    dict_data = {}
+    dict_data.update(_load_mesh(raw_directory / 'mesh_1.inp', '_1'))
+    dict_data.update(_load_mesh(raw_directory / 'mesh_2.inp', '_2'))
+    dict_data.update({
+        'incidence_2to1':
+        sp.load_npz('tests/data/heat_interaction/raw/incidence_2to1.npz'),
+        'periodic_2':
+        sp.load_npz('tests/data/heat_interaction/raw/periodic_2.npz'),
+        'coeff':
+        np.load(raw_directory / 'coeff.npy')[None, None],
+        'heat_transfer':
+        np.load(raw_directory / 'heat_transfer.npy')[None, None],
+    })
+
+    return dict_data
+
+
+def _load_mesh(path, suffix):
+    fem_data = femio.read_files('ucd', path)
+
+    nodal_surface_normal = fem_data.calculate_surface_normals(
+        mode='effective')
+    nodal_grad_x_1, nodal_grad_y_1, nodal_grad_z_1 = \
+        fem_data.calculate_spatial_gradient_adjacency_matrices(
+            'nodal', n_hop=1, moment_matrix=True,
+            normals=nodal_surface_normal,
+            consider_volume=False, normal_weight_factor=1.)
+    inversed_moment_tensors_1 = fem_data.nodal_data.get_attribute_data(
+        'inversed_moment_tensors')[..., None]
+    weighted_surface_normal_1 = fem_data.nodal_data.get_attribute_data(
+        'weighted_surface_normals')[..., None]
+    adj = fem_data.calculate_adjacency_matrix_node()
+    nadj = prepost.normalize_adjacency_matrix(adj)
+
+    phi_0 = fem_data.nodal_data.get_attribute_data('phi_0')
+    phi_1 = fem_data.nodal_data.get_attribute_data('phi_1')
+
+    return {
+        f"adj{suffix}": adj,
+        f"nadj{suffix}": nadj,
+        f"gx{suffix}": nodal_grad_x_1,
+        f"gy{suffix}": nodal_grad_y_1,
+        f"gz{suffix}": nodal_grad_z_1,
+        f"minv{suffix}": inversed_moment_tensors_1,
+        f"wnorm{suffix}": weighted_surface_normal_1,
+        f"phi_0{suffix}": phi_0,
+        f"phi_1{suffix}": phi_1,
+    }
+
+
+def _extract_boundary(fem_data, dict_data):
+    dirichlet = np.ones((len(fem_data.nodes), 1)) * np.nan
+    padded_dirichlet = np.zeros((len(fem_data.nodes), 1))
+    dirichlet_label = np.zeros((len(fem_data.nodes), 1))
+    neumann = np.zeros((len(fem_data.nodes), 1))
+    directed_neumann = np.zeros((len(fem_data.nodes), 3, 1))
+
+    if 'fixtemp' in fem_data.constraints:
+        fixtemp = fem_data.constraints['fixtemp']
+        if len(fixtemp) > 0:
+            dirichlet_indices = fem_data.nodes.ids2indices(fixtemp.ids)
+            dirichlet[dirichlet_indices, 0] = fixtemp.data
+            padded_dirichlet[dirichlet_indices, 0] = fixtemp.data
+            dirichlet_label[dirichlet_indices, 0] = 1
+
+    if 'pure_cflux' in fem_data.constraints:
+        pure_cflux = fem_data.constraints['pure_cflux']
+        surface_fem_data = fem_data.to_surface()
+        nodal_areas = surface_fem_data.convert_elemental2nodal(
+            surface_fem_data.calculate_element_areas(), mode='effective')
+        if len(pure_cflux) > 0:
+            pure_cflux_indices = fem_data.nodes.ids2indices(pure_cflux.ids)
+            neumann[pure_cflux_indices, 0] = - pure_cflux.data[:, 0] \
+                / nodal_areas[surface_fem_data.nodes.ids2indices(
+                    pure_cflux.ids), 0]
+            directed_neumann = np.einsum(
+                'ij,i->ij', dict_data['nodal_surface_normal'][..., 0],
+                neumann[:, 0])[..., None]
+
+    return {
+        'dirichlet': dirichlet, 'dirichlet_label': dirichlet_label,
+        'padded_dirichlet': padded_dirichlet,
+        'neumann': neumann, 'directed_neumann': directed_neumann}
 
 
 def conversion_function_rotation_thermal_stress(fem_data, raw_directory=None):
@@ -252,6 +484,21 @@ def preprocess_deform():
     return
 
 
+def preprocess_grad():
+    main_setting = setting.MainSetting.read_settings_yaml(
+        pathlib.Path('tests/data/grad/data.yml'))
+
+    raw_converter = prepost.RawConverter(
+        main_setting, recursive=True, force_renew=True,
+        conversion_function=conversion_function_grad)
+    raw_converter.convert()
+
+    preprocessor = prepost.Preprocessor(main_setting, force_renew=True)
+    preprocessor.preprocess_interim_data()
+
+    return
+
+
 def calculate_scale_isoam():
     data_directory = pathlib.Path('tests/data/deform/interim')
 
@@ -330,6 +577,36 @@ def preprocess_heat_time_series():
     raw_converter = prepost.RawConverter(
         main_setting, recursive=True, force_renew=True,
         conversion_function=conversion_function_heat_time_series,
+        write_ucd=False)
+    raw_converter.convert()
+
+    preprocessor = prepost.Preprocessor(main_setting, force_renew=True)
+    preprocessor.preprocess_interim_data()
+    return
+
+
+def preprocess_heat_boundary():
+    main_setting = setting.MainSetting.read_settings_yaml(
+        pathlib.Path('tests/data/heat_boundary/data.yml'))
+
+    raw_converter = prepost.RawConverter(
+        main_setting, recursive=True, force_renew=True,
+        conversion_function=conversion_function_heat_boundary,
+        write_ucd=False)
+    raw_converter.convert()
+
+    preprocessor = prepost.Preprocessor(main_setting, force_renew=True)
+    preprocessor.preprocess_interim_data()
+    return
+
+
+def preprocess_heat_interaction():
+    main_setting = setting.MainSetting.read_settings_yaml(
+        pathlib.Path('tests/data/heat_interaction/data.yml'))
+
+    raw_converter = prepost.RawConverter(
+        main_setting, recursive=True, force_renew=True,
+        conversion_function=conversion_function_heat_interaction,
         write_ucd=False)
     raw_converter.convert()
 
@@ -578,6 +855,9 @@ def generate_large():
 
 
 if __name__ == '__main__':
+    preprocess_heat_interaction()
+    preprocess_heat_boundary()
+    preprocess_grad()
     preprocess_deform()
     preprocess_rotation_thermal_stress()
     preprocess_heat_time_series()

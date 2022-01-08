@@ -26,16 +26,15 @@ class Concatenator(siml_module.SimlModule):
     @classmethod
     def _get_n_input_node(
             cls, block_setting, predecessors, dict_block_setting,
-            input_length):
+            input_length, **kwargs):
         return sum([
             dict_block_setting[predecessor].nodes[-1]
             for predecessor in predecessors])
-        return input_length
 
     @classmethod
     def _get_n_output_node(
             cls, input_node, block_setting, predecessors, dict_block_setting,
-            output_length):
+            output_length, **kwargs):
         return input_node
 
     def __init__(self, block_setting):

@@ -1,0 +1,902 @@
+ fstr_setup: OK
+  Initial condition of temperatures: OK
+
+ ISTEP =     1
+ Time  =     0.010
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -0.977
+ Minimum Node No.    :      2495
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -0.977
+
+ ISTEP =     2
+ Time  =     0.020
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -0.958
+ Minimum Node No.    :      2495
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -0.958
+
+ ISTEP =     3
+ Time  =     0.030
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -0.969
+ Minimum Node No.    :      1063
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -0.969
+
+ ISTEP =     4
+ Time  =     0.040
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -0.986
+ Minimum Node No.    :      1063
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -0.986
+
+ ISTEP =     5
+ Time  =     0.050
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -0.998
+ Minimum Node No.    :      1063
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -0.998
+
+ ISTEP =     6
+ Time  =     0.060
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -1.017
+ Minimum Node No.    :      1536
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -1.017
+
+ ISTEP =     7
+ Time  =     0.070
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -1.054
+ Minimum Node No.    :      1536
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -1.054
+
+ ISTEP =     8
+ Time  =     0.080
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -1.087
+ Minimum Node No.    :      1536
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -1.087
+
+ ISTEP =     9
+ Time  =     0.090
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -1.122
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -1.122
+
+ ISTEP =    10
+ Time  =     0.100
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -1.163
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -1.163
+
+ ISTEP =    11
+ Time  =     0.110
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -1.199
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -1.199
+
+ ISTEP =    12
+ Time  =     0.120
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -1.232
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -1.232
+
+ ISTEP =    13
+ Time  =     0.130
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -1.263
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -1.263
+
+ ISTEP =    14
+ Time  =     0.140
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -1.290
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -1.290
+
+ ISTEP =    15
+ Time  =     0.150
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -1.316
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -1.316
+
+ ISTEP =    16
+ Time  =     0.160
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -1.340
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -1.340
+
+ ISTEP =    17
+ Time  =     0.170
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -1.363
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -1.363
+
+ ISTEP =    18
+ Time  =     0.180
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -1.384
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -1.384
+
+ ISTEP =    19
+ Time  =     0.190
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -1.404
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -1.404
+
+ ISTEP =    20
+ Time  =     0.200
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -1.423
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -1.423
+
+ ISTEP =    21
+ Time  =     0.210
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -1.441
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -1.441
+
+ ISTEP =    22
+ Time  =     0.220
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -1.458
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -1.458
+
+ ISTEP =    23
+ Time  =     0.230
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -1.474
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -1.474
+
+ ISTEP =    24
+ Time  =     0.240
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -1.490
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -1.490
+
+ ISTEP =    25
+ Time  =     0.250
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -1.505
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -1.505
+
+ ISTEP =    26
+ Time  =     0.260
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -1.519
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -1.519
+
+ ISTEP =    27
+ Time  =     0.270
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -1.533
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -1.533
+
+ ISTEP =    28
+ Time  =     0.280
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -1.547
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -1.547
+
+ ISTEP =    29
+ Time  =     0.290
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -1.560
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -1.560
+
+ ISTEP =    30
+ Time  =     0.300
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -1.572
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -1.572
+
+ ISTEP =    31
+ Time  =     0.310
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -1.585
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -1.585
+
+ ISTEP =    32
+ Time  =     0.320
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -1.597
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -1.597
+
+ ISTEP =    33
+ Time  =     0.330
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -1.608
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -1.608
+
+ ISTEP =    34
+ Time  =     0.340
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -1.619
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -1.619
+
+ ISTEP =    35
+ Time  =     0.350
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -1.630
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -1.630
+
+ ISTEP =    36
+ Time  =     0.360
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -1.641
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -1.641
+
+ ISTEP =    37
+ Time  =     0.370
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -1.652
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -1.652
+
+ ISTEP =    38
+ Time  =     0.380
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -1.662
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -1.662
+
+ ISTEP =    39
+ Time  =     0.390
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -1.672
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -1.672
+
+ ISTEP =    40
+ Time  =     0.400
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -1.682
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -1.682
+
+ ISTEP =    41
+ Time  =     0.410
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -1.691
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -1.691
+
+ ISTEP =    42
+ Time  =     0.420
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -1.701
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -1.701
+
+ ISTEP =    43
+ Time  =     0.430
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -1.710
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -1.710
+
+ ISTEP =    44
+ Time  =     0.440
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -1.719
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -1.719
+
+ ISTEP =    45
+ Time  =     0.450
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -1.728
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -1.728
+
+ ISTEP =    46
+ Time  =     0.460
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -1.737
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -1.737
+
+ ISTEP =    47
+ Time  =     0.470
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -1.745
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -1.745
+
+ ISTEP =    48
+ Time  =     0.480
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -1.754
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -1.754
+
+ ISTEP =    49
+ Time  =     0.490
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -1.762
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -1.762
+
+ ISTEP =    50
+ Time  =     0.500
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -1.770
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -1.770
+
+ ISTEP =    51
+ Time  =     0.510
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -1.778
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -1.778
+
+ ISTEP =    52
+ Time  =     0.520
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -1.786
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -1.786
+
+ ISTEP =    53
+ Time  =     0.530
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -1.793
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -1.793
+
+ ISTEP =    54
+ Time  =     0.540
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -1.801
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -1.801
+
+ ISTEP =    55
+ Time  =     0.550
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -1.808
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -1.808
+
+ ISTEP =    56
+ Time  =     0.560
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -1.816
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -1.816
+
+ ISTEP =    57
+ Time  =     0.570
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -1.823
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -1.823
+
+ ISTEP =    58
+ Time  =     0.580
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -1.830
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -1.830
+
+ ISTEP =    59
+ Time  =     0.590
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -1.837
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -1.837
+
+ ISTEP =    60
+ Time  =     0.600
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -1.844
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -1.844
+
+ ISTEP =    61
+ Time  =     0.610
+ Maximum Temperature :     0.995
+ Maximum Node No.    :      1402
+ Minimum Temperature :    -1.851
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     0.995
+ Minimum Temperature(global) :    -1.851
+
+ ISTEP =    62
+ Time  =     0.620
+ Maximum Temperature :     0.998
+ Maximum Node No.    :      1379
+ Minimum Temperature :    -1.858
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     0.998
+ Minimum Temperature(global) :    -1.858
+
+ ISTEP =    63
+ Time  =     0.630
+ Maximum Temperature :     1.002
+ Maximum Node No.    :      1379
+ Minimum Temperature :    -1.864
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     1.002
+ Minimum Temperature(global) :    -1.864
+
+ ISTEP =    64
+ Time  =     0.640
+ Maximum Temperature :     1.006
+ Maximum Node No.    :      1379
+ Minimum Temperature :    -1.871
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     1.006
+ Minimum Temperature(global) :    -1.871
+
+ ISTEP =    65
+ Time  =     0.650
+ Maximum Temperature :     1.010
+ Maximum Node No.    :      1379
+ Minimum Temperature :    -1.877
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     1.010
+ Minimum Temperature(global) :    -1.877
+
+ ISTEP =    66
+ Time  =     0.660
+ Maximum Temperature :     1.013
+ Maximum Node No.    :      1379
+ Minimum Temperature :    -1.884
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     1.013
+ Minimum Temperature(global) :    -1.884
+
+ ISTEP =    67
+ Time  =     0.670
+ Maximum Temperature :     1.017
+ Maximum Node No.    :      1379
+ Minimum Temperature :    -1.890
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     1.017
+ Minimum Temperature(global) :    -1.890
+
+ ISTEP =    68
+ Time  =     0.680
+ Maximum Temperature :     1.021
+ Maximum Node No.    :      1379
+ Minimum Temperature :    -1.896
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     1.021
+ Minimum Temperature(global) :    -1.896
+
+ ISTEP =    69
+ Time  =     0.690
+ Maximum Temperature :     1.025
+ Maximum Node No.    :      1379
+ Minimum Temperature :    -1.902
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     1.025
+ Minimum Temperature(global) :    -1.902
+
+ ISTEP =    70
+ Time  =     0.700
+ Maximum Temperature :     1.028
+ Maximum Node No.    :      1379
+ Minimum Temperature :    -1.908
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     1.028
+ Minimum Temperature(global) :    -1.908
+
+ ISTEP =    71
+ Time  =     0.710
+ Maximum Temperature :     1.032
+ Maximum Node No.    :      1379
+ Minimum Temperature :    -1.915
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     1.032
+ Minimum Temperature(global) :    -1.915
+
+ ISTEP =    72
+ Time  =     0.720
+ Maximum Temperature :     1.035
+ Maximum Node No.    :      1379
+ Minimum Temperature :    -1.920
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     1.035
+ Minimum Temperature(global) :    -1.920
+
+ ISTEP =    73
+ Time  =     0.730
+ Maximum Temperature :     1.039
+ Maximum Node No.    :      1379
+ Minimum Temperature :    -1.926
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     1.039
+ Minimum Temperature(global) :    -1.926
+
+ ISTEP =    74
+ Time  =     0.740
+ Maximum Temperature :     1.042
+ Maximum Node No.    :      1379
+ Minimum Temperature :    -1.932
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     1.042
+ Minimum Temperature(global) :    -1.932
+
+ ISTEP =    75
+ Time  =     0.750
+ Maximum Temperature :     1.046
+ Maximum Node No.    :      1379
+ Minimum Temperature :    -1.938
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     1.046
+ Minimum Temperature(global) :    -1.938
+
+ ISTEP =    76
+ Time  =     0.760
+ Maximum Temperature :     1.049
+ Maximum Node No.    :      1379
+ Minimum Temperature :    -1.944
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     1.049
+ Minimum Temperature(global) :    -1.944
+
+ ISTEP =    77
+ Time  =     0.770
+ Maximum Temperature :     1.053
+ Maximum Node No.    :      1379
+ Minimum Temperature :    -1.949
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     1.053
+ Minimum Temperature(global) :    -1.949
+
+ ISTEP =    78
+ Time  =     0.780
+ Maximum Temperature :     1.056
+ Maximum Node No.    :      1379
+ Minimum Temperature :    -1.955
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     1.056
+ Minimum Temperature(global) :    -1.955
+
+ ISTEP =    79
+ Time  =     0.790
+ Maximum Temperature :     1.059
+ Maximum Node No.    :      1379
+ Minimum Temperature :    -1.960
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     1.059
+ Minimum Temperature(global) :    -1.960
+
+ ISTEP =    80
+ Time  =     0.800
+ Maximum Temperature :     1.063
+ Maximum Node No.    :      1379
+ Minimum Temperature :    -1.966
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     1.063
+ Minimum Temperature(global) :    -1.966
+
+ ISTEP =    81
+ Time  =     0.810
+ Maximum Temperature :     1.066
+ Maximum Node No.    :      1379
+ Minimum Temperature :    -1.971
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     1.066
+ Minimum Temperature(global) :    -1.971
+
+ ISTEP =    82
+ Time  =     0.820
+ Maximum Temperature :     1.069
+ Maximum Node No.    :      1379
+ Minimum Temperature :    -1.977
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     1.069
+ Minimum Temperature(global) :    -1.977
+
+ ISTEP =    83
+ Time  =     0.830
+ Maximum Temperature :     1.072
+ Maximum Node No.    :      1379
+ Minimum Temperature :    -1.982
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     1.072
+ Minimum Temperature(global) :    -1.982
+
+ ISTEP =    84
+ Time  =     0.840
+ Maximum Temperature :     1.076
+ Maximum Node No.    :      1379
+ Minimum Temperature :    -1.987
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     1.076
+ Minimum Temperature(global) :    -1.987
+
+ ISTEP =    85
+ Time  =     0.850
+ Maximum Temperature :     1.079
+ Maximum Node No.    :      1379
+ Minimum Temperature :    -1.992
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     1.079
+ Minimum Temperature(global) :    -1.992
+
+ ISTEP =    86
+ Time  =     0.860
+ Maximum Temperature :     1.082
+ Maximum Node No.    :      1379
+ Minimum Temperature :    -1.998
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     1.082
+ Minimum Temperature(global) :    -1.998
+
+ ISTEP =    87
+ Time  =     0.870
+ Maximum Temperature :     1.085
+ Maximum Node No.    :      1379
+ Minimum Temperature :    -2.003
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     1.085
+ Minimum Temperature(global) :    -2.003
+
+ ISTEP =    88
+ Time  =     0.880
+ Maximum Temperature :     1.088
+ Maximum Node No.    :      1379
+ Minimum Temperature :    -2.008
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     1.088
+ Minimum Temperature(global) :    -2.008
+
+ ISTEP =    89
+ Time  =     0.890
+ Maximum Temperature :     1.091
+ Maximum Node No.    :      1379
+ Minimum Temperature :    -2.013
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     1.091
+ Minimum Temperature(global) :    -2.013
+
+ ISTEP =    90
+ Time  =     0.900
+ Maximum Temperature :     1.094
+ Maximum Node No.    :      1379
+ Minimum Temperature :    -2.018
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     1.094
+ Minimum Temperature(global) :    -2.018
+
+ ISTEP =    91
+ Time  =     0.910
+ Maximum Temperature :     1.097
+ Maximum Node No.    :      1379
+ Minimum Temperature :    -2.023
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     1.097
+ Minimum Temperature(global) :    -2.023
+
+ ISTEP =    92
+ Time  =     0.920
+ Maximum Temperature :     1.100
+ Maximum Node No.    :      1379
+ Minimum Temperature :    -2.027
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     1.100
+ Minimum Temperature(global) :    -2.027
+
+ ISTEP =    93
+ Time  =     0.930
+ Maximum Temperature :     1.103
+ Maximum Node No.    :      1379
+ Minimum Temperature :    -2.032
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     1.103
+ Minimum Temperature(global) :    -2.032
+
+ ISTEP =    94
+ Time  =     0.940
+ Maximum Temperature :     1.106
+ Maximum Node No.    :      1379
+ Minimum Temperature :    -2.037
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     1.106
+ Minimum Temperature(global) :    -2.037
+
+ ISTEP =    95
+ Time  =     0.950
+ Maximum Temperature :     1.109
+ Maximum Node No.    :      1379
+ Minimum Temperature :    -2.042
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     1.109
+ Minimum Temperature(global) :    -2.042
+
+ ISTEP =    96
+ Time  =     0.960
+ Maximum Temperature :     1.112
+ Maximum Node No.    :      1379
+ Minimum Temperature :    -2.047
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     1.112
+ Minimum Temperature(global) :    -2.047
+
+ ISTEP =    97
+ Time  =     0.970
+ Maximum Temperature :     1.115
+ Maximum Node No.    :      1379
+ Minimum Temperature :    -2.051
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     1.115
+ Minimum Temperature(global) :    -2.051
+
+ ISTEP =    98
+ Time  =     0.980
+ Maximum Temperature :     1.118
+ Maximum Node No.    :      1379
+ Minimum Temperature :    -2.056
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     1.118
+ Minimum Temperature(global) :    -2.056
+
+ ISTEP =    99
+ Time  =     0.990
+ Maximum Temperature :     1.121
+ Maximum Node No.    :      1379
+ Minimum Temperature :    -2.060
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     1.121
+ Minimum Temperature(global) :    -2.060
+
+ ISTEP =   100
+ Time  =     1.000
+ Maximum Temperature :     1.124
+ Maximum Node No.    :      1379
+ Minimum Temperature :    -2.065
+ Minimum Node No.    :      1527
+ Maximum Temperature(global) :     1.124
+ Minimum Temperature(global) :    -2.065
