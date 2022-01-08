@@ -150,21 +150,16 @@ class SimlManager():
         return
 
     def _update_setting_if_needed(self):
-        if self.setting.trainer.restart_directory is not None:
-            restart_directory = self.setting.trainer.restart_directory
-            self._update_setting(self.setting.trainer.restart_directory)
-            self.setting.trainer.restart_directory = restart_directory
-        elif self.setting.trainer.pretrain_directory is not None:
-            pass
-            # pretrain_directory = self.setting.trainer.pretrain_directory
-            # self._update_setting(
-            #     self.setting.trainer.pretrain_directory, only_model=True)
-            # self.setting.trainer.pretrain_directory = pretrain_directory
-        elif self.setting.trainer.restart_directory is not None \
+        if self.setting.trainer.restart_directory is not None \
                 and self.setting.trainer.pretrain_directory is not None:
             raise ValueError(
                 'Restart directory and pretrain directory cannot be specified '
                 'at the same time.')
+
+        if self.setting.trainer.restart_directory is not None:
+            restart_directory = self.setting.trainer.restart_directory
+            self._update_setting(self.setting.trainer.restart_directory)
+            self.setting.trainer.restart_directory = restart_directory
         return
 
     def _load_pretrained_model_if_needed(self, *, model_file=None):
