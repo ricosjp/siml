@@ -1004,7 +1004,8 @@ class Converter:
         if not skip_femio:
             fem_data = femio.FEMData.read_directory(
                 read_simulation_type, write_simulation_base,
-                stem=write_simulation_stem, save=False)
+                stem=write_simulation_stem, save=False,
+                read_mesh_only=True)
         elif load_function:
             if len(required_file_names) == 0:
                 raise ValueError(
