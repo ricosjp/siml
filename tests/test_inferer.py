@@ -166,12 +166,13 @@ class TestInferer(unittest.TestCase):
             fem_data.elemental_data.get_attribute_data(
                 'inferred_elemental_stress'),
             res_from_preprocessed[0]['dict_y']['elemental_stress'],
-            decimal=7)
+            decimal=2)
         np.testing.assert_almost_equal(
             fem_data.elemental_data.get_attribute_data(
                 'difference_elemental_stress'),
             res_from_preprocessed[0]['dict_y']['elemental_stress']
-            - res_from_preprocessed[0]['dict_x']['elemental_stress'])
+            - res_from_preprocessed[0]['dict_x']['elemental_stress'],
+            decimal=2)
 
     def test_infer_simplified_model(self):
         setting_yaml = Path('tests/data/simplified/mlp.yml')
@@ -321,7 +322,7 @@ class TestInferer(unittest.TestCase):
             np.testing.assert_almost_equal(
                 inferred_fem_data.elemental_data.get_attribute_data(
                     'inferred_elemental_stress'),
-                res_from_raw[i_data]['dict_y']['elemental_stress'])
+                res_from_raw[i_data]['dict_y']['elemental_stress'], decimal=3)
             np.testing.assert_almost_equal(
                 res_from_raw[i_data]['dict_x']['elemental_stress'],
                 raw_fem_data.elemental_data.get_attribute_data(

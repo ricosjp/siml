@@ -94,6 +94,19 @@ def mish(x):
     return x * torch.tanh(torch.nn.functional.softplus(x))
 
 
+def smooth_leaky_relu(x):
+    return 0.75 * x + 0.25 * (x**2 + 8)**.5
+
+
+def inversed_smooth_leaky_relu(x):
+    # a x + x - sqrt((a x)^2 + 1)
+    return 1.5 * x - ((0.5 * x)**2 + 1)**.5
+
+
+def derivative_smooth_leaky_relu(x):
+    return 0.25 * x / (x**2 + 8)**.5 + 0.75
+
+
 class InversedLeakyReLU(torch.nn.Module):
 
     def __init__(self, original_lrelu=None):
@@ -146,4 +159,7 @@ DICT_ACTIVATIONS = {
     'leaky_relu': torch.nn.LeakyReLU(
         negative_slope=DEFAULT_NEGATIVE_SLOPE_FOR_LEAKY_RELU),
     'inversed_leaky_relu': InversedLeakyReLU(),
+    'smooth_leaky_relu': smooth_leaky_relu,
+    'inversed_smooth_leaky_relu': inversed_smooth_leaky_relu,
+    'derivative_smooth_leaky_relu': derivative_smooth_leaky_relu,
 }
