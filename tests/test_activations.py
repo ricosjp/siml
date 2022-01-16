@@ -80,3 +80,33 @@ class TestActivations(unittest.TestCase):
 
         np.testing.assert_almost_equal(
             tensor_.detach().numpy(), tensor.numpy())
+
+    def test_smooth_leaky_relu(self):
+        tensor = torch.rand(100, 3)
+        tensor_ = activations.inversed_smooth_leaky_relu(
+            activations.smooth_leaky_relu(tensor))
+        np.testing.assert_almost_equal(
+            tensor_.detach().numpy(), tensor.numpy(), decimal=5)
+
+    def test_smooth_leaky_relu_extreme(self):
+        x_large = torch.tensor([1e5])
+        x_small = torch.tensor([-1e5])
+
+        np.testing.assert_almost_equal(
+            activations.smooth_leaky_relu(x_large).detach().numpy(), 1e5)
+        np.testing.assert_almost_equal(
+            activations.smooth_leaky_relu(x_small).detach().numpy(), - 1e5 / 2)
+
+        np.testing.assert_almost_equal(
+            activations.inversed_smooth_leaky_relu(
+                x_large).detach().numpy(), 1e5)
+        np.testing.assert_almost_equal(
+            activations.inversed_smooth_leaky_relu(
+                x_small).detach().numpy(), - 1e5 * 2)
+
+        np.testing.assert_almost_equal(
+            activations.derivative_smooth_leaky_relu(
+                x_large).detach().numpy(), 1.)
+        np.testing.assert_almost_equal(
+            activations.derivative_smooth_leaky_relu(
+                x_small).detach().numpy(), .5)
