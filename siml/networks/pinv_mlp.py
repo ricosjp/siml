@@ -93,7 +93,7 @@ class PInvMLP(siml_module.SimlModule):
         elif name == 'leaky_relu':
             return activations.InversedLeakyReLU()
         elif name == 'smooth_leaky_relu':
-            return activations.InversedSmoothLeakyReLU()
+            return activations.inversed_smooth_leaky_relu
         else:
             raise ValueError(f"Unsupported activation name: {name}")
 
