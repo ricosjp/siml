@@ -116,7 +116,10 @@ class TensorProduct(siml_module.SimlModule):
         """Calculate tensor product of rank n and m tensors
         A_{i,k_1,k_2,...,k_m} B_{i,l_1,l_2,...,l_m}
         """
-        if len(xs) == 2:
+        if len(xs) == 1:
+            x = xs[0]
+            y = xs[0]
+        elif len(xs) == 2:
             x = xs[0]
             y = xs[1]
         else:
