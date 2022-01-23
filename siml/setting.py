@@ -450,6 +450,8 @@ class TrainerSetting(TypedDataClass):
         If fed, apply gradient clipping by value.
     clip_grad_norm: float
         If fed, apply gradient clipping with norm.
+    recursive: bool
+        If True, search data recursively.
     """
 
     inputs: CollectionVariableSetting = dc.field(
@@ -504,6 +506,7 @@ class TrainerSetting(TypedDataClass):
         default=None, metadata={'allow_none': True})
     clip_grad_norm: float = dc.field(
         default=None, metadata={'allow_none': True})
+    recursive: bool = True
 
     data_parallel: bool = False
     model_parallel: bool = False
@@ -945,6 +948,8 @@ class ConversionSetting(TypedDataClass):
         If True, save femio data in the interim directories.
     skip_save: bool, optional
         If True, skip SiML's default saving function.
+    max_process: int, optional
+        Maximum number of processes.
     """
 
     mandatory_variables: list[str] = dc.field(
@@ -962,6 +967,7 @@ class ConversionSetting(TypedDataClass):
     time_series: bool = False
     save_femio: bool = False
     skip_save: bool = False
+    max_process: int = 1000
 
     @classmethod
     def read_settings_yaml(cls, settings_yaml):

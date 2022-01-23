@@ -205,6 +205,7 @@ class Trainer(siml_manager.SimlManager):
                 self.setting.trainer.input_names,
                 self.setting.trainer.output_names,
                 self.setting.data.develop,
+                recursive=self.setting.trainer.recursive,
                 decrypt_key=self.setting.data.encrypt_key)
 
             train, validation, test = util.split_data(
@@ -531,19 +532,20 @@ class Trainer(siml_manager.SimlManager):
         test_directories = self.setting.data.test
         supports = self.setting.trainer.support_inputs
         num_workers = self.setting.trainer.num_workers
+        recursive = self.setting.trainer.recursive
 
         train_dataset = dataset_generator(
             x_variable_names, y_variable_names,
             train_directories, supports=supports, num_workers=num_workers,
-            decrypt_key=decrypt_key)
+            recursive=recursive, decrypt_key=decrypt_key)
         validation_dataset = dataset_generator(
             x_variable_names, y_variable_names,
             validation_directories, supports=supports, num_workers=num_workers,
-            allow_no_data=True, decrypt_key=decrypt_key)
+            recursive=recursive, allow_no_data=True, decrypt_key=decrypt_key)
         test_dataset = dataset_generator(
             x_variable_names, y_variable_names,
             test_directories, supports=supports, num_workers=num_workers,
-            allow_no_data=True, decrypt_key=decrypt_key)
+            recursive=recursive, allow_no_data=True, decrypt_key=decrypt_key)
 
         print(f"num_workers for data_loader: {num_workers}")
         train_loader = torch.utils.data.DataLoader(

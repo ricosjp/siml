@@ -85,7 +85,10 @@ class RawConverter():
         self.write_ucd = write_ucd
         self.to_first_order = to_first_order
         self.read_res = read_res
-        self.max_process = util.determine_max_process(max_process)
+        self.max_process = min(
+            main_setting.conversion.max_process,
+            util.determine_max_process(max_process))
+        print(f"# process: {self.max_process}")
         self.setting.conversion.output_base_directory \
             = self.setting.data.interim_root
 
@@ -107,11 +110,12 @@ class RawConverter():
         if self.recursive:
             if isinstance(raw_directory, (list, tuple, set)):
                 raw_directories = reduce(or_, [
-                    set(util.collect_data_directories(Path(d)))
+                    set(util.collect_data_directories(
+                        Path(d), print_state=True))
                     for d in raw_directory])
             else:
                 raw_directories = util.collect_data_directories(
-                    Path(raw_directory))
+                    Path(raw_directory), print_state=True)
         else:
             if isinstance(raw_directory, (list, tuple, set)):
                 raw_directories = raw_directory

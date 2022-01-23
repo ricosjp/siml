@@ -15,11 +15,13 @@ class BaseDataset(torch.utils.data.Dataset):
     def __init__(
             self, x_variable_names, y_variable_names, directories, *,
             supports=None, num_workers=0, allow_no_data=False,
-            decrypt_key=None, required_file_names=None, **kwargs):
+            recursive=True, decrypt_key=None, required_file_names=None,
+            **kwargs):
         self.x_variable_names = x_variable_names
         self.y_variable_names = y_variable_names
         self.supports = supports
         self.num_workers = num_workers
+        self.recursive = recursive
         self.decrypt_key = decrypt_key
 
         self.x_dict_mode = isinstance(self.x_variable_names, dict)
@@ -33,12 +35,15 @@ class BaseDataset(torch.utils.data.Dataset):
         if required_file_names is None:
             required_file_names = [f"{first_variable_name}.npy"]
 
-        data_directories = []
-        for directory in directories:
-            data_directories += util.collect_data_directories(
-                directory, required_file_names=required_file_names,
-                allow_no_data=allow_no_data)
-        self.data_directories = np.unique(data_directories)
+        if self.recursive:
+            data_directories = []
+            for directory in directories:
+                data_directories += util.collect_data_directories(
+                    directory, required_file_names=required_file_names,
+                    allow_no_data=allow_no_data)
+            self.data_directories = np.unique(data_directories)
+        else:
+            self.data_directories = directories
 
         if not allow_no_data and len(self.data_directories) == 0:
             raise ValueError(f"No data found in {directories}")

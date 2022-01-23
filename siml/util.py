@@ -233,7 +233,7 @@ def copy_variable_file(
 
 def collect_data_directories(
         base_directory, *, required_file_names=None, allow_no_data=False,
-        pattern=None, inverse_pattern=None, toplevel=True):
+        pattern=None, inverse_pattern=None, toplevel=True, print_state=False):
     """Collect data directories recursively from the base directory.
 
     Parameters
@@ -246,18 +246,24 @@ def collect_data_directories(
         If given, return only directories which match the pattern.
     inverse_pattern: str, optional
         If given, return only files which DO NOT match the pattern.
+    print_state: bool, optional
+        If True, print state of the search
 
     Returns
     --------
     found_directories: list[pathlib.Path]
         All found directories.
     """
+    if print_state:
+        print(f"Searching: {base_directory}")
+
     if isinstance(base_directory, (list, tuple, set)):
         found_directories = list(np.unique(np.concatenate([
             collect_data_directories(
                 bd, required_file_names=required_file_names,
                 allow_no_data=allow_no_data, pattern=pattern,
-                inverse_pattern=inverse_pattern, toplevel=False)
+                inverse_pattern=inverse_pattern, toplevel=False,
+                print_state=print_state)
             for bd in base_directory])))
         found_directories = _validate_found_directories(
             base_directory, found_directories, pattern, inverse_pattern,
@@ -280,6 +286,9 @@ def collect_data_directories(
         found_directories = _validate_found_directories(
             base_directory, found_directories, pattern, inverse_pattern,
             allow_no_data)
+
+    if print_state:
+        print(f"Found: {found_directories}")
 
     return found_directories
 
