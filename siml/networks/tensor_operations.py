@@ -3,6 +3,7 @@ import numpy as np
 import torch
 
 from .. import setting
+from . import activations
 from . import siml_module
 from . import reducer
 
@@ -157,8 +158,11 @@ class EquivariantMLP(siml_module.SimlModule):
         super().__init__(block_setting)
         self.mul = reducer.Reducer(
             setting.BlockSetting(optional={'operator': 'mul'}))
-        self.linear_weight = torch.nn.Linear(
-            block_setting.nodes[0], block_setting.nodes[-1], bias=False)
+        if block_setting.nodes[0] == block_setting.nodes[-1]:
+            self.linear_weight = activations.identity
+        else:
+            self.linear_weight = torch.nn.Linear(
+                block_setting.nodes[0], block_setting.nodes[-1], bias=False)
         self.contraction = Contraction(setting.BlockSetting())
         return
 

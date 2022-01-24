@@ -202,6 +202,10 @@ class AbstractEquivariantGNN(abstract_gcn.AbstractGCN):
                 h_res, directed_neumann=directed_neumann,
                 inversed_moment_tensors=inversed_moment_tensors)
 
+        if self.symmetric:
+            h_res = (h_res + einops.rearrange(
+                h_res, 'element x1 x2 feature -> element x2 x1 feature')) / 2
+
         if self.has_coefficient_network:
             if self.x_tensor_rank == 0:
                 coeff = self.coefficient_network(x)
@@ -233,21 +237,17 @@ class AbstractEquivariantGNN(abstract_gcn.AbstractGCN):
             # A (H W)
             h = self.subchains[0][0](h)
 
-        h = self._propagate_core_explicit(h, support)
+        h = self._propagate_core(h, support)
 
         if self.ah_w:
             # (A H) W
             h = self.subchains[0][0](h)
 
-        if self.symmetric:
-            h = (h + einops.rearrange(
-                h, 'element x1 x2 feature -> element x2 x1 feature')) / 2
-
         h = torch.nn.functional.dropout(
             h, p=self.dropout_ratios[0], training=self.training)
         return h
 
-    def _propagate_core_explicit(self, x, support):
+    def _propagate_core(self, x, support):
         h = x
         for propagation_function in self.propagation_functions:
             h = propagation_function(h, support) * self.factor
