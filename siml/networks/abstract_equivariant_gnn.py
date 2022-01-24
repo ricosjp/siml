@@ -227,7 +227,7 @@ class AbstractEquivariantGNN(abstract_gcn.AbstractGCN):
             # A (H W)
             h = self.subchains[0][0](h)
 
-        h = self._propagete_core_explicit(h, support)
+        h = self._propagate_core_explicit(h, support)
 
         if self.ah_w:
             # (A H) W
