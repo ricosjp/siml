@@ -26,6 +26,14 @@ preprocess:
     same_as: nodal_grad_x_1
   nodal_grad_z_1:
     same_as: nodal_grad_x_1
+  inc_grad:
+    method: sparse_std
+  inc_int_x:
+    method: identity
+  inc_int_y:
+    method: identity
+  inc_int_z:
+    method: identity
   dirichlet:
     same_as: nodal_t_0
   padded_dirichlet:
