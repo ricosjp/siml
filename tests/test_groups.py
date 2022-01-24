@@ -100,7 +100,7 @@ class TestGroups(unittest.TestCase):
             data_directories=main_setting_wo_repeat.data.preprocessed_root)
 
         self.assertLess(loss_implicit, loss_repeat + 2.e-3)
-        self.assertLess(loss_repeat, loss_wo_repeat + 2.e-3)
+        self.assertLess(loss_repeat, loss_wo_repeat + 4.e-3)
 
     def test_heat_boundary_repeat(self):
         main_setting = setting.MainSetting.read_settings_yaml(
