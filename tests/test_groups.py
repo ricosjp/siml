@@ -99,7 +99,7 @@ class TestGroups(unittest.TestCase):
             .trainer.output_directory,
             data_directories=main_setting_wo_repeat.data.preprocessed_root)
 
-        self.assertLess(loss_implicit, loss_repeat)
+        self.assertLess(loss_implicit, loss_repeat + 2.e-3)
         self.assertLess(loss_repeat, loss_wo_repeat + 3.e-4)
 
     def test_heat_boundary_repeat(self):
