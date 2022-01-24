@@ -2,10 +2,10 @@
 import einops
 import torch
 
-from . import abstract_equvariant_gnn
+from . import abstract_equivariant_gnn
 
 
-class IsoGCN(abstract_equvariant_gnn.AbstractEquivariantGNN):
+class IsoGCN(abstract_equivariant_gnn.AbstractEquivariantGNN):
     """IsoGCN according to https://arxiv.org/abs/2005.06316 ."""
 
     @staticmethod
