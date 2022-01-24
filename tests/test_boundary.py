@@ -153,7 +153,11 @@ class TestBoundary(unittest.TestCase):
         neumann_iso_gcn = boundary.NeumannIsoGCN(
             setting.BlockSetting(
                 type='neumann_isogcn',
-                input_names=['ISOGCN', 'NEUMANN_ENCODER', 'IN_MOMENT']),
+                input_names=['ISOGCN', 'NEUMANN_ENCODER', 'IN_MOMENT'],
+                optional={
+                    'create_neumann_linear': True,
+                    'use_subchain_linear_for_neumann': True,
+                }),
             reference_block=iso_gcn_)
 
         gx = sp.load_npz(data_path / 'nodal_grad_x.npz')
