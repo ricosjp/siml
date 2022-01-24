@@ -118,13 +118,14 @@ class AbstractEquivariantGNN(abstract_gcn.AbstractGCN):
                 self.neumann_linear = torch.nn.Linear(
                     *self.subchains[0][0].weight.shape,
                     bias=False)
+
+            if self.neumann_linear.bias is not None:
+                raise ValueError(
+                    'IsoGCN with Neumann should have no bias: '
+                    f"{self.block_setting}")
+
         else:
             self.neumann_linear = activations.identity
-
-        if self.neumann_linear.bias is not None:
-            raise ValueError(
-                'IsoGCN with Neumann should have no bias: '
-                f"{self.block_setting}")
 
         if self.create_neumann_ratio:
             self.neumann_ratio = torch.nn.Linear(1, 1, bias=False)

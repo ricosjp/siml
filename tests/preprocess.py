@@ -180,7 +180,7 @@ def conversion_function_heat_boundary(fem_data, raw_directory=None):
         fem_data.calculate_spatial_gradient_adjacency_matrices(
             'nodal', n_hop=1, moment_matrix=True,
             normals=nodal_surface_normal,
-            consider_volume=False, normal_weight=1.)
+            consider_volume=False, normal_weight=10.)
     inversed_moment_tensors_1 = fem_data.nodal_data.pop(
         'inversed_moment_tensors').data[..., None]
     weighted_surface_normal_1 = fem_data.nodal_data.pop(
@@ -188,7 +188,7 @@ def conversion_function_heat_boundary(fem_data, raw_directory=None):
 
     inc_grad, inc_int = fem_data.calculate_spatial_gradient_incidence_matrix(
         'nodal', moment_matrix=True, normals=nodal_surface_normal,
-        normal_weight=1.)
+        normal_weight=10.)
     inc_inversed_moment_tensor = fem_data.nodal_data.pop(
         'inversed_moment_tensors').data[..., None]
     inc_weighted_normal = fem_data.nodal_data.pop(

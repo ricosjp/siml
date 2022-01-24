@@ -267,7 +267,7 @@ class TestBoundary(unittest.TestCase):
 
         encoded_phi = mlp_(phi)
         encoded_neumann = neumann_encoder(
-            encoded_phi, neumann, weighted_normal)
+            phi, neumann, weighted_normal)
         grad_wo_neumann = iso_gcn_(encoded_phi, supports=supports)
         np_grad_wo_neumann = grad_wo_neumann.detach().numpy()
         np_grad_w_neumann = neumann_iso_gcn(

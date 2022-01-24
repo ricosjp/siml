@@ -120,31 +120,35 @@ class NeumannIsoGCN(siml_module.SimlModule):
         self.reference_block = reference_block
         self.create_neumann_linear = self.block_setting.optional.get(
             'create_neumann_linear', False)
+        self.use_subchain_linear_for_neumann = self.block_setting.optional.get(
+            'use_subchain_linear_for_neumann', True)
         self.neumann_factor = self.block_setting.optional.get(
             'neumann_factor', 1.)
         self.create_neumann_ratio = self.block_setting.optional.get(
             'create_neumann_ratio', False)
-        if self.reference_block is None:
-            raise ValueError(f"Feed reference_block for: {block_setting}")
-        if self.reference_block.create_subchain:
-            if len(self.reference_block.subchains) != 1 \
-                    or len(self.reference_block.subchains[0]) != 1:
-                raise ValueError(
-                    'Subchain setting incorrect for '
-                    f"{self.reference_block.block_setting} "
-                    f"(referenced from: {self.block_setting})")
+        if self.create_neumann_linear:
+            if self.reference_block is None:
+                raise ValueError(f"Feed reference_block for: {block_setting}")
+            if self.use_subchain_linear_for_neumann:
+                if self.reference_block.create_subchain:
+                    if len(self.reference_block.subchains) != 1 \
+                            or len(self.reference_block.subchains[0]) != 1:
+                        raise ValueError(
+                            'Subchain setting incorrect for '
+                            f"{self.reference_block.block_setting} "
+                            f"(referenced from: {self.block_setting})")
 
-            if self.create_neumann_linear:
+                    self.linear = self.reference_block.subchains[0][0]
+                    if self.linear.bias is not None:
+                        raise ValueError(
+                            'Reference IsoGCN should have no bias: '
+                            f"{self.reference_block.block_setting}")
+                else:
+                    self.linear = activations.identity
+            else:
                 self.linear = torch.nn.Linear(
                     *self.reference_block.subchains[0][0].weight.shape,
                     bias=False)
-            else:
-                self.linear = self.reference_block.subchains[0][0]
-
-            if self.linear.bias is not None:
-                raise ValueError(
-                    'Reference IsoGCN should have no bias: '
-                    f"{self.reference_block.block_setting}")
         else:
             self.linear = activations.identity
 
