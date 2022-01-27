@@ -110,8 +110,8 @@ model:
       type: neumann_isogcn
       input_names:
         - ISOGCN_1
-        - NEUMANN_ENCODER
         - IN_MOMENT
+        - NEUMANN_ENCODER
       destinations:
         - OUT_MLP
       reference_block_name: ISOGCN_1

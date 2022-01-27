@@ -129,8 +129,8 @@ model:
       type: neumann_isogcn
       input_names:
         - ISOGCN_1
-        - NEUMANN_ENCODER
         - IN_MOMENT
+        - NEUMANN_ENCODER
       reference_block_name: ISOGCN_1
       destinations:
         - MUL
