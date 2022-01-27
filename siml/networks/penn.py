@@ -119,7 +119,7 @@ class PENN(abstract_equivariant_gnn.AbstractEquivariantGNN):
             sparse.mul(int_inc, edge))
         return h
 
-    def _contraction(self, x, args, supports):
+    def _contraction(self, x, *args, supports):
         """Calculate contraction G \\cdot B. It calculates
         \\sum_l G_{i,j,k_1,k_2,...,l} H_{jk_1,k_2,...,l,f}
 
@@ -158,6 +158,8 @@ class PENN(abstract_equivariant_gnn.AbstractEquivariantGNN):
 
         shape = x.shape
         tensor_rank = len(shape) - 2
+        if tensor_rank == 0:
+            raise ValueError(f"Invalid tensor rank: {x.shape}")
 
         edge = self.mlp(torch.stack([
             sparse.mul(grad_inc, x) for grad_inc in grad_incs], axis=1))
@@ -165,26 +167,6 @@ class PENN(abstract_equivariant_gnn.AbstractEquivariantGNN):
             'ikl,il...kf->i...f', inversed_moment_tensors[..., 0],
             sparse.mul(int_inc, edge))
         return h
-
-        if tensor_rank == 1:
-            if self.support_tensor_rank == 1:
-                edge = self.mlp(torch.stack(
-                    [sparse.mul(grad_inc, x) for grad_inc in grad_incs],
-                    axis=1))
-                h = torch.einsum(
-                    'ikl,ilkf->if', inversed_moment_tensors[..., 0],
-                    sparse.mul(int_inc, edge))
-                return h
-            else:
-                raise NotImplementedError(
-                    f"Invalid support_tensor_rank: {self.support_tensor_rank}")
-        elif tensor_rank > 1:
-            return torch.stack([
-                self._contraction(
-                    x[:, i_dim], inversed_moment_tensors, supports=supports)
-                for i_dim in range(self.dim)], dim=-2)
-        else:
-            raise ValueError(f"Invalid tensor rank 0 (shape: {shape})")
 
     def _rotation(self, x, *args, supports):
         """Calculate rotation G \\times x.
