@@ -94,6 +94,19 @@ def conversion_function_grad(fem_data, raw_directory=None):
     directed_neumann = np.einsum(
         'ij,i->ij', weighted_normal, neumann)[..., None]
 
+    inc_grad, inc_int = fem_data.calculate_spatial_gradient_incidence_matrix(
+        'nodal', moment_matrix=True, normals=nodal_surface_normal,
+        normal_weight=10.)
+    inc_inversed_moment_tensor = fem_data.nodal_data.pop(
+        'inversed_moment_tensors').data[..., None]
+    inc_weighted_normal = fem_data.nodal_data.pop(
+        'weighted_surface_normals').data
+
+    np.testing.assert_almost_equal(
+        inversed_moment_tensor, inc_inversed_moment_tensor)
+    np.testing.assert_almost_equal(
+        weighted_normal, inc_weighted_normal)
+
     dict_data = {
         'node': node,
         'phi': phi,
@@ -102,6 +115,10 @@ def conversion_function_grad(fem_data, raw_directory=None):
         'nodal_grad_x': nodal_grad_x,
         'nodal_grad_y': nodal_grad_y,
         'nodal_grad_z': nodal_grad_z,
+        'inc_grad_x': inc_grad[0],
+        'inc_grad_y': inc_grad[1],
+        'inc_grad_z': inc_grad[2],
+        'inc_int': inc_int,
         'inversed_moment_tensor': inversed_moment_tensor,
         'directed_neumann': directed_neumann,
         'neumann': neumann[..., None],

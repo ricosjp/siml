@@ -25,6 +25,10 @@ preprocess:
     same_as: nodal_grad_x
   inversed_moment_tensor:
     same_as: nodal_grad_x
+  inc_grad_x: identity
+  inc_grad_y: identity
+  inc_grad_z: identity
+  inc_int: identity
   directed_neumann:
     same_as: phi
   neumann:

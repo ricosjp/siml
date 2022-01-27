@@ -16,7 +16,7 @@ import siml.trainer as trainer
 
 sys.path.insert(0, 'tests')
 import equivariance_base  # NOQA
-
+import preprocess  # NOQA
 
 PLOT = False
 
@@ -315,3 +315,37 @@ class TestPENN(equivariance_base.EquivarianceBase):
         self.validate_results(
             original_results, transformed_results, rank2='nodal_strain_mat',
             threshold_percent=.002, decimal=4)
+
+    def test_grad_neumann_equivariance(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/grad/penn.yml'))
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, .5)
+
+        # Test equivariance
+        ir = inferer.Inferer(
+            main_setting,
+            conversion_function=preprocess.conversion_function_grad,
+            converter_parameters_pkl=main_setting.data.preprocessed_root
+            / 'preprocessors.pkl')
+        results = ir.infer(
+            model=main_setting.trainer.output_directory,
+            output_directory_base=tr.setting.trainer.output_directory,
+            data_directories=Path('tests/data/grad/raw/test/0'),
+            perform_preprocess=True)
+        y = results[0]['dict_y']['grad']
+
+        rotated_test_directory = Path('tests/data/grad/raw/rotated_test/0')
+        rotated_results = ir.infer(
+            model=main_setting.trainer.output_directory,
+            output_directory_base=tr.setting.trainer.output_directory,
+            data_directories=rotated_test_directory,
+            perform_preprocess=True)
+        rotated_y = rotated_results[0]['dict_y']['grad']
+
+        rotation = np.load(rotated_test_directory / 'rotation.npy')
+        np.testing.assert_almost_equal(
+            np.einsum('kl,ilf->ikf', rotation, y), rotated_y, decimal=2)

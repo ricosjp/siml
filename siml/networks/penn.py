@@ -53,7 +53,7 @@ class PENN(abstract_equivariant_gnn.AbstractEquivariantGNN):
 
         return
 
-    def _convolution(self, x, inversed_moment_tensors, supports, top=True):
+    def _convolution(self, x, *args, supports, top=True):
         """Calculate convolution G \\ast x.
 
         Parameters
@@ -74,9 +74,9 @@ class PENN(abstract_equivariant_gnn.AbstractEquivariantGNN):
             [n_vertex, dim, n_feature]-shaped tensor.
         """
         return self._tensor_product(
-            x, inversed_moment_tensors, supports=supports)
+            x, *args, supports=supports)
 
-    def _tensor_product(self, x, inversed_moment_tensors, supports, top=True):
+    def _tensor_product(self, x, *args, supports, top=True):
         """Calculate tensor product G \\otimes x.
 
         Parameters
@@ -107,6 +107,7 @@ class PENN(abstract_equivariant_gnn.AbstractEquivariantGNN):
             raise ValueError(
                 'Invalid length of supports '
                 f"({len(supports)} given, expected 4)")
+        inversed_moment_tensors = args[0]
 
         grad_incs = supports[:3]
         int_inc = supports[3]
@@ -118,7 +119,7 @@ class PENN(abstract_equivariant_gnn.AbstractEquivariantGNN):
             sparse.mul(int_inc, edge))
         return h
 
-    def _contraction(self, x, inversed_moment_tensors, supports):
+    def _contraction(self, x, args, supports):
         """Calculate contraction G \\cdot B. It calculates
         \\sum_l G_{i,j,k_1,k_2,...,l} H_{jk_1,k_2,...,l,f}
 
@@ -143,6 +144,14 @@ class PENN(abstract_equivariant_gnn.AbstractEquivariantGNN):
                        ~~~~~~~~~
                        tensor rank - 1 repetition
         """
+        if self.support_tensor_rank != 1:
+            raise NotImplementedError(
+                f"Invalid support_tensor_rank: {self.support_tensor_rank}")
+        if len(supports) != 4:
+            raise ValueError(
+                'Invalid length of supports '
+                f"({len(supports)} given, expected 4)")
+        inversed_moment_tensors = args[0]
 
         grad_incs = supports[:3]
         int_inc = supports[3]
@@ -177,7 +186,7 @@ class PENN(abstract_equivariant_gnn.AbstractEquivariantGNN):
         else:
             raise ValueError(f"Invalid tensor rank 0 (shape: {shape})")
 
-    def _rotation(self, x, inversed_moment_tensors, supports):
+    def _rotation(self, x, *args, supports):
         """Calculate rotation G \\times x.
 
         Parameters
@@ -204,6 +213,7 @@ class PENN(abstract_equivariant_gnn.AbstractEquivariantGNN):
             raise ValueError(f"Tensor shape invalid: {shape}")
         if dim != 3:
             raise ValueError(f"Invalid dimension: {dim}")
+        inversed_moment_tensors = args[0]
 
         t = self._tensor_product(
             x, inversed_moment_tensors, supports=supports)

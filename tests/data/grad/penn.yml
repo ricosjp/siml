@@ -1,0 +1,128 @@
+data:
+  raw: tests/data/grad/raw
+  interim: tests/data/grad/interim
+  preprocessed: tests/data/grad/preprocessed
+  inferred: tests/data/grad/inferred
+  train:
+    - tests/data/grad/preprocessed/train
+  validation:
+    - tests/data/grad/preprocessed/validation
+  test:
+    - tests/data/grad/preprocessed/test
+conversion:
+  file_type: 'ucd'
+  required_file_names:
+    - '*.inp'
+inferer:
+  write_simulation_type: ucd
+  read_simulation_type: ucd
+
+trainer:
+  output_directory: tests/data/grad/penn
+  inputs:
+    rank0:
+      - name: phi
+        dim: 1
+    neumann:
+      - name: directed_neumann
+        dim: 1
+    inversed_moment:
+      - name: inversed_moment_tensor
+        dim: 1
+  support_inputs:
+    - inc_grad_x
+    - inc_grad_y
+    - inc_grad_z
+    - inc_int
+  outputs:
+    - name: grad
+      dim: 1
+  prune: false
+  n_epoch: 10
+  log_trigger_epoch: 1
+  stop_trigger_epoch: 10
+  seed: 0
+  lazy: false
+  batch_size: 4
+  num_workers: 0
+
+model:
+  blocks:
+    # Encoder
+    - name: IN_MLP
+      type: mlp
+      bias: false
+      is_first: true
+      input_keys:
+        - rank0
+      destinations:
+        - PENN
+      nodes:
+        - -1
+        - 16
+      activations:
+        - identity
+    - name: ID_RANK0
+      type: identity
+      is_first: true
+      input_keys:
+        - rank0
+      destinations:
+        - NEUMANN_ENCODER
+    - name: IN_NEUMANN
+      type: identity
+      is_first: true
+      input_keys:
+        - neumann
+      destinations:
+        - NEUMANN_ENCODER
+    - name: NEUMANN_ENCODER
+      type: neumann_encoder
+      input_names:
+        - ID_RANK0
+        - IN_NEUMANN
+      destinations:
+        - PENN
+      reference_block_name: IN_MLP
+    - name: IN_MOMENT
+      type: identity
+      is_first: true
+      input_keys:
+        - inversed_moment
+      destinations:
+        - PENN
+
+    # Processor 1
+    - name: PENN
+      type: penn
+      destinations:
+        - OUT_MLP
+      input_names:
+        - IN_MLP
+        - IN_MOMENT
+        - NEUMANN_ENCODER
+      support_input_indices:
+        - 0
+        - 1
+        - 2
+        - 3
+      nodes:
+        - -1
+        - 16
+        - 16
+      activations:
+        - tanh
+        - tanh
+      optional:
+        propagations:
+          - convolution
+
+    # Decoder
+    - name: OUT_MLP
+      type: mlp
+      bias: false
+      nodes:
+        - -1
+        - -1
+      activations:
+        - tanh
