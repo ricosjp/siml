@@ -21,7 +21,7 @@ def mul(sparse, tensor):
         dim = tensor.shape[-2]
         h = torch.stack([
             mul(sparse, tensor[:, i_dim])
-            for i_dim in range(dim)], dim=-2)
+            for i_dim in range(dim)], dim=1)
     else:
         raise ValueError(f"Tensor shape invalid: {shape}")
 

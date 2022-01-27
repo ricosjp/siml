@@ -43,7 +43,7 @@ class IsoGCN(abstract_equivariant_gnn.AbstractEquivariantGNN):
         elif tensor_rank > 0:
             h = torch.stack([
                 self._tensor_product(x[:, i_dim], supports)
-                for i_dim in range(dim)], dim=-2)
+                for i_dim in range(dim)], dim=1)
         else:
             raise ValueError(f"Tensor shape invalid: {shape}")
 
