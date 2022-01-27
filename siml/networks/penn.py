@@ -116,7 +116,7 @@ class PENN(abstract_equivariant_gnn.AbstractEquivariantGNN):
                 self._tensor_product(
                     x[:, i_dim], inversed_moment_tensors,
                     supports=supports, top=False)
-                for i_dim in range(dim)], dim=1)
+                for i_dim in range(dim)], dim=-2)
         else:
             raise ValueError(f"Tensor shape invalid: {shape}")
 
@@ -151,13 +151,6 @@ class PENN(abstract_equivariant_gnn.AbstractEquivariantGNN):
         grad_incs = supports[:3]
         int_inc = supports[3]
 
-        edge = self.mlp(torch.stack([
-            grad_inc.mm(x) for grad_inc in grad_incs], axis=1))
-        h = torch.einsum(
-            'ikl,ilf->ikf', inversed_moment_tensors[..., 0],
-            sparse.mul(int_inc, edge))
-        return h
-
         shape = x.shape
         tensor_rank = len(shape) - 2
         if tensor_rank == 1:
@@ -174,8 +167,9 @@ class PENN(abstract_equivariant_gnn.AbstractEquivariantGNN):
                     f"Invalid support_tensor_rank: {self.support_tensor_rank}")
         elif tensor_rank > 1:
             return torch.stack([
-                self._contraction(x[:, i_dim], supports)
-                for i_dim in range(self.dim)], dim=1)
+                self._contraction(
+                    x[:, i_dim], inversed_moment_tensors, supports=supports)
+                for i_dim in range(self.dim)], dim=-2)
         else:
             raise ValueError(f"Invalid tensor rank 0 (shape: {shape})")
 
@@ -200,16 +194,19 @@ class PENN(abstract_equivariant_gnn.AbstractEquivariantGNN):
             [n_vertex, dim, n_feature]-shaped tensor.
         """
         shape = x.shape
-        dim = len(supports)
+        dim = len(supports) - 1
         tensor_rank = len(shape) - 2
         if tensor_rank != 1:
             raise ValueError(f"Tensor shape invalid: {shape}")
         if dim != 3:
             raise ValueError(f"Invalid dimension: {dim}")
+
+        t = self._tensor_product(
+            x, inversed_moment_tensors, supports=supports)
         h = torch.stack([
-            supports[1].mm(x[:, 2]) - supports[2].mm(x[:, 1]),
-            supports[2].mm(x[:, 0]) - supports[0].mm(x[:, 2]),
-            supports[0].mm(x[:, 1]) - supports[1].mm(x[:, 0]),
-        ], dim=1)
+            t[:, 1, 2] - t[:, 2, 1],
+            t[:, 2, 0] - t[:, 0, 2],
+            t[:, 0, 1] - t[:, 1, 0],
+        ], dim=-2)
 
         return h
