@@ -137,11 +137,6 @@ class AbstractEquivariantGNN(abstract_gcn.AbstractGCN):
         self.x_tensor_rank \
             = len(shape) - 2  # (n_vertex, dim, dim, ..., n_feature)
 
-        if len(supports) != self.dim**self.support_tensor_rank:
-            raise ValueError(
-                f"{self.dim**self.support_tensor_rank} ength of supports "
-                f"expected (actual: {len(supports)} for: {self.block_setting}")
-
         if not self.create_subchain:
             return
 
@@ -193,7 +188,7 @@ class AbstractEquivariantGNN(abstract_gcn.AbstractGCN):
             shortcut = self.shortcut(x)
         else:
             shortcut = 0.
-        h_res = self._propagate(x, supports)
+        h_res = self._propagate(x, *args, supports=supports)
 
         if self.has_neumann:
             directed_neumann = args[0]
@@ -231,13 +226,13 @@ class AbstractEquivariantGNN(abstract_gcn.AbstractGCN):
         else:
             return grad + neumann
 
-    def _propagate(self, x, support):
+    def _propagate(self, x, *args, supports):
         h = x
         if not self.ah_w:
             # A (H W)
             h = self.subchains[0][0](h)
 
-        h = self._propagate_core(h, support)
+        h = self._propagate_core(h, *args, supports=supports)
 
         if self.ah_w:
             # (A H) W
@@ -247,10 +242,10 @@ class AbstractEquivariantGNN(abstract_gcn.AbstractGCN):
             h, p=self.dropout_ratios[0], training=self.training)
         return h
 
-    def _propagate_core(self, x, support):
+    def _propagate_core(self, x, *args, supports):
         h = x
         for propagation_function in self.propagation_functions:
-            h = propagation_function(h, support) * self.factor
+            h = propagation_function(h, *args, supports=supports) * self.factor
         return h
 
     def _create_propagation_functions(self):

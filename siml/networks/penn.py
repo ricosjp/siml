@@ -1,12 +1,13 @@
 
 import torch
 
-from . import abstract_equvariant_gnn
+from . import abstract_equivariant_gnn
 from . import mlp
+from . import sparse
 from . import tensor_operations
 
 
-class PENN(abstract_equvariant_gnn.AbstractEquivariantGNN):
+class PENN(abstract_equivariant_gnn.AbstractEquivariantGNN):
     """Physics-Embedded Neural Network."""
 
     @staticmethod
@@ -18,8 +19,7 @@ class PENN(abstract_equvariant_gnn.AbstractEquivariantGNN):
         return True
 
     def __init__(self, block_setting):
-        if block_setting.nodes[0] == block_setting.nodes[-1]:
-            block_setting.optional['create_subchain'] = False
+        block_setting.optional['create_subchain'] = False
 
         super().__init__(block_setting)
 
@@ -27,23 +27,35 @@ class PENN(abstract_equvariant_gnn.AbstractEquivariantGNN):
             raise ValueError(
                 f"Set only one propagation function for: {block_setting}")
 
-        if self.block_setting.optional['propagations'] == 'convolution':
+        self.use_mlp = self.block_setting.optional.get('use_mlp', None)
+
+        if self.use_mlp is None:
+            if self.block_setting.optional['propagations'] == 'contraction':
+                self.mlp = mlp.MLP(self.block_setting)
+            else:
+                self.mlp = tensor_operations.EquivariantMLP(
+                    self.block_setting)
+        elif self.use_mlp:
             self.mlp = mlp.MLP(self.block_setting)
         else:
-            self.mlp = tensor_operations.EquivariantMLP(self.block_setting)
+            self.mlp = tensor_operations.EquivariantMLP(
+                self.block_setting)
+
         return
 
-    def _convolution(self, x, supports, top=True):
+    def _convolution(self, x, inversed_moment_tensors, supports, top=True):
         """Calculate convolution G \\ast x.
 
         Parameters
         ----------
         x: torch.Tensor
             [n_vertex, n_feature]-shaped tensor.
+        inversed_moment_tensors: torch.Tensor
+            [n_vertex, 3, 3, 1]-shaped inversed moment tensors.
         supports: list[torch.Tensor]
-            - 0: [n_edge, n_vertex]-shaped spatial graph gradient incidence
-              matrix.
-            - 1, 2, 3: [n_vertex, n_edge]-shaped edge integration incidence
+            - 0, 1, 2: [n_edge, n_vertex]-shaped spatial graph gradient
+              incidence matrix.
+            - 3: [n_vertex, n_edge]-shaped edge integration incidence
               matrix.
 
         Returns
@@ -54,12 +66,19 @@ class PENN(abstract_equvariant_gnn.AbstractEquivariantGNN):
         if self.support_tensor_rank != 1:
             raise NotImplementedError(
                 f"Invalid support_tensor_rank: {self.support_tensor_rank}")
+        if len(supports) != 4:
+            raise ValueError(
+                'Invalid length of supports '
+                f"({len(supports)} given, expected 4)")
 
-        grad_inc = supports[0]
-        int_incs = supports[1:]
+        grad_incs = supports[:3]
+        int_inc = supports[3]
 
-        edge = self.mlp(grad_inc.mm(x))
-        h = torch.stack([int_inc.mm(edge) for int_inc in int_incs], axis=-2)
+        edge = self.mlp(torch.stack([
+            grad_inc.mm(x) for grad_inc in grad_incs], axis=-2))
+        h = torch.einsum(
+            'ikl,ilf->ikf', inversed_moment_tensors[..., 0],
+            sparse.mul(int_inc, edge))
         return h
 
     def _tensor_product(self, x, supports, top=True):

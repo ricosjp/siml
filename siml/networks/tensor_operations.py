@@ -158,7 +158,7 @@ class EquivariantMLP(siml_module.SimlModule):
         super().__init__(block_setting)
         self.mul = reducer.Reducer(
             setting.BlockSetting(optional={'operator': 'mul'}))
-        self.create_linear_weight = self.setting.optional.get(
+        self.create_linear_weight = self.block_setting.optional.get(
             'create_linear_weight', False)
         if block_setting.nodes[0] == block_setting.nodes[-1] and \
                 not self.create_linear_weight:
