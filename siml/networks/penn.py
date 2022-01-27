@@ -75,7 +75,7 @@ class PENN(abstract_equivariant_gnn.AbstractEquivariantGNN):
         int_inc = supports[3]
 
         edge = self.mlp(torch.stack([
-            grad_inc.mm(x) for grad_inc in grad_incs], axis=-2))
+            grad_inc.mm(x) for grad_inc in grad_incs], axis=1))
         h = torch.einsum(
             'ikl,ilf->ikf', inversed_moment_tensors[..., 0],
             sparse.mul(int_inc, edge))
@@ -90,10 +90,12 @@ class PENN(abstract_equivariant_gnn.AbstractEquivariantGNN):
             [n_vertex, dim, dim, ..., n_feature]-shaped tensor.
                        ~~~~~~~~~~~~~~
                        tensor rank repetition
+        inversed_moment_tensors: torch.Tensor
+            [n_vertex, 3, 3, 1]-shaped inversed moment tensors.
         supports: list[torch.Tensor]
-            - 0: [n_edge, n_vertex]-shaped spatial graph gradient incidence
-              matrix.
-            - 1, 2, 3: [n_vertex, n_edge]-shaped edge integration incidence
+            - 0, 1, 2: [n_edge, n_vertex]-shaped spatial graph gradient
+              incidence matrix.
+            - 3: [n_vertex, n_edge]-shaped edge integration incidence
               matrix.
 
         Returns
@@ -120,7 +122,7 @@ class PENN(abstract_equivariant_gnn.AbstractEquivariantGNN):
 
         return h
 
-    def _contraction(self, x, supports):
+    def _contraction(self, x, inversed_moment_tensors, supports):
         """Calculate contraction G \\cdot B. It calculates
         \\sum_l G_{i,j,k_1,k_2,...,l} H_{jk_1,k_2,...,l,f}
 
@@ -130,10 +132,12 @@ class PENN(abstract_equivariant_gnn.AbstractEquivariantGNN):
             [n_vertex, dim, dim, ..., n_feature]-shaped tensor.
                        ~~~~~~~~~~~~~~
                        tensor rank repetition
+        inversed_moment_tensors: torch.Tensor
+            [n_vertex, 3, 3, 1]-shaped inversed moment tensors.
         supports: list[torch.Tensor]
-            - 0: [n_edge, n_vertex]-shaped spatial graph gradient incidence
-              matrix.
-            - 1, 2, 3: [n_vertex, n_edge]-shaped edge integration incidence
+            - 0, 1, 2: [n_edge, n_vertex]-shaped spatial graph gradient
+              incidence matrix.
+            - 3: [n_vertex, n_edge]-shaped edge integration incidence
               matrix.
 
         Returns
@@ -143,13 +147,28 @@ class PENN(abstract_equivariant_gnn.AbstractEquivariantGNN):
                        ~~~~~~~~~
                        tensor rank - 1 repetition
         """
+
+        grad_incs = supports[:3]
+        int_inc = supports[3]
+
+        edge = self.mlp(torch.stack([
+            grad_inc.mm(x) for grad_inc in grad_incs], axis=1))
+        h = torch.einsum(
+            'ikl,ilf->ikf', inversed_moment_tensors[..., 0],
+            sparse.mul(int_inc, edge))
+        return h
+
         shape = x.shape
         tensor_rank = len(shape) - 2
-        if tensor_rank == self.support_tensor_rank:
+        if tensor_rank == 1:
             if self.support_tensor_rank == 1:
-                return torch.sum(torch.stack([
-                    supports[i_dim].mm(x[:, i_dim]) for i_dim
-                    in range(self.dim)]), dim=0)
+                edge = self.mlp(torch.stack(
+                    [sparse.mul(grad_inc, x) for grad_inc in grad_incs],
+                    axis=1))
+                h = torch.einsum(
+                    'ikl,ilkf->if', inversed_moment_tensors[..., 0],
+                    sparse.mul(int_inc, edge))
+                return h
             else:
                 raise NotImplementedError(
                     f"Invalid support_tensor_rank: {self.support_tensor_rank}")
@@ -158,19 +177,21 @@ class PENN(abstract_equivariant_gnn.AbstractEquivariantGNN):
                 self._contraction(x[:, i_dim], supports)
                 for i_dim in range(self.dim)], dim=1)
         else:
-            raise ValueError(f"Tensor rank is 0 (shape: {shape})")
+            raise ValueError(f"Invalid tensor rank 0 (shape: {shape})")
 
-    def _rotation(self, x, supports):
+    def _rotation(self, x, inversed_moment_tensors, supports):
         """Calculate rotation G \\times x.
 
         Parameters
         ----------
         x: torch.Tensor
             [n_vertex, dim, n_feature]-shaped tensor.
+        inversed_moment_tensors: torch.Tensor
+            [n_vertex, 3, 3, 1]-shaped inversed moment tensors.
         supports: list[torch.Tensor]
-            - 0: [n_edge, n_vertex]-shaped spatial graph gradient incidence
-              matrix.
-            - 1, 2, 3: [n_vertex, n_edge]-shaped edge integration incidence
+            - 0, 1, 2: [n_edge, n_vertex]-shaped spatial graph gradient
+              incidence matrix.
+            - 3: [n_vertex, n_edge]-shaped edge integration incidence
               matrix.
 
         Returns
@@ -189,6 +210,6 @@ class PENN(abstract_equivariant_gnn.AbstractEquivariantGNN):
             supports[1].mm(x[:, 2]) - supports[2].mm(x[:, 1]),
             supports[2].mm(x[:, 0]) - supports[0].mm(x[:, 2]),
             supports[0].mm(x[:, 1]) - supports[1].mm(x[:, 0]),
-        ], dim=-2)
+        ], dim=1)
 
         return h
