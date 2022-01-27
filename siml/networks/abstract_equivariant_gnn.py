@@ -181,6 +181,20 @@ class AbstractEquivariantGNN(abstract_gcn.AbstractGCN):
         return
 
     def _forward_single(self, x, *args, supports=None):
+        """Forward computation.
+
+        Parameters
+        ----------
+        x: torch.Tensor
+        args: list[torch.Tensor], optional
+            - 0: inversed moment tensor.
+            - 1: directed neumann tensor.
+        supports: list[torch.sparse_coo_tensor]
+
+        Returns
+        -------
+        torch.Tensor
+        """
         if self.is_first:
             self._validate_block(x, supports)
             self.is_first = False
@@ -191,8 +205,8 @@ class AbstractEquivariantGNN(abstract_gcn.AbstractGCN):
         h_res = self._propagate(x, *args, supports=supports)
 
         if self.has_neumann:
-            directed_neumann = args[0]
-            inversed_moment_tensors = args[1]
+            inversed_moment_tensors = args[0]
+            directed_neumann = args[1]
             h_res = self._add_neumann(
                 h_res, directed_neumann=directed_neumann,
                 inversed_moment_tensors=inversed_moment_tensors)
