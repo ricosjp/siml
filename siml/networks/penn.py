@@ -81,7 +81,7 @@ class PENN(abstract_equivariant_gnn.AbstractEquivariantGNN):
             sparse.mul(int_inc, edge))
         return h
 
-    def _tensor_product(self, x, supports, top=True):
+    def _tensor_product(self, x, inversed_moment_tensors, supports, top=True):
         """Calculate tensor product G \\otimes x.
 
         Parameters
@@ -104,14 +104,17 @@ class PENN(abstract_equivariant_gnn.AbstractEquivariantGNN):
                        tensor rank+1 repetition
         """
         shape = x.shape
-        dim = len(supports)
+        dim = len(supports) - 1
         tensor_rank = len(shape) - 2
         if tensor_rank == 0:
-            h = self._convolution(x, supports, top=False)
+            h = self._convolution(
+                x, inversed_moment_tensors, supports=supports, top=False)
         elif tensor_rank > 0:
             h = torch.stack([
-                self._tensor_product(x[:, i_dim], supports, top=False)
-                for i_dim in range(dim)], dim=-2)
+                self._tensor_product(
+                    x[:, i_dim], inversed_moment_tensors,
+                    supports=supports, top=False)
+                for i_dim in range(dim)], dim=1)
         else:
             raise ValueError(f"Tensor shape invalid: {shape}")
 

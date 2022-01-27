@@ -13,7 +13,7 @@ import siml.networks.sparse as sparse
 PLOT = False
 
 
-class TestPENN(unittest.TestCase):
+class TestSparse(unittest.TestCase):
 
     def test_linear_penn_convolution_same_as_isogcn(self):
         data_path = Path(
