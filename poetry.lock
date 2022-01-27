@@ -295,7 +295,7 @@ description = "FEM I/O Tool"
 name = "femio"
 optional = false
 python-versions = ">=3.8,<3.10"
-version = "0.3.2.dev202201240625"
+version = "0.3.2.dev202201270850"
 
 [package.dependencies]
 kiwisolver = "1.0.1"
@@ -1387,7 +1387,7 @@ envisage = [
     {file = "envisage-6.0.1.tar.gz", hash = "sha256:8864c29aa344f7ac26eeb94788798f2d0cc791dcf95c632da8d79ebc580e114c"},
 ]
 femio = [
-    {file = "femio-0.3.2.dev202201240625-py3-none-any.whl", hash = "sha256:c6fcdaf1d5ca72141e0abc6a7620d2f49b4922d19da7004cbec1945568a776eb"},
+    {file = "femio-0.3.2.dev202201270850-py3-none-any.whl", hash = "sha256:c8c79a326fb63c24e4a7a7422694544054572ffaa6562fa6e772648994b226f8"},
 ]
 filelock = [
     {file = "filelock-3.0.12-py3-none-any.whl", hash = "sha256:929b7d63ec5b7d6b71b0fa5ac14e030b3f70b75747cef1b10da9b879fef15836"},
