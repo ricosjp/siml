@@ -690,7 +690,7 @@ class TestNetworks(unittest.TestCase):
     def test_equivariant_mlp_rank2(self):
         equivariant_mlp = tensor_operations.EquivariantMLP(
             setting.BlockSetting(
-                nodes=[2, 4, 8], activations=['tanh', 'identity']))
+                nodes=[2, 4, 8], activations=['tanh', 'tanh']))
         equivariant_mlp.eval()
 
         x = np.random.rand(200, 3, 3, 2).astype(np.float32)

@@ -425,11 +425,21 @@ def conversion_function_rotation_thermal_stress(fem_data, raw_directory=None):
     nodal_strain_mat = fem_data.convert_array2symmetric_matrix(
         nodal_strain_array, from_engineering=True)
 
+    inc_grad, inc_int = fem_data.calculate_spatial_gradient_incidence_matrix(
+        'nodal', moment_matrix=True, normals=False)
+    inversed_moment_tensors = fem_data.nodal_data.pop(
+        'inversed_moment_tensors').data[..., None]
+
     dict_data = {
         'nadj': nadj,
         'nodal_grad_x': nodal_grad_x,
         'nodal_grad_y': nodal_grad_y,
         'nodal_grad_z': nodal_grad_z,
+        'inc_grad_x': inc_grad[0],
+        'inc_grad_y': inc_grad[1],
+        'inc_grad_z': inc_grad[2],
+        'inc_int': inc_int,
+        'minv': inversed_moment_tensors,
         'nodal_hess_xx': nodal_hess_xx,
         'nodal_hess_xy': nodal_hess_xy,
         'nodal_hess_xz': nodal_hess_xz,

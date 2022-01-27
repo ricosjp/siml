@@ -1,21 +1,27 @@
 
 from pathlib import Path
-import unittest
+import shutil
+import sys
 
 import numpy as np
 import scipy.sparse as sp
 import torch
 
 import siml.datasets as datasets
+import siml.inferer as inferer
 import siml.networks.iso_gcn as iso_gcn
 import siml.networks.penn as penn
 import siml.setting as setting
+import siml.trainer as trainer
+
+sys.path.insert(0, 'tests')
+import equivariance_base  # NOQA
 
 
 PLOT = False
 
 
-class TestPENN(unittest.TestCase):
+class TestPENN(equivariance_base.EquivarianceBase):
 
     def test_linear_penn_convolution_same_as_isogcn(self):
         penn_ = penn.PENN(setting.BlockSetting(
@@ -100,7 +106,7 @@ class TestPENN(unittest.TestCase):
             datasets.pad_sparse(gy),
             datasets.pad_sparse(gz)])
         n = gx.shape[-1]
-        np_v = np.random.rand(n, 3, 3, 5).astype(np.float32)
+        np_v = np.random.rand(n, 3, 5).astype(np.float32)
 
         res_penn = penn_(
             torch.from_numpy(np_v), torch.from_numpy(np_minv),
@@ -206,3 +212,106 @@ class TestPENN(unittest.TestCase):
 
         np.testing.assert_almost_equal(
             res_penn.detach().numpy(), res_isogcn.detach().numpy(), decimal=6)
+
+    def test_penn_rotation_thermal_stress_rank0_rank2(self):
+        main_setting = setting.MainSetting.read_settings_yaml(Path(
+            'tests/data/rotation_thermal_stress/penn_rank0_rank2.yml'))
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        tr.train()
+
+        # Confirm inference result has isometric invariance and equivariance
+        original_path = Path(
+            'tests/data/rotation_thermal_stress/preprocessed/cube/original')
+        transformed_paths = self.collect_transformed_paths(
+            'tests/data/rotation_thermal_stress/preprocessed/cube'
+            '/*_transformed_*')
+        ir = inferer.Inferer(
+            main_setting, save=False,
+            converter_parameters_pkl=Path(
+                'tests/data/rotation_thermal_stress/preprocessed'
+                '/preprocessors.pkl'))
+        model_directory = str(main_setting.trainer.output_directory)
+        original_results = ir.infer(
+            model=model_directory,
+            data_directories=[original_path])
+        transformed_results = ir.infer(
+            model=model_directory,
+            data_directories=transformed_paths)
+
+        self.validate_results(
+            original_results, transformed_results, rank2='nodal_strain_mat',
+            threshold_percent=.002, decimal=4)
+
+    def test_iso_gcn_rotation_thermal_stress_rank2_rank0(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/rotation_thermal_stress/penn_rank2_rank0.yml'))
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, .5)
+
+        # Confirm inference result has isometric invariance
+        original_path = Path(
+            'tests/data/rotation_thermal_stress/preprocessed/cube/original')
+        transformed_paths = self.collect_transformed_paths(
+            'tests/data/rotation_thermal_stress/preprocessed/cube'
+            '/*_transformed_*')
+        ir = inferer.Inferer(
+            main_setting, save=False,
+            converter_parameters_pkl=Path(
+                'tests/data/rotation_thermal_stress/preprocessed/'
+                'preprocessors.pkl'))
+        model_directory = str(main_setting.trainer.output_directory)
+        inference_outpout_directory = \
+            main_setting.trainer.output_directory / 'inferred'
+        if inference_outpout_directory.exists():
+            shutil.rmtree(inference_outpout_directory)
+        original_results = ir.infer(
+            model=model_directory,
+            data_directories=[original_path])
+        transformed_results = ir.infer(
+            model=model_directory,
+            data_directories=transformed_paths)
+
+        self.validate_results(
+            original_results, transformed_results, rank0='initial_temperature',
+            decimal=4)
+
+    def test_iso_gcn_rotation_thermal_stress_rank2_rank2(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/rotation_thermal_stress/penn_rank2_rank2.yml'))
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, 1.)
+
+        # Confirm inference result has isometric invariance
+        original_path = Path(
+            'tests/data/rotation_thermal_stress/preprocessed/cube/original')
+        transformed_paths = self.collect_transformed_paths(
+            'tests/data/rotation_thermal_stress/preprocessed/cube'
+            '/*_transformed_*')
+        ir = inferer.Inferer(
+            main_setting, save=False,
+            converter_parameters_pkl=Path(
+                'tests/data/rotation_thermal_stress/preprocessed/'
+                'preprocessors.pkl'))
+        model_directory = str(main_setting.trainer.output_directory)
+        inference_outpout_directory = \
+            main_setting.trainer.output_directory / 'inferred'
+        if inference_outpout_directory.exists():
+            shutil.rmtree(inference_outpout_directory)
+        original_results = ir.infer(
+            model=model_directory,
+            data_directories=[original_path])
+        transformed_results = ir.infer(
+            model=model_directory,
+            data_directories=transformed_paths)
+
+        self.validate_results(
+            original_results, transformed_results, rank2='nodal_strain_mat',
+            threshold_percent=.002, decimal=4)

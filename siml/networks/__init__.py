@@ -19,6 +19,7 @@ from . import lstm
 from . import mlp
 from . import message_passing
 from . import normalized_mlp
+from . import penn
 from . import pinv_mlp
 from . import reducer
 from . import reshape
@@ -65,6 +66,7 @@ blocks = [
     mlp.MLP,
     message_passing.MessagePassing,
     normalized_mlp.NormalizedMLP,
+    penn.PENN,
     pinv_mlp.PInvMLP,
     set_transformer.SetTransformerEncoder,
     set_transformer.SetTransformerDecoder,

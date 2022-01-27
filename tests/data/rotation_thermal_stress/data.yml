@@ -22,6 +22,13 @@ preprocess:
     same_as: nodal_grad_x
   nodal_grad_z:
     same_as: nodal_grad_x
+  inc_grad_x: sparse_std
+  inc_grad_y:
+    same_as: inc_grad_x
+  inc_grad_z:
+    same_as: inc_grad_x
+  inc_int: identity
+  minv: identity
   nodal_hess_xx:
     method: sparse_std
     componentwise: false

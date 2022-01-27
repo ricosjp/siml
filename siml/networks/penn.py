@@ -1,4 +1,5 @@
 
+import numpy as np
 import torch
 
 from . import abstract_equivariant_gnn
@@ -18,8 +19,17 @@ class PENN(abstract_equivariant_gnn.AbstractEquivariantGNN):
     def accepts_multiple_inputs():
         return True
 
+    @classmethod
+    def _get_n_input_node(
+            cls, block_setting, predecessors, dict_block_setting,
+            input_length, **kwargs):
+        return np.max([
+            dict_block_setting[predecessor].nodes[-1]
+            for predecessor in predecessors])
+
     def __init__(self, block_setting):
         block_setting.optional['create_subchain'] = False
+        block_setting.optional['set_last_activation'] = False
 
         super().__init__(block_setting)
 
@@ -63,23 +73,8 @@ class PENN(abstract_equivariant_gnn.AbstractEquivariantGNN):
         y: torch.Tensor
             [n_vertex, dim, n_feature]-shaped tensor.
         """
-        if self.support_tensor_rank != 1:
-            raise NotImplementedError(
-                f"Invalid support_tensor_rank: {self.support_tensor_rank}")
-        if len(supports) != 4:
-            raise ValueError(
-                'Invalid length of supports '
-                f"({len(supports)} given, expected 4)")
-
-        grad_incs = supports[:3]
-        int_inc = supports[3]
-
-        edge = self.mlp(torch.stack([
-            grad_inc.mm(x) for grad_inc in grad_incs], axis=1))
-        h = torch.einsum(
-            'ikl,ilf->ikf', inversed_moment_tensors[..., 0],
-            sparse.mul(int_inc, edge))
-        return h
+        return self._tensor_product(
+            x, inversed_moment_tensors, supports=supports)
 
     def _tensor_product(self, x, inversed_moment_tensors, supports, top=True):
         """Calculate tensor product G \\otimes x.
@@ -105,21 +100,22 @@ class PENN(abstract_equivariant_gnn.AbstractEquivariantGNN):
                        ~~~~~~~~~~~~~~~~~~~
                        tensor rank+1 repetition
         """
-        shape = x.shape
-        dim = len(supports) - 1
-        tensor_rank = len(shape) - 2
-        if tensor_rank == 0:
-            h = self._convolution(
-                x, inversed_moment_tensors, supports=supports, top=False)
-        elif tensor_rank > 0:
-            h = torch.stack([
-                self._tensor_product(
-                    x[:, i_dim], inversed_moment_tensors,
-                    supports=supports, top=False)
-                for i_dim in range(dim)], dim=-2)
-        else:
-            raise ValueError(f"Tensor shape invalid: {shape}")
+        if self.support_tensor_rank != 1:
+            raise NotImplementedError(
+                f"Invalid support_tensor_rank: {self.support_tensor_rank}")
+        if len(supports) != 4:
+            raise ValueError(
+                'Invalid length of supports '
+                f"({len(supports)} given, expected 4)")
 
+        grad_incs = supports[:3]
+        int_inc = supports[3]
+
+        edge = self.mlp(torch.stack([
+            sparse.mul(grad_inc, x) for grad_inc in grad_incs], axis=1))
+        h = torch.einsum(
+            'ikl,il...f->ik...f', inversed_moment_tensors[..., 0],
+            sparse.mul(int_inc, edge))
         return h
 
     def _contraction(self, x, inversed_moment_tensors, supports):
@@ -153,6 +149,14 @@ class PENN(abstract_equivariant_gnn.AbstractEquivariantGNN):
 
         shape = x.shape
         tensor_rank = len(shape) - 2
+
+        edge = self.mlp(torch.stack([
+            sparse.mul(grad_inc, x) for grad_inc in grad_incs], axis=1))
+        h = torch.einsum(
+            'ikl,il...kf->i...f', inversed_moment_tensors[..., 0],
+            sparse.mul(int_inc, edge))
+        return h
+
         if tensor_rank == 1:
             if self.support_tensor_rank == 1:
                 edge = self.mlp(torch.stack(

@@ -1,0 +1,136 @@
+
+from pathlib import Path
+import glob
+import unittest
+
+import numpy as np
+
+
+class EquivarianceBase(unittest.TestCase):
+
+    def validate_results(
+            self, original_results, transformed_results,
+            *, rank0=None, rank2=None, validate_x=True, decimal=5,
+            threshold_percent=1e-3):
+
+        if rank0 is not None:
+            scale = np.max(np.abs(original_results[0]['dict_y'][rank0]))
+
+            for transformed_result in transformed_results:
+                if validate_x:
+                    np.testing.assert_almost_equal(
+                        original_results[0]['dict_x'][rank0],
+                        transformed_result['dict_x'][rank0], decimal=decimal)
+
+                print(
+                    f"data_directory: {transformed_result['data_directory']}")
+                self.print_vec(
+                    original_results[0]['dict_y'][rank0] / scale,
+                    'Transform x ML', 5)
+                self.print_vec(
+                    transformed_result['dict_y'][rank0] / scale,
+                    'ML x Transform', 5)
+                self.print_vec((
+                    original_results[0]['dict_y'][rank0]
+                    - transformed_result['dict_y'][rank0]) / scale,
+                    'Diff', 5)
+                self.compare_relative_rmse(
+                    original_results[0]['dict_y'][rank0],
+                    transformed_result['dict_y'][rank0],
+                    threshold_percent=threshold_percent)
+                np.testing.assert_almost_equal(
+                    original_results[0]['dict_y'][rank0] / scale,
+                    transformed_result['dict_y'][rank0] / scale,
+                    decimal=decimal)
+
+        if rank2 is not None:
+            scale = np.max(np.abs(original_results[0]['dict_y'][rank2]))
+
+            for transformed_result in transformed_results:
+                print(
+                    f"data_directory: {transformed_result['data_directory']}")
+                orthogonal_matrix = self.load_orthogonal_matrix(
+                    transformed_result['data_directory'])
+                if validate_x:
+                    np.testing.assert_almost_equal(
+                        self.transform_rank2(
+                            orthogonal_matrix,
+                            original_results[0]['dict_x'][rank2]),
+                        transformed_result['dict_x'][rank2], decimal=decimal)
+
+                transformed_original = self.transform_rank2(
+                    orthogonal_matrix, original_results[0]['dict_y'][rank2])
+                self.print_vec(
+                    transformed_original / scale, 'Transform x ML', 5)
+                self.print_vec(
+                    transformed_result['dict_y'][rank2] / scale,
+                    'ML x Transform', 5)
+                self.print_vec((
+                    transformed_original
+                    - transformed_result['dict_y'][rank2]) / scale,
+                    'Diff', 5)
+                self.compare_relative_rmse(
+                    transformed_original, transformed_result['dict_y'][rank2],
+                    threshold_percent=threshold_percent)
+                np.testing.assert_almost_equal(
+                    transformed_original / scale,
+                    transformed_result['dict_y'][rank2] / scale,
+                    decimal=decimal)
+
+        return
+
+    def compare_relative_rmse(self, target, y, threshold_percent):
+        target_scale = np.mean(target**2)**.5
+        rmse = np.mean((y - target)**2)**.5
+        self.assertLess(rmse / target_scale * 100, threshold_percent)
+
+    def print_vec(self, x, name=None, n=None):
+        if n is None:
+            n = x.shape[0]
+        print('--')
+        if name is not None:
+            print(name)
+        if len(x.shape) == 4:
+            for _x in x[:n, ..., 0]:
+                print(_x)
+        elif len(x.shape) == 3:
+            for _x in x[:n, ..., 0]:
+                print(_x)
+        elif len(x.shape) == 2:
+            for _x in x[:n]:
+                print(_x)
+        else:
+            raise ValueError(f"Unexpected array shape: {x.shape}")
+        print('--')
+        return
+
+    def transform_rank1(self, orthogonal_matrix, x):
+        if len(x.shape) == 2:
+            return np.array([orthogonal_matrix @ _x for _x in x])
+        elif len(x.shape) == 3:
+            n_feature = x.shape[-1]
+            return np.stack([
+                np.array([orthogonal_matrix @ _x for _x in x[..., i_feature]])
+                for i_feature in range(n_feature)], axis=-1)
+        else:
+            raise ValueError(f"Unexpected x shape: {x.shape}")
+
+    def identity(self, orthogonal_matrix, x):
+        return x
+
+    def transform_rank2(self, orthogonal_matrix, t):
+        n_feature = t.shape[-1]
+        return np.stack([
+            np.array([
+                orthogonal_matrix @ _t @ orthogonal_matrix.T
+                for _t in t[..., i_feature]])
+            for i_feature in range(n_feature)], axis=-1)
+
+    def collect_transformed_paths(self, root_path, recursive=False):
+        return [
+            Path(g) for g in glob.glob(str(root_path), recursive=recursive)]
+
+    def load_orthogonal_matrix(self, preprocessed_path):
+        return np.loadtxt(
+            str(preprocessed_path / 'orthogonal_matrix.txt').replace(
+                'preprocessed', 'raw'))

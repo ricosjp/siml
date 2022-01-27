@@ -5,7 +5,6 @@ import torch
 from .. import setting
 from . import abstract_gcn
 from . import activations
-from . import identity
 from . import mlp
 from . import tensor_operations
 
@@ -27,6 +26,8 @@ class AbstractEquivariantGNN(abstract_gcn.AbstractGCN):
         super().__init__(
             block_setting, create_subchain=False,
             multiple_networks=False, residual=block_setting.residual)
+        self.set_last_activation = block_setting.optional.get(
+            'set_last_activation', True)
         if self.create_subchain:
             n_layer = len(self.block_setting.nodes) - 1
             if n_layer == 0:
@@ -56,13 +57,16 @@ class AbstractEquivariantGNN(abstract_gcn.AbstractGCN):
 
         else:
             print(f"Skip subchain creation for: {block_setting.name}")
-            self.subchains = [[identity.Identity(block_setting)]]
+            self.subchains = [[activations.identity]]
             self.has_coefficient_network = False
 
-        if self.has_coefficient_network:
-            self.last_activation = activations.identity
+        if self.set_last_activation:
+            if self.has_coefficient_network:
+                self.last_activation = activations.identity
+            else:
+                self.last_activation = self.activations[-1]
         else:
-            self.last_activation = self.activations[-1]
+            self.last_activation = activations.identity
 
         self.dim = block_setting.optional.get('dim', 3)
         self.support_tensor_rank = block_setting.optional.get(
@@ -92,11 +96,14 @@ class AbstractEquivariantGNN(abstract_gcn.AbstractGCN):
 
         # Setting for Neumann BC
         if self.block_setting.input_names is not None:
-            if len(self.block_setting.input_names) != 3:
+            if len(self.block_setting.input_names) == 2:
+                self.has_neumann = False
+            elif len(self.block_setting.input_names) == 3:
+                self.has_neumann = True
+                self._init_neumann()
+            else:
                 raise ValueError(
-                    f"# of input names invalid for {self.block_setting}")
-            self.has_neumann = True
-            self._init_neumann()
+                    f"Invalidt input_names for: {self.block_setting}")
         else:
             self.has_neumann = False
         return

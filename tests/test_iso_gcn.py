@@ -1,8 +1,7 @@
 
-import glob
 from pathlib import Path
 import shutil
-import unittest
+import sys
 
 import numpy as np
 import scipy.sparse as sp
@@ -15,10 +14,13 @@ import siml.setting as setting
 import siml.trainer as trainer
 
 
+sys.path.insert(0, 'tests')
+import equivariance_base  # NOQA
+
 PLOT = False
 
 
-class TestIsoGCN(unittest.TestCase):
+class TestIsoGCN(equivariance_base.EquivarianceBase):
 
     def test_convolution_rank0_rank1(self):
         x = np.random.rand(4, 3)
@@ -176,15 +178,6 @@ class TestIsoGCN(unittest.TestCase):
                     original_rotated_h_conv[:, 1, 2, i],
                     original_rotated_h_conv[:, 2, 1, i])
         return
-
-    def collect_transformed_paths(self, root_path, recursive=False):
-        return [
-            Path(g) for g in glob.glob(str(root_path), recursive=recursive)]
-
-    def load_orthogonal_matrix(self, preprocessed_path):
-        return np.loadtxt(
-            str(preprocessed_path / 'orthogonal_matrix.txt').replace(
-                'preprocessed', 'raw'))
 
     def test_contraction_rank2_rank0_real_data(self):
         original_path = Path(
@@ -361,48 +354,6 @@ class TestIsoGCN(unittest.TestCase):
         vec2 = np.cross(vec3, vec1)
         return np.array([vec1, vec2, vec3])
 
-    def print_vec(self, x, name=None, n=None):
-        if n is None:
-            n = x.shape[0]
-        print('--')
-        if name is not None:
-            print(name)
-        if len(x.shape) == 4:
-            for _x in x[:n, ..., 0]:
-                print(_x)
-        elif len(x.shape) == 3:
-            for _x in x[:n, ..., 0]:
-                print(_x)
-        elif len(x.shape) == 2:
-            for _x in x[:n]:
-                print(_x)
-        else:
-            raise ValueError(f"Unexpected array shape: {x.shape}")
-        print('--')
-        return
-
-    def transform_rank1(self, orthogonal_matrix, x):
-        if len(x.shape) == 2:
-            return np.array([orthogonal_matrix @ _x for _x in x])
-        elif len(x.shape) == 3:
-            n_feature = x.shape[-1]
-            return np.stack([
-                np.array([orthogonal_matrix @ _x for _x in x[..., i_feature]])
-                for i_feature in range(n_feature)], axis=-1)
-        else:
-            raise ValueError(f"Unexpected x shape: {x.shape}")
-
-    def identity(self, orthogonal_matrix, x):
-        return x
-
-    def transform_rank2(self, orthogonal_matrix, t):
-        n_feature = t.shape[-1]
-        return np.stack([
-            np.array([
-                orthogonal_matrix @ _t @ orthogonal_matrix.T
-                for _t in t[..., i_feature]])
-            for i_feature in range(n_feature)], axis=-1)
-
     def conv(self, iso_gcn_, h, g_tilde, rank_g=1, einstring=None):
         if rank_g == 1:
             gs = [
@@ -438,82 +389,6 @@ class TestIsoGCN(unittest.TestCase):
         g_eye = np.einsum('ij,ik->ijk', np.eye(n), np.sum(g, axis=1))
         g_tilde = g - g_eye
         return g, g_eye, g_tilde
-
-    def validate_results(
-            self, original_results, transformed_results,
-            *, rank0=None, rank2=None, validate_x=True, decimal=5,
-            threshold_percent=1e-3):
-
-        if rank0 is not None:
-            scale = np.max(np.abs(original_results[0]['dict_y'][rank0]))
-
-            for transformed_result in transformed_results:
-                if validate_x:
-                    np.testing.assert_almost_equal(
-                        original_results[0]['dict_x'][rank0],
-                        transformed_result['dict_x'][rank0], decimal=decimal)
-
-                print(
-                    f"data_directory: {transformed_result['data_directory']}")
-                self.print_vec(
-                    original_results[0]['dict_y'][rank0] / scale,
-                    'Transform x IsoGCN', 5)
-                self.print_vec(
-                    transformed_result['dict_y'][rank0] / scale,
-                    'IsoGCN x Transform', 5)
-                self.print_vec((
-                    original_results[0]['dict_y'][rank0]
-                    - transformed_result['dict_y'][rank0]) / scale,
-                    'Diff', 5)
-                self.compare_relative_rmse(
-                    original_results[0]['dict_y'][rank0],
-                    transformed_result['dict_y'][rank0],
-                    threshold_percent=threshold_percent)
-                np.testing.assert_almost_equal(
-                    original_results[0]['dict_y'][rank0] / scale,
-                    transformed_result['dict_y'][rank0] / scale,
-                    decimal=decimal)
-
-        if rank2 is not None:
-            scale = np.max(np.abs(original_results[0]['dict_y'][rank2]))
-
-            for transformed_result in transformed_results:
-                print(
-                    f"data_directory: {transformed_result['data_directory']}")
-                orthogonal_matrix = self.load_orthogonal_matrix(
-                    transformed_result['data_directory'])
-                if validate_x:
-                    np.testing.assert_almost_equal(
-                        self.transform_rank2(
-                            orthogonal_matrix,
-                            original_results[0]['dict_x'][rank2]),
-                        transformed_result['dict_x'][rank2], decimal=decimal)
-
-                transformed_original = self.transform_rank2(
-                    orthogonal_matrix, original_results[0]['dict_y'][rank2])
-                self.print_vec(
-                    transformed_original / scale, 'Transform x IsoGCN', 5)
-                self.print_vec(
-                    transformed_result['dict_y'][rank2] / scale,
-                    'IsoGCN x Transform', 5)
-                self.print_vec((
-                    transformed_original
-                    - transformed_result['dict_y'][rank2]) / scale,
-                    'Diff', 5)
-                self.compare_relative_rmse(
-                    transformed_original, transformed_result['dict_y'][rank2],
-                    threshold_percent=threshold_percent)
-                np.testing.assert_almost_equal(
-                    transformed_original / scale,
-                    transformed_result['dict_y'][rank2] / scale,
-                    decimal=decimal)
-
-        return
-
-    def compare_relative_rmse(self, target, y, threshold_percent):
-        target_scale = np.mean(target**2)**.5
-        rmse = np.mean((y - target)**2)**.5
-        self.assertLess(rmse / target_scale * 100, threshold_percent)
 
     def test_iso_gcn_rank0_rank0(self):
         main_setting = setting.MainSetting.read_settings_yaml(
