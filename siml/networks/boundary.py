@@ -165,8 +165,8 @@ class NeumannIsoGCN(siml_module.SimlModule):
         ----------
         xs: List[torch.Tensor]
             0: Gradient values without Neumann.
-            1: Neumann values multiplied with normal vectors.
-            2: Inversed moment matrices.
+            1: Inversed moment matrices.
+            2: Neumann values multiplied with normal vectors.
 
         Returns
         -------
@@ -177,8 +177,8 @@ class NeumannIsoGCN(siml_module.SimlModule):
             raise ValueError(
                 f"Input shoulbe x and Dirichlet ({len(xs)} given)")
         grad = xs[0]
-        directed_neumann = xs[1]
-        inversed_moment_tensors = xs[2]
+        inversed_moment_tensors = xs[1]
+        directed_neumann = xs[2]
         neumann = torch.einsum(
             'ikl,il...f->ik...f',
             inversed_moment_tensors[..., 0],

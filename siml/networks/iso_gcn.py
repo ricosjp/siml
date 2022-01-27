@@ -16,7 +16,7 @@ class IsoGCN(abstract_equivariant_gnn.AbstractEquivariantGNN):
     def accepts_multiple_inputs():
         return True
 
-    def _tensor_product(self, x, supports):
+    def _tensor_product(self, x, *args, supports):
         """Calculate tensor product G \\otimes x.
 
         Parameters
@@ -49,7 +49,7 @@ class IsoGCN(abstract_equivariant_gnn.AbstractEquivariantGNN):
 
         return h
 
-    def _convolution(self, x, supports, top=True):
+    def _convolution(self, x, *args, supports, top=True):
         """Calculate convolution G \\ast x.
 
         Parameters
@@ -80,7 +80,7 @@ class IsoGCN(abstract_equivariant_gnn.AbstractEquivariantGNN):
 
         return h
 
-    def _contraction(self, x, supports):
+    def _contraction(self, x, *args, supports):
         """Calculate contraction G \\cdot B. It calculates
         \\sum_l G_{i,j,k_1,k_2,...,l} H_{jk_1,k_2,...,l,f}
 
@@ -125,7 +125,7 @@ class IsoGCN(abstract_equivariant_gnn.AbstractEquivariantGNN):
         else:
             raise ValueError(f"Tensor rank is 0 (shape: {shape})")
 
-    def _rotation(self, x, supports):
+    def _rotation(self, x, *args, supports):
         """Calculate rotation G \\times x.
 
         Parameters

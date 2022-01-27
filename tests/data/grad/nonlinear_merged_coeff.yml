@@ -107,8 +107,8 @@ model:
       type: iso_gcn
       input_names:
         - IN_MLP
-        - NEUMANN_ENCODER
         - IN_MOMENT
+        - NEUMANN_ENCODER
       destinations:
         - OUT_MLP
       bias: false
