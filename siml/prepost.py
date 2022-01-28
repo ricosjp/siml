@@ -392,6 +392,7 @@ class Preprocessor:
 
     def __init__(
             self, main_setting, force_renew=False, save_func=None,
+            recursive=True,
             str_replace='interim', max_process=None, allow_missing=False):
         """Initialize preprocessor of interim data with preprocessing
         e.g. standardization and then save them.
@@ -400,6 +401,8 @@ class Preprocessor:
         ----------
         force_renew: bool, optional
             If True, renew npy files even if they are alerady exist.
+        recursive: bool, optional
+            If True, search data recursively.
         save_func: callable, optional
             Callback function to customize save data. It should accept
             output_directory, variable_name, and transformed_data.
@@ -412,11 +415,15 @@ class Preprocessor:
             If True, continue even if some of variables are missing.
         """
         self.setting = main_setting
+        self.recursive = recursive
         self.force_renew = force_renew
         self.save_func = save_func
-        self.interim_directories = util.collect_data_directories(
-            self.setting.data.interim,
-            required_file_names=self.REQUIRED_FILE_NAMES)
+        if self.recursive:
+            self.interim_directories = util.collect_data_directories(
+                self.setting.data.interim,
+                required_file_names=self.REQUIRED_FILE_NAMES)
+        else:
+            self.interim_directories = self.setting.data.interim
         self.str_replace = str_replace
         self.max_process = util.determine_max_process(max_process)
         self.allow_missing = allow_missing
