@@ -14,15 +14,8 @@ def mul(sparse, tensor):
     torch.Tensor
     """
     shape = tensor.shape
-    tensor_rank = len(shape) - 2
-    if tensor_rank == 0:
-        h = sparse.mm(tensor)
-    elif tensor_rank > 0:
-        dim = tensor.shape[-2]
-        h = torch.stack([
-            mul(sparse, tensor[:, i_dim])
-            for i_dim in range(dim)], dim=1)
-    else:
-        raise ValueError(f"Tensor shape invalid: {shape}")
-
+    sparse_shape = sparse.shape
+    h = torch.reshape(
+        sparse.mm(torch.reshape(tensor, (shape[0], -1))),
+        [sparse_shape[0]] + list(shape[1:]))
     return h
