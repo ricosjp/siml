@@ -84,15 +84,28 @@ def conversion_function_grad(fem_data, raw_directory=None):
     nodal_grad_x, nodal_grad_y, nodal_grad_z = \
         fem_data.calculate_spatial_gradient_adjacency_matrices(
             'nodal', n_hop=1, moment_matrix=True, normals=nodal_surface_normal,
-            normal_weight_factor=1., consider_volume=False)
-    inversed_moment_tensor = fem_data.nodal_data.get_attribute_data(
-        'inversed_moment_tensors')[..., None]
-    weighted_normal = fem_data.nodal_data.get_attribute_data(
-        'weighted_surface_normals')
+            normal_weight=10., consider_volume=False)
+    inversed_moment_tensor = fem_data.nodal_data.pop(
+        'inversed_moment_tensors').data[..., None]
+    weighted_normal = fem_data.nodal_data.pop(
+        'weighted_surface_normals').data
 
     neumann = np.einsum('ij,ij->i', nodal_surface_normal, grad[..., 0])
     directed_neumann = np.einsum(
         'ij,i->ij', weighted_normal, neumann)[..., None]
+
+    inc_grad, inc_int = fem_data.calculate_spatial_gradient_incidence_matrix(
+        'nodal', moment_matrix=True, normals=nodal_surface_normal,
+        normal_weight=10.)
+    inc_inversed_moment_tensor = fem_data.nodal_data.pop(
+        'inversed_moment_tensors').data[..., None]
+    inc_weighted_normal = fem_data.nodal_data.pop(
+        'weighted_surface_normals').data
+
+    np.testing.assert_almost_equal(
+        inversed_moment_tensor, inc_inversed_moment_tensor)
+    np.testing.assert_almost_equal(
+        weighted_normal, inc_weighted_normal)
 
     dict_data = {
         'node': node,
@@ -102,6 +115,10 @@ def conversion_function_grad(fem_data, raw_directory=None):
         'nodal_grad_x': nodal_grad_x,
         'nodal_grad_y': nodal_grad_y,
         'nodal_grad_z': nodal_grad_z,
+        'inc_grad_x': inc_grad[0],
+        'inc_grad_y': inc_grad[1],
+        'inc_grad_z': inc_grad[2],
+        'inc_int': inc_int,
         'inversed_moment_tensor': inversed_moment_tensor,
         'directed_neumann': directed_neumann,
         'neumann': neumann[..., None],
@@ -180,11 +197,24 @@ def conversion_function_heat_boundary(fem_data, raw_directory=None):
         fem_data.calculate_spatial_gradient_adjacency_matrices(
             'nodal', n_hop=1, moment_matrix=True,
             normals=nodal_surface_normal,
-            consider_volume=False, normal_weight_factor=1.)
-    inversed_moment_tensors_1 = fem_data.nodal_data.get_attribute_data(
-        'inversed_moment_tensors')[..., None]
-    weighted_surface_normal_1 = fem_data.nodal_data.get_attribute_data(
-        'weighted_surface_normals')[..., None]
+            consider_volume=False, normal_weight=10.)
+    inversed_moment_tensors_1 = fem_data.nodal_data.pop(
+        'inversed_moment_tensors').data[..., None]
+    weighted_surface_normal_1 = fem_data.nodal_data.pop(
+        'weighted_surface_normals').data[..., None]
+
+    inc_grad, inc_int = fem_data.calculate_spatial_gradient_incidence_matrix(
+        'nodal', moment_matrix=True, normals=nodal_surface_normal,
+        normal_weight=10.)
+    inc_inversed_moment_tensor = fem_data.nodal_data.pop(
+        'inversed_moment_tensors').data[..., None]
+    inc_weighted_normal = fem_data.nodal_data.pop(
+        'weighted_surface_normals').data[..., None]
+
+    np.testing.assert_almost_equal(
+        inversed_moment_tensors_1, inc_inversed_moment_tensor)
+    np.testing.assert_almost_equal(
+        weighted_surface_normal_1, inc_weighted_normal)
 
     dict_data = {
         'node': node,
@@ -194,6 +224,10 @@ def conversion_function_heat_boundary(fem_data, raw_directory=None):
         'nodal_grad_x_1': nodal_grad_x_1,
         'nodal_grad_y_1': nodal_grad_y_1,
         'nodal_grad_z_1': nodal_grad_z_1,
+        'inc_grad_x': inc_grad[0],
+        'inc_grad_y': inc_grad[1],
+        'inc_grad_z': inc_grad[2],
+        'inc_int': inc_int,
         'inversed_moment_tensors_1': inversed_moment_tensors_1,
         'weighted_surface_normal_1': weighted_surface_normal_1,
     }
@@ -408,11 +442,21 @@ def conversion_function_rotation_thermal_stress(fem_data, raw_directory=None):
     nodal_strain_mat = fem_data.convert_array2symmetric_matrix(
         nodal_strain_array, from_engineering=True)
 
+    inc_grad, inc_int = fem_data.calculate_spatial_gradient_incidence_matrix(
+        'nodal', moment_matrix=True, normals=False)
+    inversed_moment_tensors = fem_data.nodal_data.pop(
+        'inversed_moment_tensors').data[..., None]
+
     dict_data = {
         'nadj': nadj,
         'nodal_grad_x': nodal_grad_x,
         'nodal_grad_y': nodal_grad_y,
         'nodal_grad_z': nodal_grad_z,
+        'inc_grad_x': inc_grad[0],
+        'inc_grad_y': inc_grad[1],
+        'inc_grad_z': inc_grad[2],
+        'inc_int': inc_int,
+        'minv': inversed_moment_tensors,
         'nodal_hess_xx': nodal_hess_xx,
         'nodal_hess_xy': nodal_hess_xy,
         'nodal_hess_xz': nodal_hess_xz,
@@ -855,8 +899,8 @@ def generate_large():
 
 
 if __name__ == '__main__':
-    preprocess_heat_interaction()
     preprocess_heat_boundary()
+    preprocess_heat_interaction()
     preprocess_grad()
     preprocess_deform()
     preprocess_rotation_thermal_stress()

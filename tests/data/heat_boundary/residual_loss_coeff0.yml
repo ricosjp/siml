@@ -276,8 +276,8 @@ model:
           type: neumann_isogcn
           input_names:
             - ISO_GCN_RANK0_RANK1_1
-            - IN_NEUMANN
             - IN_MOMENT
+            - IN_NEUMANN
           destinations:
             - CONTRACTION_1
           reference_block_name: ISO_GCN_RANK0_RANK1_1

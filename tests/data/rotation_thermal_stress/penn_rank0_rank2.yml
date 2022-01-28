@@ -1,0 +1,124 @@
+data:
+  train:
+    - tests/data/rotation_thermal_stress/preprocessed
+  validation:
+    - tests/data/rotation_thermal_stress/preprocessed
+  develop:
+    - tests/data/rotation_thermal_stress/preprocessed
+trainer:
+  lazy: false
+  num_workers: 0
+  output_directory: tests/data/rotation_thermal_stress/models/penn_rank0_rank2
+  split_ratio:
+    validation: .1
+    test: .0
+  inputs:
+    rank0:
+      - name: initial_temperature
+        dim: 1
+    minv:
+      - name: minv
+        dim: 1
+  support_inputs:
+    - inc_grad_x
+    - inc_grad_y
+    - inc_grad_z
+    - inc_int
+  outputs:
+    - name: nodal_strain_mat
+      dim: 1
+  prune: true
+  batch_size: 2
+  n_epoch: 10
+  log_trigger_epoch: 1
+  stop_trigger_epoch: 1
+  seed: 0
+model:
+  blocks:
+    - name: IN_MLP
+      type: mlp
+      input_keys:
+        - rank0
+      destinations:
+        - PENN_RANK0_RANK1
+        - ARRAY2DIAGMAT
+      nodes:
+        - -1
+        - 10
+        - 10
+      activations:
+        - tanh
+        - tanh
+    - name: ID_MINV
+      type: identity
+      is_first: true
+      input_keys:
+        - minv
+      destinations:
+        - PENN_RANK0_RANK1
+        - PENN_RANK1_RANK2
+    - name: PENN_RANK0_RANK1
+      type: penn
+      coeff: 1.e0
+      input_names:
+        - IN_MLP
+        - ID_MINV
+      destinations:
+        - PENN_RANK1_RANK2
+      support_input_indices:
+        - 0
+        - 1
+        - 2
+        - 3
+      nodes:
+        - -1
+        - 10
+        - 10
+      activations:
+        - tanh
+        - tanh
+      optional:
+        propagations:
+          - tensor_product
+        ah_w: true
+    - name: PENN_RANK1_RANK2
+      type: penn
+      coeff: 1.e0
+      input_names:
+        - PENN_RANK0_RANK1
+        - ID_MINV
+      destinations:
+        - ADD
+      support_input_indices:
+        - 0
+        - 1
+        - 2
+        - 3
+      nodes:
+        - -1
+        - 10
+        - 10
+      activations:
+        - tanh
+        - tanh
+      optional:
+        propagations:
+          - tensor_product
+        ah_w: true
+        symmetric: true
+    - name: ARRAY2DIAGMAT
+      type: array2diagmat
+      destinations:
+        - ADD
+    - name: ADD
+      type: reducer
+      destinations:
+        - OUT_LINEAR
+      optional:
+        operator: add
+    - name: OUT_LINEAR
+      type: mlp
+      nodes:
+        - -1
+        - -1
+      bias: false

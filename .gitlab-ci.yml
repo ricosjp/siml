@@ -91,6 +91,10 @@ test_iso_gcn:
   extends: .test
   script: python3.9 -m pytest tests/test_iso_gcn.py tests/test_boundary.py --capture=no
 
+test_penn:
+  extends: .test
+  script: python3.9 -m pytest tests/test_penn.py --capture=no
+
 test_optimize:
   extends: .test
   script: python3.9 -m pytest tests/test_optimize.py --capture=no
@@ -116,7 +120,7 @@ test_trainer_long:
 test_other:
   extends: .test
   script:
-    - python3.9 -m pytest tests/test_prepost.py tests/test_setting.py tests/test_util.py tests/test_inferer.py tests/test_activations.py --capture=no
+    - python3.9 -m pytest tests/test_prepost.py tests/test_setting.py tests/test_util.py tests/test_inferer.py tests/test_activations.py tests/test_sparse.py --capture=no
 
 test_group:
   extends: .test

@@ -392,8 +392,8 @@ model:
           type: iso_gcn
           input_names:
             - IN_RANK0_1
-            - MUL_HEAT_1
             - IN_MINV_1
+            - MUL_HEAT_1
           destinations:
             - MUL_1
           residual: false
@@ -460,8 +460,8 @@ model:
           type: iso_gcn
           input_names:
             - IN_RANK0_2
-            - MUL_HEAT_2
             - IN_MINV_2
+            - MUL_HEAT_2
           destinations:
             - MUL_2
           residual: false

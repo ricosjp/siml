@@ -218,7 +218,8 @@ class Network(torch.nn.Module):
                         raise ValueError(
                             'input_names differs from the predecessors:\n'
                             f"{set(block_setting.input_names)}\n"
-                            f"{set(self.call_graph.predecessors(graph_node))}")
+                            f"{set(self.call_graph.predecessors(graph_node))}"
+                            f"\nin: {block_setting}")
                     inputs = [
                         dict_hidden[input_name][
                             ..., block_setting.input_selection].to(device)
