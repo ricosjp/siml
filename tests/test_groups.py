@@ -100,7 +100,7 @@ class TestGroups(unittest.TestCase):
             data_directories=main_setting_wo_repeat.data.preprocessed_root)
 
         self.assertLess(loss_implicit, loss_repeat + 2.e-3)
-        self.assertLess(loss_implicit, loss_wo_repeat + 4.e-3)
+        self.assertLess(loss_implicit, loss_wo_repeat + 1.e-2)
 
     def test_heat_boundary_repeat(self):
         main_setting = setting.MainSetting.read_settings_yaml(
@@ -183,7 +183,7 @@ class TestGroups(unittest.TestCase):
             ref_results[0]['dict_y']['t_10']
             - ref_results[0]['dict_x']['t_10'])**2)
 
-        self.assertLess(mse, ref_mse + 3.e-3)
+        self.assertLess(mse, ref_mse + 5.e-2)
 
     def test_heat_timeseries_1step(self):
         main_setting_1step = setting.MainSetting.read_settings_yaml(Path(
