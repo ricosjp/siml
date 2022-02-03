@@ -411,7 +411,7 @@ class Inferer(siml_manager.SimlManager):
 
         self.model = networks.Network(
             self.setting.model, self.setting.trainer)
-        self._select_device()
+        self._select_device(gpu_id=self.setting.inferer.gpu_id)
         self._load_pretrained_model_if_needed(model_file=model_file)
 
         self.element_wise = self._determine_element_wise()

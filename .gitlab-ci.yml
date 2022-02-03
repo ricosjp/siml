@@ -61,7 +61,7 @@ test_gpu_networks:
 test_gpu:
   extends: .test
   script:
-    - python3.9 -m pytest tests/gpu/test_optimize_gpu.py tests/gpu/test_trainer_gpu.py --capture=no
+    - python3.9 -m pytest tests/gpu/test_optimize_gpu.py tests/gpu/test_trainer_gpu.py tests/gpu/test_inferer_gpu.py --capture=no
   tags:
     - multi-gpu
     - avx
