@@ -97,10 +97,13 @@ class SimlManager():
                 self.device = 'cpu'
                 self.output_device = self.device
         else:
-            if gpu_id != -1 \
+            if self.setting.trainer.gpu_id != -1 \
                     or self.setting.trainer.data_parallel \
                     or self.setting.trainer.model_parallel:
                 raise ValueError('No GPU found.')
+            self.setting.trainer.gpu_id = -1
+            self.device = 'cpu'
+            self.output_device = self.device
         return
 
     def _determine_element_wise(self):
