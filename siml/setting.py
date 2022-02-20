@@ -545,6 +545,7 @@ class TrainerSetting(TypedDataClass):
                 self.support_inputs = [self.support_input]
         if self.optimizer_setting is None:
             self.optimizer_setting = {
+                'name': 'adam',
                 'lr': 0.001,
                 'betas': (0.9, 0.99),
                 'eps': 1e-8,

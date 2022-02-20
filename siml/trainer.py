@@ -568,6 +568,10 @@ class Trainer(siml_manager.SimlManager):
             return torch.optim.Adam(
                 self.model.parameters(),
                 **self.setting.trainer.optimizer_setting)
+        elif optimizer_name == 'adamw':
+            return torch.optim.AdamW(
+                self.model.parameters(),
+                **self.setting.trainer.optimizer_setting)
         else:
             raise ValueError(f"Unknown optimizer name: {optimizer_name}")
 
