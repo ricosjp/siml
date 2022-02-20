@@ -654,6 +654,8 @@ class InfererSetting(TypedDataClass):
         is too large to fit into the memory available.
     model_key: bytes
         If fed, decrypt model file with the key.
+    gpu_id: int, optional
+        GPU ID. Specify non negative value to use GPU. -1 Meaning CPU.
     """
     model: Path = dc.field(
         default=None, metadata={'allow_none': True})
@@ -683,6 +685,7 @@ class InfererSetting(TypedDataClass):
     return_all_results: bool = True
     model_key: bytes = dc.field(
         default=None, metadata={'allow_none': True})
+    gpu_id: int = -1
 
 
 @dc.dataclass

@@ -63,7 +63,10 @@ class SimlManager():
         self.optuna_trial = optuna_trial
         return
 
-    def _select_device(self):
+    def _select_device(self, gpu_id=None):
+        if gpu_id is None:
+            gpu_id = self.setting.trainer.gpu_id
+
         if self._is_gpu_supporting():
             if self.setting.trainer.data_parallel:
                 if self.setting.trainer.time_series:
@@ -85,11 +88,11 @@ class SimlManager():
                 gpu_count = torch.cuda.device_count()
                 self.output_device = f"cuda:{gpu_count-1}"
                 print(f"Model parallel enabled with {gpu_count} GPUs.")
-            elif self.setting.trainer.gpu_id != -1:
-                self.device = f"cuda:{self.setting.trainer.gpu_id}"
+            elif gpu_id != -1:
+                self.device = f"cuda:{gpu_id}"
                 self.output_device = self.device
                 self.model.to(self.device)
-                print(f"GPU device: {self.setting.trainer.gpu_id}")
+                print(f"GPU device: {gpu_id}")
             else:
                 self.device = 'cpu'
                 self.output_device = self.device
@@ -101,6 +104,7 @@ class SimlManager():
             self.setting.trainer.gpu_id = -1
             self.device = 'cpu'
             self.output_device = self.device
+        return
 
     def _determine_element_wise(self):
         if self.setting.trainer.time_series:
