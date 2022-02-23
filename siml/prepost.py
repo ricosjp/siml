@@ -104,8 +104,6 @@ class RawConverter():
         if raw_directory is None:
             raw_directory = self.setting.data.raw
 
-        print(raw_directory)
-
         # Process all subdirectories when recursice is True
         if self.recursive:
             if isinstance(raw_directory, (list, tuple, set)):
