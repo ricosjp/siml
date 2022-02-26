@@ -287,9 +287,6 @@ def collect_data_directories(
             base_directory, found_directories, pattern, inverse_pattern,
             allow_no_data)
 
-    if print_state:
-        print(f"Found: {found_directories}")
-
     return found_directories
 
 
