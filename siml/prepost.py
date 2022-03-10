@@ -88,7 +88,6 @@ class RawConverter():
         self.max_process = min(
             main_setting.conversion.max_process,
             util.determine_max_process(max_process))
-        print(f"# process: {self.max_process}")
         self.setting.conversion.output_base_directory \
             = self.setting.data.interim_root
 
@@ -101,6 +100,7 @@ class RawConverter():
             Raw data directory name. If not fed, self.setting.data.raw is used
             instead.
         """
+        print(f"# process: {self.max_process}")
         if raw_directory is None:
             raw_directory = self.setting.data.raw
 
