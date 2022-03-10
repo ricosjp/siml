@@ -254,10 +254,18 @@ class RawConverter():
         return
 
 
-def update_fem_data(fem_data, dict_data, prefix='', *, allow_overwrite=False):
+def update_fem_data(
+        fem_data, dict_data, prefix='', *, allow_overwrite=False,
+        answer_keys=None, answer_prefix=''):
     for key, value in dict_data.items():
 
-        variable_name = prefix + key
+        if answer_keys is not None:
+            if key in answer_keys:
+                variable_name = answer_prefix + key
+            else:
+                variable_name = prefix + key
+        else:
+            variable_name = prefix + key
         if isinstance(value, np.ndarray):
             if len(value.shape) > 2 and value.shape[-1] == 1:
                 if len(value.shape) == 4 and value.shape[1] == 3 \
@@ -1033,7 +1041,9 @@ class Converter:
         if convert_to_order1:
             fem_data = fem_data.to_first_order()
 
-        fem_data = update_fem_data(fem_data, dict_data_x, prefix='answer_')
+        fem_data = update_fem_data(
+            fem_data, dict_data_x, prefix='input_',
+            answer_keys=dict_data_y.keys(), answer_prefix='answer_')
         fem_data = update_fem_data(fem_data, dict_data_y, prefix='inferred_')
         fem_data = add_difference(
             fem_data, dict_data_y, dict_data_x, prefix='difference_')
