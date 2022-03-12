@@ -508,7 +508,7 @@ class TestTrainer(unittest.TestCase):
         tr = trainer.Trainer(main_setting)
         loss = tr.train()
 
-        with self.assertRaises(pickle.UnpicklingError):
+        with self.assertRaises((pickle.UnpicklingError, UnicodeDecodeError)):
             torch.load(
                 main_setting.trainer.output_directory
                 / 'snapshot_epoch_100.pth.enc')
