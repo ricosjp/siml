@@ -1,5 +1,6 @@
 import dataclasses as dc
 from enum import Enum
+import io
 import os
 from pathlib import Path
 import typing
@@ -389,6 +390,8 @@ class TrainerSetting(TypedDataClass):
         Batch size for validation dataset.
     n_epoch: int, optional
         The number of epochs.
+    model_key: bytes
+        If fed, decrypt model file with the key.
     gpu_id: int, optional
         GPU ID. Specify non negative value to use GPU. -1 Meaning CPU.
     log_trigger_epoch: int, optional
@@ -478,6 +481,8 @@ class TrainerSetting(TypedDataClass):
     loss_function: str = 'mse'
     optimizer: str = 'adam'
     compute_accuracy: bool = False
+    model_key: bytes = dc.field(
+        default=None, metadata={'allow_none': True})
     gpu_id: int = -1
     log_trigger_epoch: int = 1
     stop_trigger_epoch: int = 10
@@ -1170,7 +1175,7 @@ class MainSetting:
             raise ValueError(f"Unknown data type: {new_setting.__class__}")
 
 
-def write_yaml(data_class, file_name, *, overwrite=False):
+def write_yaml(data_class, file_name, *, overwrite=False, key=None):
     """Write YAML file of the specified dataclass object.
 
     Parameters
@@ -1181,13 +1186,26 @@ def write_yaml(data_class, file_name, *, overwrite=False):
         YAML file name to write.
     overwrite: bool, optional
         If True, overwrite file.
+    key: bytes
+        Key for encription.
     """
-    file_name = Path(file_name)
+    if key is None:
+        file_name = Path(file_name)
+    else:
+        if '.enc' in str(file_name):
+            file_name = Path(file_name)
+        else:
+            file_name = Path(str(file_name) + '.enc')
     if file_name.exists() and not overwrite:
         raise ValueError(f"{file_name} already exists")
 
-    with open(file_name, 'w') as f:
-        dump_yaml(data_class, f)
+    if key is None:
+        with open(file_name, 'w') as f:
+            dump_yaml(data_class, f)
+    else:
+        string = dump_yaml(data_class, None)
+        bio = io.BytesIO(string.encode('utf8'))
+        util.encrypt_file(key, file_name, bio)
     return
 
 
@@ -1216,6 +1234,9 @@ def dump_yaml(data_class, stream):
             standardized_dict_data['data'].pop('encrypt_key')
         if 'decrypt_key' in standardized_dict_data['data']:
             standardized_dict_data['data'].pop('decrypt_key')
+    if 'trainer' in standardized_dict_data:
+        if 'model_key' in standardized_dict_data['trainer']:
+            standardized_dict_data['trainer'].pop('model_key')
     if 'inferer' in standardized_dict_data:
         if 'model_key' in standardized_dict_data['inferer']:
             standardized_dict_data['inferer'].pop('model_key')

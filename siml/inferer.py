@@ -73,12 +73,15 @@ class Inferer(siml_manager.SimlManager):
         else:
             obj.setting.inferer.model = obj._select_snapshot(model_directory)
 
+        # Prefer pkl file under model_directory over setting one
         if (model_directory / 'preprocessors.pkl').is_file():
             obj.setting.inferer.converter_parameters_pkl \
                 = model_directory / 'preprocessors.pkl'
         elif (model_directory / 'preprocessors.pkl.enc').is_file():
             obj.setting.inferer.converter_parameters_pkl \
                 = model_directory / 'preprocessors.pkl.enc'
+        elif obj.setting.inferer.converter_parameters_pkl is not None:
+            pass
         else:
             raise ValueError('No preprocessor pickle file found')
 
@@ -371,9 +374,7 @@ class Inferer(siml_manager.SimlManager):
             output_setting = output_directory / 'settings.yml.enc'
             if output_setting.exists():
                 raise ValueError(f"{output_setting} already exists")
-            string = setting.dump_yaml(self.setting, None)
-            bio = io.BytesIO(string.encode('utf8'))
-            util.encrypt_file(encrypt_key, output_setting, bio)
+            setting.write_yaml(self.setting, output_setting, key=encrypt_key)
 
         return
 
@@ -444,6 +445,15 @@ class Inferer(siml_manager.SimlManager):
         self.prepare_batch = self.collate_fn.prepare_batch
 
         setting = self.setting
+        if setting.data.encrypt_key is not None:
+            key = setting.data.encrypt_key
+        elif setting.inferer.model_key is not None:
+            key = setting.inferer.model_key
+        elif setting.trainer.model_key is not None:
+            key = setting.trainer.model_key
+        else:
+            key = None
+
         if raw_dict_x is not None:
             inference_dataset = datasets.SimplifiedDataset(
                 setting.trainer.input_names,
@@ -460,7 +470,7 @@ class Inferer(siml_manager.SimlManager):
                 supports=setting.trainer.support_inputs,
                 num_workers=0,
                 required_file_names=setting.conversion.required_file_names,
-                decrypt_key=setting.data.encrypt_key,
+                decrypt_key=key,
                 prepost_converter=self.prepost_converter,
                 conversion_setting=setting.conversion,
                 conversion_function=self.conversion_function,
@@ -474,7 +484,7 @@ class Inferer(siml_manager.SimlManager):
                 supports=setting.trainer.support_inputs,
                 num_workers=0,
                 allow_no_data=allow_no_data,
-                decrypt_key=setting.data.encrypt_key)
+                decrypt_key=key)
 
         inference_loader = torch.utils.data.DataLoader(
             inference_dataset, collate_fn=self.collate_fn,
