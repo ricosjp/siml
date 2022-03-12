@@ -374,7 +374,7 @@ class Inferer(siml_manager.SimlManager):
             output_setting = output_directory / 'settings.yml.enc'
             if output_setting.exists():
                 raise ValueError(f"{output_setting} already exists")
-            setting.write_yaml(self.setting, output_setting)
+            setting.write_yaml(self.setting, output_setting, key=encrypt_key)
 
         return
 
