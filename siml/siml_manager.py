@@ -178,7 +178,9 @@ class SimlManager():
                 method=self.setting.trainer.snapshot_choise_method)
 
         key = self.setting.inferer.model_key
-        if key is not None and snapshot.suffix == '.enc':
+        if snapshot.suffix == '.enc':
+            if key is None:
+                raise ValueError('Feed key to load encrypted model')
             checkpoint = torch.load(
                 util.decrypt_file(key, snapshot), map_location=self.device)
         else:
@@ -202,7 +204,12 @@ class SimlManager():
         if path.is_file():
             return path
         elif path.is_dir():
-            snapshots = path.glob('snapshot_epoch_*')
+            snapshots = list(path.glob('snapshot_epoch_*'))
+            if '.enc' in str(snapshots[0]):
+                suffix = 'pth.enc'
+            else:
+                suffix = 'pth'
+
             if method == 'latest':
                 return max(
                     snapshots, key=lambda p: int(re.search(
@@ -215,14 +222,14 @@ class SimlManager():
                     return self._select_snapshot(path, method='train_best')
                 best_epoch = df['epoch'].iloc[
                     df['validation_loss'].idxmin()]
-                return path / f"snapshot_epoch_{best_epoch}.pth"
+                return path / f"snapshot_epoch_{best_epoch}.{suffix}"
             elif method == 'train_best':
                 df = pd.read_csv(
                     path / 'log.csv', header=0, index_col=None,
                     skipinitialspace=True)
                 best_epoch = df['epoch'].iloc[
                     df['train_loss'].idxmin()]
-                return path / f"snapshot_epoch_{best_epoch}.pth"
+                return path / f"snapshot_epoch_{best_epoch}.{suffix}"
             else:
                 raise ValueError(f"Unknown snapshot choise method: {method}")
 

@@ -1,4 +1,5 @@
 import enum
+import io
 import time
 
 import ignite
@@ -39,7 +40,8 @@ class Trainer(siml_manager.SimlManager):
 
         setting.write_yaml(
             self.setting,
-            self.setting.trainer.output_directory / 'settings.yml')
+            self.setting.trainer.output_directory / 'settings.yml',
+            key=self.setting.trainer.model_key)
 
         print(
             self._display_mergin('epoch')
@@ -328,15 +330,7 @@ class Trainer(siml_manager.SimlManager):
             self.pbar.n = self.pbar.last_print_n = 0
 
             # Save checkpoint
-            torch.save(
-                {
-                    'epoch': engine.state.epoch,
-                    'validation_loss': validation_loss,
-                    'model_state_dict': self.model.state_dict(),
-                    'optimizer_state_dict': self.optimizer.state_dict()
-                },
-                self.setting.trainer.output_directory
-                / f"snapshot_epoch_{engine.state.epoch}.pth")
+            self.save_model(engine, validation_loss)
 
             # Write log
             with open(self.log_file, 'a') as f:
@@ -401,6 +395,34 @@ class Trainer(siml_manager.SimlManager):
             self.evaluator.add_event_handler(
                 StopTriggerEvents.EVALUATED, pruning_handler)
 
+        return
+
+    def save_model(self, engine, validation_loss):
+        if self.setting.trainer.model_key is None:
+            torch.save(
+                {
+                    'epoch': engine.state.epoch,
+                    'validation_loss': validation_loss,
+                    'model_state_dict': self.model.state_dict(),
+                    'optimizer_state_dict': self.optimizer.state_dict()
+                },
+                self.setting.trainer.output_directory
+                / f"snapshot_epoch_{engine.state.epoch}.pth")
+        else:
+            b = io.BytesIO()
+            torch.save(
+                {
+                    'epoch': engine.state.epoch,
+                    'validation_loss': validation_loss,
+                    'model_state_dict': self.model.state_dict(),
+                    'optimizer_state_dict': self.optimizer.state_dict()
+                },
+                b)
+            util.encrypt_file(
+                self.setting.trainer.model_key,
+                self.setting.trainer.output_directory
+                / f"snapshot_epoch_{engine.state.epoch}.pth.enc",
+                b)
         return
 
     def create_pbar(self, total):

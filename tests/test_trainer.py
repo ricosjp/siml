@@ -1,4 +1,5 @@
 from pathlib import Path
+import pickle
 import shutil
 import unittest
 
@@ -503,12 +504,22 @@ class TestTrainer(unittest.TestCase):
 
         shutil.rmtree(
             main_setting.trainer.output_directory, ignore_errors=True)
+        main_setting.trainer.model_key = main_setting.data.encrypt_key
         tr = trainer.Trainer(main_setting)
         loss = tr.train()
 
-        ir = inferer.Inferer(
-            main_setting,
-            model=main_setting.trainer.output_directory,
+        with self.assertRaises(pickle.UnpicklingError):
+            torch.load(
+                main_setting.trainer.output_directory
+                / 'snapshot_epoch_100.pth.enc')
+
+        with self.assertRaises(UnicodeDecodeError):
+            setting.MainSetting.read_settings_yaml(
+                main_setting.trainer.output_directory / 'settings.yml.enc')
+
+        ir = inferer.Inferer.from_model_directory(
+            main_setting.trainer.output_directory,
+            decrypt_key=main_setting.trainer.model_key,
             converter_parameters_pkl=main_setting.data.preprocessed[0]
             / 'preprocessors.pkl', save=False)
         results = ir.infer(
