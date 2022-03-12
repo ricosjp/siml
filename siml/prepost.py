@@ -876,7 +876,7 @@ class Converter:
             write_simulation_type='fistr', skip_femio=False,
             load_function=None, convert_to_order1=False,
             data_addition_function=None, required_file_names=[],
-            perform_inverse=True, **kwargs):
+            less_output=False, perform_inverse=True, **kwargs):
         """Postprocess data with inversely converting them.
 
         Parameters
@@ -911,6 +911,8 @@ class Converter:
             and returns data_dict and fem_data.
         required_file_names: list[str], optional
             Required file names for load function.
+        less_output: bool, optional
+            If True, output less variables in FEMData object.
         data_addition_function=callable, optional
             Function to add some data to existing fem_data.
 
@@ -1004,7 +1006,8 @@ class Converter:
                     raise ValueError('No write_simulation_base fed.')
                 self._write_simulation(
                     output_directory, fem_data, overwrite=overwrite,
-                    write_simulation_type=write_simulation_type)
+                    write_simulation_type=write_simulation_type,
+                    less_output=less_output)
             if save_function is not None:
                 save_function(
                     output_directory, fem_data, overwrite=overwrite,
@@ -1044,7 +1047,7 @@ class Converter:
         fem_data = update_fem_data(
             fem_data, dict_data_x, prefix='input_',
             answer_keys=dict_data_y.keys(), answer_prefix='answer_')
-        fem_data = update_fem_data(fem_data, dict_data_y, prefix='inferred_')
+        fem_data = update_fem_data(fem_data, dict_data_y, prefix='predicted_')
         fem_data = add_difference(
             fem_data, dict_data_y, dict_data_x, prefix='difference_')
         if data_addition_function is not None:
@@ -1054,7 +1057,7 @@ class Converter:
 
     def _write_simulation(
             self, output_directory, fem_data, *,
-            write_simulation_type='fistr', overwrite=False):
+            write_simulation_type='fistr', overwrite=False, less_output=False):
         if write_simulation_type == 'fistr':
             ext = ''
         elif write_simulation_type == 'ucd':
@@ -1066,6 +1069,37 @@ class Converter:
         else:
             raise ValueError(
                 f"Unexpected write_simulation_type: {write_simulation_type}")
+        if less_output:
+            nodal_data = {}
+            for key in fem_data.nodal_data.keys():
+                if 'answer_' in key or 'inferred_' in key \
+                        or 'difference_' in key:
+                    nodal_data.update({
+                        key: fem_data.nodal_data.get_attribute_data(key)})
+                else:
+                    pass
+            fem_data.nodal_data.reset()
+
+            elemental_data = {}
+            for key in fem_data.elemental_data.keys():
+                if 'answer_' in key or 'inferred_' in key \
+                        or 'difference_' in key:
+                    elemental_data.update({
+                        key: fem_data.elemental_data.get_attribute_data(key)})
+                else:
+                    pass
+            if 'face' in fem_data.elemental_data:
+                face = fem_data.elemental_data['face']
+                has_face = True
+            else:
+                has_face = False
+            fem_data.elemental_data.reset()
+            fem_data.nodal_data.update_data(fem_data.nodes.ids, nodal_data)
+            fem_data.elemental_data.update_data(
+                fem_data.elements.ids, elemental_data)
+            if has_face:
+                fem_data.elemental_data['face'] = face
+
         fem_data.write(
             write_simulation_type, output_directory / ('mesh' + ext),
             overwrite=overwrite)

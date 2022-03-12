@@ -660,6 +660,8 @@ class InfererSetting(TypedDataClass):
         If fed, decrypt model file with the key.
     gpu_id: int, optional
         GPU ID. Specify non negative value to use GPU. -1 Meaning CPU.
+    less_output: bool, optional
+        If True, output less variables in FEMData object.
     """
     model: Path = dc.field(
         default=None, metadata={'allow_none': True})
@@ -690,6 +692,7 @@ class InfererSetting(TypedDataClass):
     model_key: bytes = dc.field(
         default=None, metadata={'allow_none': True})
     gpu_id: int = -1
+    less_output: bool = False
 
 
 @dc.dataclass
