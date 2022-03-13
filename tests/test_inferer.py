@@ -164,7 +164,7 @@ class TestInferer(unittest.TestCase):
             'ucd', [output_directory / 'mesh.inp'])
         np.testing.assert_almost_equal(
             fem_data.elemental_data.get_attribute_data(
-                'inferred_elemental_stress'),
+                'predicted_elemental_stress'),
             res_from_preprocessed[0]['dict_y']['elemental_stress'],
             decimal=2)
         np.testing.assert_almost_equal(
@@ -321,7 +321,7 @@ class TestInferer(unittest.TestCase):
                 'ucd', inferred_directory)
             np.testing.assert_almost_equal(
                 inferred_fem_data.elemental_data.get_attribute_data(
-                    'inferred_elemental_stress'),
+                    'predicted_elemental_stress'),
                 res_from_raw[i_data]['dict_y']['elemental_stress'], decimal=3)
             np.testing.assert_almost_equal(
                 res_from_raw[i_data]['dict_x']['elemental_stress'],
@@ -329,7 +329,7 @@ class TestInferer(unittest.TestCase):
                     'ElementalSTRESS'), decimal=2)
             np.testing.assert_almost_equal(
                 inferred_fem_data.elemental_data.get_attribute_data(
-                    'inferred_elemental_stress'),
+                    'predicted_elemental_stress'),
                 raw_fem_data.elemental_data.get_attribute_data(
                     'ElementalSTRESS'), decimal=-1)
         return
