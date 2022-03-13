@@ -1072,7 +1072,7 @@ class Converter:
         if less_output:
             nodal_data = {}
             for key in fem_data.nodal_data.keys():
-                if 'answer_' in key or 'inferred_' in key \
+                if 'answer_' in key or 'predicted_' in key \
                         or 'difference_' in key:
                     nodal_data.update({
                         key: fem_data.nodal_data.get_attribute_data(key)})
@@ -1082,7 +1082,7 @@ class Converter:
 
             elemental_data = {}
             for key in fem_data.elemental_data.keys():
-                if 'answer_' in key or 'inferred_' in key \
+                if 'answer_' in key or 'predicted_' in key \
                         or 'difference_' in key:
                     elemental_data.update({
                         key: fem_data.elemental_data.get_attribute_data(key)})

@@ -45,10 +45,33 @@ class BaseDataset(torch.utils.data.Dataset):
         else:
             self.data_directories = directories
 
+        list_y_variable_names = self._get_list_variable_names(
+            self.y_variable_names)
+        if len(self.data_directories) > 0:
+            if np.all([
+                    len(list(self.data_directories[0].glob(
+                        f"{y_variable_name}.*"))) == 1
+                    for y_variable_name in list_y_variable_names]):
+                self.load_y = True
+            else:
+                print(
+                    f"Output data is missing in {self.data_directories[0]}. "
+                    'Skip loading y variables.')
+                self.load_y = False
+
         if not allow_no_data and len(self.data_directories) == 0:
             raise ValueError(f"No data found in {directories}")
 
         return
+
+    def _get_list_variable_names(self, variable_names):
+        if isinstance(variable_names, (list, tuple)):
+            return variable_names
+        elif isinstance(variable_names, dict):
+            return np.concatenate([value for value in variable_names.values()])
+        else:
+            raise ValueError(
+                f"Unexpected variable_names type: {variable_names}")
 
     def __len__(self):
         return len(self.data_directories)
@@ -103,8 +126,11 @@ class BaseDataset(torch.utils.data.Dataset):
     def _load_data(self, data_directory, pbar=None):
         x_data = self._load_from_names(
             data_directory, self.x_variable_names)
-        y_data = self._load_from_names(
-            data_directory, self.y_variable_names)
+        if self.load_y:
+            y_data = self._load_from_names(
+                data_directory, self.y_variable_names)
+        else:
+            y_data = None
 
         if pbar:
             pbar.update()
