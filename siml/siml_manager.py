@@ -97,7 +97,7 @@ class SimlManager():
                 self.device = 'cpu'
                 self.output_device = self.device
         else:
-            if self.setting.trainer.gpu_id != -1 \
+            if gpu_id != -1 \
                     or self.setting.trainer.data_parallel \
                     or self.setting.trainer.model_parallel:
                 raise ValueError('No GPU found.')
