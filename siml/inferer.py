@@ -297,7 +297,9 @@ class Inferer(siml_manager.SimlManager):
         """
         output_directory = self._determine_output_directory()
         output_directory.mkdir(parents=True, exist_ok=True)
-        setting.write_yaml(self.setting, output_directory / 'settings.yml')
+        setting.write_yaml(
+            self.setting, output_directory / 'settings.yml',
+            key=self.setting.inferer.model_key)
         self._write_log(output_directory, results)
         return
 
