@@ -389,7 +389,7 @@ class Inferer(siml_manager.SimlManager):
 
     def _prepare_inference(
             self, *,
-            raw_dict_x=None, answer_raw_dict_y=None, allow_no_data=False):
+            raw_dict_x=None, answer_raw_dict_y=None, allow_no_data=True):
 
         # Define model
         if self.setting.inferer.model is None:
@@ -433,7 +433,7 @@ class Inferer(siml_manager.SimlManager):
 
     def _get_inferernce_loader(
             self, raw_dict_x=None, answer_raw_dict_y=None,
-            allow_no_data=False):
+            allow_no_data=True):
         input_is_dict = isinstance(
             self.setting.trainer.inputs.variables, dict)
         output_is_dict = isinstance(
