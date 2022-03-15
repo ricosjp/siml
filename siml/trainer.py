@@ -221,12 +221,18 @@ class Trainer(siml_manager.SimlManager):
             self.setting.trainer.inputs.variables, dict)
         output_is_dict = isinstance(
             self.setting.trainer.outputs.variables, dict)
-        self.input_time_series_keys = [
-            k for k, v in self.setting.trainer.inputs.time_series.items()
-            if np.any(v)]
-        self.output_time_series_keys = [
-            k for k, v in self.setting.trainer.inputs.time_series.items()
-            if np.any(v)]
+        if isinstance(self.setting.trainer.inputs.time_series, dict):
+            self.input_time_series_keys = [
+                k for k, v in self.setting.trainer.inputs.time_series.items()
+                if np.any(v)]
+        else:
+            self.input_time_series_keys = []
+        if isinstance(self.setting.trainer.outputs.time_series, dict):
+            self.output_time_series_keys = [
+                k for k, v in self.setting.trainer.inputs.time_series.items()
+                if np.any(v)]
+        else:
+            self.output_time_series_keys = []
         self.input_time_slices = self.setting.trainer.inputs.time_slice
         self.output_time_slices = self.setting.trainer.outputs.time_slice
         self.collate_fn = datasets.CollateFunctionGenerator(
