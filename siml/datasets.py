@@ -54,10 +54,14 @@ class BaseDataset(torch.utils.data.Dataset):
                     for y_variable_name in list_y_variable_names]):
                 self.load_y = True
             else:
-                print(
-                    f"Output data is missing in {self.data_directories[0]}. "
-                    'Skip loading y variables.')
-                self.load_y = False
+                if allow_no_data:
+                    print(
+                        'Output data is missing in '
+                        f"{self.data_directories[0]}. "
+                        'Skip loading y variables.')
+                    self.load_y = False
+                else:
+                    raise ValueError(f"y data not found in {directories}")
 
         if not allow_no_data and len(self.data_directories) == 0:
             raise ValueError(f"No data found in {directories}")
@@ -334,12 +338,32 @@ class CollateFunctionGenerator():
 
     def __init__(
             self, *, time_series=False, dict_input=False, dict_output=False,
-            use_support=False, element_wise=False, data_parallel=False):
+            use_support=False, element_wise=False, data_parallel=False,
+            input_time_series_keys=None, output_time_series_keys=None,
+            input_time_slices=None, output_time_slices=None):
 
         if time_series:
             self.shape_length = 2
         else:
             self.shape_length = 1
+
+        if input_time_series_keys is None:
+            self.input_time_series_keys = []
+        else:
+            self.input_time_series_keys = input_time_series_keys
+        if output_time_series_keys is None:
+            self.output_time_series_keys = []
+        else:
+            self.output_time_series_keys = output_time_series_keys
+
+        if input_time_slices is None:
+            self.input_time_slices = slice(None)
+        else:
+            self.input_time_slices = input_time_slices
+        if output_time_slices is None:
+            self.output_time_slices = slice(None)
+        else:
+            self.output_time_slices = output_time_slices
 
         self.convert_input_dense = self._determine_convert_dense(
             time_series, dict_input, element_wise, data_parallel)
@@ -458,8 +482,13 @@ class CollateFunctionGenerator():
         return {
             dict_key:
             np.array([
-                list(b['x'][dict_key].shape[:self.shape_length])
+                list(b['x'][dict_key].shape[:2])
                 for b in batch])
+            if dict_key in self.input_time_series_keys
+            else
+                np.array([
+                    list(b['x'][dict_key].shape[:self.shape_length])
+                    for b in batch])
             for dict_key in keys}
 
     def _extract_original_shapes_from_list(self, batch):
@@ -480,11 +509,13 @@ class CollateFunctionGenerator():
         return [[pad_sparse(s, length) for s in b[key]] for b in batch]
 
     def __call__(self, batch):
-        x = self.convert_input_dense(batch, 'x')
+        x = self._slice(
+            self.convert_input_dense(batch, 'x'), self.input_time_slices)
         if batch[0]['t'] is None:
             t = torch.tensor([])
         else:
-            t = self.convert_output_dense(batch, 't')
+            t = self._slice(
+                self.convert_output_dense(batch, 't'), self.output_time_slices)
         supports = self.convert_sparse(batch, 'supports')
         original_shapes = self.extract_original_shapes(batch)
         data_directories = [b.get('data_directory', None) for b in batch]
@@ -492,6 +523,14 @@ class CollateFunctionGenerator():
             'x': x, 't': t, 'supports': supports,
             'original_shapes': original_shapes,
             'data_directories': data_directories}
+
+    def _slice(self, data, time_slices):
+        if isinstance(data, torch.Tensor):
+            return data[time_slices]
+        elif isinstance(data, dict):
+            return {k: v[time_slices[k]] for k, v in data.items()}
+        else:
+            raise ValueError(f"Invalid data format: {data}")
 
     def _prepare_batch_without_support(
             self, batch, device=None, output_device=None, non_blocking=False):

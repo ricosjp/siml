@@ -221,12 +221,24 @@ class Trainer(siml_manager.SimlManager):
             self.setting.trainer.inputs.variables, dict)
         output_is_dict = isinstance(
             self.setting.trainer.outputs.variables, dict)
+        input_time_series_keys = [
+            k for k, v in self.setting.trainer.inputs.time_series.items()
+            if np.any(v)]
+        output_time_series_keys = [
+            k for k, v in self.setting.trainer.inputs.time_series.items()
+            if np.any(v)]
+        input_time_slices = self.setting.trainer.inputs.time_slice
+        output_time_slices = self.setting.trainer.outputs.time_slice
         self.collate_fn = datasets.CollateFunctionGenerator(
             time_series=self.setting.trainer.time_series,
             dict_input=input_is_dict, dict_output=output_is_dict,
             use_support=self.setting.trainer.support_inputs,
             element_wise=self.element_wise,
-            data_parallel=self.setting.trainer.data_parallel)
+            data_parallel=self.setting.trainer.data_parallel,
+            input_time_series_keys=input_time_series_keys,
+            output_time_series_keys=output_time_series_keys,
+            input_time_slices=input_time_slices,
+            output_time_slices=output_time_slices)
         self.prepare_batch = self.collate_fn.prepare_batch
 
         if self.setting.trainer.lazy:

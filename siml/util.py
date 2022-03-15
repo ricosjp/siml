@@ -991,7 +991,12 @@ def decrypt_file(key, file_name, return_stringio=False):
 
 class VariableMask:
 
-    def __init__(self, skips, dims, is_dict):
+    def __init__(self, skips, dims, is_dict=None, *, invert=False):
+        if invert:
+            skips = self._invert(skips)
+
+        if is_dict is None:
+            is_dict = isinstance(skips, dict)
         if isinstance(skips, list):
             if not np.any(skips):
                 self.mask_function = self._identity_mask
@@ -1017,6 +1022,12 @@ class VariableMask:
 
     def __call__(self, *xs, **kwarg):
         return self.mask_function(*xs, **kwarg)
+
+    def _invert(self, skips):
+        if isinstance(skips, list):
+            return [not s for s in skips]
+        elif isinstance(skips, dict):
+            return {k: [not s for s in v] for k, v in skips.items()}
 
     def _generate_mask(self, skips, dims):
         return ~np.array(np.concatenate([

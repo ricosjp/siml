@@ -259,11 +259,17 @@ class VariableSetting(TypedDataClass):
     skip: bool
         If True, skip the variable for loss computation or convergence
         computation.
+    time_series: bool
+        If True, regard it as a time series.
+    time_slice: list[int]
+        Slice for time series.
     """
     name: str = 'variable'
     dim: int = 1
     shape: list[int] = dc.field(default_factory=list)
     skip: bool = False
+    time_series: bool = False
+    time_slice: slice = dc.field(default_factory=lambda: slice(None))
 
     def get(self, key, default=None):
         if default is None:
@@ -346,6 +352,25 @@ class CollectionVariableSetting(TypedDataClass):
             return {key: np.sum(value) for key, value in dim_data.items()}
         else:
             return np.sum(dim_data)
+
+    @property
+    def time_series(self):
+        return self.collect_values('time_series')
+
+    @property
+    def time_slice(self):
+        s = self.collect_values('time_slice')
+        if isinstance(s, list):
+            if not np.all(np.array(s) == s[0]):
+                raise ValueError(f"Invalid setting for variables: {self}")
+            return s[0]
+        elif isinstance(s, dict):
+            for v in s.values():
+                if not np.all(np.array(v) == v[0]):
+                    raise ValueError(f"Invalid setting for variables: {self}")
+            return {k: v[0] for k, v in s.items()}
+        else:
+            raise ValueError(f"Invalid format: {s}")
 
     def to_dict(self):
         if isinstance(self.variables, dict):

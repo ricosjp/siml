@@ -207,3 +207,42 @@ class TestGroups(unittest.TestCase):
         ref_loss = ref_tr.train()
 
         np.testing.assert_almost_equal(loss_1step, ref_loss)
+
+    def test_heat_timeseries_input_basic(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/heat_boundary/ts_isogcn.yml'))
+        main_setting.trainer.gpu_id = GPU_ID
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        self.assertLess(loss, .1)
+
+        ir = inferer.Inferer(
+            main_setting,
+            converter_parameters_pkl=main_setting.data.preprocessed_root
+            / 'preprocessors.pkl')
+        ir.infer(
+            model=main_setting.trainer.output_directory,
+            output_directory_base=tr.setting.trainer.output_directory,
+            data_directories=main_setting.data.preprocessed_root)
+
+    def test_heat_timeseries_input_slice(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/heat_boundary/ts_isogcn_slice.yml'))
+        main_setting.trainer.gpu_id = GPU_ID
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        self.assertLess(loss, .1)
+
+        ir = inferer.Inferer(
+            main_setting,
+            converter_parameters_pkl=main_setting.data.preprocessed_root
+            / 'preprocessors.pkl')
+        results = ir.infer(
+            model=main_setting.trainer.output_directory,
+            output_directory_base=tr.setting.trainer.output_directory,
+            data_directories=main_setting.data.preprocessed_root)
+        self.assertEqual(len(results[0]['dict_y']['ts_temperature']), 3)

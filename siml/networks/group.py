@@ -79,6 +79,13 @@ class Group(siml_module.SimlModule):
         self.loop = self.group_setting.repeat > 1
         self.mode = self.group_setting.mode
         self.time_series_length = self.group_setting.time_series_length
+        self.time_series_mask = util.VariableMask(
+            self.group_setting.inputs.time_series,
+            self.group_setting.inputs.dims,
+            invert=True)
+        self.time_series_names = [
+            k for k, v in self.group_setting.inputs.time_series.items()
+            if np.any(v)]
         self.debug = self.group_setting.debug
 
         self.componentwise_alpha = self.group_setting.optional.get(
@@ -174,15 +181,36 @@ class Group(siml_module.SimlModule):
 
     def forward_time_series(self, x, supports, original_shapes=None):
         ts = [x]
-        for i_time in range(self.time_series_length):
+        if self.time_series_length < 0:
+            time_series_length = self._get_time_series_length(x)
+        else:
+            time_series_length = self.time_series_length
+
+        for i_time in range(time_series_length):
             ts.append(self.forward_step(
-                self._clone(ts[-1]), supports,
-                original_shapes=original_shapes))
+                self._generate_time_series_input(ts[-1], x, i_time),
+                supports, original_shapes=original_shapes))
         return self._stack(ts[1:])
 
-    def _clone(self, x):
+    def _get_time_series_length(self, x):
         if isinstance(x, dict):
-            y = {k: v.clone() for k, v in x.items()}
+            masked_x = self.time_series_mask(x, keep_empty_data=False)[0]
+            lengths = np.array([len(v) for v in masked_x])
+            if not np.all(lengths == lengths[0]):
+                raise ValueError(
+                    'Time length mismatch: '
+                    f"{self.time_series_names}, {lengths}")
+            return lengths[0]
+        else:
+            raise NotImplementedError
+
+    def _generate_time_series_input(self, x, original_x, time_index):
+        if isinstance(x, dict):
+            y = {
+                k: original_x[k][time_index].clone()
+                if k in self.time_series_names
+                else v.clone()
+                for k, v in x.items()}
             # for v in y.values():
             #     if v.requires_grad:
             #         v.retain_grad()

@@ -284,6 +284,8 @@ def conversion_function_heat_boundary(fem_data, raw_directory=None):
         'nodal_grad_x_1': nodal_grad_x_1,
         'nodal_grad_y_1': nodal_grad_y_1,
         'nodal_grad_z_1': nodal_grad_z_1,
+        'ts_temperature': temperatures,
+        'ts_mean_temperature': np.mean(temperatures, axis=1, keepdims=True),
         'inversed_moment_tensors_1': inversed_moment_tensors_1,
         'weighted_surface_normal_1': weighted_surface_normal_1,
         'nodal_surface_normal': nodal_surface_normal[..., None],

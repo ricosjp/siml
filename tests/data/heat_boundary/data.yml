@@ -82,3 +82,7 @@ preprocess:
     same_as: nodal_t_0
   nodal_t_100:
     same_as: nodal_t_0
+  ts_temperature:
+    same_as: nodal_t_0
+  ts_mean_temperature:
+    same_as: nodal_t_0
