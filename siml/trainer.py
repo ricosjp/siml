@@ -479,8 +479,12 @@ class Trainer(siml_manager.SimlManager):
 
         def update_standard(x, y, model, optimizer):
             split_xs, split_ys = self._split_data_if_needed(x, y)
+
             for split_x, split_y in zip(split_xs, split_ys):
                 optimizer.zero_grad()
+                split_x['x'] = self._send(split_x['x'], self.device)
+                split_y = self._send(split_y, self.output_device)
+
                 split_y_pred = model(split_x)
                 loss = self.loss(
                     split_y_pred, split_y, split_x['original_shapes'])
@@ -500,8 +504,17 @@ class Trainer(siml_manager.SimlManager):
 
         def update_model(engine, batch):
             self.model.train()
+            if self.setting.trainer.time_series_split is None:
+                input_device = self.device
+                support_device = self.device
+                output_device = self.output_device
+            else:
+                input_device = 'cpu'
+                support_device = self.device
+                output_device = 'cpu'
             x, y = self.prepare_batch(
-                batch, device=self.device, output_device=self.output_device,
+                batch, device=input_device, output_device=output_device,
+                support_device=support_device,
                 non_blocking=self.setting.trainer.non_blocking)
             loss = update_function(x, y, self.model, self.optimizer)
             if self.setting.trainer.output_stats:
@@ -510,25 +523,57 @@ class Trainer(siml_manager.SimlManager):
 
         return ignite.engine.Engine(update_model)
 
+    def _send(self, x, device):
+        if isinstance(x, torch.Tensor):
+            return x.to(device)
+        elif isinstance(x, dict):
+            return {k: self._send(v, device) for k, v in x.items()}
+        elif isinstance(x, list):
+            return [self._send(v, device) for v in x]
+        else:
+            raise ValueError(f"Invalid format: {x.__class__}")
+
     def _split_data_if_needed(self, x, y):
         if self.setting.trainer.time_series_split is None:
-            return x, y
+            return [x], [y]
+        split_x_tensors = self._split_core(x['x'], self.input_time_series_keys)
+        split_xs = [
+            {
+                'x': split_x_tensor,
+                'original_shapes':
+                self._get_original_shapes(
+                    split_x_tensor, x['original_shapes']),
+                'supports': x['supports']}
+            for split_x_tensor in split_x_tensors]
+        split_ys = self._split_core(y, self.output_time_series_keys)
+        return split_xs, split_ys
 
-        raise ValueError({'rank0': x.device})
-        self.input_time_series_keys = [
-            k for k, v in self.setting.trainer.inputs.time_series.items()
-            if np.any(v)]
-        self.output_time_series_keys = [
-            k for k, v in self.setting.trainer.inputs.time_series.items()
-            if np.any(v)]
-        self.input_time_slices = self.setting.trainer.inputs.time_slice
-        self.output_time_slices = self.setting.trainer.outputs.time_slice
-        # {k: self._split_core(v) if k in self.input_time_series_keys else [v]}
-        raise ValueError(x)
+    def _get_original_shapes(self, x, previous_shapes):
+        if isinstance(x, torch.Tensor):
+            previous_shapes[:, 0] = len(x)
+            return previous_shapes
+        elif isinstance(x, dict):
+            return {
+                k: self._get_original_shapes(v, previous_shapes[k])
+                for k, v in x.items()}
+        else:
+            raise ValueError(f"Invalid format: {x}")
 
-    def _split_core(self, x):
+    def _split_core(self, x, time_series_keys):
         start, step, length = self.setting.trainer.time_series_split
-        return [x[s:s+length] for s in range(start, len(x) - step, step)]
+        range_ = range(start, len(x) - step, step)
+
+        if isinstance(x, torch.Tensor):
+            return [x[s:s+length] for s in range_]
+
+        elif isinstance(x, dict):
+            return [{
+                k:
+                v[s:s+length] if k in time_series_keys
+                else v for k, v in x.items()} for s in range_]
+
+        else:
+            raise ValueError(f"Invalid format: {x}")
 
     def _calculate_other_loss(self, model, y_pred, y, original_shapes=None):
         if original_shapes is None:

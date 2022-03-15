@@ -533,7 +533,8 @@ class CollateFunctionGenerator():
             raise ValueError(f"Invalid data format: {data}")
 
     def _prepare_batch_without_support(
-            self, batch, device=None, output_device=None, non_blocking=False):
+            self, batch, device=None, output_device=None, support_device=None,
+            non_blocking=False):
         return {
             'x': self.convert_input_tensor(
                 batch['x'], device=device, non_blocking=non_blocking),
@@ -542,19 +543,22 @@ class CollateFunctionGenerator():
             batch['t'], device=output_device, non_blocking=non_blocking)
 
     def _prepare_batch_with_support(
-            self, batch, device=None, output_device=None, non_blocking=False):
+            self, batch, device=None, output_device=None, support_device=None,
+            non_blocking=False):
         return {
             'x': self.convert_input_tensor(
                 batch['x'], device=device, non_blocking=non_blocking),
             'supports': [
-                convert_tensor(s, device=device, non_blocking=non_blocking)
+                convert_tensor(
+                    s, device=support_device, non_blocking=non_blocking)
                 for s in batch['supports']],
             'original_shapes': batch['original_shapes'],
         }, self.convert_output_tensor(
             batch['t'], device=output_device, non_blocking=non_blocking)
 
     def _prepare_batch_with_support_data_parallel(
-            self, batch, device=None, output_device=None, non_blocking=False):
+            self, batch, device=None, output_device=None, support_device=None,
+            non_blocking=False):
         return {
             'x': self.convert_input_tensor(
                 batch['x'], device='cpu', non_blocking=non_blocking),
