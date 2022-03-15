@@ -480,6 +480,8 @@ class TrainerSetting(TypedDataClass):
         If fed, apply gradient clipping with norm.
     recursive: bool
         If True, search data recursively.
+    time_series_split: list[int]
+        If fed, split time series with [start, step, length].
     """
 
     inputs: CollectionVariableSetting = dc.field(
@@ -544,6 +546,8 @@ class TrainerSetting(TypedDataClass):
     output_stats: bool = False
     split_ratio: dict = dc.field(default_factory=dict)
     figure_format: str = 'pdf'
+    time_series_split: list[int] = dc.field(
+        default=None, metadata={'allow_none': True})
 
     def __post_init__(self):
         if self.element_wise and self.lazy:

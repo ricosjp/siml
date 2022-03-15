@@ -221,24 +221,24 @@ class Trainer(siml_manager.SimlManager):
             self.setting.trainer.inputs.variables, dict)
         output_is_dict = isinstance(
             self.setting.trainer.outputs.variables, dict)
-        input_time_series_keys = [
+        self.input_time_series_keys = [
             k for k, v in self.setting.trainer.inputs.time_series.items()
             if np.any(v)]
-        output_time_series_keys = [
+        self.output_time_series_keys = [
             k for k, v in self.setting.trainer.inputs.time_series.items()
             if np.any(v)]
-        input_time_slices = self.setting.trainer.inputs.time_slice
-        output_time_slices = self.setting.trainer.outputs.time_slice
+        self.input_time_slices = self.setting.trainer.inputs.time_slice
+        self.output_time_slices = self.setting.trainer.outputs.time_slice
         self.collate_fn = datasets.CollateFunctionGenerator(
             time_series=self.setting.trainer.time_series,
             dict_input=input_is_dict, dict_output=output_is_dict,
             use_support=self.setting.trainer.support_inputs,
             element_wise=self.element_wise,
             data_parallel=self.setting.trainer.data_parallel,
-            input_time_series_keys=input_time_series_keys,
-            output_time_series_keys=output_time_series_keys,
-            input_time_slices=input_time_slices,
-            output_time_slices=output_time_slices)
+            input_time_series_keys=self.input_time_series_keys,
+            output_time_series_keys=self.output_time_series_keys,
+            input_time_slices=self.input_time_slices,
+            output_time_slices=self.output_time_slices)
         self.prepare_batch = self.collate_fn.prepare_batch
 
         if self.setting.trainer.lazy:
@@ -478,15 +478,18 @@ class Trainer(siml_manager.SimlManager):
             return loss
 
         def update_standard(x, y, model, optimizer):
-            optimizer.zero_grad()
-            y_pred = model(x)
-            loss = self.loss(y_pred, y, x['original_shapes'])
-            other_loss = self._calculate_other_loss(
-                model, y_pred, y, x['original_shapes'])
-            (loss + other_loss).backward()
-            model = _clip_if_needed(model)
-            self.optimizer.step()
-            model.reset()
+            split_xs, split_ys = self._split_data_if_needed(x, y)
+            for split_x, split_y in zip(split_xs, split_ys):
+                optimizer.zero_grad()
+                split_y_pred = model(split_x)
+                loss = self.loss(
+                    split_y_pred, split_y, split_x['original_shapes'])
+                other_loss = self._calculate_other_loss(
+                    model, split_y_pred, split_y, split_x['original_shapes'])
+                (loss + other_loss).backward()
+                model = _clip_if_needed(model)
+                self.optimizer.step()
+                model.reset()
             return loss
 
         if not self.element_wise \
@@ -506,6 +509,26 @@ class Trainer(siml_manager.SimlManager):
             return loss.item()
 
         return ignite.engine.Engine(update_model)
+
+    def _split_data_if_needed(self, x, y):
+        if self.setting.trainer.time_series_split is None:
+            return x, y
+
+        raise ValueError({'rank0': x.device})
+        self.input_time_series_keys = [
+            k for k, v in self.setting.trainer.inputs.time_series.items()
+            if np.any(v)]
+        self.output_time_series_keys = [
+            k for k, v in self.setting.trainer.inputs.time_series.items()
+            if np.any(v)]
+        self.input_time_slices = self.setting.trainer.inputs.time_slice
+        self.output_time_slices = self.setting.trainer.outputs.time_slice
+        # {k: self._split_core(v) if k in self.input_time_series_keys else [v]}
+        raise ValueError(x)
+
+    def _split_core(self, x):
+        start, step, length = self.setting.trainer.time_series_split
+        return [x[s:s+length] for s in range(start, len(x) - step, step)]
 
     def _calculate_other_loss(self, model, y_pred, y, original_shapes=None):
         if original_shapes is None:
