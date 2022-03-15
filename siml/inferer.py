@@ -438,12 +438,18 @@ class Inferer(siml_manager.SimlManager):
             self.setting.trainer.inputs.variables, dict)
         output_is_dict = isinstance(
             self.setting.trainer.outputs.variables, dict)
-        input_time_series_keys = [
-            k for k, v in self.setting.trainer.inputs.time_series.items()
-            if np.any(v)]
-        output_time_series_keys = [
-            k for k, v in self.setting.trainer.inputs.time_series.items()
-            if np.any(v)]
+        if isinstance(self.setting.trainer.inputs.time_series, dict):
+            input_time_series_keys = [
+                k for k, v in self.setting.trainer.inputs.time_series.items()
+                if np.any(v)]
+        else:
+            input_time_series_keys = []
+        if isinstance(self.setting.trainer.outputs.time_series, dict):
+            output_time_series_keys = [
+                k for k, v in self.setting.trainer.inputs.time_series.items()
+                if np.any(v)]
+        else:
+            output_time_series_keys = []
         input_time_slices = self.setting.trainer.inputs.time_slice
         output_time_slices = self.setting.trainer.outputs.time_slice
         self.collate_fn = datasets.CollateFunctionGenerator(
