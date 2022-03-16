@@ -400,7 +400,10 @@ class Interaction(siml_module.SimlModule):
         else:
             incidence = supports[0]
         row = incidence._indices()[0]
-        ret[row] = self.op(incidence.mm(other)[row], x[row]) * self.factor
+        try:
+            ret[row] = self.op(incidence.mm(other)[row], x[row]) * self.factor
+        except:
+            raise ValueError(incidence.device, other.device, x.device, ret.device)
         return ret
 
 

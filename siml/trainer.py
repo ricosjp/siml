@@ -229,7 +229,7 @@ class Trainer(siml_manager.SimlManager):
             self.input_time_series_keys = []
         if isinstance(self.setting.trainer.outputs.time_series, dict):
             self.output_time_series_keys = [
-                k for k, v in self.setting.trainer.inputs.time_series.items()
+                k for k, v in self.setting.trainer.outputs.time_series.items()
                 if np.any(v)]
         else:
             self.output_time_series_keys = []
@@ -566,8 +566,20 @@ class Trainer(siml_manager.SimlManager):
             raise ValueError(f"Invalid format: {x}")
 
     def _split_core(self, x, time_series_keys):
+        if isinstance(x, torch.Tensor):
+            len_x = len(x)
+        elif isinstance(x, dict):
+            lens = np.array([
+                len(v) for k, v in x.items() if k in time_series_keys])
+            if not np.all(lens == lens[0]):
+                raise ValueError(
+                    f"Time series length mismatch: {time_series_keys}, {lens}")
+            len_x = lens[0]
+        else:
+            raise ValueError(f"Invalid format: {x}")
+
         start, step, length = self.setting.trainer.time_series_split
-        range_ = range(start, len(x) - step, step)
+        range_ = range(start, len_x - step, step)
 
         if isinstance(x, torch.Tensor):
             return [x[s:s+length] for s in range_]
@@ -601,6 +613,7 @@ class Trainer(siml_manager.SimlManager):
                 x, y = self.prepare_batch(
                     batch, device=self.device,
                     output_device=self.output_device,
+                    support_device=self.device,
                     non_blocking=self.setting.trainer.non_blocking)
                 y_pred = self.model(x)
                 return y_pred, y, {

@@ -446,7 +446,7 @@ class Inferer(siml_manager.SimlManager):
             input_time_series_keys = []
         if isinstance(self.setting.trainer.outputs.time_series, dict):
             output_time_series_keys = [
-                k for k, v in self.setting.trainer.inputs.time_series.items()
+                k for k, v in self.setting.trainer.outputs.time_series.items()
                 if np.any(v)]
         else:
             output_time_series_keys = []
@@ -518,6 +518,7 @@ class Inferer(siml_manager.SimlManager):
             x, y = self.prepare_batch(
                 batch, device=self.device,
                 output_device=self.output_device,
+                support_device=self.device,
                 non_blocking=self.setting.trainer.non_blocking)
             with torch.no_grad():
                 start_time = time.time()
