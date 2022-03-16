@@ -83,9 +83,14 @@ class Group(siml_module.SimlModule):
             self.group_setting.inputs.time_series,
             self.group_setting.inputs.dims,
             invert=True)
-        self.time_series_names = [
-            k for k, v in self.group_setting.inputs.time_series.items()
-            if np.any(v)]
+        if isinstance(self.group_setting.inputs.time_series, list):
+            self.time_series_keys = []
+        elif isinstance(self.group_setting.inputs.time_series, dict):
+            self.time_series_keys = [
+                k for k, v in self.group_setting.inputs.time_series.items()
+                if np.any(v)]
+        else:
+            raise ValueError(f"Invalid format: {self.group_setting.inputs}")
         self.debug = self.group_setting.debug
 
         self.componentwise_alpha = self.group_setting.optional.get(
@@ -199,7 +204,7 @@ class Group(siml_module.SimlModule):
             if not np.all(lengths == lengths[0]):
                 raise ValueError(
                     'Time length mismatch: '
-                    f"{self.time_series_names}, {lengths}")
+                    f"{self.time_series_keys}, {lengths}")
             return lengths[0]
         else:
             raise NotImplementedError
@@ -208,7 +213,7 @@ class Group(siml_module.SimlModule):
         if isinstance(x, dict):
             y = {
                 k: original_x[k][time_index].clone()
-                if k in self.time_series_names
+                if k in self.time_series_keys
                 else v.clone()
                 for k, v in x.items()}
             # for v in y.values():
