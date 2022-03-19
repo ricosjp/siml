@@ -596,8 +596,7 @@ class TrainerSetting(TypedDataClass):
                 "Set stop_trigger_epoch larger than log_trigger_epoch")
 
         if self.time_series_split_evaluation is None:
-            self.time_series_split_evaluation \
-                = self.time_series_split_evaluation
+            self.time_series_split_evaluation = self.time_series_split
         if self.time_series:
             self.update_time_series(self.inputs)
             self.update_time_series(self.outputs)

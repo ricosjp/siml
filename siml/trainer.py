@@ -626,7 +626,7 @@ class Trainer(siml_manager.SimlManager):
             with torch.no_grad():
                 x, y = self.prepare_batch(
                     batch, device=input_device,
-                    output_device=output_device,
+                    output_device='cpu',
                     support_device=support_device,
                     non_blocking=self.setting.trainer.non_blocking)
                 split_xs, split_ys = self._split_data_if_needed(
@@ -643,11 +643,12 @@ class Trainer(siml_manager.SimlManager):
                 else:
                     cat_x = util.cat(
                         [split_x['x'] for split_x in split_xs],
-                        self.setting.trainer.time_series)
+                        time_series=True)
                     original_shapes = self._update_original_shapes(
                         cat_x, x['original_shapes'])
-                y_pred = util.cat(y_pred, self.setting.trainer.time_series)
-                y = util.cat(split_ys, self.setting.trainer.time_series)
+                y_pred = util.cat(y_pred, time_series=True)
+                y = self._send(
+                    util.cat(split_ys, time_series=True), self.output_device)
                 return y_pred, y, {
                     'original_shapes': original_shapes,
                     'model': self.model}
