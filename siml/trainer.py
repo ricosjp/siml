@@ -638,12 +638,12 @@ class Trainer(siml_manager.SimlManager):
                     split_x['x'] = self._send(split_x['x'], self.device)
                     y_pred.append(self.model(split_x))
 
-                cat_x = util.cat(
-                    [split_x['x'] for split_x in split_xs],
-                    self.setting.trainer.time_series)
                 if self.setting.trainer.time_series_split_evaluation is None:
                     original_shapes = x['original_shapes']
                 else:
+                    cat_x = util.cat(
+                        [split_x['x'] for split_x in split_xs],
+                        self.setting.trainer.time_series)
                     original_shapes = self._update_original_shapes(
                         cat_x, x['original_shapes'])
                 y_pred = util.cat(y_pred, self.setting.trainer.time_series)
