@@ -289,7 +289,10 @@ class LossFunction:
         return
 
     def __call__(self, y_pred, y, original_shapes=None, **kwargs):
-        return self.loss(y_pred, y, original_shapes)
+        return torch.mean(torch.cat([
+            self.loss(y_pred_, y_, original_shapes_)[..., None]
+            for y_pred_, y_, original_shapes_
+            in zip(y_pred, y, original_shapes)]))
 
     def loss_function_dict(self, y_pred, y, original_shapes=None):
         masked_y_pred, masked_y = self.mask_function(y_pred, y)

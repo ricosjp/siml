@@ -609,13 +609,30 @@ class Trainer(siml_manager.SimlManager):
 
         def _inference(engine, batch):
             self.model.eval()
+            if self.setting.trainer.time_series_split_evaluation is None:
+                input_device = self.device
+                support_device = self.device
+                output_device = self.output_device
+            else:
+                input_device = 'cpu'
+                support_device = self.device
+                output_device = 'cpu'
+
             with torch.no_grad():
                 x, y = self.prepare_batch(
-                    batch, device=self.device,
-                    output_device=self.output_device,
-                    support_device=self.device,
+                    batch, device=input_device,
+                    output_device=output_device,
+                    support_device=support_device,
                     non_blocking=self.setting.trainer.non_blocking)
-                y_pred = self.model(x)
+                split_xs, split_ys = self._split_data_if_needed(x, y)
+
+                y_pred = []
+                for split_x in split_xs:
+                    split_x['x'] = self._send(split_x['x'], self.device)
+                    y_pred.append(self.model(split_x))
+                y = [
+                    self._send(split_y, self.output_device)
+                    for split_y in split_ys]
                 return y_pred, y, {
                     'original_shapes': x['original_shapes'],
                     'model': self.model}

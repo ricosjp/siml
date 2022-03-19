@@ -548,6 +548,8 @@ class TrainerSetting(TypedDataClass):
     figure_format: str = 'pdf'
     time_series_split: list[int] = dc.field(
         default=None, metadata={'allow_none': True})
+    time_series_split_evaluation: list[int] = dc.field(
+        default=None, metadata={'allow_none': True})
 
     def __post_init__(self):
         if self.element_wise and self.lazy:
@@ -593,6 +595,9 @@ class TrainerSetting(TypedDataClass):
             raise ValueError(
                 "Set stop_trigger_epoch larger than log_trigger_epoch")
 
+        if self.time_series_split_evaluation is None:
+            self.time_series_split_evaluation \
+                = self.time_series_split_evaluation
         super().__post_init__()
         return
 
