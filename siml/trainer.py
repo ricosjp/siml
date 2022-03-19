@@ -633,6 +633,12 @@ class Trainer(siml_manager.SimlManager):
                 y = [
                     self._send(split_y, self.output_device)
                     for split_y in split_ys]
+                if self.setting.trainer.time_series:
+                    y_pred = torch.cat(y_pred, dim=1)
+                    y = torch.cat(y, dim=1)
+                else:
+                    y_pred = torch.cat(y_pred, dim=0)
+                    y = torch.cat(y, dim=0)
                 return y_pred, y, {
                     'original_shapes': x['original_shapes'],
                     'model': self.model}

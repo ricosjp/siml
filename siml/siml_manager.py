@@ -274,11 +274,12 @@ class LossFunction:
             raise ValueError(f"Unknown loss function name: {loss_name}")
         self.output_is_dict = output_is_dict
         self.output_dims = output_dims
+        self.time_series = time_series
 
         self.mask_function = util.VariableMask(
             output_skips, output_dims, output_is_dict)
 
-        if time_series:
+        if self.time_series:
             self.loss = self.loss_function_time_with_padding
         else:
             if self.output_is_dict:
@@ -289,13 +290,7 @@ class LossFunction:
         return
 
     def __call__(self, y_pred, y, original_shapes=None, **kwargs):
-        if isinstance(y_pred, list):
-            return torch.mean(torch.cat([
-                self.loss(y_pred_, y_, original_shapes_)[..., None]
-                for y_pred_, y_, original_shapes_
-                in zip(y_pred, y, original_shapes)]))
-        else:
-            return self.loss(y_pred, y, original_shapes)
+        return self.loss(y_pred, y, original_shapes)
 
     def loss_function_dict(self, y_pred, y, original_shapes=None):
         masked_y_pred, masked_y = self.mask_function(y_pred, y)
