@@ -558,6 +558,8 @@ class Trainer(siml_manager.SimlManager):
         return split_xs, split_ys
 
     def _update_original_shapes(self, x, previous_shapes):
+        if previous_shapes is None:
+            return None
         if isinstance(x, torch.Tensor):
             previous_shapes[:, 0] = len(x)
             return previous_shapes
@@ -628,7 +630,8 @@ class Trainer(siml_manager.SimlManager):
                     support_device=support_device,
                     non_blocking=self.setting.trainer.non_blocking)
                 split_xs, split_ys = self._split_data_if_needed(
-                    x, y, self.setting.trainer.time_series_split_evaluation)
+                    x, y,
+                    self.setting.trainer.time_series_split_evaluation)
 
                 y_pred = []
                 for split_x in split_xs:
@@ -638,12 +641,16 @@ class Trainer(siml_manager.SimlManager):
                 cat_x = util.cat(
                     [split_x['x'] for split_x in split_xs],
                     self.setting.trainer.time_series)
-                original_shapes = self._update_original_shapes(
-                    cat_x, x['original_shapes'])
+                if self.setting.trainer.time_series_split_evaluation is None:
+                    original_shapes = x['original_shapes']
+                else:
+                    original_shapes = self._update_original_shapes(
+                        cat_x, x['original_shapes'])
                 y_pred = util.cat(y_pred, self.setting.trainer.time_series)
                 y = util.cat(split_ys, self.setting.trainer.time_series)
                 return y_pred, y, {
-                    'original_shapes': original_shapes, 'model': self.model}
+                    'original_shapes': original_shapes,
+                    'model': self.model}
 
         evaluator_engine = ignite.engine.Engine(_inference)
 

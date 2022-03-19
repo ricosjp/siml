@@ -598,7 +598,21 @@ class TrainerSetting(TypedDataClass):
         if self.time_series_split_evaluation is None:
             self.time_series_split_evaluation \
                 = self.time_series_split_evaluation
+        if self.time_series:
+            self.update_time_series(self.inputs)
+            self.update_time_series(self.outputs)
         super().__post_init__()
+        return
+
+    def update_time_series(self, variables):
+        if isinstance(variables, list):
+            for variable in variables:
+                variable.update({'time_series': True})
+        elif isinstance(variables, dict):
+            for variable in variables.values():
+                self.update_time_series(variable)
+        else:
+            raise ValueError(f"Unexpected variables type: {variables}")
         return
 
     @property
