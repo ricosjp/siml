@@ -607,13 +607,15 @@ class TrainerSetting(TypedDataClass):
     def update_time_series(self, variables):
         if isinstance(variables, list):
             for variable in variables:
-                variable.update({'time_series': True})
-        elif isinstance(variables, dict):
-            if 'name' in variables:
-                variables['time_series'] = True
-                return
-            for variable in variables.values():
                 self.update_time_series(variable)
+        elif isinstance(variables, dict):
+            if 'super_post_init' in variables:
+                self.update_time_series(variables['variables'])
+            elif 'name' in variables:
+                variables['time_series'] = True
+            else:
+                for variable in variables.values():
+                    self.update_time_series(variable)
         else:
             raise ValueError(f"Unexpected variables type: {variables}")
         return
