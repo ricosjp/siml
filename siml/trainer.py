@@ -624,21 +624,13 @@ class Trainer(siml_manager.SimlManager):
                     output_device=output_device,
                     support_device=support_device,
                     non_blocking=self.setting.trainer.non_blocking)
-                split_xs, split_ys = self._split_data_if_needed(x, y)
+                split_xs, _ = self._split_data_if_needed(x, y)
 
                 y_pred = []
                 for split_x in split_xs:
                     split_x['x'] = self._send(split_x['x'], self.device)
                     y_pred.append(self.model(split_x))
-                y = [
-                    self._send(split_y, self.output_device)
-                    for split_y in split_ys]
-                if self.setting.trainer.time_series:
-                    y_pred = torch.cat(y_pred, dim=1)
-                    y = torch.cat(y, dim=1)
-                else:
-                    y_pred = torch.cat(y_pred, dim=0)
-                    y = torch.cat(y, dim=0)
+                y_pred = util.cat(y_pred, self.setting.trainer.time_series)
                 return y_pred, y, {
                     'original_shapes': x['original_shapes'],
                     'model': self.model}

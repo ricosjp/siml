@@ -1059,3 +1059,18 @@ class VariableMask:
 
     def _array_mask(self, *xs):
         return [x[..., self.mask] for x in xs]
+
+
+def cat(x, time_series):
+    if time_series:
+        dim = 1
+    else:
+        dim = 0
+
+    if isinstance(x[0], dict):
+        len_x = len(x)
+        return {
+            k: torch.cat([x[i][k] for i in range(len_x)], dim=dim)
+            for k in x[0].keys()}
+    else:
+        return torch.cat(x, dim=dim)
