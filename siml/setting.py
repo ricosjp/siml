@@ -609,7 +609,7 @@ class TrainerSetting(TypedDataClass):
             for variable in variables:
                 variable.update({'time_series': True})
         elif isinstance(variables, dict):
-            if 'time_series' in variables:
+            if 'name' in variables:
                 variables['time_series'] = True
                 return
             for variable in variables.values():
