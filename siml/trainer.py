@@ -484,7 +484,8 @@ class Trainer(siml_manager.SimlManager):
             return loss
 
         def update_standard(x, y, model, optimizer):
-            split_xs, split_ys = self._split_data_if_needed(x, y)
+            split_xs, split_ys = self._split_data_if_needed(
+                x, y, self.setting.trainer.time_series_split)
 
             for split_x, split_y in zip(split_xs, split_ys):
                 optimizer.zero_grad()
@@ -539,33 +540,35 @@ class Trainer(siml_manager.SimlManager):
         else:
             raise ValueError(f"Invalid format: {x.__class__}")
 
-    def _split_data_if_needed(self, x, y):
-        if self.setting.trainer.time_series_split is None:
+    def _split_data_if_needed(self, x, y, time_series_split):
+        if time_series_split is None:
             return [x], [y]
-        split_x_tensors = self._split_core(x['x'], self.input_time_series_keys)
+        split_x_tensors = self._split_core(
+            x['x'], self.input_time_series_keys, time_series_split)
         split_xs = [
             {
                 'x': split_x_tensor,
                 'original_shapes':
-                self._get_original_shapes(
+                self._update_original_shapes(
                     split_x_tensor, x['original_shapes']),
                 'supports': x['supports']}
             for split_x_tensor in split_x_tensors]
-        split_ys = self._split_core(y, self.output_time_series_keys)
+        split_ys = self._split_core(
+            y, self.output_time_series_keys, time_series_split)
         return split_xs, split_ys
 
-    def _get_original_shapes(self, x, previous_shapes):
+    def _update_original_shapes(self, x, previous_shapes):
         if isinstance(x, torch.Tensor):
             previous_shapes[:, 0] = len(x)
             return previous_shapes
         elif isinstance(x, dict):
             return {
-                k: self._get_original_shapes(v, previous_shapes[k])
+                k: self._update_original_shapes(v, previous_shapes[k])
                 for k, v in x.items()}
         else:
             raise ValueError(f"Invalid format: {x}")
 
-    def _split_core(self, x, time_series_keys):
+    def _split_core(self, x, time_series_keys, time_series_split):
         if isinstance(x, torch.Tensor):
             len_x = len(x)
         elif isinstance(x, dict):
@@ -578,7 +581,7 @@ class Trainer(siml_manager.SimlManager):
         else:
             raise ValueError(f"Invalid format: {x}")
 
-        start, step, length = self.setting.trainer.time_series_split
+        start, step, length = time_series_split
         range_ = range(start, len_x - step, step)
 
         if isinstance(x, torch.Tensor):
@@ -624,16 +627,23 @@ class Trainer(siml_manager.SimlManager):
                     output_device=output_device,
                     support_device=support_device,
                     non_blocking=self.setting.trainer.non_blocking)
-                split_xs, _ = self._split_data_if_needed(x, y)
+                split_xs, split_ys = self._split_data_if_needed(
+                    x, y, self.setting.trainer.time_series_split_evaluation)
 
                 y_pred = []
                 for split_x in split_xs:
                     split_x['x'] = self._send(split_x['x'], self.device)
                     y_pred.append(self.model(split_x))
+
+                cat_x = util.cat(
+                    [split_x['x'] for split_x in split_xs],
+                    self.setting.trainer.time_series)
+                original_shapes = self._update_original_shapes(
+                    cat_x, x['original_shapes'])
                 y_pred = util.cat(y_pred, self.setting.trainer.time_series)
+                y = util.cat(split_ys, self.setting.trainer.time_series)
                 return y_pred, y, {
-                    'original_shapes': x['original_shapes'],
-                    'model': self.model}
+                    'original_shapes': original_shapes, 'model': self.model}
 
         evaluator_engine = ignite.engine.Engine(_inference)
 

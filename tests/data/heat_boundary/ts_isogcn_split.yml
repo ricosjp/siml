@@ -25,6 +25,10 @@ trainer:
     - 0
     - 2
     - 4
+  time_series_split_evaluation:
+    - 0
+    - 2
+    - 6
   inputs:
     rank0:
       - name: ts_temperature
