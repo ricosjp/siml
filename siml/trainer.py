@@ -584,7 +584,7 @@ class Trainer(siml_manager.SimlManager):
             raise ValueError(f"Invalid format: {x}")
 
         start, step, length = time_series_split
-        range_ = range(start, len_x - step, step)
+        range_ = range(start, len_x - length + 1, step)
 
         if isinstance(x, torch.Tensor):
             return [x[s:s+length] for s in range_]
@@ -617,11 +617,9 @@ class Trainer(siml_manager.SimlManager):
             if self.setting.trainer.time_series_split_evaluation is None:
                 input_device = self.device
                 support_device = self.device
-                output_device = self.output_device
             else:
                 input_device = 'cpu'
                 support_device = self.device
-                output_device = 'cpu'
 
             with torch.no_grad():
                 x, y = self.prepare_batch(
@@ -641,14 +639,18 @@ class Trainer(siml_manager.SimlManager):
                 if self.setting.trainer.time_series_split_evaluation is None:
                     original_shapes = x['original_shapes']
                 else:
-                    cat_x = util.cat(
+                    cat_x = util.cat_time_series(
                         [split_x['x'] for split_x in split_xs],
-                        time_series=True)
+                        time_series_keys=self.input_time_series_keys)
                     original_shapes = self._update_original_shapes(
                         cat_x, x['original_shapes'])
-                y_pred = util.cat(y_pred, time_series=True)
+                y_pred = util.cat_time_series(
+                    y_pred, time_series_keys=self.output_time_series_keys)
                 y = self._send(
-                    util.cat(split_ys, time_series=True), self.output_device)
+                    util.cat_time_series(
+                        split_ys,
+                        time_series_keys=self.output_time_series_keys),
+                    self.output_device)
                 return y_pred, y, {
                     'original_shapes': original_shapes,
                     'model': self.model}

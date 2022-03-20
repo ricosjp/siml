@@ -1061,16 +1061,14 @@ class VariableMask:
         return [x[..., self.mask] for x in xs]
 
 
-def cat(x, time_series):
-    if time_series:
-        dim = 1
-    else:
-        dim = 0
+def cat_time_series(x, time_series_keys):
 
     if isinstance(x[0], dict):
         len_x = len(x)
         return {
-            k: torch.cat([x[i][k] for i in range(len_x)], dim=dim)
+            k: torch.cat([x[i][k] for i in range(len_x)], dim=1)
+            if k in time_series_keys
+            else torch.cat([x[i][k] for i in range(len_x)], dim=0)
             for k in x[0].keys()}
     else:
-        return torch.cat(x, dim=dim)
+        return torch.cat(x, dim=1)  # Assume all are time series
