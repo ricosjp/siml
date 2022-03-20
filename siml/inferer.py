@@ -389,7 +389,7 @@ class Inferer(siml_manager.SimlManager):
 
     def _prepare_inference(
             self, *,
-            raw_dict_x=None, answer_raw_dict_y=None, allow_no_data=False):
+            raw_dict_x=None, answer_raw_dict_y=None, allow_no_data=True):
 
         # Define model
         if self.setting.inferer.model is None:
@@ -433,17 +433,35 @@ class Inferer(siml_manager.SimlManager):
 
     def _get_inferernce_loader(
             self, raw_dict_x=None, answer_raw_dict_y=None,
-            allow_no_data=False):
+            allow_no_data=True):
         input_is_dict = isinstance(
             self.setting.trainer.inputs.variables, dict)
         output_is_dict = isinstance(
             self.setting.trainer.outputs.variables, dict)
+        if isinstance(self.setting.trainer.inputs.time_series, dict):
+            input_time_series_keys = [
+                k for k, v in self.setting.trainer.inputs.time_series.items()
+                if np.any(v)]
+        else:
+            input_time_series_keys = []
+        if isinstance(self.setting.trainer.outputs.time_series, dict):
+            output_time_series_keys = [
+                k for k, v in self.setting.trainer.outputs.time_series.items()
+                if np.any(v)]
+        else:
+            output_time_series_keys = []
+        input_time_slices = self.setting.trainer.inputs.time_slice
+        output_time_slices = self.setting.trainer.outputs.time_slice
         self.collate_fn = datasets.CollateFunctionGenerator(
             time_series=self.setting.trainer.time_series,
             dict_input=input_is_dict, dict_output=output_is_dict,
             use_support=self.setting.trainer.support_inputs,
             element_wise=self.element_wise,
-            data_parallel=self.setting.trainer.data_parallel)
+            data_parallel=self.setting.trainer.data_parallel,
+            input_time_series_keys=input_time_series_keys,
+            output_time_series_keys=output_time_series_keys,
+            input_time_slices=input_time_slices,
+            output_time_slices=output_time_slices)
         self.prepare_batch = self.collate_fn.prepare_batch
 
         setting = self.setting
@@ -500,6 +518,7 @@ class Inferer(siml_manager.SimlManager):
             x, y = self.prepare_batch(
                 batch, device=self.device,
                 output_device=self.output_device,
+                support_device=self.device,
                 non_blocking=self.setting.trainer.non_blocking)
             with torch.no_grad():
                 start_time = time.time()

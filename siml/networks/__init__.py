@@ -51,6 +51,7 @@ blocks = [
     reshape.Reshape,
     reshape.TimeSeriesToFeatures,
     reshape.FeaturesToTimeSeries,
+    reshape.Accessor,
     symmat2array.Symmat2Array,
     tensor_operations.TensorProduct,
     time_norm.TimeNorm,
