@@ -40,6 +40,7 @@ class DeepSets(siml_module.SimlModule):
         self.lambda_ = mlp.MLP(block_setting, last_identity=True)
         self.gamma = mlp.MLP(block_setting, last_identity=True)
         self.dict_key = block_setting.optional.get('dict_key', None)
+        self.dim = block_setting.optional.get('dim', None)
         return
 
     def _forward_core(self, x, supports=None, original_shapes=None):
@@ -62,7 +63,11 @@ class DeepSets(siml_module.SimlModule):
             shapes = original_shapes
         else:
             shapes = original_shapes[self.dict_key]
-        dim = len(shapes[0]) - 1
+        if self.dim is None:
+            dim = len(shapes[0]) - 1
+        else:
+            dim = self.dim
+
         split_h = activations.split(self.lambda_(x), shapes)
         reduced_h = activations.max_pool(self.gamma(h), shapes)
         if dim == 0:
