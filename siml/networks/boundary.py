@@ -358,6 +358,7 @@ class Interaction(siml_module.SimlModule):
 
         self.transpose = self.block_setting.optional.get('transpose', False)
         self.other_zero = self.block_setting.optional.get('other_zero', True)
+        self.clone = self.block_setting.optional.get('clone', False)
         self.factor = self.block_setting.optional.get('factor', 1.)
         return
 
@@ -393,7 +394,10 @@ class Interaction(siml_module.SimlModule):
         if self.other_zero:
             ret = torch.zeros(x.shape, device=x.device)
         else:
-            ret = x
+            if self.clone:
+                ret = x.clone()
+            else:
+                ret = x
 
         if self.transpose:
             incidence = supports[0].transpose(0, 1)
