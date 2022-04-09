@@ -250,13 +250,16 @@ class SimlModule(torch.nn.Module, metaclass=abc.ABCMeta):
         return
 
     def forward(self, x, supports=None, original_shapes=None):
-        if self.block_setting.no_grad:
-            with torch.no_grad():
+        try:
+            if self.block_setting.no_grad:
+                with torch.no_grad():
+                    h = self._forward(
+                        x, supports=supports, original_shapes=original_shapes)
+            else:
                 h = self._forward(
                     x, supports=supports, original_shapes=original_shapes)
-        else:
-            h = self._forward(
-                x, supports=supports, original_shapes=original_shapes)
+        except Exception as e:
+            raise ValueError(f"{e}\nError occured in: {self.block_setting}")
         return h
 
     def _forward(self, x, supports=None, original_shapes=None):

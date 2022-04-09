@@ -101,6 +101,9 @@ class Network(torch.nn.Module):
             block_setting = self.dict_block_setting[graph_node]
             predecessors = tuple(self.call_graph.predecessors(graph_node))
             block_type = block_setting.type
+            if block_type not in self.dict_block_class:
+                raise ValueError(
+                    f"{block_type} invalid for: {block_setting}")
             block_class = self.dict_block_class[block_type]
 
             input_node, output_node = block_class.get_n_nodes(

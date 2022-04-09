@@ -494,9 +494,14 @@ class Trainer(siml_manager.SimlManager):
 
                 split_y_pred = model(split_x)
                 loss = self.loss(
-                    split_y_pred, split_y, split_x['original_shapes'])
+                    self._slice(split_y_pred),
+                    self._slice(split_y),
+                    split_x['original_shapes'])
                 other_loss = self._calculate_other_loss(
-                    model, split_y_pred, split_y, split_x['original_shapes'])
+                    model,
+                    self._slice(split_y_pred),
+                    self._slice(split_y),
+                    split_x['original_shapes'])
                 (loss + other_loss).backward()
                 model = _clip_if_needed(model)
                 self.optimizer.step()
@@ -529,6 +534,16 @@ class Trainer(siml_manager.SimlManager):
             return loss.item()
 
         return ignite.engine.Engine(update_model)
+
+    def _slice(self, x):
+        if isinstance(x, torch.Tensor):
+            return x[self.setting.trainer.loss_slice]
+        elif isinstance(x, dict):
+            return {k: self._slice(v) for k, v in x.items()}
+        elif isinstance(x, list):
+            return [self._slice(v) for v in x]
+        else:
+            raise ValueError(f"Invalid format: {x.__class__}")
 
     def _send(self, x, device):
         if isinstance(x, torch.Tensor):

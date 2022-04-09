@@ -482,6 +482,8 @@ class TrainerSetting(TypedDataClass):
         If True, search data recursively.
     time_series_split: list[int]
         If fed, split time series with [start, step, length].
+    loss_slice: slice
+        Slice to be applied to loss computation.
     """
 
     inputs: CollectionVariableSetting = dc.field(
@@ -550,6 +552,7 @@ class TrainerSetting(TypedDataClass):
         default=None, metadata={'allow_none': True})
     time_series_split_evaluation: list[int] = dc.field(
         default=None, metadata={'allow_none': True})
+    loss_slice: slice = dc.field(default_factory=lambda: slice(None))
 
     def __post_init__(self):
         if self.element_wise and self.lazy:
