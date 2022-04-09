@@ -185,91 +185,95 @@ class Network(torch.nn.Module):
             block_name: None for block_name in self.call_graph.nodes}
 
         for graph_node in self.sorted_graph_nodes:
-            block_setting = self.dict_block_setting[graph_node]
-            if graph_node == config.INPUT_LAYER_NAME:
-                dict_hidden[graph_node] = x
-            else:
-                device = block_setting.device
+            try:
+                block_setting = self.dict_block_setting[graph_node]
+                if graph_node == config.INPUT_LAYER_NAME:
+                    dict_hidden[graph_node] = x
+                else:
+                    device = block_setting.device
 
-                if block_setting.type == 'group':
-                    dict_predecessors = {
-                        predecessor: dict_hidden[predecessor]
-                        for predecessor
-                        in self.call_graph.predecessors(graph_node)}
-                    inputs = self.dict_block[graph_node].generate_inputs(
-                        dict_predecessors)
-                elif block_setting.input_keys is None \
-                        and block_setting.input_names is None:
-                    inputs = [
-                        self._select_dimension(
-                            dict_hidden[predecessor],
-                            block_setting.input_selection, device)
-                        for predecessor
-                        in self.call_graph.predecessors(graph_node)]
-                elif block_setting.input_keys is not None:
-                    inputs = [
-                        torch.cat([
-                            dict_hidden[predecessor][input_key][
+                    if block_setting.type == 'group':
+                        dict_predecessors = {
+                            predecessor: dict_hidden[predecessor]
+                            for predecessor
+                            in self.call_graph.predecessors(graph_node)}
+                        inputs = self.dict_block[graph_node].generate_inputs(
+                            dict_predecessors)
+                    elif block_setting.input_keys is None \
+                            and block_setting.input_names is None:
+                        inputs = [
+                            self._select_dimension(
+                                dict_hidden[predecessor],
+                                block_setting.input_selection, device)
+                            for predecessor
+                            in self.call_graph.predecessors(graph_node)]
+                    elif block_setting.input_keys is not None:
+                        inputs = [
+                            torch.cat([
+                                dict_hidden[predecessor][input_key][
+                                    ..., block_setting.input_selection].to(device)
+                                for input_key in block_setting.input_keys], dim=-1)
+                            for predecessor
+                            in self.call_graph.predecessors(graph_node)]
+
+                    elif block_setting.input_names is not None:
+                        if set(block_setting.input_names) != set(
+                                self.call_graph.predecessors(graph_node)):
+                            raise ValueError(
+                                'input_names differs from the predecessors:\n'
+                                f"{set(block_setting.input_names)}\n"
+                                f"{set(self.call_graph.predecessors(graph_node))}"
+                                f"\nin: {block_setting}")
+                        inputs = [
+                            dict_hidden[input_name][
                                 ..., block_setting.input_selection].to(device)
-                            for input_key in block_setting.input_keys], dim=-1)
-                        for predecessor
-                        in self.call_graph.predecessors(graph_node)]
-
-                elif block_setting.input_names is not None:
-                    if set(block_setting.input_names) != set(
-                            self.call_graph.predecessors(graph_node)):
-                        raise ValueError(
-                            'input_names differs from the predecessors:\n'
-                            f"{set(block_setting.input_names)}\n"
-                            f"{set(self.call_graph.predecessors(graph_node))}"
-                            f"\nin: {block_setting}")
-                    inputs = [
-                        dict_hidden[input_name][
-                            ..., block_setting.input_selection].to(device)
-                        for input_name in block_setting.input_names]
-                else:
-                    raise ValueError('Should not reach here')
-
-                if block_setting.type == 'group':
-                    output = self.dict_block[graph_node](
-                        inputs, supports=supports,
-                        original_shapes=original_shapes)
-                    hidden = output
-
-                elif self.dict_block_information[graph_node].uses_support():
-                    if self.merge_sparses:
-                        raise ValueError(
-                            'merge_sparses is no longer available')
+                            for input_name in block_setting.input_names]
                     else:
-                        if isinstance(supports[0], list):
-                            selected_supports = [
-                                [s.to(device) for s in sp] for sp
-                                in supports[
-                                    :, block_setting.support_input_indices]]
+                        raise ValueError('Should not reach here')
+
+                    if block_setting.type == 'group':
+                        output = self.dict_block[graph_node](
+                            inputs, supports=supports,
+                            original_shapes=original_shapes)
+                        hidden = output
+
+                    elif self.dict_block_information[graph_node].uses_support():
+                        if self.merge_sparses:
+                            raise ValueError(
+                                'merge_sparses is no longer available')
                         else:
-                            selected_supports = [
-                                supports[i].to(device) for i
-                                in block_setting.support_input_indices]
+                            if isinstance(supports[0], list):
+                                selected_supports = [
+                                    [s.to(device) for s in sp] for sp
+                                    in supports[
+                                        :, block_setting.support_input_indices]]
+                            else:
+                                selected_supports = [
+                                    supports[i].to(device) for i
+                                    in block_setting.support_input_indices]
 
-                    hidden = self.dict_block[graph_node](
-                        *inputs, supports=selected_supports,
-                        original_shapes=original_shapes)
-                else:
-                    hidden = self.dict_block[graph_node](
-                        *inputs, original_shapes=original_shapes)
-
-                if block_setting.coeff is not None:
-                    if isinstance(hidden, dict):
-                        hidden = {
-                            k: v * block_setting.coeff
-                            for k, v in hidden.items()}
+                        hidden = self.dict_block[graph_node](
+                            *inputs, supports=selected_supports,
+                            original_shapes=original_shapes)
                     else:
-                        hidden = hidden * block_setting.coeff
-                if block_setting.output_key is not None:
-                    dict_hidden[graph_node] = {
-                        block_setting.output_key: hidden}
-                else:
-                    dict_hidden[graph_node] = hidden
+                        hidden = self.dict_block[graph_node](
+                            *inputs, original_shapes=original_shapes)
+
+                    if block_setting.coeff is not None:
+                        if isinstance(hidden, dict):
+                            hidden = {
+                                k: v * block_setting.coeff
+                                for k, v in hidden.items()}
+                        else:
+                            hidden = hidden * block_setting.coeff
+                    if block_setting.output_key is not None:
+                        dict_hidden[graph_node] = {
+                            block_setting.output_key: hidden}
+                    else:
+                        dict_hidden[graph_node] = hidden
+            except Exception as e:
+                raise ValueError(
+                    f"{e}\nError occured in: {block_setting}")
 
         if self.y_dict_mode:
             return_dict = {}

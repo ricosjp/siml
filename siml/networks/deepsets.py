@@ -41,6 +41,13 @@ class DeepSets(siml_module.SimlModule):
         self.gamma = mlp.MLP(block_setting, last_identity=True)
         self.dict_key = block_setting.optional.get('dict_key', None)
         self.dim = block_setting.optional.get('dim', None)
+        self.pool = block_setting.optional.get('pool', 'max_pool')
+        if self.pool == 'max_pool':
+            self.pool_function = activations.max_pool
+        elif self.pool == 'mean':
+            self.pool_function = activations.mean
+        else:
+            raise ValueError(f"Invalid pooling option in: {block_setting}")
         return
 
     def _forward_core(self, x, supports=None, original_shapes=None):
@@ -69,7 +76,7 @@ class DeepSets(siml_module.SimlModule):
             dim = self.dim
 
         split_h = activations.split(self.lambda_(x), shapes)
-        reduced_h = activations.max_pool(self.gamma(h), shapes)
+        reduced_h = self.pool_function(self.gamma(h), shapes)
         if dim == 0:
             h = torch.cat([
                 sh + reduced_h[i] for i, sh in enumerate(split_h)])
