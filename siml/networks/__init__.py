@@ -21,6 +21,7 @@ from . import message_passing
 from . import normalized_mlp
 from . import penn
 from . import pinv_mlp
+from . import proportional
 from . import reducer
 from . import reshape
 from . import set_transformer
@@ -69,6 +70,7 @@ blocks = [
     normalized_mlp.NormalizedMLP,
     penn.PENN,
     pinv_mlp.PInvMLP,
+    proportional.Proportional,
     set_transformer.SetTransformerEncoder,
     set_transformer.SetTransformerDecoder,
     share.Share,
