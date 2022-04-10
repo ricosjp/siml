@@ -63,6 +63,7 @@ class PInvMLP(siml_module.SimlModule):
         self.activations = [
             self._define_activation(name)
             for name in self.reference_block.block_setting.activations[-1::-1]]
+        self.clone = self.block_setting.optional.get('clone', False)
 
         return
 
@@ -79,11 +80,17 @@ class PInvMLP(siml_module.SimlModule):
         y: torch.Tensor
             Output of the NN.
         """
-        h = x
+        if self.clone:
+            h = x.clone()
+        else:
+            h = x
         for linear, activation in zip(self.linears, self.activations):
             h = activation(h)  # Activation first, because it is inverse
             h = linear(h)
-        return h
+        if self.clone:
+            return h.clone()
+        else:
+            return h
 
     def _define_activation(self, name):
         if name == 'identity':
