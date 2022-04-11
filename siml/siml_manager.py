@@ -246,11 +246,15 @@ class SimlManager():
             loss_with_answer = self._create_loss_function()
             def loss_function_with_allowing_no_answer(
                     y_pred, y, original_shapes, **kwargs):
-                if y is None or len(y) == 0:
+                try:
+                    if y is None or len(y) == 0 or self.min_len(y) == 0:
+                        return None
+                    else:
+                        return loss_with_answer(
+                            y_pred, y, original_shapes=original_shapes)
+                except Exception:
+                    print('Skip loss computation.')
                     return None
-                else:
-                    return loss_with_answer(
-                        y_pred, y, original_shapes=original_shapes)
             return loss_function_with_allowing_no_answer
 
         loss_name = self.setting.trainer.loss_function.lower()
@@ -261,6 +265,14 @@ class SimlManager():
             time_series=self.setting.trainer.time_series,
             output_skips=self.setting.trainer.output_skips,
             output_dims=self.setting.trainer.output_dims)
+
+    def min_len(self, x):
+        if isinstance(x, torch.Tensor):
+            return len(x)
+        elif isinstance(x, list):
+            return np.min([self.min_len(x_) for x_ in x])
+        elif isinstance(x, dict):
+            return np.min([self.min_len(v) for v in x.values()])
 
 
 class LossFunction:
