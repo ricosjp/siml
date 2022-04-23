@@ -717,6 +717,8 @@ class InfererSetting(TypedDataClass):
         GPU ID. Specify non negative value to use GPU. -1 Meaning CPU.
     less_output: bool, optional
         If True, output less variables in FEMData object.
+    skip_fem_data_creation: bool, optional
+        If True, skip fem_data object creation.
     """
     model: Path = dc.field(
         default=None, metadata={'allow_none': True})
@@ -748,6 +750,7 @@ class InfererSetting(TypedDataClass):
         default=None, metadata={'allow_none': True})
     gpu_id: int = -1
     less_output: bool = False
+    skip_fem_data_creation: bool = False
 
 
 @dc.dataclass

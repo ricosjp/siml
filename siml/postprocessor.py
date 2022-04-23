@@ -63,7 +63,8 @@ class Postprocessor(Metric):
                 convert_to_order1=setting.inferer.convert_to_order1,
                 required_file_names=setting.conversion.required_file_names,
                 less_output=setting.inferer.less_output,
-                perform_inverse=setting.inferer.perform_inverse)
+                perform_inverse=setting.inferer.perform_inverse,
+                skip_fem_data_creation=setting.inferer.skip_fem_data_creation)
         raw_loss = self._compute_raw_loss(
             inversed_dict_x, inversed_dict_y, x['original_shapes'])
 

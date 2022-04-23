@@ -876,7 +876,8 @@ class Converter:
             write_simulation_type='fistr', skip_femio=False,
             load_function=None, convert_to_order1=False,
             data_addition_function=None, required_file_names=[],
-            less_output=False, perform_inverse=True, **kwargs):
+            less_output=False, perform_inverse=True,
+            skip_fem_data_creation=False, **kwargs):
         """Postprocess data with inversely converting them.
 
         Parameters
@@ -913,8 +914,10 @@ class Converter:
             Required file names for load function.
         less_output: bool, optional
             If True, output less variables in FEMData object.
-        data_addition_function=callable, optional
+        data_addition_function: callable, optional
             Function to add some data to existing fem_data.
+        skip_fem_data_creation: bool, optional
+            If True, skip fem_data object creation.
 
         Returns
         --------
@@ -973,7 +976,8 @@ class Converter:
             return_dict_data_y = {}
 
         # Save data
-        if write_simulation_base is None or not write_simulation_base.exists():
+        if skip_fem_data_creation or write_simulation_base is None \
+                or not write_simulation_base.exists():
             fem_data = None
         else:
             try:
