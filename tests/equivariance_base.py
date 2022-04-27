@@ -10,7 +10,7 @@ class EquivarianceBase(unittest.TestCase):
 
     def validate_results(
             self, original_results, transformed_results,
-            *, rank0=None, rank2=None, validate_x=True, decimal=5,
+            *, rank0=None, rank1=None, rank2=None, validate_x=True, decimal=5,
             threshold_percent=1e-3):
 
         if rank0 is not None:
@@ -41,6 +41,40 @@ class EquivarianceBase(unittest.TestCase):
                 np.testing.assert_almost_equal(
                     original_results[0]['dict_y'][rank0] / scale,
                     transformed_result['dict_y'][rank0] / scale,
+                    decimal=decimal)
+
+        if rank1 is not None:
+            scale = np.max(np.abs(original_results[0]['dict_y'][rank1]))
+
+            for transformed_result in transformed_results:
+                print(
+                    f"data_directory: {transformed_result['data_directory']}")
+                orthogonal_matrix = self.load_orthogonal_matrix(
+                    transformed_result['data_directory'])
+                if validate_x:
+                    np.testing.assert_almost_equal(
+                        self.transform_rank1(
+                            orthogonal_matrix,
+                            original_results[0]['dict_x'][rank1]),
+                        transformed_result['dict_x'][rank1], decimal=decimal)
+
+                transformed_original = self.transform_rank1(
+                    orthogonal_matrix, original_results[0]['dict_y'][rank1])
+                self.print_vec(
+                    transformed_original / scale, 'Transform x ML', 5)
+                self.print_vec(
+                    transformed_result['dict_y'][rank1] / scale,
+                    'ML x Transform', 5)
+                self.print_vec((
+                    transformed_original
+                    - transformed_result['dict_y'][rank1]) / scale,
+                    'Diff', 5)
+                self.compare_relative_rmse(
+                    transformed_original, transformed_result['dict_y'][rank1],
+                    threshold_percent=threshold_percent)
+                np.testing.assert_almost_equal(
+                    transformed_original / scale,
+                    transformed_result['dict_y'][rank1] / scale,
                     decimal=decimal)
 
         if rank2 is not None:
@@ -131,6 +165,13 @@ class EquivarianceBase(unittest.TestCase):
             Path(g) for g in glob.glob(str(root_path), recursive=recursive)]
 
     def load_orthogonal_matrix(self, preprocessed_path):
-        return np.loadtxt(
+        ortho_path = Path(
             str(preprocessed_path / 'orthogonal_matrix.txt').replace(
                 'preprocessed', 'raw'))
+        rotation_path = Path(
+            str(preprocessed_path / 'rotation_matrix.npy').replace(
+                'preprocessed', 'raw'))
+        if ortho_path.is_file():
+            return np.loadtxt(ortho_path)
+        elif rotation_path.is_file():
+            return np.load(rotation_path)
