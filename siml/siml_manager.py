@@ -97,7 +97,7 @@ class SimlManager():
                 self.device = 'cpu'
                 self.output_device = self.device
         else:
-            if self.setting.trainer.gpu_id != -1 \
+            if gpu_id != -1 \
                     or self.setting.trainer.data_parallel \
                     or self.setting.trainer.model_parallel:
                 raise ValueError('No GPU found.')
@@ -178,7 +178,9 @@ class SimlManager():
                 method=self.setting.trainer.snapshot_choise_method)
 
         key = self.setting.inferer.model_key
-        if key is not None and snapshot.suffix == '.enc':
+        if snapshot.suffix == '.enc':
+            if key is None:
+                raise ValueError('Feed key to load encrypted model')
             checkpoint = torch.load(
                 util.decrypt_file(key, snapshot), map_location=self.device)
         else:
@@ -202,7 +204,12 @@ class SimlManager():
         if path.is_file():
             return path
         elif path.is_dir():
-            snapshots = path.glob('snapshot_epoch_*')
+            snapshots = list(path.glob('snapshot_epoch_*'))
+            if '.enc' in str(snapshots[0]):
+                suffix = 'pth.enc'
+            else:
+                suffix = 'pth'
+
             if method == 'latest':
                 return max(
                     snapshots, key=lambda p: int(re.search(
@@ -215,14 +222,14 @@ class SimlManager():
                     return self._select_snapshot(path, method='train_best')
                 best_epoch = df['epoch'].iloc[
                     df['validation_loss'].idxmin()]
-                return path / f"snapshot_epoch_{best_epoch}.pth"
+                return path / f"snapshot_epoch_{best_epoch}.{suffix}"
             elif method == 'train_best':
                 df = pd.read_csv(
                     path / 'log.csv', header=0, index_col=None,
                     skipinitialspace=True)
                 best_epoch = df['epoch'].iloc[
                     df['train_loss'].idxmin()]
-                return path / f"snapshot_epoch_{best_epoch}.pth"
+                return path / f"snapshot_epoch_{best_epoch}.{suffix}"
             else:
                 raise ValueError(f"Unknown snapshot choise method: {method}")
 
@@ -239,11 +246,15 @@ class SimlManager():
             loss_with_answer = self._create_loss_function()
             def loss_function_with_allowing_no_answer(
                     y_pred, y, original_shapes, **kwargs):
-                if y is None or len(y) == 0:
+                try:
+                    if y is None or len(y) == 0 or self.min_len(y) == 0:
+                        return None
+                    else:
+                        return loss_with_answer(
+                            y_pred, y, original_shapes=original_shapes)
+                except Exception:
+                    print('Skip loss computation.')
                     return None
-                else:
-                    return loss_with_answer(
-                        y_pred, y, original_shapes=original_shapes)
             return loss_function_with_allowing_no_answer
 
         loss_name = self.setting.trainer.loss_function.lower()
@@ -254,6 +265,14 @@ class SimlManager():
             time_series=self.setting.trainer.time_series,
             output_skips=self.setting.trainer.output_skips,
             output_dims=self.setting.trainer.output_dims)
+
+    def min_len(self, x):
+        if isinstance(x, torch.Tensor):
+            return len(x)
+        elif isinstance(x, list):
+            return np.min([self.min_len(x_) for x_ in x])
+        elif isinstance(x, dict):
+            return np.min([self.min_len(v) for v in x.values()])
 
 
 class LossFunction:
@@ -267,11 +286,12 @@ class LossFunction:
             raise ValueError(f"Unknown loss function name: {loss_name}")
         self.output_is_dict = output_is_dict
         self.output_dims = output_dims
+        self.time_series = time_series
 
         self.mask_function = util.VariableMask(
             output_skips, output_dims, output_is_dict)
 
-        if time_series:
+        if self.time_series:
             self.loss = self.loss_function_time_with_padding
         else:
             if self.output_is_dict:

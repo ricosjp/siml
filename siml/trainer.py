@@ -1,4 +1,5 @@
 import enum
+import io
 import time
 
 import ignite
@@ -39,7 +40,8 @@ class Trainer(siml_manager.SimlManager):
 
         setting.write_yaml(
             self.setting,
-            self.setting.trainer.output_directory / 'settings.yml')
+            self.setting.trainer.output_directory / 'settings.yml',
+            key=self.setting.trainer.model_key)
 
         print(
             self._display_mergin('epoch')
@@ -219,12 +221,30 @@ class Trainer(siml_manager.SimlManager):
             self.setting.trainer.inputs.variables, dict)
         output_is_dict = isinstance(
             self.setting.trainer.outputs.variables, dict)
+        if isinstance(self.setting.trainer.inputs.time_series, dict):
+            self.input_time_series_keys = [
+                k for k, v in self.setting.trainer.inputs.time_series.items()
+                if np.any(v)]
+        else:
+            self.input_time_series_keys = []
+        if isinstance(self.setting.trainer.outputs.time_series, dict):
+            self.output_time_series_keys = [
+                k for k, v in self.setting.trainer.outputs.time_series.items()
+                if np.any(v)]
+        else:
+            self.output_time_series_keys = []
+        self.input_time_slices = self.setting.trainer.inputs.time_slice
+        self.output_time_slices = self.setting.trainer.outputs.time_slice
         self.collate_fn = datasets.CollateFunctionGenerator(
             time_series=self.setting.trainer.time_series,
             dict_input=input_is_dict, dict_output=output_is_dict,
             use_support=self.setting.trainer.support_inputs,
             element_wise=self.element_wise,
-            data_parallel=self.setting.trainer.data_parallel)
+            data_parallel=self.setting.trainer.data_parallel,
+            input_time_series_keys=self.input_time_series_keys,
+            output_time_series_keys=self.output_time_series_keys,
+            input_time_slices=self.input_time_slices,
+            output_time_slices=self.output_time_slices)
         self.prepare_batch = self.collate_fn.prepare_batch
 
         if self.setting.trainer.lazy:
@@ -328,15 +348,7 @@ class Trainer(siml_manager.SimlManager):
             self.pbar.n = self.pbar.last_print_n = 0
 
             # Save checkpoint
-            torch.save(
-                {
-                    'epoch': engine.state.epoch,
-                    'validation_loss': validation_loss,
-                    'model_state_dict': self.model.state_dict(),
-                    'optimizer_state_dict': self.optimizer.state_dict()
-                },
-                self.setting.trainer.output_directory
-                / f"snapshot_epoch_{engine.state.epoch}.pth")
+            self.save_model(engine, validation_loss)
 
             # Write log
             with open(self.log_file, 'a') as f:
@@ -403,6 +415,34 @@ class Trainer(siml_manager.SimlManager):
 
         return
 
+    def save_model(self, engine, validation_loss):
+        if self.setting.trainer.model_key is None:
+            torch.save(
+                {
+                    'epoch': engine.state.epoch,
+                    'validation_loss': validation_loss,
+                    'model_state_dict': self.model.state_dict(),
+                    'optimizer_state_dict': self.optimizer.state_dict()
+                },
+                self.setting.trainer.output_directory
+                / f"snapshot_epoch_{engine.state.epoch}.pth")
+        else:
+            b = io.BytesIO()
+            torch.save(
+                {
+                    'epoch': engine.state.epoch,
+                    'validation_loss': validation_loss,
+                    'model_state_dict': self.model.state_dict(),
+                    'optimizer_state_dict': self.optimizer.state_dict()
+                },
+                b)
+            util.encrypt_file(
+                self.setting.trainer.model_key,
+                self.setting.trainer.output_directory
+                / f"snapshot_epoch_{engine.state.epoch}.pth.enc",
+                b)
+        return
+
     def create_pbar(self, total):
         return tqdm(
             initial=0, leave=False,
@@ -444,15 +484,28 @@ class Trainer(siml_manager.SimlManager):
             return loss
 
         def update_standard(x, y, model, optimizer):
-            optimizer.zero_grad()
-            y_pred = model(x)
-            loss = self.loss(y_pred, y, x['original_shapes'])
-            other_loss = self._calculate_other_loss(
-                model, y_pred, y, x['original_shapes'])
-            (loss + other_loss).backward()
-            model = _clip_if_needed(model)
-            self.optimizer.step()
-            model.reset()
+            split_xs, split_ys = self._split_data_if_needed(
+                x, y, self.setting.trainer.time_series_split)
+
+            for split_x, split_y in zip(split_xs, split_ys):
+                optimizer.zero_grad()
+                split_x['x'] = self._send(split_x['x'], self.device)
+                split_y = self._send(split_y, self.output_device)
+
+                split_y_pred = model(split_x)
+                loss = self.loss(
+                    self._slice(split_y_pred),
+                    self._slice(split_y),
+                    split_x['original_shapes'])
+                other_loss = self._calculate_other_loss(
+                    model,
+                    self._slice(split_y_pred),
+                    self._slice(split_y),
+                    split_x['original_shapes'])
+                (loss + other_loss).backward()
+                model = _clip_if_needed(model)
+                self.optimizer.step()
+                model.reset()
             return loss
 
         if not self.element_wise \
@@ -463,8 +516,17 @@ class Trainer(siml_manager.SimlManager):
 
         def update_model(engine, batch):
             self.model.train()
+            if self.setting.trainer.time_series_split is None:
+                input_device = self.device
+                support_device = self.device
+                output_device = self.output_device
+            else:
+                input_device = 'cpu'
+                support_device = self.device
+                output_device = 'cpu'
             x, y = self.prepare_batch(
-                batch, device=self.device, output_device=self.output_device,
+                batch, device=input_device, output_device=output_device,
+                support_device=support_device,
                 non_blocking=self.setting.trainer.non_blocking)
             loss = update_function(x, y, self.model, self.optimizer)
             if self.setting.trainer.output_stats:
@@ -472,6 +534,84 @@ class Trainer(siml_manager.SimlManager):
             return loss.item()
 
         return ignite.engine.Engine(update_model)
+
+    def _slice(self, x):
+        if isinstance(x, torch.Tensor):
+            return x[self.setting.trainer.loss_slice]
+        elif isinstance(x, dict):
+            return {k: self._slice(v) for k, v in x.items()}
+        elif isinstance(x, list):
+            return [self._slice(v) for v in x]
+        else:
+            raise ValueError(f"Invalid format: {x.__class__}")
+
+    def _send(self, x, device):
+        if isinstance(x, torch.Tensor):
+            return x.to(device)
+        elif isinstance(x, dict):
+            return {k: self._send(v, device) for k, v in x.items()}
+        elif isinstance(x, list):
+            return [self._send(v, device) for v in x]
+        else:
+            raise ValueError(f"Invalid format: {x.__class__}")
+
+    def _split_data_if_needed(self, x, y, time_series_split):
+        if time_series_split is None:
+            return [x], [y]
+        split_x_tensors = self._split_core(
+            x['x'], self.input_time_series_keys, time_series_split)
+        split_xs = [
+            {
+                'x': split_x_tensor,
+                'original_shapes':
+                self._update_original_shapes(
+                    split_x_tensor, x['original_shapes']),
+                'supports': x['supports']}
+            for split_x_tensor in split_x_tensors]
+        split_ys = self._split_core(
+            y, self.output_time_series_keys, time_series_split)
+        return split_xs, split_ys
+
+    def _update_original_shapes(self, x, previous_shapes):
+        if previous_shapes is None:
+            return None
+        if isinstance(x, torch.Tensor):
+            previous_shapes[:, 0] = len(x)
+            return previous_shapes
+        elif isinstance(x, dict):
+            return {
+                k: self._update_original_shapes(v, previous_shapes[k])
+                for k, v in x.items()}
+        else:
+            raise ValueError(f"Invalid format: {x}")
+
+    def _split_core(self, x, time_series_keys, time_series_split):
+        if isinstance(x, torch.Tensor):
+            len_x = len(x)
+        elif isinstance(x, dict):
+            lens = np.array([
+                len(v) for k, v in x.items() if k in time_series_keys])
+            if not np.all(lens == lens[0]):
+                raise ValueError(
+                    f"Time series length mismatch: {time_series_keys}, {lens}")
+            len_x = lens[0]
+        else:
+            raise ValueError(f"Invalid format: {x}")
+
+        start, step, length = time_series_split
+        range_ = range(start, len_x - length + 1, step)
+
+        if isinstance(x, torch.Tensor):
+            return [x[s:s+length] for s in range_]
+
+        elif isinstance(x, dict):
+            return [{
+                k:
+                v[s:s+length] if k in time_series_keys
+                else v for k, v in x.items()} for s in range_]
+
+        else:
+            raise ValueError(f"Invalid format: {x}")
 
     def _calculate_other_loss(self, model, y_pred, y, original_shapes=None):
         if original_shapes is None:
@@ -489,14 +629,45 @@ class Trainer(siml_manager.SimlManager):
 
         def _inference(engine, batch):
             self.model.eval()
+            if self.setting.trainer.time_series_split_evaluation is None:
+                input_device = self.device
+                support_device = self.device
+            else:
+                input_device = 'cpu'
+                support_device = self.device
+
             with torch.no_grad():
                 x, y = self.prepare_batch(
-                    batch, device=self.device,
-                    output_device=self.output_device,
+                    batch, device=input_device,
+                    output_device='cpu',
+                    support_device=support_device,
                     non_blocking=self.setting.trainer.non_blocking)
-                y_pred = self.model(x)
+                split_xs, split_ys = self._split_data_if_needed(
+                    x, y,
+                    self.setting.trainer.time_series_split_evaluation)
+
+                y_pred = []
+                for split_x in split_xs:
+                    split_x['x'] = self._send(split_x['x'], self.device)
+                    y_pred.append(self.model(split_x))
+
+                if self.setting.trainer.time_series_split_evaluation is None:
+                    original_shapes = x['original_shapes']
+                else:
+                    cat_x = util.cat_time_series(
+                        [split_x['x'] for split_x in split_xs],
+                        time_series_keys=self.input_time_series_keys)
+                    original_shapes = self._update_original_shapes(
+                        cat_x, x['original_shapes'])
+                y_pred = util.cat_time_series(
+                    y_pred, time_series_keys=self.output_time_series_keys)
+                y = self._send(
+                    util.cat_time_series(
+                        split_ys,
+                        time_series_keys=self.output_time_series_keys),
+                    self.output_device)
                 return y_pred, y, {
-                    'original_shapes': x['original_shapes'],
+                    'original_shapes': original_shapes,
                     'model': self.model}
 
         evaluator_engine = ignite.engine.Engine(_inference)

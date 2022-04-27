@@ -358,6 +358,7 @@ class Interaction(siml_module.SimlModule):
 
         self.transpose = self.block_setting.optional.get('transpose', False)
         self.other_zero = self.block_setting.optional.get('other_zero', True)
+        self.clone = self.block_setting.optional.get('clone', False)
         self.factor = self.block_setting.optional.get('factor', 1.)
         return
 
@@ -393,7 +394,10 @@ class Interaction(siml_module.SimlModule):
         if self.other_zero:
             ret = torch.zeros(x.shape, device=x.device)
         else:
-            ret = x
+            if self.clone:
+                ret = x.clone()
+            else:
+                ret = x
 
         if self.transpose:
             incidence = supports[0].transpose(0, 1)
@@ -436,6 +440,8 @@ class Assignment(siml_module.SimlModule):
             no_parameter=True)
         self.broadcast = self.block_setting.optional.get('broadcast', False)
         self.dict_key = self.block_setting.optional.get('dict_key', None)
+        self.dim = self.block_setting.optional.get('dim', 0)
+        self.clone = self.block_setting.optional.get('clone', False)
         return
 
     def forward(
@@ -456,7 +462,10 @@ class Assignment(siml_module.SimlModule):
             Values assigned
         """
         if len(xs) == 3:
-            x = xs[0]
+            if self.clone:
+                x = xs[0].clone()
+            else:
+                x = xs[0]
             other = xs[1]
             cond_val = xs[2]
         else:
@@ -476,10 +485,18 @@ class Assignment(siml_module.SimlModule):
                     x, original_shapes[self.dict_key])
                 split_cond = activations.split(
                     cond, original_shapes[self.dict_key])
-            y = torch.cat([
-                split_data[i_other] * ~split_cond[i_other][..., None]
-                + other[[i_other]] * split_cond[i_other][..., None]
-                for i_other in range(len(other))], dim=0)
+            if self.dim == 0:
+                y = torch.cat([
+                    split_data[i_other] * ~split_cond[i_other][..., None]
+                    + other[[i_other]] * split_cond[i_other][..., None]
+                    for i_other in range(len(other))], dim=0)
+            elif self.dim == 1:
+                y = torch.cat([
+                    split_data[i_other] * ~split_cond[i_other][..., None]
+                    + other[:, [i_other]] * split_cond[i_other][..., None]
+                    for i_other in range(other.shape[1])], dim=1)
+            else:
+                raise ValueError(f"Invalid dim for: {self.block_setting}")
 
         else:
             x[cond] = other[cond]

@@ -39,6 +39,16 @@ class DeepSets(siml_module.SimlModule):
         super().__init__(block_setting, create_linears=False)
         self.lambda_ = mlp.MLP(block_setting, last_identity=True)
         self.gamma = mlp.MLP(block_setting, last_identity=True)
+        self.dict_key = block_setting.optional.get('dict_key', None)
+        self.dim = block_setting.optional.get('dim', None)
+        self.pool = block_setting.optional.get('pool', 'max_pool')
+        if self.pool == 'max_pool':
+            self.pool_function = activations.max_pool
+        elif self.pool == 'mean':
+            self.pool_function = activations.mean
+        else:
+            raise ValueError(f"Invalid pooling option in: {block_setting}")
+        return
 
     def _forward_core(self, x, supports=None, original_shapes=None):
         """Execute the NN's forward computation.
@@ -56,9 +66,17 @@ class DeepSets(siml_module.SimlModule):
             Output of the NN.
         """
         h = x
-        dim = len(original_shapes[0]) - 1
-        split_h = activations.split(self.lambda_(x), original_shapes)
-        reduced_h = activations.max_pool(self.gamma(h), original_shapes)
+        if self.dict_key is None:
+            shapes = original_shapes
+        else:
+            shapes = original_shapes[self.dict_key]
+        if self.dim is None:
+            dim = len(shapes[0]) - 1
+        else:
+            dim = self.dim
+
+        split_h = activations.split(self.lambda_(x), shapes)
+        reduced_h = self.pool_function(self.gamma(h), shapes)
         if dim == 0:
             h = torch.cat([
                 sh + reduced_h[i] for i, sh in enumerate(split_h)])

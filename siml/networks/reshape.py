@@ -116,3 +116,31 @@ class TimeSeriesToFeatures(siml_module.SimlModule):
                 f"Invalid shape for TimeSeriesToFeatures: {x.shape}")
         axes = list(range(len(x.shape)))
         return torch.permute(x, axes[1:] + [0])[..., 0, :]
+
+
+class Accessor(siml_module.SimlModule):
+    """Access data using the given index."""
+
+    @staticmethod
+    def get_name():
+        return 'accessor'
+
+    @staticmethod
+    def is_trainable():
+        return False
+
+    @staticmethod
+    def accepts_multiple_inputs():
+        return False
+
+    @staticmethod
+    def uses_support():
+        return False
+
+    def __init__(self, block_setting):
+        super().__init__(block_setting, no_parameter=True)
+        self.index = block_setting.optional.get('index', 0)
+        return
+
+    def forward(self, x, supports=None, original_shapes=None):
+        return x[self.index]

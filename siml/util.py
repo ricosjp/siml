@@ -287,9 +287,6 @@ def collect_data_directories(
             base_directory, found_directories, pattern, inverse_pattern,
             allow_no_data)
 
-    if print_state:
-        print(f"Found: {found_directories}")
-
     return found_directories
 
 
@@ -994,7 +991,12 @@ def decrypt_file(key, file_name, return_stringio=False):
 
 class VariableMask:
 
-    def __init__(self, skips, dims, is_dict):
+    def __init__(self, skips, dims, is_dict=None, *, invert=False):
+        if invert:
+            skips = self._invert(skips)
+
+        if is_dict is None:
+            is_dict = isinstance(skips, dict)
         if isinstance(skips, list):
             if not np.any(skips):
                 self.mask_function = self._identity_mask
@@ -1020,6 +1022,12 @@ class VariableMask:
 
     def __call__(self, *xs, **kwarg):
         return self.mask_function(*xs, **kwarg)
+
+    def _invert(self, skips):
+        if isinstance(skips, list):
+            return [not s for s in skips]
+        elif isinstance(skips, dict):
+            return {k: [not s for s in v] for k, v in skips.items()}
 
     def _generate_mask(self, skips, dims):
         return ~np.array(np.concatenate([
@@ -1051,3 +1059,16 @@ class VariableMask:
 
     def _array_mask(self, *xs):
         return [x[..., self.mask] for x in xs]
+
+
+def cat_time_series(x, time_series_keys):
+
+    if isinstance(x[0], dict):
+        len_x = len(x)
+        return {
+            k: torch.cat([x[i][k] for i in range(len_x)], dim=1)
+            if k in time_series_keys
+            else torch.cat([x[i][k] for i in range(len_x)], dim=0)
+            for k in x[0].keys()}
+    else:
+        return torch.cat(x, dim=1)  # Assume all are time series

@@ -1,5 +1,6 @@
 import dataclasses as dc
 from enum import Enum
+import io
 import os
 from pathlib import Path
 import typing
@@ -258,11 +259,17 @@ class VariableSetting(TypedDataClass):
     skip: bool
         If True, skip the variable for loss computation or convergence
         computation.
+    time_series: bool
+        If True, regard it as a time series.
+    time_slice: list[int]
+        Slice for time series.
     """
     name: str = 'variable'
     dim: int = 1
     shape: list[int] = dc.field(default_factory=list)
     skip: bool = False
+    time_series: bool = False
+    time_slice: slice = dc.field(default_factory=lambda: slice(None))
 
     def get(self, key, default=None):
         if default is None:
@@ -346,6 +353,25 @@ class CollectionVariableSetting(TypedDataClass):
         else:
             return np.sum(dim_data)
 
+    @property
+    def time_series(self):
+        return self.collect_values('time_series')
+
+    @property
+    def time_slice(self):
+        s = self.collect_values('time_slice')
+        if isinstance(s, list):
+            if not np.all(np.array(s) == s[0]):
+                raise ValueError(f"Invalid setting for variables: {self}")
+            return s[0]
+        elif isinstance(s, dict):
+            for v in s.values():
+                if not np.all(np.array(v) == v[0]):
+                    raise ValueError(f"Invalid setting for variables: {self}")
+            return {k: v[0] for k, v in s.items()}
+        else:
+            raise ValueError(f"Invalid format: {s}")
+
     def to_dict(self):
         if isinstance(self.variables, dict):
             ret_dict = {}
@@ -389,6 +415,8 @@ class TrainerSetting(TypedDataClass):
         Batch size for validation dataset.
     n_epoch: int, optional
         The number of epochs.
+    model_key: bytes
+        If fed, decrypt model file with the key.
     gpu_id: int, optional
         GPU ID. Specify non negative value to use GPU. -1 Meaning CPU.
     log_trigger_epoch: int, optional
@@ -452,6 +480,10 @@ class TrainerSetting(TypedDataClass):
         If fed, apply gradient clipping with norm.
     recursive: bool
         If True, search data recursively.
+    time_series_split: list[int]
+        If fed, split time series with [start, step, length].
+    loss_slice: slice
+        Slice to be applied to loss computation.
     """
 
     inputs: CollectionVariableSetting = dc.field(
@@ -478,6 +510,8 @@ class TrainerSetting(TypedDataClass):
     loss_function: str = 'mse'
     optimizer: str = 'adam'
     compute_accuracy: bool = False
+    model_key: bytes = dc.field(
+        default=None, metadata={'allow_none': True})
     gpu_id: int = -1
     log_trigger_epoch: int = 1
     stop_trigger_epoch: int = 10
@@ -514,6 +548,11 @@ class TrainerSetting(TypedDataClass):
     output_stats: bool = False
     split_ratio: dict = dc.field(default_factory=dict)
     figure_format: str = 'pdf'
+    time_series_split: list[int] = dc.field(
+        default=None, metadata={'allow_none': True})
+    time_series_split_evaluation: list[int] = dc.field(
+        default=None, metadata={'allow_none': True})
+    loss_slice: slice = dc.field(default_factory=lambda: slice(None))
 
     def __post_init__(self):
         if self.element_wise and self.lazy:
@@ -559,7 +598,28 @@ class TrainerSetting(TypedDataClass):
             raise ValueError(
                 "Set stop_trigger_epoch larger than log_trigger_epoch")
 
+        if self.time_series_split_evaluation is None:
+            self.time_series_split_evaluation = self.time_series_split
+        if self.time_series:
+            self.update_time_series(self.inputs)
+            self.update_time_series(self.outputs)
         super().__post_init__()
+        return
+
+    def update_time_series(self, variables):
+        if isinstance(variables, list):
+            for variable in variables:
+                self.update_time_series(variable)
+        elif isinstance(variables, dict):
+            if 'super_post_init' in variables:
+                self.update_time_series(variables['variables'])
+            elif 'name' in variables:
+                variables['time_series'] = True
+            else:
+                for variable in variables.values():
+                    self.update_time_series(variable)
+        else:
+            raise ValueError(f"Unexpected variables type: {variables}")
         return
 
     @property
@@ -655,6 +715,10 @@ class InfererSetting(TypedDataClass):
         If fed, decrypt model file with the key.
     gpu_id: int, optional
         GPU ID. Specify non negative value to use GPU. -1 Meaning CPU.
+    less_output: bool, optional
+        If True, output less variables in FEMData object.
+    skip_fem_data_creation: bool, optional
+        If True, skip fem_data object creation.
     """
     model: Path = dc.field(
         default=None, metadata={'allow_none': True})
@@ -685,6 +749,8 @@ class InfererSetting(TypedDataClass):
     model_key: bytes = dc.field(
         default=None, metadata={'allow_none': True})
     gpu_id: int = -1
+    less_output: bool = False
+    skip_fem_data_creation: bool = False
 
 
 @dc.dataclass
@@ -1170,7 +1236,7 @@ class MainSetting:
             raise ValueError(f"Unknown data type: {new_setting.__class__}")
 
 
-def write_yaml(data_class, file_name, *, overwrite=False):
+def write_yaml(data_class, file_name, *, overwrite=False, key=None):
     """Write YAML file of the specified dataclass object.
 
     Parameters
@@ -1181,13 +1247,26 @@ def write_yaml(data_class, file_name, *, overwrite=False):
         YAML file name to write.
     overwrite: bool, optional
         If True, overwrite file.
+    key: bytes
+        Key for encription.
     """
-    file_name = Path(file_name)
+    if key is None:
+        file_name = Path(file_name)
+    else:
+        if '.enc' in str(file_name):
+            file_name = Path(file_name)
+        else:
+            file_name = Path(str(file_name) + '.enc')
     if file_name.exists() and not overwrite:
         raise ValueError(f"{file_name} already exists")
 
-    with open(file_name, 'w') as f:
-        dump_yaml(data_class, f)
+    if key is None:
+        with open(file_name, 'w') as f:
+            dump_yaml(data_class, f)
+    else:
+        string = dump_yaml(data_class, None)
+        bio = io.BytesIO(string.encode('utf8'))
+        util.encrypt_file(key, file_name, bio)
     return
 
 
@@ -1216,6 +1295,9 @@ def dump_yaml(data_class, stream):
             standardized_dict_data['data'].pop('encrypt_key')
         if 'decrypt_key' in standardized_dict_data['data']:
             standardized_dict_data['data'].pop('decrypt_key')
+    if 'trainer' in standardized_dict_data:
+        if 'model_key' in standardized_dict_data['trainer']:
+            standardized_dict_data['trainer'].pop('model_key')
     if 'inferer' in standardized_dict_data:
         if 'model_key' in standardized_dict_data['inferer']:
             standardized_dict_data['inferer'].pop('model_key')
