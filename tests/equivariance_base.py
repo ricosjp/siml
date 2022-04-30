@@ -169,9 +169,12 @@ class EquivarianceBase(unittest.TestCase):
             str(preprocessed_path / 'orthogonal_matrix.txt').replace(
                 'preprocessed', 'raw'))
         rotation_path = Path(
-            str(preprocessed_path / 'rotation_matrix.npy').replace(
+            str(preprocessed_path.parent / 'rotation_matrix.npy').replace(
                 'preprocessed', 'raw'))
         if ortho_path.is_file():
             return np.loadtxt(ortho_path)
         elif rotation_path.is_file():
             return np.load(rotation_path)
+        else:
+            raise ValueError(
+                f"Transformation matrix not found for: {preprocessed_path}")
