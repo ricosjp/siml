@@ -409,6 +409,10 @@ class TrainerSetting(TypedDataClass):
         Optimizer to be used for training.
     compute_accuracy: bool, optional
         If True, compute accuracy.
+    name: str
+        The name of the study.
+    suffix: str
+        Suffix to be added to the name.
     batch_size: int, optional
         Batch size for train dataset.
     validation_batch_size: int, optional
@@ -496,6 +500,8 @@ class TrainerSetting(TypedDataClass):
     output_directory: Path = None
 
     name: str = 'default'
+    suffix: str = dc.field(
+        default=None, metadata={'allow_none': True})
     batch_size: int = 1
     validation_batch_size: int = dc.field(
         default=None, metadata={'allow_none': True})
@@ -663,11 +669,15 @@ class TrainerSetting(TypedDataClass):
         else:
             base = Path(base)
         if id_ is None:
-            self.output_directory = base \
-                / f"{self.name}_{util.date_string()}"
+            id_string = ''
         else:
-            self.output_directory = base \
-                / f"{self.name}_{id_}_{util.date_string()}"
+            id_string = f"_{id_}"
+        if self.suffix is None:
+            suffix_string = ''
+        else:
+            suffix_string = f"_{self.suffix}"
+        self.output_directory = base \
+            / f"{self.name}{suffix_string}{id_string}_{util.date_string()}"
 
 
 @dc.dataclass

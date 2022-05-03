@@ -324,7 +324,9 @@ class Network(torch.nn.Module):
             else:
                 return x[..., input_selection].to(device)
 
-    def draw(self, output_file_name):
+    def draw(self, output_directory, *, stem=None):
+        if stem is None:
+            stem = 'network'
         figure = plt.figure(dpi=1000)
         mapping = {
             graph_node:
@@ -335,10 +337,21 @@ class Network(torch.nn.Module):
         d = nx.drawing.nx_pydot.to_pydot(nx.relabel.relabel_nodes(
             self.call_graph, mapping=mapping, copy=True))
         if self.trainer_setting.figure_format == 'pdf':
-            d.write_pdf(output_file_name)
+            d.write_pdf(output_directory / f"{stem}.pdf")
         elif self.trainer_setting.figure_format == 'png':
-            d.write_png(output_file_name)
+            d.write_png(output_directory / f"{stem}.png")
+        else:
+            raise ValueError(
+                f"Invalid figure format: {self.trainer_setting.figure_format}")
         plt.close(figure)
+
+        # Draw groups if exist
+        for key, block_setting in self.dict_block_setting.items():
+            if block_setting.type != 'group':
+                continue
+            self.dict_block[key].group.draw(
+                output_directory, stem=f"network_{block_setting.name}")
+
         return
 
 
