@@ -76,6 +76,11 @@ def main():
         default='epoch',
         help='X axis name')
     parser.add_argument(
+        '-g', '--log-x-axis',
+        type=strtobool,
+        default=0,
+        help='If True, set x axis scale logarithmic')
+    parser.add_argument(
         '-c', '--continuous',
         type=strtobool,
         default=0,
@@ -162,9 +167,13 @@ def main():
                 color=color, alpha=alpha, lw=lw)
 
     plt.yscale('log')
+    if args.log_x_axis:
+        plt.xscale('log')
+        plt.xlim(1, None)
+    else:
+        plt.xlim(0, None)
     plt.xlabel(args.x_axis)
     plt.ylabel('loss')
-    plt.xlim(0, None)
     if args.x_limit is not None:
         if len(args.x_limit) != 2:
             raise ValueError(
