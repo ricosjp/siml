@@ -339,14 +339,14 @@ def collect_files(
         for required_file_name in required_file_names:
             found_files = found_files + collect_files(
                 directories, required_file_name, pattern=pattern,
-                inverse_pattern=inverse_pattern)
+                inverse_pattern=inverse_pattern, allow_no_data=True)
         return found_files
 
     if isinstance(directories, list):
         return list(np.unique(np.concatenate([
             collect_files(
                 d, required_file_names, pattern=pattern,
-                inverse_pattern=inverse_pattern)
+                inverse_pattern=inverse_pattern, allow_no_data=True)
             for d in directories])))
 
     required_file_name = required_file_names
@@ -1002,9 +1002,15 @@ class VariableMask:
                 self.mask_function = self._identity_mask
                 return
         elif isinstance(skips, dict):
-            if np.all([not np.any(v) for v in skips.values()]):
-                self.mask_function = self._dict_identity_mask
-                return
+            pass
+            # NOTE: Not using _dict_identity_mask in case the output has
+            #       assitional keys.
+            # if np.all([not np.any(v) for v in skips.values()]):
+            #     self.mask_function = self._dict_identity_mask
+            #     self.mask = {
+            #         key: self._generate_mask(skip_value, dims[key])
+            #         for key, skip_value in skips.items()}
+            #     return
         else:
             raise NotImplementedError
 

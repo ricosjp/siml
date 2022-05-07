@@ -344,6 +344,12 @@ class Group(siml_module.SimlModule):
 
         if self.residual_loss:
             self.losses['residual'] = residual
+
+        # Add output values not involved in the loop
+        h.update({
+            k: operator[k] for k in operator.keys()
+            if k not in self.skips})
+
         return h
 
     def _calculate_nabla_f(

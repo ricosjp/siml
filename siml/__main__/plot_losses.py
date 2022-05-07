@@ -89,7 +89,10 @@ def main():
 
     csv_files = siml.util.collect_files(
         args.data_directories, pattern=args.filter,
-        inverse_pattern=args.inverse_filter, required_file_names=['log.csv'])
+        inverse_pattern=args.inverse_filter, required_file_names=['log.csv'],
+        allow_no_data=True)
+    if len(csv_files) == 0:
+        raise ValueError(f"No data found in: {args.data_directories}")
     valid_csv_files, data_frames = load_logs(csv_files)
     n_files = len(valid_csv_files)
 
