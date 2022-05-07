@@ -407,9 +407,9 @@ class NeumannDecoder(siml_module.SimlModule):
 
         decoder_hidden = encoded_x
         for encoder_hidden, pinv_linear, derivative_activation in zip(
-                    encoder_hiddens_inversed_order,
-                    self.pinv_linears,
-                    self.derivative_activations):
+                encoder_hiddens_inversed_order,
+                self.pinv_linears,
+                self.derivative_activations):
             inverse_derivative_encoder_hidden = \
                 1 / derivative_activation(encoder_hidden)
             decoder_hidden = torch.einsum(
