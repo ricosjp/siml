@@ -114,28 +114,26 @@ class PInvLinear(torch.nn.Module):
         return
 
     def forward(self, x):
-        if self.option == 'normalized_mlp':
-            w = self.weight / torch.max(torch.abs(self.weight))
-        elif self.option == 'id_mlp':
-            w = self.weight + 1
-        elif self.option == 'mlp':
-            w = self.weight
-        else:
-            raise ValueError(f"Unexpected option: {self.option}")
-        b = self.bias
-
-        if b is None:
-            h = torch.einsum(
-                'n...f,fg->n...g', x, torch.pinverse(w.T))
-        else:
-            h = torch.einsum(
-                'n...f,fg->n...g', x - b, torch.pinverse(w.T))
+        h = torch.einsum('n...f,fg->n...g', x + self.bias, self.weight)
         return h
 
     @property
     def weight(self):
-        return self.ref.weight
+        """Return pseudo inversed weight."""
+        if self.option == 'normalized_mlp':
+            w = self.ref.weight / torch.max(torch.abs(self.ref.weight))
+        elif self.option == 'id_mlp':
+            w = self.ref.weight + 1
+        elif self.option == 'mlp':
+            w = self.ref.weight
+        else:
+            raise ValueError(f"Unexpected option: {self.option}")
+        return torch.pinverse(w.T)
 
     @property
     def bias(self):
-        return self.ref.bias
+        """Return inverse bias."""
+        if self.ref.bias is None:
+            return 0
+        else:
+            return - self.ref.bias
