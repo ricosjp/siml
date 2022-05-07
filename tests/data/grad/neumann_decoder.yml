@@ -1,0 +1,147 @@
+data:
+  raw: tests/data/grad/raw
+  interim: tests/data/grad/interim
+  preprocessed: tests/data/grad/preprocessed
+  inferred: tests/data/grad/inferred
+  train:
+    - tests/data/grad/preprocessed/train
+  validation:
+    - tests/data/grad/preprocessed/validation
+  test:
+    - tests/data/grad/preprocessed/test
+conversion:
+  file_type: 'ucd'
+  required_file_names:
+    - '*.inp'
+inferer:
+  write_simulation_type: ucd
+  read_simulation_type: ucd
+
+trainer:
+  output_directory: tests/data/grad/neumann_decoder
+  inputs:
+    rank0:
+      - name: x_component
+        dim: 1
+      # - name: phi
+      #   dim: 1
+    neumann:
+      - name: x_component_neumann
+        dim: 1
+      # - name: neumann
+      #   dim: 1
+    normal:
+      - name: nodal_weighted_normal
+        dim: 1
+    inversed_moment:
+      - name: inversed_moment_tensor
+        dim: 1
+  support_inputs:
+    - nodal_grad_x
+    - nodal_grad_y
+    - nodal_grad_z
+  outputs:
+    - name: grad_x_component
+      dim: 1
+    # - name: grad
+    #   dim: 1
+  prune: false
+  n_epoch: 1000
+  log_trigger_epoch: 10
+  stop_trigger_epoch: 10
+  seed: 0
+  lazy: false
+  batch_size: 1
+  num_workers: 0
+
+model:
+  blocks:
+    # Encoder
+    - name: IN_MLP
+      type: mlp
+      is_first: true
+      bias: false
+      input_keys:
+        - rank0
+      destinations:
+        - ISOGCN_1
+      nodes:
+        - -1
+        - 8
+        - 16
+        - 16
+      activations:
+        - leaky_relu
+        - leaky_relu
+        - identity
+    - name: ID_RANK0
+      type: identity
+      is_first: true
+      input_keys:
+        - rank0
+      destinations:
+        - NEUMANN_ENCODER
+        - NEUMANN_DECODER
+    - name: IN_NEUMANN
+      type: identity
+      is_first: true
+      input_keys:
+        - neumann
+      destinations:
+        - NEUMANN_ENCODER
+    - name: IN_NORMAL
+      type: identity
+      is_first: true
+      input_keys:
+        - normal
+      destinations:
+        - NEUMANN_ENCODER
+    - name: NEUMANN_ENCODER
+      type: neumann_encoder
+      input_names:
+        - ID_RANK0
+        - IN_NEUMANN
+        - IN_NORMAL
+      destinations:
+        - ISOGCN_1
+      reference_block_name: IN_MLP
+    - name: IN_MOMENT
+      type: identity
+      is_first: true
+      input_keys:
+        - inversed_moment
+      destinations:
+        - ISOGCN_1
+
+    # Processor 1
+    - name: ISOGCN_1
+      type: iso_gcn
+      input_names:
+        - IN_MLP
+        - IN_MOMENT
+        - NEUMANN_ENCODER
+      destinations:
+        - NEUMANN_DECODER
+      bias: false
+      nodes:
+        - -1
+        - 16
+      activations:
+        - identity
+      support_input_indices:
+        - 0
+        - 1
+        - 2
+      optional:
+        propagations:
+          - convolution
+        ah_w: true
+        create_neumann_linear: false
+
+    # Decoder
+    - name: NEUMANN_DECODER
+      type: neumann_decoder
+      input_names:
+        - ISOGCN_1
+        - ID_RANK0
+      reference_block_name: IN_MLP
