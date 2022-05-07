@@ -2,6 +2,7 @@
 import torch
 
 from . import activations
+from . import pinv_mlp
 from . import siml_module
 
 
@@ -277,28 +278,147 @@ class NeumannEncoder(siml_module.SimlModule):
             surface_normals = xs[2]
         else:
             raise ValueError(
-                f"Input shoulbe x and Neumann (and normal) ({len(xs)} given)")
+                'Input should be x and Neumann (and normal) '
+                f"({len(xs)} given)")
 
         with torch.no_grad():
-            for linear, name, activation, derivative_activation in zip(
-                    self.linears, self.activation_names,
+            for linear, activation, derivative_activation in zip(
+                    self.linears,
                     self.activations, self.derivative_activations):
-                if name == 'identity':
-                    neumann = torch.einsum(
-                        'i...f,fg->i...g', neumann, linear.weight.T)
-                else:
-                    lineared_h = linear(h)
-                    derivative_h = derivative_activation(lineared_h)
-                    neumann = torch.einsum(
-                        'ig,i...g->i...g', derivative_h, torch.einsum(
-                            'i...f,fg->i...g', neumann, linear.weight.T))
-                    h = activation(lineared_h)
+                lineared_h = linear(h)
+                derivative_h = derivative_activation(lineared_h)
+                neumann = torch.einsum(
+                    'ig,i...g->i...g', derivative_h, torch.einsum(
+                        'i...f,fg->i...g', neumann, linear.weight.T))
+                h = activation(lineared_h)
 
         if len(xs) == 2:
             return neumann
         else:
             return torch.einsum(
                 'i...f,ik->ik...f', neumann, surface_normals[..., 0])
+
+    def _define_activation_derivative(self, name):
+        if name == 'identity':
+            return activations.one
+        elif name == 'tanh':
+            return activations.derivative_tanh
+        elif name == 'leaky_relu':
+            return activations.DerivativeLeakyReLU()
+        else:
+            raise ValueError(f"Unsupported activation name: {name}")
+
+
+class NeumannDecoder(siml_module.SimlModule):
+    """Decoder for gradient with Neumann condition."""
+
+    SUPPORTED_ACTIVATION_NAMES = ['identity', 'leaky_relu']
+
+    @staticmethod
+    def get_name():
+        return 'neumann_decoder'
+
+    @staticmethod
+    def is_trainable():
+        return False
+
+    @staticmethod
+    def accepts_multiple_inputs():
+        return True
+
+    @staticmethod
+    def uses_support():
+        return False
+
+    @classmethod
+    def _get_n_output_node(
+            cls, input_node, block_setting, predecessors, dict_block_setting,
+            output_length, **kwargs):
+        return dict_block_setting[block_setting.reference_block_name].nodes[-1]
+
+    def __init__(self, block_setting, reference_block):
+        super().__init__(
+            block_setting, create_neumann_linears=False,
+            create_activations=False, create_dropouts=False,
+            no_parameter=True)
+        self.epsilon = self.block_setting.optional.get('epsilon', 1.e-5)
+        self.reference_block = reference_block
+        if self.reference_block is None:
+            raise ValueError(f"Feed reference_block for: {block_setting}")
+        if self.reference_block.block_setting.type != 'mlp':
+            ref_type = self.reference_block.block_setting.type = 'mlp'
+            raise ValueError(
+                f"Unsupported reference block type: {ref_type}\n"
+                f"for: {self.block_setting}")
+
+        self.original_activations = [
+            a for a in self.reference_block.activations]
+        self.original_linears = [
+            linear for linear
+            in self.reference_block.linears]
+
+        self.activation_names = [
+            name for name
+            in self.reference_block.block_setting.activations[-1::-1]]
+        self.pinv_linears = [
+            pinv_mlp.PInvLinear(linear, option='mlp') for linear
+            in self.reference_block.linears[-1::-1]]
+        self.derivative_activations = [
+            self._define_activation_derivative(name)
+            for name in self.activation_names]
+        self.validate()
+        return
+
+    def validate(self):
+        for activation_name in self.activation_names:
+            if activation_name not in self.SUPPORTED_ACTIVATION_NAMES:
+                raise ValueError(
+                    f"{activation_name} is not supported for: "
+                    f"{self.block_setting}")
+        return
+
+    def forward(
+            self, *xs, supports=None, original_shapes=None):
+        """
+        Take into account Neumann boundary condition using IsoGCN.
+
+        Parameters
+        ----------
+        xs: List[torch.Tensor]
+            0: Encoded values
+            1: Non encoded values (input to the entire NN)
+
+        Returns
+        -------
+        ys: torch.Tensor
+            Embedded Neumann values multiplied with normal vectors.
+        """
+        encoded_x = xs[0]
+        raw_x = xs[1]
+
+        with torch.no_grad():
+            encoder_hiddens = [raw_x]
+            for original_linear, original_activation in zip(
+                    self.original_linears, self.original_activations):
+                encoder_hiddens.append(
+                    original_activation(original_linear(encoder_hiddens[-1])))
+            encoder_hiddens_inversed_order = [
+                h for h in encoder_hiddens[-1::-1]]
+
+        decoder_hidden = encoded_x
+        for encoder_hidden, pinv_linear, derivative_activation in zip(
+                encoder_hiddens_inversed_order,
+                self.pinv_linears,
+                self.derivative_activations):
+            inverse_derivative_encoder_hidden = \
+                1 / derivative_activation(encoder_hidden)
+            decoder_hidden = torch.einsum(
+                'i...g,gh->i...h',
+                torch.einsum(
+                    'ig,i...g->i...g',
+                    inverse_derivative_encoder_hidden, decoder_hidden),
+                pinv_linear.weight.T)
+        return decoder_hidden
 
     def _define_activation_derivative(self, name):
         if name == 'identity':

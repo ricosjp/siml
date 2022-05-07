@@ -18,16 +18,20 @@ inferer:
   read_simulation_type: ucd
 
 trainer:
-  output_directory: tests/data/grad/nonlinear_merged
+  output_directory: tests/data/grad/linear_wo_neumann_decoder
   inputs:
     rank0:
-      - name: phi
+      - name: x_component
         dim: 1
+      # - name: phi
+      #   dim: 1
     neumann:
-      - name: neumann
+      - name: x_component_neumann
         dim: 1
+      # - name: neumann
+      #   dim: 1
     normal:
-      - name: nodal_weighted_normal
+      - name: nodal_surface_normal
         dim: 1
     inversed_moment:
       - name: inversed_moment_tensor
@@ -37,8 +41,10 @@ trainer:
     - nodal_grad_y
     - nodal_grad_z
   outputs:
-    - name: grad
+    - name: grad_x_component
       dim: 1
+    # - name: grad
+    #   dim: 1
   prune: false
   n_epoch: 1000
   log_trigger_epoch: 10
@@ -62,11 +68,7 @@ model:
       nodes:
         - -1
         - 16
-        - 16
-        - 16
       activations:
-        - tanh
-        - tanh
         - identity
     - name: ID_RANK0
       type: identity
@@ -114,8 +116,7 @@ model:
         - IN_MOMENT
         - NEUMANN_ENCODER
       destinations:
-        - MUL
-        - NORM
+        - NEUMANN_DECODER
       bias: false
       nodes:
         - -1
@@ -131,32 +132,9 @@ model:
           - convolution
         ah_w: true
         create_neumann_linear: false
-        use_subchain_linear_for_neumann: false
-
-    - name: NORM
-      type: contraction
-      destinations:
-        - NORM_MLP
-    - name: NORM_MLP
-      type: mlp
-      destinations:
-        - MUL
-      nodes:
-        - -1
-        - 16
-        - 16
-      activations:
-        - tanh
-        - tanh
-    - name: MUL
-      type: reducer
-      destinations:
-        - OUT_MLP
-      optional:
-        operator: mul
 
     # Decoder
-    - name: OUT_MLP
+    - name: NEUMANN_DECODER
       type: mlp
       nodes:
         - -1

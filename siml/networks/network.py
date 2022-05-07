@@ -209,21 +209,26 @@ class Network(torch.nn.Module):
                             in self.call_graph.predecessors(graph_node)]
                     elif block_setting.input_keys is not None:
                         inputs = [
-                            torch.cat([
-                                dict_hidden[predecessor][input_key][
-                                    ..., block_setting.input_selection].to(device)
-                                for input_key in block_setting.input_keys], dim=-1)
+                            torch.cat(
+                                [
+                                    dict_hidden[predecessor][input_key][
+                                        ..., block_setting.input_selection
+                                    ].to(device)
+                                    for input_key in block_setting.input_keys
+                                ], dim=-1)
                             for predecessor
                             in self.call_graph.predecessors(graph_node)]
 
                     elif block_setting.input_names is not None:
                         if set(block_setting.input_names) != set(
                                 self.call_graph.predecessors(graph_node)):
+                            set_predecessors = set(
+                                self.call_graph.predecessors(graph_node))
                             raise ValueError(
                                 'input_names differs from the predecessors:\n'
                                 f"{set(block_setting.input_names)}\n"
-                                f"{set(self.call_graph.predecessors(graph_node))}"
-                                f"\nin: {block_setting}")
+                                f"{set_predecessors}\n"
+                                f"in: {block_setting}")
                         inputs = [
                             dict_hidden[input_name][
                                 ..., block_setting.input_selection].to(device)
@@ -237,7 +242,8 @@ class Network(torch.nn.Module):
                             original_shapes=original_shapes)
                         hidden = output
 
-                    elif self.dict_block_information[graph_node].uses_support():
+                    elif self.dict_block_information[
+                            graph_node].uses_support():
                         if self.merge_sparses:
                             raise ValueError(
                                 'merge_sparses is no longer available')
@@ -246,7 +252,8 @@ class Network(torch.nn.Module):
                                 selected_supports = [
                                     [s.to(device) for s in sp] for sp
                                     in supports[
-                                        :, block_setting.support_input_indices]]
+                                        :,
+                                        block_setting.support_input_indices]]
                             else:
                                 selected_supports = [
                                     supports[i].to(device) for i

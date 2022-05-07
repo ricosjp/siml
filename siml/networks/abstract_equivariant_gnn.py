@@ -118,13 +118,16 @@ class AbstractEquivariantGNN(abstract_gcn.AbstractGCN):
         self.create_neumann_ratio = self.block_setting.optional.get(
             'create_neumann_ratio', False)
 
-        if self.create_neumann_linear:
+        if self.use_subchain_linear_for_neumann:
+            self.neumann_linear = self.subchains[0][0]
+        elif self.create_neumann_linear:
             if self.use_subchain_linear_for_neumann:
-                self.neumann_linear = self.subchains[0][0]
-            else:
-                self.neumann_linear = torch.nn.Linear(
-                    *self.subchains[0][0].weight.shape,
-                    bias=False)
+                raise ValueError(
+                    'Disable either use_subchain_linear_for_neumann or'
+                    f"create_neumann_linear for: {self.block_setting}")
+            self.neumann_linear = torch.nn.Linear(
+                *self.subchains[0][0].weight.shape,
+                bias=False)
 
             if self.neumann_linear.bias is not None:
                 raise ValueError(
