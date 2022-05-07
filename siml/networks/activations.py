@@ -10,7 +10,7 @@ def identity(x):
 
 
 def one(x):
-    return 1
+    return torch.ones(x.shape)
 
 
 def atanh(x, epsilon=1e-5):

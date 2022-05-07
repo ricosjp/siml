@@ -107,10 +107,25 @@ def conversion_function_grad(fem_data, raw_directory=None):
     np.testing.assert_almost_equal(
         weighted_normal, inc_weighted_normal)
 
+    x_component = fem_data.nodes.data[:, [0]]
+    grad_x_component = np.zeros(fem_data.nodes.data.shape)[..., None]
+    grad_x_component[:, 0, 0] = 1.
+    x_component_neumann = np.einsum(
+        'ij,ij->i', nodal_surface_normal, grad_x_component[..., 0])[..., None]
+    directed_x_component_neumann = np.einsum(
+        'ij,i->ij',
+        weighted_normal, x_component_neumann[..., 0])[..., None]
+
     dict_data = {
         'node': node,
         'phi': phi,
         'grad': grad,
+        'directed_neumann': directed_neumann,
+        'neumann': neumann[..., None],
+        'x_component': x_component,
+        'grad_x_component': grad_x_component,
+        'x_component_neumann': x_component_neumann,
+        'directed_x_component_neumann': directed_x_component_neumann,
         'nodal_nadj': nodal_nadj,
         'nodal_grad_x': nodal_grad_x,
         'nodal_grad_y': nodal_grad_y,
@@ -120,8 +135,6 @@ def conversion_function_grad(fem_data, raw_directory=None):
         'inc_grad_z': inc_grad[2],
         'inc_int': inc_int,
         'inversed_moment_tensor': inversed_moment_tensor,
-        'directed_neumann': directed_neumann,
-        'neumann': neumann[..., None],
         'nodal_surface_normal': nodal_surface_normal[..., None],
         'nodal_weighted_normal': weighted_normal[..., None],
     }

@@ -517,7 +517,7 @@ class TestNetworks(unittest.TestCase):
                 tr.model.dict_block['PINV_MLP'].linears[-1::-1]):
             np.testing.assert_almost_equal(
                 l_inv.weight.detach().numpy(),
-                np.linalg.pinv(l_ref.weight.detach().numpy().T),
+                np.linalg.pinv(l_ref.weight.detach().numpy()),
                 decimal=5)
             np.testing.assert_almost_equal(
                 l_inv.bias.detach().numpy(), - l_ref.bias.detach().numpy())
@@ -556,7 +556,7 @@ class TestNetworks(unittest.TestCase):
                 tr.model.dict_block['PINV_MLP'].linears[-1::-1]):
             np.testing.assert_almost_equal(
                 l_inv.weight.detach().numpy(),
-                np.linalg.pinv(l_ref.weight.detach().numpy().T),
+                np.linalg.pinv(l_ref.weight.detach().numpy()),
                 decimal=5)
             self.assertEqual(l_inv.bias, 0)
             self.assertIsNone(l_ref.bias)

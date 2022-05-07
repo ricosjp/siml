@@ -114,7 +114,7 @@ class PInvLinear(torch.nn.Module):
         return
 
     def forward(self, x):
-        h = torch.einsum('n...f,fg->n...g', x + self.bias, self.weight)
+        h = torch.einsum('n...f,fg->n...g', x + self.bias, self.weight.T)
         return h
 
     @property
@@ -128,7 +128,7 @@ class PInvLinear(torch.nn.Module):
             w = self.ref.weight
         else:
             raise ValueError(f"Unexpected option: {self.option}")
-        return torch.pinverse(w.T)
+        return torch.pinverse(w)
 
     @property
     def bias(self):
