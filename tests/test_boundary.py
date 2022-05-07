@@ -336,7 +336,6 @@ class TestBoundary(unittest.TestCase):
             output_directory_base=tr.setting.trainer.output_directory,
             data_directories=main_setting.data.test[0])
         results[0]['fem_data'].write('ucd', 'tmp.inp', overwrite=True)
-        raise
         x = results[0]['dict_x']
         y = results[0]['dict_y']
         filter_boundary = np.linalg.norm(

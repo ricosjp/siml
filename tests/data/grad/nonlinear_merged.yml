@@ -131,6 +131,7 @@ model:
           - convolution
         ah_w: true
         create_neumann_linear: false
+        use_subchain_linear_for_neumann: false
 
     - name: NORM
       type: contraction
