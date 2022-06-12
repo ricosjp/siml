@@ -484,6 +484,8 @@ class TrainerSetting(TypedDataClass):
         If fed, split time series with [start, step, length].
     loss_slice: slice
         Slice to be applied to loss computation.
+    state_dict_strict: bool
+        It will be passed to torch.nn.Module.load_state_dict.
     """
 
     inputs: CollectionVariableSetting = dc.field(
@@ -541,6 +543,7 @@ class TrainerSetting(TypedDataClass):
     clip_grad_norm: float = dc.field(
         default=None, metadata={'allow_none': True})
     recursive: bool = True
+    state_dict_strict: bool = True
 
     data_parallel: bool = False
     model_parallel: bool = False

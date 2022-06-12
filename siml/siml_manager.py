@@ -186,14 +186,19 @@ class SimlManager():
         else:
             checkpoint = torch.load(snapshot, map_location=self.device)
 
-        if len(self.model.state_dict()) != len(checkpoint['model_state_dict']):
-            raise ValueError('Model parameter length invalid')
-        # Convert new state_dict in case DataParallel wraps model
-        model_state_dict = OrderedDict({
-            k1: checkpoint['model_state_dict'][k2] for k1, k2 in zip(
-                sorted(self.model.state_dict().keys()),
-                sorted(checkpoint['model_state_dict'].keys()))})
-        self.model.load_state_dict(model_state_dict)
+        if self.setting.trainer.state_dict_strict:
+            if len(self.model.state_dict()) != len(
+                    checkpoint['model_state_dict']):
+                raise ValueError('Model parameter length invalid')
+            # Convert new state_dict in case DataParallel wraps model
+            model_state_dict = OrderedDict({
+                k1: checkpoint['model_state_dict'][k2] for k1, k2 in zip(
+                    sorted(self.model.state_dict().keys()),
+                    sorted(checkpoint['model_state_dict'].keys()))})
+        else:
+            model_state_dict = checkpoint['model_state_dict']
+        self.model.load_state_dict(
+            model_state_dict, strict=self.setting.trainer.state_dict_strict)
         print(f"{snapshot} loaded as a pretrain model.")
         return
 
