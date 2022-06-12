@@ -44,6 +44,7 @@ blocks = [
     boundary.Interaction,
     boundary.NeumannIsoGCN,
     boundary.NeumannEncoder,
+    boundary.NeumannDecoder,
     concatenator.Concatenator,
     tensor_operations.Contraction,
     identity.Identity,

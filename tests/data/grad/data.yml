@@ -10,9 +10,23 @@ conversion:
 
 preprocess:
   node: std_scale
+
   phi: std_scale
   grad:
     same_as: phi
+  directed_neumann:
+    same_as: phi
+  neumann:
+    same_as: phi
+
+  x_component: std_scale
+  grad_x_component:
+    same_as: x_component
+  x_component_neumann:
+    same_as: x_component
+  directed_x_component_neumann:
+    same_as: x_component
+
   nodal_nadj: identity
   nodal_grad_x:
     method: isoam_scale
@@ -29,9 +43,5 @@ preprocess:
   inc_grad_y: identity
   inc_grad_z: identity
   inc_int: identity
-  directed_neumann:
-    same_as: phi
-  neumann:
-    same_as: phi
   nodal_surface_normal: identity
   nodal_weighted_normal: identity

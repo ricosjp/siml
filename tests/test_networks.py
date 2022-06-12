@@ -516,9 +516,11 @@ class TestNetworks(unittest.TestCase):
                 tr.model.dict_block['MLP'].linears,
                 tr.model.dict_block['PINV_MLP'].linears[-1::-1]):
             np.testing.assert_almost_equal(
-                l_inv.weight.detach().numpy(), l_ref.weight.detach().numpy())
+                l_inv.weight.detach().numpy(),
+                np.linalg.pinv(l_ref.weight.detach().numpy()),
+                decimal=5)
             np.testing.assert_almost_equal(
-                l_inv.bias.detach().numpy(), l_ref.bias.detach().numpy())
+                l_inv.bias.detach().numpy(), - l_ref.bias.detach().numpy())
 
         x = torch.rand(100, 3, 3, 6)
         y = tr.model.dict_block['MLP'](x)
@@ -553,8 +555,10 @@ class TestNetworks(unittest.TestCase):
                 tr.model.dict_block['MLP'].linears,
                 tr.model.dict_block['PINV_MLP'].linears[-1::-1]):
             np.testing.assert_almost_equal(
-                l_inv.weight.detach().numpy(), l_ref.weight.detach().numpy())
-            self.assertIsNone(l_inv.bias)
+                l_inv.weight.detach().numpy(),
+                np.linalg.pinv(l_ref.weight.detach().numpy()),
+                decimal=5)
+            self.assertEqual(l_inv.bias, 0)
             self.assertIsNone(l_ref.bias)
 
         x = torch.rand(100, 3, 3, 6)

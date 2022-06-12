@@ -335,6 +335,7 @@ class TestBoundary(unittest.TestCase):
             model=main_setting.trainer.output_directory,
             output_directory_base=tr.setting.trainer.output_directory,
             data_directories=main_setting.data.test[0])
+        results[0]['fem_data'].write('ucd', 'tmp.inp', overwrite=True)
         x = results[0]['dict_x']
         y = results[0]['dict_y']
         filter_boundary = np.linalg.norm(
@@ -380,6 +381,15 @@ class TestBoundary(unittest.TestCase):
             / np.mean(answer_boundary**2)**.5
 
         self.assertLess(error_boundary, error_wo_boundary)
+
+    def test_grad_neumann_merged_identity(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/grad/merged_identity.yml'))
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, 1e-3)
 
     def test_grad_neumann_linear(self):
         main_setting = setting.MainSetting.read_settings_yaml(
@@ -616,6 +626,70 @@ class TestBoundary(unittest.TestCase):
         rotation = np.load(rotated_test_directory / 'rotation.npy')
         np.testing.assert_almost_equal(
             np.einsum('kl,ilf->ikf', rotation, y), rotated_y, decimal=2)
+
+    def test_grad_nonlinear_neumann_decoder(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/grad/neumann_decoder.yml'))
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, 1e-5)
+
+        # ir = inferer.Inferer(
+        #     main_setting,
+        #     converter_parameters_pkl=main_setting.data.preprocessed_root
+        #     / 'preprocessors.pkl')
+        # ir.setting.inferer.write_simulation = True
+        # ir.setting.inferer.write_simulation_base = Path(
+        #     'tests/data/grad/raw')
+        # results = ir.infer(
+        #     model=main_setting.trainer.output_directory,
+        #     output_directory_base=tr.setting.trainer.output_directory,
+        #     data_directories=main_setting.data.test[0])
+        # results[0]['fem_data'].write('ucd', 'tmp.inp', overwrite=True)
+
+    def test_grad_linear_neumann_decoder(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/grad/linear_neumann_decoder.yml'))
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, 1e-5)
+
+        # ir = inferer.Inferer(
+        #     main_setting,
+        #     converter_parameters_pkl=main_setting.data.preprocessed_root
+        #     / 'preprocessors.pkl')
+        # ir.setting.inferer.write_simulation = True
+        # ir.setting.inferer.write_simulation_base = Path(
+        #     'tests/data/grad/raw')
+        # results = ir.infer(
+        #     model=main_setting.trainer.output_directory,
+        #     output_directory_base=tr.setting.trainer.output_directory,
+        #     data_directories=main_setting.data.test[0])
+        # # results[0]['fem_data'].write('ucd', 'tmp.inp', overwrite=True)
+
+    def test_neumann_decoder_layer(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/grad/neumann_decoder.yml'))
+        main_setting.trainer.n_epoch = 10
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        tr.train()
+        x = torch.rand(100, 1)
+        neumann = torch.rand(100, 1)
+        normals = torch.zeros(100, 3, 1)
+        normals[:, 0, 0] = 1.
+        encoded_directed_neumann = tr.model.dict_block['NEUMANN_ENCODER'](
+            x, neumann, normals)
+        decoded_neumann = tr.model.dict_block['NEUMANN_DECODER'](
+            encoded_directed_neumann, x)
+        np.testing.assert_almost_equal(
+            decoded_neumann[:, 0, 0].detach().numpy(),
+            neumann[:, 0].numpy(), decimal=5)
 
     def test_heat_interaction(self):
         main_setting = setting.MainSetting.read_settings_yaml(

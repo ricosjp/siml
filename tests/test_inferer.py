@@ -174,6 +174,14 @@ class TestInferer(unittest.TestCase):
             - res_from_preprocessed[0]['dict_x']['elemental_stress'],
             decimal=2)
 
+        desired_raw_loss = np.mean((
+            fem_data.elemental_data.get_attribute_data(
+                'predicted_elemental_stress')
+            - fem_data.elemental_data.get_attribute_data(
+                'answer_elemental_stress'))**2)
+        np.testing.assert_almost_equal(
+            res_from_preprocessed[0]['raw_loss'], desired_raw_loss)
+
     def test_infer_simplified_model(self):
         setting_yaml = Path('tests/data/simplified/mlp.yml')
         model_file = Path(

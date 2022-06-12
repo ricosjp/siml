@@ -112,9 +112,7 @@ class Trainer(siml_manager.SimlManager):
         # Define model
         self.model = networks.Network(self.setting.model, self.setting.trainer)
         if self.setting.trainer.draw_network and draw:
-            self.model.draw(
-                self.setting.trainer.output_directory
-                / f"network.{self.setting.trainer.figure_format}")
+            self.model.draw(self.setting.trainer.output_directory)
 
         self.element_wise = self._determine_element_wise()
         self.loss = self._create_loss_function()
