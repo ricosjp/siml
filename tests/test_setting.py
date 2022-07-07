@@ -10,6 +10,11 @@ class TestSetting(unittest.TestCase):
 
     def test_write_yaml(self):
         main_setting = setting.MainSetting()
+        main_setting.misc['string'] = 'abc'
+        main_setting.misc['data'] = 1
+        main_setting.misc['list'] = [1, 2, 3]
+        main_setting.misc['dict'] = {'a': 1, 'b': 2, 'c': 3}
+
         write_setting_yml = Path('tests/data/write_setting.yml')
         if write_setting_yml.exists():
             write_setting_yml.unlink()
@@ -18,6 +23,14 @@ class TestSetting(unittest.TestCase):
             write_setting_yml)
         np.testing.assert_array_equal(
             main_setting.trainer.inputs, written_setting.trainer.inputs)
+        self.assertEqual(
+            main_setting.misc['string'], written_setting.misc['string'])
+        self.assertEqual(
+            main_setting.misc['data'], written_setting.misc['data'])
+        self.assertEqual(
+            main_setting.misc['list'], written_setting.misc['list'])
+        self.assertEqual(
+            main_setting.misc['dict'], written_setting.misc['dict'])
 
     def test_read_settings_yaml(self):
         yaml_file = Path('tests/data/deform/general_block.yml')

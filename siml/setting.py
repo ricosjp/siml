@@ -1123,6 +1123,7 @@ class MainSetting:
     optuna: OptunaSetting = OptunaSetting()
     study: StudySetting = StudySetting()
     replace_preprocessed: bool = False
+    misc: dict = dc.field(default_factory=dict)
 
     @classmethod
     def read_settings_yaml(cls, settings_yaml, replace_preprocessed=False):
@@ -1179,6 +1180,10 @@ class MainSetting:
             study_setting = StudySetting(**dict_settings['study'])
         else:
             study_setting = StudySetting()
+        if 'misc' in dict_settings:
+            misc_setting = dict_settings['misc']
+        else:
+            misc_setting = {}
 
         return cls(
             data=data_setting, conversion=conversion_setting,
@@ -1186,7 +1191,9 @@ class MainSetting:
             trainer=trainer_setting, model=model_setting,
             inferer=inferer_setting,
             optuna=optuna_setting, study=study_setting,
-            replace_preprocessed=replace_preprocessed)
+            replace_preprocessed=replace_preprocessed,
+            misc=misc_setting,
+        )
 
     @classmethod
     def _pop_train_setting(cls, train_dict_settings):
