@@ -211,14 +211,21 @@ class RawConverter():
                 dict_data = {}
 
         if self.conversion_function is not None:
-            dict_data.update(
-                self.conversion_function(fem_data, raw_path))
+            try:
+                dict_data.update(
+                    self.conversion_function(fem_data, raw_path))
+            except BaseException as e:
+                raise ValueError(
+                    f"{e}\nconversion_function failed for: {raw_path}")
 
         if self.load_function is not None:
             data_files = util.collect_files(
                 raw_path, conversion_setting.required_file_names)
-            loaded_dict_data, fem_data = self.load_function(
-                data_files, raw_path)
+            try:
+                loaded_dict_data, fem_data = self.load_function(
+                    data_files, raw_path)
+            except BaseException as e:
+                raise ValueError(f"{e}\nload_function failed for: {raw_path}")
             dict_data.update(loaded_dict_data)
 
         if self.filter_function is not None and not self.filter_function(
@@ -990,8 +997,9 @@ class Converter:
                     skip_femio=skip_femio, load_function=load_function,
                     convert_to_order1=convert_to_order1,
                     required_file_names=required_file_names)
-            except ValueError:
+            except ValueError as e:
                 print(
+                    f"{e}\n"
                     'Could not read FEMData object, set None\n'
                     f"write_simulation_base: {write_simulation_base}\n"
                     f"write_simulation_stem: {write_simulation_stem}\n"

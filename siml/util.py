@@ -1047,11 +1047,17 @@ class VariableMask:
             [x[key] for key in xs[0].keys()] for x in xs]
 
     def _dict_mask(self, *xs, keep_empty_data=True):
-        masked = [
-            [
-                x[key][..., self.mask[key]] for key in self.mask.keys()
-                if key in x]
-            for x in xs]
+        try:
+            masked = [
+                [
+                    x[key][..., self.mask[key]] for key in self.mask.keys()
+                    if key in x]
+                for x in xs]
+        except IndexError as e:
+            x = xs[0]
+            raise ValueError(f"{e}\n", {
+                key: (x[key].shape, self.mask[key].shape)
+                for key in self.mask.keys() if key in x})
         if keep_empty_data:
             return [
                 [
