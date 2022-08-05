@@ -66,7 +66,7 @@ class Postprocessor(Metric):
                 perform_inverse=setting.inferer.perform_inverse,
                 skip_fem_data_creation=setting.inferer.skip_fem_data_creation)
         raw_loss = self._compute_raw_loss(
-            inversed_dict_x, inversed_dict_y, x['original_shapes'])
+            inversed_dict_answer, inversed_dict_y, x['original_shapes'])
 
         if self.inferer.postprocess_function is not None:
             inversed_dict_x, inversed_dict_y, fem_data \
@@ -103,20 +103,21 @@ class Postprocessor(Metric):
     def compute(self):
         return self._results
 
-    def _compute_raw_loss(self, dict_x, dict_y, original_shapes=None):
+    def _compute_raw_loss(self, dict_answer, dict_y, original_shapes=None):
         y_keys = dict_y.keys()
-        if not np.all([y_key in dict_x for y_key in y_keys]):
+        if not np.all([y_key in dict_answer for y_key in y_keys]):
             return None  # No answer
 
         if isinstance(self.inferer.setting.trainer.output_names, dict):
             output_names = self.inferer.setting.trainer.output_names
             y_raw_pred = self._reshape_dict(output_names, dict_y)
-            y_raw_answer = self._reshape_dict(output_names, dict_x)
+            y_raw_answer = self._reshape_dict(output_names, dict_answer)
         else:
             y_raw_pred = torch.from_numpy(
                 np.concatenate([dict_y[k] for k in dict_y.keys()], axis=-1))
             y_raw_answer = torch.from_numpy(
-                np.concatenate([dict_x[k] for k in dict_y.keys()], axis=-1))
+                np.concatenate(
+                    [dict_answer[k] for k in dict_y.keys()], axis=-1))
 
         raw_loss = self.inferer.loss(
             y_raw_pred, y_raw_answer, original_shapes=original_shapes)

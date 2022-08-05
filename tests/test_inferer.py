@@ -171,7 +171,7 @@ class TestInferer(unittest.TestCase):
             fem_data.elemental_data.get_attribute_data(
                 'difference_elemental_stress'),
             res_from_preprocessed[0]['dict_y']['elemental_stress']
-            - res_from_preprocessed[0]['dict_x']['elemental_stress'],
+            - res_from_preprocessed[0]['dict_answer']['elemental_stress'],
             decimal=2)
 
         desired_raw_loss = np.mean((
@@ -332,7 +332,7 @@ class TestInferer(unittest.TestCase):
                     'predicted_elemental_stress'),
                 res_from_raw[i_data]['dict_y']['elemental_stress'], decimal=3)
             np.testing.assert_almost_equal(
-                res_from_raw[i_data]['dict_x']['elemental_stress'],
+                res_from_raw[i_data]['dict_answer']['elemental_stress'],
                 raw_fem_data.elemental_data.get_attribute_data(
                     'ElementalSTRESS'), decimal=2)
             np.testing.assert_almost_equal(
