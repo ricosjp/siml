@@ -104,6 +104,8 @@ class Postprocessor(Metric):
         return self._results
 
     def _compute_raw_loss(self, dict_answer, dict_y, original_shapes=None):
+        if dict_answer is None:
+            return None  # No answer
         y_keys = dict_y.keys()
         if not np.all([y_key in dict_answer for y_key in y_keys]):
             return None  # No answer
