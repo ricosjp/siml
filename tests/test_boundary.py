@@ -338,12 +338,13 @@ class TestBoundary(unittest.TestCase):
         results[0]['fem_data'].write('ucd', 'tmp.inp', overwrite=True)
         x = results[0]['dict_x']
         y = results[0]['dict_y']
+        a = results[0]['dict_answer']
         filter_boundary = np.linalg.norm(
             x['directed_neumann'][..., 0], axis=1) > 1.e-2
         normal = np.load(
             results[0]['data_directory'] / 'nodal_surface_normal.npy')
         answer_boundary = np.einsum(
-            'ijf,ijf->i', x['grad'], normal)[filter_boundary]
+            'ijf,ijf->i', a['grad'], normal)[filter_boundary]
         prediction_boundary = np.einsum(
             'ijf,ijf->i', y['grad'], normal)[filter_boundary]
         error_boundary = np.mean(
@@ -412,12 +413,13 @@ class TestBoundary(unittest.TestCase):
             data_directories=main_setting.data.test[0])
         x = results[0]['dict_x']
         y = results[0]['dict_y']
+        a = results[0]['dict_answer']
         filter_boundary = np.linalg.norm(
             x['directed_neumann'][..., 0], axis=1) > 1.e-2
         normal = np.load(
             results[0]['data_directory'] / 'nodal_surface_normal.npy')
         answer_boundary = np.einsum(
-            'ijf,ijf->i', x['grad'], normal)[filter_boundary]
+            'ijf,ijf->i', a['grad'], normal)[filter_boundary]
         prediction_boundary = np.einsum(
             'ijf,ijf->i', y['grad'], normal)[filter_boundary]
         error_boundary = np.mean(
@@ -511,12 +513,13 @@ class TestBoundary(unittest.TestCase):
             data_directories=main_setting.data.test[0])
         x = results[0]['dict_x']
         y = results[0]['dict_y']
+        a = results[0]['dict_answer']
         filter_boundary = np.linalg.norm(
             x['nodal_weighted_normal'][..., 0], axis=1) > 1e-5
         normal = np.load(
             results[0]['data_directory'] / 'nodal_surface_normal.npy')
         answer_boundary = np.einsum(
-            'ijf,ijf->i', x['grad'], normal)[filter_boundary]
+            'ijf,ijf->i', a['grad'], normal)[filter_boundary]
         prediction_boundary = np.einsum(
             'ijf,ijf->i', y['grad'], normal)[filter_boundary]
         error_boundary = np.mean(

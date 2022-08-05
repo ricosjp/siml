@@ -19,8 +19,9 @@ class EquivarianceBase(unittest.TestCase):
             for transformed_result in transformed_results:
                 if validate_x:
                     np.testing.assert_almost_equal(
-                        original_results[0]['dict_x'][rank0],
-                        transformed_result['dict_x'][rank0], decimal=decimal)
+                        original_results[0]['dict_answer'][rank0],
+                        transformed_result['dict_answer'][rank0],
+                        decimal=decimal)
 
                 print(
                     f"data_directory: {transformed_result['data_directory']}")
@@ -89,8 +90,9 @@ class EquivarianceBase(unittest.TestCase):
                     np.testing.assert_almost_equal(
                         self.transform_rank2(
                             orthogonal_matrix,
-                            original_results[0]['dict_x'][rank2]),
-                        transformed_result['dict_x'][rank2], decimal=decimal)
+                            original_results[0]['dict_answer'][rank2]),
+                        transformed_result['dict_answer'][rank2],
+                        decimal=decimal)
 
                 transformed_original = self.transform_rank2(
                     orthogonal_matrix, original_results[0]['dict_y'][rank2])

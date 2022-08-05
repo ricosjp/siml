@@ -2,6 +2,7 @@ from pathlib import Path
 import shutil
 import unittest
 
+import femio
 import numpy as np
 import torch
 
@@ -160,7 +161,8 @@ class TestGroups(unittest.TestCase):
             data_directories=Path(
                 'tests/data/heat_time_series/preprocessed/2'))
         mse = np.mean((
-            results[0]['dict_y']['t_10'] - results[0]['dict_x']['t_10'])**2)
+            results[0]['dict_y']['t_10']
+            - results[0]['dict_answer']['t_10'])**2)
 
         ref_main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/heat_time_series/heat_group_nl_repeat4.yml'))
@@ -181,7 +183,7 @@ class TestGroups(unittest.TestCase):
                 'tests/data/heat_time_series/preprocessed/2'))
         ref_mse = np.mean((
             ref_results[0]['dict_y']['t_10']
-            - ref_results[0]['dict_x']['t_10'])**2)
+            - ref_results[0]['dict_answer']['t_10'])**2)
 
         self.assertLess(mse, ref_mse + 5.e-2)
 
@@ -266,3 +268,10 @@ class TestGroups(unittest.TestCase):
             output_directory_base=tr.setting.trainer.output_directory,
             data_directories=main_setting.data.preprocessed_root)
         self.assertLess(results[0]['loss'], .5)
+
+        fem_data = femio.read_files(
+            'vtu', results[0]['output_directory'] / 'mesh.vtu')
+        np.testing.assert_almost_equal(
+            fem_data.nodal_data.get_attribute_data('input_ts_temperature_1'),
+            fem_data.nodal_data.get_attribute_data('answer_ts_temperature_0'),
+        )

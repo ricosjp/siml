@@ -549,7 +549,7 @@ class TestTrainer(unittest.TestCase):
 
         t_mse_w_skip = np.mean((
             results[0]['dict_y']['cnt_temperature']
-            - results[0]['dict_x']['cnt_temperature'])**2)
+            - results[0]['dict_answer']['cnt_temperature'])**2)
 
         # Traiing without skip
         main_setting = setting.MainSetting.read_settings_yaml(Path(
@@ -573,7 +573,7 @@ class TestTrainer(unittest.TestCase):
                 'cube/original'))
         t_mse_wo_skip = np.mean((
             results[0]['dict_y']['cnt_temperature']
-            - results[0]['dict_x']['cnt_temperature'])**2)
+            - results[0]['dict_answer']['cnt_temperature'])**2)
 
         print(t_mse_wo_skip, t_mse_w_skip)
         self.assertLess(t_mse_wo_skip, t_mse_w_skip)
@@ -599,7 +599,7 @@ class TestTrainer(unittest.TestCase):
 
         t_mse_w_skip = np.mean((
             results[0]['dict_y']['cnt_temperature']
-            - results[0]['dict_x']['cnt_temperature'])**2)
+            - results[0]['dict_answer']['cnt_temperature'])**2)
 
         # Traiing without skip
         main_setting = setting.MainSetting.read_settings_yaml(Path(
@@ -622,7 +622,7 @@ class TestTrainer(unittest.TestCase):
                 'cube/original'))
         t_mse_wo_skip = np.mean((
             results[0]['dict_y']['cnt_temperature']
-            - results[0]['dict_x']['cnt_temperature'])**2)
+            - results[0]['dict_answer']['cnt_temperature'])**2)
 
         print(t_mse_wo_skip, t_mse_w_skip)
         self.assertLess(t_mse_wo_skip, t_mse_w_skip)

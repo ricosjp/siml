@@ -161,8 +161,9 @@ class Inferer(siml_manager.SimlManager):
         -------
         inference_results: list[Dict]
             Inference results contains:
-                - dict_x: input and answer variables
+                - dict_x: input and variables
                 - dict_y: inferred variables
+                - dict_answer: answer variables (None if not found)
                 - loss: Loss value (scaled)
                 - raw_loss: Loss in a raw scale
                 - fem_data: FEMData object
