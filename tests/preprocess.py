@@ -38,22 +38,22 @@ def conversion_function(fem_data, data_directory):
     global_modulus = np.mean(
         fem_data.elemental_data.get_attribute_data('modulus'), keepdims=True)
 
-    tensor_stress = fem_data.convert_array2symmetric_matrix(
+    tensor_stress = femio.functions.convert_array2symmetric_matrix(
         fem_data.elemental_data.get_attribute_data('ElementalSTRESS'),
         from_engineering=False)[:, :, :, None]
-    tensor_strain = fem_data.convert_array2symmetric_matrix(
+    tensor_strain = femio.functions.convert_array2symmetric_matrix(
         fem_data.elemental_data.get_attribute_data('ElementalSTRAIN'),
         from_engineering=True)[:, :, :, None]
-    tensor_gauss_strain1 = fem_data.convert_array2symmetric_matrix(
+    tensor_gauss_strain1 = femio.functions.convert_array2symmetric_matrix(
         fem_data.elemental_data.get_attribute_data('GaussSTRAIN1'),
         from_engineering=True)[:, :, :, None]
-    tensor_gauss_strain2 = fem_data.convert_array2symmetric_matrix(
+    tensor_gauss_strain2 = femio.functions.convert_array2symmetric_matrix(
         fem_data.elemental_data.get_attribute_data('GaussSTRAIN2'),
         from_engineering=True)[:, :, :, None]
-    tensor_gauss_strain3 = fem_data.convert_array2symmetric_matrix(
+    tensor_gauss_strain3 = femio.functions.convert_array2symmetric_matrix(
         fem_data.elemental_data.get_attribute_data('GaussSTRAIN3'),
         from_engineering=True)[:, :, :, None]
-    tensor_gauss_strain4 = fem_data.convert_array2symmetric_matrix(
+    tensor_gauss_strain4 = femio.functions.convert_array2symmetric_matrix(
         fem_data.elemental_data.get_attribute_data('GaussSTRAIN4'),
         from_engineering=True)[:, :, :, None]
     return {
@@ -250,7 +250,7 @@ def conversion_function_heat_boundary(fem_data, raw_directory=None):
     elemental_thermal_conductivity_array = np.stack([
         c[0, :-1] for c in raw_conductivity[:, 0]])
     elemental_thermal_conductivity \
-        = fem_data.convert_array2symmetric_matrix(
+        = femio.functions.convert_array2symmetric_matrix(
             elemental_thermal_conductivity_array,
             from_engineering=False)[:, :, :, None]
     nodal_thermal_conductivity_array \
@@ -258,7 +258,7 @@ def conversion_function_heat_boundary(fem_data, raw_directory=None):
             elemental_thermal_conductivity_array, mode='mean',
             raise_negative_volume=False)
     nodal_thermal_conductivity \
-        = fem_data.convert_array2symmetric_matrix(
+        = femio.functions.convert_array2symmetric_matrix(
             nodal_thermal_conductivity_array, from_engineering=False)[
                 :, :, :, None]
 
@@ -441,9 +441,9 @@ def conversion_function_rotation_thermal_stress(fem_data, raw_directory=None):
     global_lte_array = np.mean(
         elemental_lte_array, axis=0, keepdims=True)
 
-    elemental_lte_mat = fem_data.convert_array2symmetric_matrix(
+    elemental_lte_mat = femio.functions.convert_array2symmetric_matrix(
         elemental_lte_array, from_engineering=True)
-    nodal_lte_mat = fem_data.convert_array2symmetric_matrix(
+    nodal_lte_mat = femio.functions.convert_array2symmetric_matrix(
         nodal_lte_array, from_engineering=True)
     global_lte_mat = np.mean(
         elemental_lte_mat, axis=0, keepdims=True)
@@ -452,9 +452,9 @@ def conversion_function_rotation_thermal_stress(fem_data, raw_directory=None):
         'ElementalSTRAIN')
     nodal_strain_array = fem_data.nodal_data.get_attribute_data(
         'NodalSTRAIN')[filter_]
-    elemental_strain_mat = fem_data.convert_array2symmetric_matrix(
+    elemental_strain_mat = femio.functions.convert_array2symmetric_matrix(
         elemental_strain_array, from_engineering=True)
-    nodal_strain_mat = fem_data.convert_array2symmetric_matrix(
+    nodal_strain_mat = femio.functions.convert_array2symmetric_matrix(
         nodal_strain_array, from_engineering=True)
 
     inc_grad, inc_int = fem_data.calculate_spatial_gradient_incidence_matrix(
