@@ -18,7 +18,7 @@ conversion:
 inferer:
   write_simulation: true
   write_simulation_base: tests/data/heat_boundary/raw
-  write_simulation_type: 'ucd'
+  write_simulation_type: 'vtu'
 trainer:
   output_directory: tests/data/heat_boundary/ts_isogcn_split
   time_series_split:
@@ -343,9 +343,9 @@ model:
             - CONTRACTION_1
           reference_block_name: ISO_GCN_RANK0_RANK1_1
           optional:
-            # create_neumann_linear: true
+            create_neumann_linear: true
             # create_neumann_ratio: true
-            neumann_factor: -1.
+            # neumann_factor: -1.
         - name: CONTRACTION_1
           type: contraction
           destinations: ISO_GCN_RANK1_RANK0_1

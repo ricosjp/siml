@@ -2,6 +2,7 @@ from pathlib import Path
 import shutil
 import unittest
 
+import femio
 import numpy as np
 import torch
 
@@ -266,3 +267,10 @@ class TestGroups(unittest.TestCase):
             output_directory_base=tr.setting.trainer.output_directory,
             data_directories=main_setting.data.preprocessed_root)
         self.assertLess(results[0]['loss'], .5)
+
+        fem_data = femio.read_files(
+            'vtu', results[0]['output_directory'] / 'mesh.vtu')
+        np.testing.assert_almost_equal(
+            fem_data.nodal_data.get_attribute_data('input_ts_temperature_1'),
+            fem_data.nodal_data.get_attribute_data('answer_ts_temperature_0'),
+        )

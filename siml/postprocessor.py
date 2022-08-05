@@ -43,7 +43,7 @@ class Postprocessor(Metric):
             data_directory)
 
         setting = self.inferer.setting
-        inversed_dict_x, inversed_dict_y, fem_data \
+        inversed_dict_x, inversed_dict_y, inversed_dict_answer, fem_data \
             = self.inferer.prepost_converter.postprocess(
                 dict_var_x, dict_var_y_pred,
                 output_directory=output_directory,
@@ -76,6 +76,7 @@ class Postprocessor(Metric):
         if self.inferer.setting.inferer.return_all_results:
             self._results.append({
                 'dict_x': inversed_dict_x, 'dict_y': inversed_dict_y,
+                'dict_answer': inversed_dict_answer,
                 'fem_data': fem_data,
                 'loss': loss,
                 'raw_loss': raw_loss,

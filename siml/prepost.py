@@ -274,32 +274,38 @@ def update_fem_data(
         else:
             variable_name = prefix + key
         if isinstance(value, np.ndarray):
-            if len(value.shape) > 2 and value.shape[-1] == 1:
-                if len(value.shape) == 4 and value.shape[1] == 3 \
-                        and value.shape[2] == 3:
-                    # NOTE: Assume this is symmetric matrix
-                    reshaped_value \
-                        = fem_data.convert_symmetric_matrix2array(
-                            value[..., 0])
-                else:
-                    reshaped_value = value[..., 0]
-                dict_data_to_update = {
-                    variable_name: value,
-                    variable_name + '_reshaped': reshaped_value}
-            else:
+            value = reshape_data_if_needed(value)
+            shape = value.shape
+
+            if shape[0] == len(fem_data.nodes.ids):
+                # Nodal data
                 dict_data_to_update = {
                     variable_name: value}
-            len_data = len(value)
-
-            if len_data == len(fem_data.nodes.ids):
-                # Nodal data
                 fem_data.nodal_data.update_data(
                     fem_data.nodes.ids, dict_data_to_update,
                     allow_overwrite=allow_overwrite)
-            elif len_data == len(fem_data.elements.ids):
+            elif shape[1] == len(fem_data.nodes.ids):
+                # Nodal data with time series
+                dict_data_to_update = {
+                    f"{variable_name}_{i}": reshape_data_if_needed(v)
+                    for i, v in enumerate(value)}
+                fem_data.nodal_data.update_data(
+                    fem_data.nodes.ids, dict_data_to_update,
+                    allow_overwrite=allow_overwrite)
+            elif shape[0] == len(fem_data.elements.ids):
                 # Elemental data
+                dict_data_to_update = {
+                    variable_name: value}
                 fem_data.elemental_data.update_data(
                     fem_data.elements.ids, dict_data_to_update,
+                    allow_overwrite=allow_overwrite)
+            elif shape[1] == len(fem_data.elements.ids):
+                # Elemental data with time series
+                dict_data_to_update = {
+                    f"{variable_name}_{i}": reshape_data_if_needed(v)
+                    for i, v in enumerate(value)}
+                fem_data.elemental_data.update_data(
+                    fem_data.nodes.ids, dict_data_to_update,
                     allow_overwrite=allow_overwrite)
             else:
                 print(f"{variable_name} is skipped to include in fem_data")
@@ -310,8 +316,38 @@ def update_fem_data(
     return fem_data
 
 
+def reshape_data_if_needed(value):
+    """Reshape numpy.ndarray-like to be writable to visualization files.
+
+    Parameters
+    ----------
+    value: numpy.ndarray
+        Data to be processed.
+
+    Returns
+    -------
+    reshaped_data: numpy.ndarray
+    """
+    if len(value.shape) > 2 and value.shape[-1] == 1:
+        if len(value.shape) == 4 and value.shape[1] == 3 \
+                and value.shape[2] == 3:
+            # NOTE: Assume this is symmetric matrix
+            reshaped_value \
+                = femio.functions.convert_symmetric_matrix2array(
+                    value[..., 0])
+        else:
+            reshaped_value = value[..., 0]
+    elif len(value.shape) == 1:
+        reshaped_value = value[:, None]
+    else:
+        reshaped_value = value
+    return reshaped_value
+
+
 def add_difference(
         fem_data, dict_data, reference_dict_data, prefix='difference'):
+    if reference_dict_data is None:
+        return fem_data
     intersections = set(
         dict_data.keys()).intersection(reference_dict_data.keys())
     if len(intersections) == 0:
@@ -932,6 +968,8 @@ class Converter:
                 Inversed input data.
             inversed_dict_data_y: dict
                 Inversed output data.
+            inversed_dict_answer: dict
+                Inversed answer data. None when the answer not available.
             fem_data: femio.FEMData
                 FEMData object with input and output data.
         """
@@ -956,16 +994,18 @@ class Converter:
 
         if dict_data_y_answer is not None and len(dict_data_y_answer) > 0:
             if isinstance(list(dict_data_y_answer.values())[0], dict):
-                return_dict_data_x.update({
+                return_dict_data_y_answer = {
                     variable_name:
                     dict_post_function[variable_name](data)
                     for value in dict_data_y_answer.values()
-                    for variable_name, data in value.items()})
+                    for variable_name, data in value.items()}
             else:
-                return_dict_data_x.update({
+                return_dict_data_y_answer = {
                     variable_name:
                     dict_post_function[variable_name](data)
-                    for variable_name, data in dict_data_y_answer.items()})
+                    for variable_name, data in dict_data_y_answer.items()}
+        else:
+            return_dict_data_y_answer = None
 
         if len(dict_data_y) > 0:
             if isinstance(list(dict_data_y.values())[0], dict):
@@ -990,6 +1030,7 @@ class Converter:
             try:
                 fem_data = self._create_fem_data(
                     return_dict_data_x, return_dict_data_y,
+                    dict_data_answer=return_dict_data_y_answer,
                     write_simulation_base=write_simulation_base,
                     write_simulation_stem=write_simulation_stem,
                     read_simulation_type=read_simulation_type,
@@ -1025,10 +1066,12 @@ class Converter:
                     output_directory, fem_data, overwrite=overwrite,
                     write_simulation_type=write_simulation_type)
 
-        return return_dict_data_x, return_dict_data_y, fem_data
+        return return_dict_data_x, return_dict_data_y, \
+            return_dict_data_y_answer, fem_data
 
     def _create_fem_data(
             self, dict_data_x, dict_data_y, write_simulation_base, *,
+            dict_data_answer=None,
             write_simulation_stem=None,
             read_simulation_type='fistr', data_addition_function=None,
             skip_femio=False, load_function=None,
@@ -1057,11 +1100,13 @@ class Converter:
             fem_data = fem_data.to_first_order()
 
         fem_data = update_fem_data(
-            fem_data, dict_data_x, prefix='input_',
-            answer_keys=dict_data_y.keys(), answer_prefix='answer_')
+            fem_data, dict_data_x, prefix='input_')
+        if dict_data_answer is not None:
+            fem_data = update_fem_data(
+                fem_data, dict_data_answer, prefix='answer_')
         fem_data = update_fem_data(fem_data, dict_data_y, prefix='predicted_')
         fem_data = add_difference(
-            fem_data, dict_data_y, dict_data_x, prefix='difference_')
+            fem_data, dict_data_y, dict_data_answer, prefix='difference_')
         if data_addition_function is not None:
             fem_data = data_addition_function(fem_data, write_simulation_base)
 
@@ -1076,7 +1121,7 @@ class Converter:
             ext = '.inp'
         elif write_simulation_type == 'vtk':
             ext = '.vtk'
-        elif write_simulation_type == 'polyvtk':
+        elif write_simulation_type in ['polyvtk', 'vtu']:
             ext = '.vtu'
         else:
             raise ValueError(
