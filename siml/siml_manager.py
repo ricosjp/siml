@@ -177,7 +177,12 @@ class SimlManager():
                 self.setting.trainer.pretrain_directory,
                 method=self.setting.trainer.snapshot_choise_method)
 
-        key = self.setting.inferer.model_key
+        key = None
+        if self.setting.trainer.model_key is not None:
+            key = self.setting.trainer.model_key
+        if self.setting.inferer.model_key is not None:
+            key = self.setting.inferer.model_key
+
         if snapshot.suffix == '.enc':
             if key is None:
                 raise ValueError('Feed key to load encrypted model')

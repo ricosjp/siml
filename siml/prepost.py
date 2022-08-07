@@ -286,7 +286,7 @@ def update_fem_data(
                     allow_overwrite=allow_overwrite)
             elif shape[1] == len(fem_data.nodes.ids):
                 # Nodal data with time series
-                if shape[0] == 0:
+                if shape[0] == 1:
                     dict_data_to_update = {
                         variable_name: reshape_data_if_needed(value[0])}
                 else:
@@ -305,7 +305,7 @@ def update_fem_data(
                     allow_overwrite=allow_overwrite)
             elif shape[1] == len(fem_data.elements.ids):
                 # Elemental data with time series
-                if shape[0] == 0:
+                if shape[0] == 1:
                     dict_data_to_update = {
                         variable_name: reshape_data_if_needed(value[0])}
                 else:

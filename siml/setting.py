@@ -361,13 +361,8 @@ class CollectionVariableSetting(TypedDataClass):
     def time_slice(self):
         s = self.collect_values('time_slice')
         if isinstance(s, list):
-            if not np.all(np.array(s) == s[0]):
-                raise ValueError(f"Invalid setting for variables: {self}")
             return s[0]
         elif isinstance(s, dict):
-            for v in s.values():
-                if not np.all(np.array(v) == v[0]):
-                    raise ValueError(f"Invalid setting for variables: {self}")
             return {k: v[0] for k, v in s.items()}
         else:
             raise ValueError(f"Invalid format: {s}")
