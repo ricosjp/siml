@@ -286,9 +286,13 @@ def update_fem_data(
                     allow_overwrite=allow_overwrite)
             elif shape[1] == len(fem_data.nodes.ids):
                 # Nodal data with time series
-                dict_data_to_update = {
-                    f"{variable_name}_{i}": reshape_data_if_needed(v)
-                    for i, v in enumerate(value)}
+                if shape[0] == 0:
+                    dict_data_to_update = {
+                        variable_name: reshape_data_if_needed(value[0])}
+                else:
+                    dict_data_to_update = {
+                        f"{variable_name}_{i}": reshape_data_if_needed(v)
+                        for i, v in enumerate(value)}
                 fem_data.nodal_data.update_data(
                     fem_data.nodes.ids, dict_data_to_update,
                     allow_overwrite=allow_overwrite)
@@ -301,9 +305,13 @@ def update_fem_data(
                     allow_overwrite=allow_overwrite)
             elif shape[1] == len(fem_data.elements.ids):
                 # Elemental data with time series
-                dict_data_to_update = {
-                    f"{variable_name}_{i}": reshape_data_if_needed(v)
-                    for i, v in enumerate(value)}
+                if shape[0] == 0:
+                    dict_data_to_update = {
+                        variable_name: reshape_data_if_needed(value[0])}
+                else:
+                    dict_data_to_update = {
+                        f"{variable_name}_{i}": reshape_data_if_needed(v)
+                        for i, v in enumerate(value)}
                 fem_data.elemental_data.update_data(
                     fem_data.nodes.ids, dict_data_to_update,
                     allow_overwrite=allow_overwrite)
