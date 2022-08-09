@@ -127,7 +127,7 @@ class SimlManager():
         if path.is_file():
             yaml_file = path
         elif path.is_dir():
-            yamls = list(path.glob('*.y*ml'))
+            yamls = list(path.glob('*.y*ml')) + list(path.glob('*.y*ml.enc'))
             if len(yamls) != 1:
                 yaml_file_candidates = [
                     y for y in yamls if 'setting' in str(y)]
@@ -138,11 +138,34 @@ class SimlManager():
                         f"{len(yamls)} yaml files found in {path}")
             else:
                 yaml_file = yamls[0]
+
+        key = None
+        if self.setting.trainer.model_key is not None:
+            key = self.setting.trainer.model_key
+            trainer_has_key = True
+        else:
+            trainer_has_key = False
+        if self.setting.inferer.model_key is not None:
+            key = self.setting.inferer.model_key
+            inferer_has_key = True
+        else:
+            inferer_has_key = False
+
+        if 'enc' in str(yaml_file):
+            yaml_file = util.decrypt_file(key, yaml_file, return_stringio=True)
+
         if only_model:
             self.setting.model = setting.MainSetting.read_settings_yaml(
                 yaml_file).model
         else:
             self.setting = setting.MainSetting.read_settings_yaml(yaml_file)
+
+        if trainer_has_key:
+            self.setting.trainer.model_key = key
+            self.setting.data.decrypt_key = key
+        if inferer_has_key:
+            self.setting.inferer.model_key = key
+            self.setting.data.decrypt_key = key
 
         if not self.inference_mode:
             if self.setting.trainer.output_directory.exists():

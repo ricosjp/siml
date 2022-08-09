@@ -782,7 +782,20 @@ class Trainer(siml_manager.SimlManager):
             return
         snapshot = self._select_snapshot(
             self.setting.trainer.restart_directory, method='latest')
-        checkpoint = torch.load(snapshot, map_location=self.device)
+
+        key = None
+        if self.setting.trainer.model_key is not None:
+            key = self.setting.trainer.model_key
+        if self.setting.inferer.model_key is not None:
+            key = self.setting.inferer.model_key
+        if snapshot.suffix == '.enc':
+            if key is None:
+                raise ValueError('Feed key to load encrypted model')
+            checkpoint = torch.load(
+                util.decrypt_file(key, snapshot), map_location=self.device)
+        else:
+            checkpoint = torch.load(snapshot, map_location=self.device)
+
         self.model.load_state_dict(checkpoint['model_state_dict'])
         self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         self.trainer.load_state_dict({
