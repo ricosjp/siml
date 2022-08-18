@@ -12,8 +12,7 @@ import siml.trainer as trainer
 
 
 if torch.cuda.is_available():
-    # GPU_ID = 0
-    GPU_ID = -1
+    GPU_ID = 0
 else:
     GPU_ID = -1
 
