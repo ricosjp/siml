@@ -283,7 +283,17 @@ class TestGroups(unittest.TestCase):
         if ref_tr.setting.trainer.output_directory.exists():
             shutil.rmtree(ref_tr.setting.trainer.output_directory)
         ref_loss = ref_tr.train()
-        np.testing.assert_array_less(ref_loss, .1)
+
+        ref_ir = inferer.Inferer(
+            ref_main_setting,
+            converter_parameters_pkl=ref_main_setting.data.preprocessed_root
+            / 'preprocessors.pkl')
+        ref_ir.infer(
+            model=ref_main_setting.trainer.output_directory,
+            output_directory_base=ref_tr.setting.trainer.output_directory,
+            data_directories=Path(
+                'tests/data/heat_boundary/preprocessed/cylinder/clscale0.3/'
+                'steepness1.0_rep0'))
 
         main_setting = setting.MainSetting.read_settings_yaml(Path(
             'tests/data/heat_boundary/multigrid.yml'))
