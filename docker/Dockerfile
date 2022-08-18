@@ -15,6 +15,7 @@ RUN apt-get update -y \
   g++ \
   lsb-release wget software-properties-common \
   libedit-dev \
+  libmetis-dev \
   && apt-get install -y --no-install-recommends \
   tzdata \
   python3.9 \
