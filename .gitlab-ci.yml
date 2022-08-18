@@ -33,7 +33,9 @@ stages:
 
 preprocess:
   stage: preprocess
-  script: python3.9 tests/preprocess.py
+  script:
+    - python3.9 -m pip install metis
+    - python3.9 tests/preprocess.py
   artifacts:
     paths:
       - tests/data
