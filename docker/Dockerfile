@@ -1,5 +1,4 @@
-# FROM nvidia/cuda:10.1-base
-FROM nvidia/cuda:11.1-cudnn8-devel
+FROM nvidia/cuda:11.1.1-runtime-ubuntu20.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -34,6 +33,8 @@ ENV LLVM_CONFIG /usr/bin/llvm-config-10
 
 
 COPY ./pyproject.toml /src/pyproject.toml
+COPY ./README.md /src/README.md
+COPY ./siml /src/siml
 # COPY ./poetry.lock /src/poetry.lock
 WORKDIR /src
 

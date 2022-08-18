@@ -12,7 +12,8 @@ else
 endif
 
 build: Dockerfile
-	cp ../pyproject.toml .
+	cp ../pyproject.toml ../README.md .
+	cp -r ../siml .
 	docker build -t $(CI_REGISTRY_IMAGE):$(TAG) \
 		-f Dockerfile .
 
