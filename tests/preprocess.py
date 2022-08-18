@@ -193,46 +193,47 @@ def conversion_function_heat_time_series(fem_data, raw_directory=None):
         'nodal_conductivity': nodal_conductivity,
         'global_conductivity': global_conductivity})
 
-    # Graph reduction for multigrid
-    output_directory = pathlib.Path(
-        str(raw_directory).replace('raw', 'interim'))
-    nodal_adj = fem_data.calculate_adjacency_matrix_node()
+    # # Graph reduction for multigrid
+    # output_directory = pathlib.Path(
+    #     str(raw_directory).replace('raw', 'interim'))
+    # nodal_adj = fem_data.calculate_adjacency_matrix_node()
+    #
+    # reduce0to1, reduced_adj1, reduced_nodes1, part1, gx1, gy1, gz1 \
+    #     = reduce_graph(
+    #         output_directory, nodal_adj, fem_data.nodes.data, 500, n_hop=2)
+    # dict_data.update({
+    #     'reduce0to1': reduce0to1,
+    #     'reduced_adj1': reduced_adj1,
+    #     'reduced_nadj1': prepost.normalize_adjacency_matrix(reduced_adj1),
+    #     'reduced_gx1': gx1,
+    #     'reduced_gy1': gy1,
+    #     'reduced_gz1': gz1,
+    # })
+    #
+    # reduce1to2, reduced_adj2, reduced_nodes2, part2, gx2, gy2, gz2 \
+    #     = reduce_graph(
+    #         output_directory, reduced_adj1, reduced_nodes1, 50, n_hop=10)
+    # dict_data.update({
+    #     'reduce1to2': reduce1to2,
+    #     'reduced_adj2': reduced_adj2,
+    #     'reduced_nadj2': prepost.normalize_adjacency_matrix(reduced_adj2),
+    #     'reduced_gx2': gx2,
+    #     'reduced_gy2': gy2,
+    #     'reduced_gz2': gz2,
+    # })
+    #
+    # reduce2to3, reduced_adj3, reduced_nodes3, part3, gx3, gy3, gz3 \
+    #     = reduce_graph(
+    #         output_directory, reduced_adj2, reduced_nodes2, 5, n_hop=5)
+    # dict_data.update({
+    #     'reduce2to3': reduce2to3,
+    #     'reduced_adj3': reduced_adj3,
+    #     'reduced_nadj3': prepost.normalize_adjacency_matrix(reduced_adj3),
+    #     'reduced_gx3': gx3,
+    #     'reduced_gy3': gy3,
+    #     'reduced_gz3': gz3,
+    # })
 
-    reduce0to1, reduced_adj1, reduced_nodes1, part1, gx1, gy1, gz1 \
-        = reduce_graph(
-            output_directory, nodal_adj, fem_data.nodes.data, 500, n_hop=2)
-    dict_data.update({
-        'reduce0to1': reduce0to1,
-        'reduced_adj1': reduced_adj1,
-        'reduced_nadj1': prepost.normalize_adjacency_matrix(reduced_adj1),
-        'reduced_gx1': gx1,
-        'reduced_gy1': gy1,
-        'reduced_gz1': gz1,
-    })
-
-    reduce1to2, reduced_adj2, reduced_nodes2, part2, gx2, gy2, gz2 \
-        = reduce_graph(
-            output_directory, reduced_adj1, reduced_nodes1, 50, n_hop=10)
-    dict_data.update({
-        'reduce1to2': reduce1to2,
-        'reduced_adj2': reduced_adj2,
-        'reduced_nadj2': prepost.normalize_adjacency_matrix(reduced_adj2),
-        'reduced_gx2': gx2,
-        'reduced_gy2': gy2,
-        'reduced_gz2': gz2,
-    })
-
-    reduce2to3, reduced_adj3, reduced_nodes3, part3, gx3, gy3, gz3 \
-        = reduce_graph(
-            output_directory, reduced_adj2, reduced_nodes2, 5, n_hop=5)
-    dict_data.update({
-        'reduce2to3': reduce2to3,
-        'reduced_adj3': reduced_adj3,
-        'reduced_nadj3': prepost.normalize_adjacency_matrix(reduced_adj3),
-        'reduced_gx3': gx3,
-        'reduced_gy3': gy3,
-        'reduced_gz3': gz3,
-    })
     return dict_data
 
 

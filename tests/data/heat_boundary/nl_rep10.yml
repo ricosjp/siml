@@ -52,7 +52,7 @@ trainer:
   batch_size: 1
   n_epoch: 10000
   log_trigger_epoch: 10
-  stop_trigger_epoch: 10
+  stop_trigger_epoch: 50
   seed: 0
   lazy: false
   num_workers: 0
