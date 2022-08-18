@@ -493,6 +493,14 @@ hdf5 = ["h5py"]
 xml = ["lxml"]
 
 [[package]]
+name = "metis"
+version = "0.2a5"
+description = "METIS wrapper using ctypes"
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "more-itertools"
 version = "8.8.0"
 description = "More routines for operating on iterables, beyond itertools"
@@ -1239,7 +1247,7 @@ cupy = []
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.9, <3.10"
-content-hash = "faf5d790fdb983acc146c4289d3947a7df14b7b3f096a74c6ddc25ee79ccb786"
+content-hash = "58ff3e51db36332a05f6e264bff8b1dc325f68e5612c7e1bb6a3f48c49af0e41"
 
 [metadata.files]
 aiohttp = [
@@ -1564,6 +1572,7 @@ meshio = [
     {file = "meshio-3.3.1-py3-none-any.whl", hash = "sha256:237305cabb1c8d72f4c4673ccf8bfd88f5495c04899fe57623339a386de3ad2f"},
     {file = "meshio-3.3.1.tar.gz", hash = "sha256:c00371adfda84efd5557f400159aab4baaacb6abd374aac1ba2cf2d8fddc1862"},
 ]
+metis = []
 more-itertools = [
     {file = "more-itertools-8.8.0.tar.gz", hash = "sha256:83f0308e05477c68f56ea3a888172c78ed5d5b3c282addb67508e7ba6c8f813a"},
     {file = "more_itertools-8.8.0-py3-none-any.whl", hash = "sha256:2cf89ec599962f2ddc4d568a05defc40e0a587fbc10d5989713638864c36be4d"},
