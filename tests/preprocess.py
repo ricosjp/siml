@@ -5,8 +5,10 @@ import random
 import shutil
 
 import femio
-import matplotlib.pyplot as plt
+import networkx as nx
 import numpy as np
+import matplotlib.pyplot as plt
+import metis
 import scipy.sparse as sp
 import siml.prepost as prepost
 import siml.setting as setting
@@ -190,6 +192,47 @@ def conversion_function_heat_time_series(fem_data, raw_directory=None):
         'elemental_conductivity': elemental_conductivity,
         'nodal_conductivity': nodal_conductivity,
         'global_conductivity': global_conductivity})
+
+    # Graph reduction for multigrid
+    output_directory = pathlib.Path(
+        str(raw_directory).replace('raw', 'interim'))
+    nodal_adj = fem_data.calculate_adjacency_matrix_node()
+
+    reduce0to1, reduced_adj1, reduced_nodes1, part1, gx1, gy1, gz1 \
+        = reduce_graph(
+            output_directory, nodal_adj, fem_data.nodes.data, 500, n_hop=2)
+    dict_data.update({
+        'reduce0to1': reduce0to1,
+        'reduced_adj1': reduced_adj1,
+        'reduced_nadj1': prepost.normalize_adjacency_matrix(reduced_adj1),
+        'reduced_gx1': gx1,
+        'reduced_gy1': gy1,
+        'reduced_gz1': gz1,
+    })
+
+    reduce1to2, reduced_adj2, reduced_nodes2, part2, gx2, gy2, gz2 \
+        = reduce_graph(
+            output_directory, reduced_adj1, reduced_nodes1, 50, n_hop=10)
+    dict_data.update({
+        'reduce1to2': reduce1to2,
+        'reduced_adj2': reduced_adj2,
+        'reduced_nadj2': prepost.normalize_adjacency_matrix(reduced_adj2),
+        'reduced_gx2': gx2,
+        'reduced_gy2': gy2,
+        'reduced_gz2': gz2,
+    })
+
+    reduce2to3, reduced_adj3, reduced_nodes3, part3, gx3, gy3, gz3 \
+        = reduce_graph(
+            output_directory, reduced_adj2, reduced_nodes2, 5, n_hop=5)
+    dict_data.update({
+        'reduce2to3': reduce2to3,
+        'reduced_adj3': reduced_adj3,
+        'reduced_nadj3': prepost.normalize_adjacency_matrix(reduced_adj3),
+        'reduced_gx3': gx3,
+        'reduced_gy3': gy3,
+        'reduced_gz3': gz3,
+    })
     return dict_data
 
 
@@ -305,7 +348,91 @@ def conversion_function_heat_boundary(fem_data, raw_directory=None):
     })
 
     dict_data.update(_extract_boundary(fem_data, dict_data))
+
+    # Graph reduction for multigrid
+    output_directory = pathlib.Path(
+        str(raw_directory).replace('raw', 'interim'))
+
+    reduce0to1, reduced_adj1, reduced_nodes1, part1, gx1, gy1, gz1 \
+        = reduce_graph(
+            output_directory, nodal_adj, fem_data.nodes.data, 500, n_hop=2)
+    dict_data.update({
+        'reduce0to1': reduce0to1,
+        'reduced_adj1': reduced_adj1,
+        'reduced_nadj1': prepost.normalize_adjacency_matrix(reduced_adj1),
+        'reduced_gx1': gx1,
+        'reduced_gy1': gy1,
+        'reduced_gz1': gz1,
+    })
+
+    reduce1to2, reduced_adj2, reduced_nodes2, part2, gx2, gy2, gz2 \
+        = reduce_graph(
+            output_directory, reduced_adj1, reduced_nodes1, 50, n_hop=10)
+    dict_data.update({
+        'reduce1to2': reduce1to2,
+        'reduced_adj2': reduced_adj2,
+        'reduced_nadj2': prepost.normalize_adjacency_matrix(reduced_adj2),
+        'reduced_gx2': gx2,
+        'reduced_gy2': gy2,
+        'reduced_gz2': gz2,
+    })
+
+    reduce2to3, reduced_adj3, reduced_nodes3, part3, gx3, gy3, gz3 \
+        = reduce_graph(
+            output_directory, reduced_adj2, reduced_nodes2, 5, n_hop=5)
+    dict_data.update({
+        'reduce2to3': reduce2to3,
+        'reduced_adj3': reduced_adj3,
+        'reduced_nadj3': prepost.normalize_adjacency_matrix(reduced_adj3),
+        'reduced_gx3': gx3,
+        'reduced_gy3': gy3,
+        'reduced_gz3': gz3,
+    })
+
     return dict_data
+
+
+def reduce_graph(output_directory, adj, nodes, n_part, n_hop=1):
+    graph = nx.from_scipy_sparse_matrix(adj)
+    (edgecuts, parts) = metis.part_graph(graph, n_part)
+    reduce = sp.coo_matrix(
+        (
+            np.ones(len(nodes)),
+            (parts, np.arange(len(nodes))),
+        ), dtype=bool)
+    factors = reduce.sum(axis=1)
+
+    reduced_adj = reduce @ adj @ reduce.T
+    for _ in range(n_hop - 1):
+        reduced_adj = reduced_adj + reduced_adj @ reduced_adj
+    reduced_nodes = reduce @ nodes / factors
+    reduced_fem_data = generate_fem_data_from_adjacency(
+        reduced_nodes, reduced_adj)
+    reduced_fem_data.write(
+        'ucd', output_directory / f"reduced_{n_part}.inp", overwrite=True)
+
+    gx, gy, gz = reduced_fem_data \
+        .calculate_spatial_gradient_adjacency_matrices(
+            mode='nodal', order1_only=False, adj=reduced_adj,
+            use_effective_volume=False, moment_matrix=True,
+            consider_volume=False, normals=False)
+
+    return reduce, reduced_adj, reduced_nodes, parts, gx, gy, gz
+
+
+def generate_fem_data_from_adjacency(nodes, adj):
+    coo_adj = adj.tocoo()
+    row = coo_adj.row
+    col = coo_adj.col
+    fem_nodes = femio.FEMAttribute(
+        'NODE', ids=np.arange(len(nodes)) + 1, data=nodes)
+    fem_elements = femio.FEMAttribute(
+        'line',
+        ids=np.arange(len(row)) + 1,
+        data=np.stack([row, col], axis=-1) + 1)
+    fem_data = femio.FEMData(nodes=fem_nodes, elements=fem_elements)
+
+    return fem_data
 
 
 def conversion_function_heat_interaction(fem_data, raw_directory=None):

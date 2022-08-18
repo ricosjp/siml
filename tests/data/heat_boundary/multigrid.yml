@@ -20,7 +20,7 @@ inferer:
   write_simulation_base: tests/data/heat_boundary/raw
   write_simulation_type: 'ucd'
 trainer:
-  output_directory: tests/data/heat_boundary/boundary_isogcn
+  output_directory: tests/data/heat_boundary/multigrid
   inputs:
     rank0:
       - name: nodal_t_0
@@ -62,7 +62,7 @@ trainer:
   batch_size: 1
   n_epoch: 10000
   log_trigger_epoch: 10
-  stop_trigger_epoch: 100
+  stop_trigger_epoch: 10
   seed: 0
   lazy: false
   num_workers: 0

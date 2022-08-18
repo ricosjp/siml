@@ -275,3 +275,34 @@ class TestGroups(unittest.TestCase):
             fem_data.nodal_data.get_attribute_data('input_ts_temperature_1'),
             fem_data.nodal_data.get_attribute_data('answer_ts_temperature_0'),
         )
+
+    def test_heat_multigrid(self):
+        ref_main_setting = setting.MainSetting.read_settings_yaml(Path(
+            'tests/data/heat_boundary/nl_rep10.yml'))
+        ref_main_setting.trainer.gpu_id = GPU_ID
+        ref_tr = trainer.Trainer(ref_main_setting)
+        if ref_tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(ref_tr.setting.trainer.output_directory)
+        ref_loss = ref_tr.train()
+        np.testing.assert_array_less(ref_loss, .1)
+
+        main_setting = setting.MainSetting.read_settings_yaml(Path(
+            'tests/data/heat_boundary/multigrid.yml'))
+        main_setting.trainer.gpu_id = GPU_ID
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, .1)
+        self.assertLess(loss, ref_loss)
+
+        ir = inferer.Inferer(
+            main_setting,
+            converter_parameters_pkl=main_setting.data.preprocessed_root
+            / 'preprocessors.pkl')
+        ir.infer(
+            model=main_setting.trainer.output_directory,
+            output_directory_base=tr.setting.trainer.output_directory,
+            data_directories=Path(
+                'tests/data/heat_boundary/preprocessed/cylinder/clscale0.3/'
+                'steepness1.0_rep0'))
