@@ -492,11 +492,11 @@ class TestTrainer(unittest.TestCase):
                 / 'train/tet2_3_modulusx0.9000/elemental_strain.npy.enc',
                 allow_pickle=True)
 
-        with self.assertRaises((pickle.UnpicklingError, OSError)):
+        with self.assertRaises(ValueError):
             np.load(
                 main_setting.data.preprocessed[0]
                 / 'train/tet2_3_modulusx0.9000/elemental_strain.npy.enc')
-        with self.assertRaises(OSError):
+        with self.assertRaises((pickle.UnpicklingError, OSError)):
             np.load(
                 main_setting.data.preprocessed[0]
                 / 'train/tet2_3_modulusx0.9000/elemental_strain.npy.enc',
