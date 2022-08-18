@@ -9,6 +9,7 @@ models
 *_models/*
 docker/pyproject.toml
 examples/00_basic_data
+docker/*
 
 # Documents
 *.rst

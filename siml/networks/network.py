@@ -103,7 +103,8 @@ class Network(torch.nn.Module):
             block_type = block_setting.type
             if block_type not in self.dict_block_class:
                 raise ValueError(
-                    f"{block_type} invalid for: {block_setting}")
+                    f"{block_type} invalid for: {block_setting}\n"
+                    f"Not in: {self.dict_block_class}")
             block_class = self.dict_block_class[block_type]
 
             input_node, output_node = block_class.get_n_nodes(

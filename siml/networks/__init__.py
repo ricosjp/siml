@@ -26,6 +26,7 @@ from . import reducer
 from . import reshape
 from . import set_transformer
 from . import share
+from . import spmm
 from . import symmat2array
 from . import tcn
 from . import tensor_operations
@@ -54,6 +55,7 @@ blocks = [
     reshape.TimeSeriesToFeatures,
     reshape.FeaturesToTimeSeries,
     reshape.Accessor,
+    spmm.SpMM,
     symmat2array.Symmat2Array,
     tensor_operations.TensorProduct,
     time_norm.TimeNorm,

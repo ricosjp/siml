@@ -35,12 +35,11 @@ class ClusterGCN(abstract_pyg_gcn.AbstractPyGGCN):
 
     def _forward_single_core(self, x, subchain_index, support):
         edge_index = support._indices()
-        size = support.size()
         h = x
         for cluster_gcn, dropout_ratio, activation in zip(
                 self.cluster_gcns[subchain_index], self.dropout_ratios,
                 self.activations):
-            h = cluster_gcn(h, edge_index, size=size)
+            h = cluster_gcn(h, edge_index)
             h = torch.nn.functional.dropout(
                 h, p=dropout_ratio, training=self.training)
             h = activation(h)

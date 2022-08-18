@@ -33,7 +33,8 @@ stages:
 
 preprocess:
   stage: preprocess
-  script: python3.9 tests/preprocess.py
+  script:
+    - python3.9 tests/preprocess.py
   artifacts:
     paths:
       - tests/data
@@ -126,9 +127,9 @@ test_group:
   extends: .test
   script:
     - python3.9 -m pytest tests/test_groups.py --capture=no
-  # tags:
-  #   - avx
-  #   - gpu
+  tags:
+    - avx
+    - gpu
 
 pages:
   stage: deploy
