@@ -277,7 +277,7 @@ class TestGroups(unittest.TestCase):
 
     def test_heat_multigrid(self):
         ref_main_setting = setting.MainSetting.read_settings_yaml(Path(
-            'tests/data/heat_boundary/nl_rep10.yml'))
+            'tests/data/heat_boundary/nl_rep20.yml'))
         ref_main_setting.trainer.gpu_id = GPU_ID
         ref_tr = trainer.Trainer(ref_main_setting)
         if ref_tr.setting.trainer.output_directory.exists():
