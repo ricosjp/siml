@@ -34,6 +34,37 @@ preprocess:
     method: identity
   inc_int:
     method: identity
+
+  reduce0to1: identity
+  reduced_adj1: identity
+  reduced_nadj1: identity
+  reduced_gx1:
+    same_as: nodal_grad_x_1
+  reduced_gy1:
+    same_as: nodal_grad_x_1
+  reduced_gz1:
+    same_as: nodal_grad_x_1
+
+  reduce1to2: identity
+  reduced_adj2: identity
+  reduced_nadj2: identity
+  reduced_gx2:
+    same_as: nodal_grad_x_1
+  reduced_gy2:
+    same_as: nodal_grad_x_1
+  reduced_gz2:
+    same_as: nodal_grad_x_1
+
+  reduce2to3: identity
+  reduced_adj3: identity
+  reduced_nadj3: identity
+  reduced_gx3:
+    same_as: nodal_grad_x_1
+  reduced_gy3:
+    same_as: nodal_grad_x_1
+  reduced_gz3:
+    same_as: nodal_grad_x_1
+
   dirichlet:
     same_as: nodal_t_0
   padded_dirichlet:
