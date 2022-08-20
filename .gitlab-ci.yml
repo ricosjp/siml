@@ -150,6 +150,7 @@ pages:
   only:
     - master
     - develop
+    - fix_sphinx
 
 
 .deploy:wheel:
