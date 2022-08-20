@@ -38,7 +38,7 @@ preprocess:
   artifacts:
     paths:
       - tests/data
-    expire_in: 60min
+    expire_in: 180min
 
 autopep8:
   stage: preprocess
@@ -150,6 +150,7 @@ pages:
   only:
     - master
     - develop
+    - fix_sphinx
 
 
 .deploy:wheel:
