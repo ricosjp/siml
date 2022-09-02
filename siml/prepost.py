@@ -10,6 +10,7 @@ from operator import or_
 import os
 from pathlib import Path
 import pickle
+from typing import Dict
 
 import femio
 import matplotlib.pyplot as plt
@@ -37,7 +38,7 @@ class RawConverter():
             conversion_function=None, filter_function=None, load_function=None,
             save_function=None,
             force_renew=False, read_npy=False, write_ucd=True, read_res=True,
-            max_process=None, to_first_order=False):
+            max_process=None, to_first_order=False, save_dtype_dict=None):
         """Initialize converter of raw data and save them in interim directory.
 
         Parameters
@@ -90,6 +91,7 @@ class RawConverter():
             util.determine_max_process(max_process))
         self.setting.conversion.output_base_directory \
             = self.setting.data.interim_root
+        self.save_dtype_dict = save_dtype_dict
 
     def convert(self, raw_directory=None):
         """Perform conversion.
@@ -1228,7 +1230,7 @@ def _extract_single_variable(
 
 def save_dict_data(
         output_directory, dict_data, *, dtype=np.float32, encrypt_key=None,
-        finished_file='converted'):
+        finished_file='converted', save_dtype_dict: Dict = None):
     """Save dict_data.
 
     Parameters
@@ -1247,10 +1249,25 @@ def save_dict_data(
         None
     """
     for key, value in dict_data.items():
+        save_dtype = _get_save_dtype(key,
+                                     default_dtype=dtype,
+                                     save_dtype_dict=save_dtype_dict)
         util.save_variable(
-            output_directory, key, value, dtype=dtype, encrypt_key=encrypt_key)
+            output_directory,
+            key, value, dtype=save_dtype, encrypt_key=encrypt_key)
     (output_directory / finished_file).touch()
     return
+
+
+def _get_save_dtype(variable_name: str,
+                    default_dtype: np.dtype,
+                    save_dtype_dict: Dict = None):
+    if save_dtype_dict is None:
+        return default_dtype
+    if variable_name in save_dtype_dict:
+        return save_dtype_dict[variable_name]
+    else:
+        return default_dtype
 
 
 def determine_output_directory(
