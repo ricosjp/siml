@@ -4,6 +4,8 @@ import scipy.sparse as sp
 import torch
 
 from . import abstract_gcn
+from . import spmm
+from .. import setting
 
 
 class MessagePassing(abstract_gcn.AbstractGCN):
@@ -30,6 +32,9 @@ class MessagePassing(abstract_gcn.AbstractGCN):
         self.node_parameters, _ = self._create_subchains(
             block_setting, block_setting.nodes, square_weight=True,
             start_index=1)
+        self.spmm = spmm.SpMM(setting.BlockSetting(optional={
+            'mode': 'mean', 'transpose': True}))
+        return
 
     def make_reduce_matrix(self, nadj, *, mean=False):
         col = nadj._indices()[1].cpu().numpy()
@@ -43,11 +48,12 @@ class MessagePassing(abstract_gcn.AbstractGCN):
             normalized_rm = rm.multiply(1. / degrees)
 
             reduce_matrix = torch.sparse_coo_tensor(
-                torch.LongTensor([row, col]),
+                torch.LongTensor(np.array([row, col])),
                 torch.FloatTensor(normalized_rm.data), shape)
         else:
             reduce_matrix = torch.sparse_coo_tensor(
-                torch.LongTensor([row, col]), torch.FloatTensor(data), shape)
+                torch.LongTensor(np.array([row, col])),
+                torch.FloatTensor(data), shape)
 
         return reduce_matrix.to(nadj.device)
 
@@ -67,7 +73,7 @@ class MessagePassing(abstract_gcn.AbstractGCN):
             Output of the NN.
         """
         h_node = x
-        reduce_matrix = self.make_reduce_matrix(support, mean=True)
+        reduce_matrix = self.make_reduce_matrix(support)
         row = support._indices()[0].cpu().numpy()
         col = support._indices()[1].cpu().numpy()
         for i in range(len(self.edge_parameters[subchain_index])):
@@ -80,7 +86,7 @@ class MessagePassing(abstract_gcn.AbstractGCN):
             edge_emb = self.activations[i](
                 self.edge_parameters[subchain_index][i](merged))
 
-            h_edge = torch.sparse.mm(reduce_matrix.transpose(0, 1), edge_emb)
+            h_edge = self.spmm(edge_emb, supports=[reduce_matrix])
             h_node = self.activations[i](
                 self.node_parameters[subchain_index][i](h_edge))
 
