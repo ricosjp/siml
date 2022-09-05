@@ -1,0 +1,26 @@
+data:
+  raw: tests/data/heat_steady/raw
+  interim: tests/data/heat_steady/interim
+  preprocessed: tests/data/heat_steady/preprocessed
+  inferred: tests/data/heat_steady/inferred
+  train:
+    - tests/data/heat_steady/preprocessed
+  validation:
+    - tests/data/heat_steady/preprocessed
+preprocess:
+  nodal_adj: identity
+  nodal_nadj:
+    method: identity
+  nodal_grad_x_1:
+    method: isoam_scale
+    other_components:
+      - nodal_grad_y_1
+      - nodal_grad_z_1
+  nodal_grad_y_1:
+    same_as: nodal_grad_x_1
+  nodal_grad_z_1:
+    same_as: nodal_grad_x_1
+
+  init_phi: identity
+  phi: identity
+  dirichlet_phi: identity
