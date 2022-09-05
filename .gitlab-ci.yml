@@ -40,6 +40,15 @@ preprocess:
       - tests/data
     expire_in: 180min
 
+generate_heat_steady:
+  stage: preprocess
+  script:
+    - python3.9 tests/data/heat_steady/generate_data.py
+  artifacts:
+    paths:
+      - tests/data/heat_steady
+    expire_in: 180min
+
 autopep8:
   stage: preprocess
   script:
