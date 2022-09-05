@@ -258,7 +258,8 @@ class RawConverter():
             save_dict_data(
                 output_directory, dict_data,
                 encrypt_key=self.setting.data.encrypt_key,
-                finished_file=self.setting.conversion.finished_file)
+                finished_file=self.setting.conversion.finished_file,
+                save_dtype_dict=self.save_dtype_dict)
 
         return
 
