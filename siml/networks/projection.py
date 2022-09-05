@@ -1,4 +1,5 @@
 import torch
+from typing import Callable
 from . import siml_module
 
 
@@ -45,16 +46,27 @@ class Projection(siml_module.SimlModule):
                          no_parameter=True,
                          create_activations=False)
 
-        if 'operator' in block_setting.optional:
-            str_op = block_setting.optional['operator']
-            if str_op == 'mean':
-                self.op = torch.mean
-            elif str_op == 'sum':
-                self.op = torch.sum
-            else:
-                raise ValueError(f"Unknown operator for projection: {str_op}")
+        self.op = self._select_operator(block_setting)
+        self.time_series_input = self._is_time_series_input(block_setting)
+
+    def _select_operator(self, block_setting) -> Callable:
+        if 'operator' not in block_setting.optional:
+            # default is mean function
+            return torch.mean
+
+        str_op = block_setting.optional['operator']
+        if str_op == 'mean':
+            return torch.mean
+        elif str_op == 'sum':
+            return torch.sum
         else:
-            self.op = torch.mean
+            raise ValueError(f"Unknown operator for projection: {str_op}")
+
+    def _is_time_series_input(self, block_setting) -> bool:
+        if 'time_series_input' not in block_setting.optional:
+            return False
+
+        return block_setting.optional['time_series_input']
 
     def forward(self,
                 *xs,
@@ -74,8 +86,19 @@ class Projection(siml_module.SimlModule):
         for flag in range(1, max_n + 1):
             filter_to = (projection == int(-1) * flag)
             fillter_from = (projection == flag)
-            v = self.op(x[fillter_from, ...], axis=0)
-            x[filter_to, ...] = v
+
+            if not self.time_series_input:
+                # stedy state tensor
+                v = self.op(x[fillter_from, ...], axis=0)
+                x[filter_to, ...] = v
+            else:
+                # time series tensor
+                v = self.op(x[:, fillter_from, ...], axis=1)
+                n_to = torch.sum(filter_to).item()
+                val_size = v.shape[-1]
+                print(v)
+                x[:, filter_to, ...] = \
+                    v.repeat(1, n_to).view(-1, n_to, val_size)
 
         return x
 
