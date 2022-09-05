@@ -43,7 +43,7 @@ preprocess:
 generate_heat_steady:
   stage: preprocess
   script:
-    - python3.9 tests/data/heat_steady/generate_data.py
+    - python3.9 tests/data/heat_steady/generate_data.py tests/data/heat_steady
   artifacts:
     paths:
       - tests/data/heat_steady

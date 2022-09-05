@@ -22,7 +22,7 @@ def main():
         default=10,
         help='The number of training data samples [10]')
     parser.add_argument(
-        '-n',
+        '-v',
         '--n-validation',
         type=int,
         default=10,
