@@ -16,6 +16,18 @@ def main():
         type=pathlib.Path,
         help='Output directory path')
     parser.add_argument(
+        '-n',
+        '--n-train',
+        type=int,
+        default=10,
+        help='The number of training data samples [10]')
+    parser.add_argument(
+        '-n',
+        '--n-validation',
+        type=int,
+        default=10,
+        help='The number of validation data samples [10]')
+    parser.add_argument(
         '-j',
         '--min-n_element',
         type=int,
@@ -52,12 +64,15 @@ class DataGenerator:
 
     def __init__(
             self, output_directory, *,
-            edge_length=.1, n_repetition=10, seed=0,
+            edge_length=.1,
+            n_train=100, n_validation=10,
+            seed=0,
             min_n_element=10, max_n_element=100,
             polynomial_degree=3, max_process=None):
         self.output_directory = output_directory / 'interim'
         self.edge_length = edge_length
-        self.n_repetition = n_repetition
+        self.n_train = n_train
+        self.n_validation = n_validation
         self.seed = seed
         self.min_n_element = min_n_element
         self.max_n_element = max_n_element
@@ -73,8 +88,14 @@ class DataGenerator:
         """Create grid graph data.
         """
 
+        self.mode = 'train'
         with multi.Pool(self.max_process) as pool:
-            pool.map(self._generate_one_data, list(range(self.n_repetition)))
+            pool.map(self._generate_one_data, list(range(self.n_train)))
+
+        self.mode = 'validation'
+        with multi.Pool(self.max_process) as pool:
+            pool.map(self._generate_one_data, list(range(self.n_validation)))
+
         return
 
     def preprocess(self):
@@ -101,7 +122,7 @@ class DataGenerator:
         target_dict_data, fem_data = self.add_data(fem_data)
         dict_data = self.extract_feature(fem_data, target_dict_data)
 
-        output_directory = self.output_directory / str(i_data)
+        output_directory = self.output_directory / self.mode / str(i_data)
         self.save(output_directory, dict_data, fem_data)
         return
 

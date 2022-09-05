@@ -324,7 +324,7 @@ class TestGroups(unittest.TestCase):
         if tr.setting.trainer.output_directory.exists():
             shutil.rmtree(tr.setting.trainer.output_directory)
         loss = tr.train()
-        np.testing.assert_array_less(loss, 1.)
+        np.testing.assert_array_less(loss, 1.e-2)
 
         ir = inferer.Inferer(
             main_setting,
@@ -334,4 +334,4 @@ class TestGroups(unittest.TestCase):
             model=main_setting.trainer.output_directory,
             output_directory_base=tr.setting.trainer.output_directory,
             data_directories=Path(
-                'tests/data/heat_steady/preprocessed/9'))
+                'tests/data/heat_steady/preprocessed/validation'))

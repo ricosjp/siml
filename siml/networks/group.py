@@ -300,10 +300,10 @@ class Group(siml_module.SimlModule):
                 operator, keep_empty_data=False)[0]
 
             if self.steady:
-                # R(u) = - D u dt
+                # R(u) = - D[u] dt
                 masked_nabla_f = self.broadcast(-1, masked_operator, torch.mul)
             else:
-                # R(u) = u - u(t) - D u dt
+                # R(u) = u - u(t) - D[u] dt
                 masked_nabla_f = self.operate(self.operate(
                     masked_h, masked_x, torch.sub), masked_operator, torch.sub)
 
