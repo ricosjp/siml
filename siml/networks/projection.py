@@ -84,16 +84,16 @@ class Projection(siml_module.SimlModule):
             ValueError('projection marker is not found.')
 
         for flag in range(1, max_n + 1):
-            filter_to = (projection == int(-1) * flag)
-            fillter_from = (projection == flag)
+            filter_from = (projection == int(-1) * flag)
+            filter_to = (projection == flag)
 
             if not self.time_series_input:
                 # stedy state tensor
-                v = self.op(x[fillter_from, ...], axis=0)
+                v = self.op(x[filter_from, ...], axis=0)
                 x[filter_to, ...] = v
             else:
                 # time series tensor
-                v = self.op(x[:, fillter_from, ...], axis=1)
+                v = self.op(x[:, filter_from, ...], axis=1)
                 n_to = torch.sum(filter_to).item()
                 val_size = v.shape[-1]
                 print(v)

@@ -50,7 +50,7 @@ def setup_input_tensor():
 
     # Suppose shape of input tensor is (n_vertex, dim)
     # ex. scalar values
-    flag = torch.tensor([1, 1, 1, -1, -1, 0, 0])
+    flag = torch.tensor([-1, -1, -1, 1, 1, 0, 0])
     value_tensor = torch.tensor([3, 4, 2, 5, 5, 6, 6], dtype=float)
     mean_tensor = torch.tensor([3, 4, 2, 3, 3, 6, 6], dtype=float)
     sum_tensor = torch.tensor([3, 4, 2, 9, 9, 6, 6], dtype=float)
@@ -60,7 +60,7 @@ def setup_input_tensor():
 
     # Suppose shape of input tensor is (n_vertex, dim, dim)
     # ex. U (Velocity)
-    flag = torch.tensor([1, 1, 1, -1, -1, 0, 0])
+    flag = torch.tensor([-1, -1, -1, 1, 1, 0, 0])
     value_tensor = torch.tensor([[1, 1, 1], [1, 3, 3], [1, 2, 5],
                                  [3, 4, 5], [5, 4, 2], [2, 2, 2],
                                  [3, 3, 3]], dtype=float)
@@ -82,7 +82,7 @@ def setup_time_series_input_scalar_tensor():
     inputs = []
     # Suppose shape of input tensor is (n_vertex, dim)
     # ex. scalar values
-    flag = torch.tensor([1, 1, 1, -1, -1, 0, 0]).unsqueeze(-1)
+    flag = torch.tensor([-1, -1, -1, 1, 1, 0, 0]).unsqueeze(-1)
     value_tensor = torch.tensor([[3, 4, 2, 5, 5, 6, 6],
                                  [4, 4, 7, 5, 8, 9, 9]],
                                 dtype=float).unsqueeze(-1)
@@ -96,7 +96,7 @@ def setup_time_series_input_scalar_tensor():
 
     # Suppose shape of input tensor is (n_vertex, dim, dim)
     # ex. U (Velocity)
-    flag = torch.tensor([1, 1, 1, -1, -1, 0, 0])
+    flag = torch.tensor([-1, -1, -1, 1, 1, 0, 0])
     value_tensor = torch.tensor([[[1, 1, 1], [1, 3, 3], [1, 2, 5],
                                  [3, 4, 5], [5, 4, 2], [2, 2, 2],
                                  [3, 3, 3]],
