@@ -38,7 +38,7 @@ class RawConverter():
             conversion_function=None, filter_function=None, load_function=None,
             save_function=None,
             force_renew=False, read_npy=False, write_ucd=True, read_res=True,
-            max_process=None, to_first_order=False, save_dtype_dict=None):
+            max_process=None, to_first_order=False):
         """Initialize converter of raw data and save them in interim directory.
 
         Parameters
@@ -75,7 +75,7 @@ class RawConverter():
         max_process: int, optional
             The maximum number of processes to perform conversion.
         """
-        self.setting = main_setting
+        self.setting: setting.MainSetting = main_setting
         self.recursive = recursive
         self.conversion_function = conversion_function
         self.filter_function = filter_function
@@ -91,7 +91,6 @@ class RawConverter():
             util.determine_max_process(max_process))
         self.setting.conversion.output_base_directory \
             = self.setting.data.interim_root
-        self.save_dtype_dict = save_dtype_dict
 
     def convert(self, raw_directory=None):
         """Perform conversion.
@@ -259,7 +258,7 @@ class RawConverter():
                 output_directory, dict_data,
                 encrypt_key=self.setting.data.encrypt_key,
                 finished_file=self.setting.conversion.finished_file,
-                save_dtype_dict=self.save_dtype_dict)
+                save_dtype_dict=self.setting.misc.get("save_dtype_dict"))
 
         return
 
