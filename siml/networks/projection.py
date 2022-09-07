@@ -28,7 +28,7 @@ class Projection(siml_module.SimlModule):
                           dict_block_setting,
                           input_length,
                           **kwargs):
-        return dict_block_setting[predecessors[0]].nodes[-1]
+        return dict_block_setting[predecessors[1]].nodes[-1]
 
     @classmethod
     def _get_n_output_node(cls,
