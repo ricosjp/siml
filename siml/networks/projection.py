@@ -96,7 +96,6 @@ class Projection(siml_module.SimlModule):
                 v = self.op(x[:, filter_from, ...], axis=1)
                 n_to = torch.sum(filter_to).item()
                 val_size = v.shape[-1]
-                print(v)
                 x[:, filter_to, ...] = \
                     v.repeat(1, n_to).view(-1, n_to, val_size)
 
