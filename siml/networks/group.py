@@ -103,6 +103,8 @@ class Group(siml_module.SimlModule):
             'learn_alpha', False)
         self.abs_alpha = self.group_setting.optional.get(
             'abs_alpha', True)
+        self.steady = self.group_setting.optional.get(
+            'steady', False)
 
         if self.abs_alpha:
             self.alpha_filter = torch.abs
@@ -297,9 +299,13 @@ class Group(siml_module.SimlModule):
             masked_operator = self.mask_function(
                 operator, keep_empty_data=False)[0]
 
-            # R(u) = u - u(t) - D u dt
-            masked_nabla_f = self.operate(self.operate(
-                masked_h, masked_x, torch.sub), masked_operator, torch.sub)
+            if self.steady:
+                # R(u) = - D[u] dt
+                masked_nabla_f = self.broadcast(-1, masked_operator, torch.mul)
+            else:
+                # R(u) = u - u(t) - D[u] dt
+                masked_nabla_f = self.operate(self.operate(
+                    masked_h, masked_x, torch.sub), masked_operator, torch.sub)
 
             alphas = self._calculate_alphas(
                 masked_h, masked_h_previous,
@@ -437,6 +443,12 @@ class Group(siml_module.SimlModule):
                                     '...,...->', delta_h, delta_nabla_f)
                                 + 1.e-5)
         return self.alpha_filter(alpha)
+
+    def broadcast(self, a, x, operator):
+        if isinstance(x, list):
+            return [self.broadcast(a, x_, operator) for x_ in x]
+        else:
+            return operator(a, x)
 
     def operate(self, x, y, operator):
         if isinstance(x, list):
