@@ -36,7 +36,11 @@ class Inferer(siml_manager.SimlManager):
         return cls(main_setting, **kwargs)
 
     @classmethod
-    def from_model_directory(cls, model_directory, decrypt_key=None, **kwargs):
+    def from_model_directory(cls,
+                             model_directory,
+                             decrypt_key=None,
+                             infer_epoch: int = None,
+                             **kwargs):
         """Load model data from a deployed directory.
 
         Parameters
@@ -46,6 +50,8 @@ class Inferer(siml_manager.SimlManager):
         decrypt_key: bytes, optional
             Key to decrypt model data. If not fed, and the data is encrypted,
             ValueError is raised.
+        infer_epoch: int, optional
+            If fed, model which corresponds to infer_epoch is used.
 
         Returns
         --------
@@ -71,7 +77,11 @@ class Inferer(siml_manager.SimlManager):
         elif (model_directory / 'model.enc').is_file():
             obj.setting.inferer.model = model_directory / 'model.enc'
         else:
-            obj.setting.inferer.model = obj._select_snapshot(model_directory)
+            method = 'best' if infer_epoch is None else 'specified'
+            obj.setting.inferer.model = \
+                obj._select_snapshot(model_directory,
+                                     method=method,
+                                     infer_epoch=infer_epoch)
 
         # Prefer pkl file under model_directory over setting one
         if (model_directory / 'preprocessors.pkl').is_file():

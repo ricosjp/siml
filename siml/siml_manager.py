@@ -230,7 +230,7 @@ class SimlManager():
         print(f"{snapshot} loaded as a pretrain model.")
         return
 
-    def _select_snapshot(self, path, method='best'):
+    def _select_snapshot(self, path, method='best', infer_epoch: int = None):
         if not path.exists():
             raise ValueError(f"{path} doesn't exist")
 
@@ -263,6 +263,8 @@ class SimlManager():
                 best_epoch = df['epoch'].iloc[
                     df['train_loss'].idxmin()]
                 return path / f"snapshot_epoch_{best_epoch}.{suffix}"
+            elif method == "specified":
+                return path / f"snapshot_epoch_{infer_epoch}.{suffix}"
             else:
                 raise ValueError(f"Unknown snapshot choise method: {method}")
 
