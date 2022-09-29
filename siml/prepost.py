@@ -374,6 +374,26 @@ def add_difference(
     return fem_data
 
 
+def add_abs_difference(
+        fem_data, dict_data, reference_dict_data, prefix='difference_abs'):
+    if reference_dict_data is None:
+        return fem_data
+    intersections = set(
+        dict_data.keys()).intersection(reference_dict_data.keys())
+    if len(intersections) == 0:
+        return fem_data
+    
+    difference_dict_data = {
+        intersection:
+        np.abs(np.reshape(
+            dict_data[intersection], reference_dict_data[intersection].shape)
+        - reference_dict_data[intersection])
+        for intersection in intersections}
+    fem_data = update_fem_data(fem_data, difference_dict_data, prefix=prefix)
+
+    return fem_data
+
+
 def concatenate_preprocessed_data(
         preprocessed_base_directories, output_directory_base, variable_names,
         *, ratios=(.9, .05, .05), overwrite=False):
@@ -1117,6 +1137,8 @@ class Converter:
         fem_data = update_fem_data(fem_data, dict_data_y, prefix='predicted_')
         fem_data = add_difference(
             fem_data, dict_data_y, dict_data_answer, prefix='difference_')
+        fem_data = add_abs_difference(
+            fem_data, dict_data_y, dict_data_answer, prefix='difference_abs_')
         if data_addition_function is not None:
             fem_data = data_addition_function(fem_data, write_simulation_base)
 
