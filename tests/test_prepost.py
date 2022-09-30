@@ -501,3 +501,26 @@ class TestPrepost(unittest.TestCase):
         self.assertTrue(Path(
             'tests/data/list/preprocessed/data/tet2_4_modulusx0.9000'
         ).exists())
+
+    def test_save_dtype_is_applied(self):
+        data_setting = setting.DataSetting(
+            raw=Path('tests/data/csv_prepost/raw'),
+            interim=Path('tests/data/csv_prepost/interim'))
+        conversion_setting = setting.ConversionSetting(
+            required_file_names=['*.csv'], skip_femio=True)
+
+        main_setting = setting.MainSetting(
+            data=data_setting, conversion=conversion_setting,
+            misc={"save_dtype_dict": {"a": 'int32'}})
+
+        shutil.rmtree(data_setting.interim_root, ignore_errors=True)
+        shutil.rmtree(data_setting.preprocessed_root, ignore_errors=True)
+
+        rc = pre.RawConverter(
+            main_setting, recursive=True, load_function=load_function)
+        rc.convert()
+
+        interim_directory = data_setting.interim_root / 'train/1'
+        interim_data = np.load(interim_directory / 'a.npy')
+
+        assert interim_data.dtype == np.int32

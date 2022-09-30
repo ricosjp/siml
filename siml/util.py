@@ -7,6 +7,7 @@ from pathlib import Path
 import re
 import shutil
 import subprocess
+import pickle
 
 from Cryptodome.Cipher import AES
 
@@ -470,7 +471,7 @@ class PreprocessConverter():
                 setattr(self.converter, key, value)
         return
 
-    def _init_with_str(self, preprocess_method):
+    def _init_with_str(self, preprocess_method: str):
         if preprocess_method == 'identity':
             self.converter = Identity()
         elif preprocess_method == 'standardize':
@@ -492,6 +493,9 @@ class PreprocessConverter():
             self.converter = preprocessing.MinMaxScaler()
         elif preprocess_method == 'max_abs':
             self.converter = MaxAbsScaler(power=self.power)
+        elif preprocess_method.startswith('user_defined'):
+            pkl_path = preprocess_method.split("?Path=")[1]
+            self.converter = UserDefinedScalar(pkl_path)
         else:
             raise ValueError(
                 f"Unknown preprocessing method: {preprocess_method}")
@@ -812,6 +816,29 @@ class Identity(TransformerMixin, BaseEstimator):
 
     def inverse_transform(self, data):
         return data
+
+
+class UserDefinedScalar(TransformerMixin, BaseEstimator):
+
+    def __init__(self, pkl_path: Path):
+        self.scalar = self._load_pkl(pkl_path)
+        return
+
+    def _load_pkl(self, pkl_path: Path):
+        with open(pkl_path, 'rb') as fr:
+            scalar = pickle.load(fr)
+        return scalar
+
+    def partial_fit(self, data):
+        return
+
+    def transform(self, data):
+        out = self.scalar.transform(data)
+        return out
+
+    def inverse_transform(self, data):
+        inverse_out = self.scalar.inverse_transform(data)
+        return inverse_out
 
 
 def get_top_directory():

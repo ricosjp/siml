@@ -32,6 +32,8 @@ from . import tcn
 from . import tensor_operations
 from . import time_norm
 from . import translator
+from . import projection
+from . import threshold
 
 
 # Add block information
@@ -60,6 +62,8 @@ blocks = [
     tensor_operations.TensorProduct,
     time_norm.TimeNorm,
     translator.Translator,
+    projection.Projection,
+    threshold.Threshold,
 
     # Layers with weights
     deepsets.DeepSets,
