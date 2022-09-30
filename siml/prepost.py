@@ -382,12 +382,14 @@ def add_abs_difference(
         dict_data.keys()).intersection(reference_dict_data.keys())
     if len(intersections) == 0:
         return fem_data
-    
+
     difference_dict_data = {
         intersection:
-        np.abs(np.reshape(
-            dict_data[intersection], reference_dict_data[intersection].shape)
-        - reference_dict_data[intersection])
+        np.abs(
+            np.reshape(
+                dict_data[intersection],
+                reference_dict_data[intersection].shape)
+            - reference_dict_data[intersection])
         for intersection in intersections}
     fem_data = update_fem_data(fem_data, difference_dict_data, prefix=prefix)
 
