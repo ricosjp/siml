@@ -22,7 +22,9 @@ class Threshold(siml_module.SimlModule):
     DEFALUT_THRESHOLD = 0.0
 
     def __init__(self, block_setting):
-        super().__init__(block_setting, create_activations=False)
+        super().__init__(block_setting,
+                         create_activations=False,
+                         no_parameter=True)
         self.threshold = self._select_threshold(block_setting)
         self.value = self._select_value(block_setting)
 
