@@ -313,7 +313,7 @@ def update_fem_data(
                         f"{variable_name}_{i}": reshape_data_if_needed(v)
                         for i, v in enumerate(value)}
                 fem_data.elemental_data.update_data(
-                    fem_data.nodes.ids, dict_data_to_update,
+                    fem_data.elements.ids, dict_data_to_update,
                     allow_overwrite=allow_overwrite)
             else:
                 print(f"{variable_name} is skipped to include in fem_data")
