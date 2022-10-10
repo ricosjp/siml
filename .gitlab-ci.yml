@@ -49,6 +49,15 @@ generate_heat_steady:
       - tests/data/heat_steady
     expire_in: 180min
 
+generate_advection:
+  stage: preprocess
+  script:
+    - python3.9 tests/data/advection/generate_data.py tests/data/advection
+  artifacts:
+    paths:
+      - tests/data/advection
+    expire_in: 180min
+
 autopep8:
   stage: preprocess
   script:

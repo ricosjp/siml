@@ -289,6 +289,8 @@ class AbstractEquivariantGNN(abstract_gcn.AbstractGCN):
             return self._tensor_product
         elif str_propagation == 'rotation':
             return self._rotation
+        elif str_propagation == 'spread':
+            return self._spread
         else:
             raise ValueError(
                 f"Unexpected propagation method: {str_propagation}")

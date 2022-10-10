@@ -9,6 +9,7 @@ from . import array2diagmat
 from . import array2symmat
 from . import boundary
 from . import deepsets
+from . import dggnn
 from . import gcn
 from . import group
 from . import id_mlp
@@ -63,6 +64,7 @@ blocks = [
 
     # Layers with weights
     deepsets.DeepSets,
+    dggnn.DGGNN,
     gcn.GCN,
     group.Group,
     id_mlp.IdMLP,
