@@ -10,6 +10,7 @@ from operator import or_
 import os
 from pathlib import Path
 import pickle
+from typing import Dict
 
 import femio
 import matplotlib.pyplot as plt
@@ -74,7 +75,7 @@ class RawConverter():
         max_process: int, optional
             The maximum number of processes to perform conversion.
         """
-        self.setting = main_setting
+        self.setting: setting.MainSetting = main_setting
         self.recursive = recursive
         self.conversion_function = conversion_function
         self.filter_function = filter_function
@@ -256,7 +257,8 @@ class RawConverter():
             save_dict_data(
                 output_directory, dict_data,
                 encrypt_key=self.setting.data.encrypt_key,
-                finished_file=self.setting.conversion.finished_file)
+                finished_file=self.setting.conversion.finished_file,
+                save_dtype_dict=self.setting.misc.get("save_dtype_dict"))
 
         return
 
@@ -366,6 +368,28 @@ def add_difference(
         np.reshape(
             dict_data[intersection], reference_dict_data[intersection].shape)
         - reference_dict_data[intersection]
+        for intersection in intersections}
+    fem_data = update_fem_data(fem_data, difference_dict_data, prefix=prefix)
+
+    return fem_data
+
+
+def add_abs_difference(
+        fem_data, dict_data, reference_dict_data, prefix='difference_abs'):
+    if reference_dict_data is None:
+        return fem_data
+    intersections = set(
+        dict_data.keys()).intersection(reference_dict_data.keys())
+    if len(intersections) == 0:
+        return fem_data
+
+    difference_dict_data = {
+        intersection:
+        np.abs(
+            np.reshape(
+                dict_data[intersection],
+                reference_dict_data[intersection].shape)
+            - reference_dict_data[intersection])
         for intersection in intersections}
     fem_data = update_fem_data(fem_data, difference_dict_data, prefix=prefix)
 
@@ -1115,6 +1139,8 @@ class Converter:
         fem_data = update_fem_data(fem_data, dict_data_y, prefix='predicted_')
         fem_data = add_difference(
             fem_data, dict_data_y, dict_data_answer, prefix='difference_')
+        fem_data = add_abs_difference(
+            fem_data, dict_data_y, dict_data_answer, prefix='difference_abs_')
         if data_addition_function is not None:
             fem_data = data_addition_function(fem_data, write_simulation_base)
 
@@ -1228,7 +1254,7 @@ def _extract_single_variable(
 
 def save_dict_data(
         output_directory, dict_data, *, dtype=np.float32, encrypt_key=None,
-        finished_file='converted'):
+        finished_file='converted', save_dtype_dict: Dict = None):
     """Save dict_data.
 
     Parameters
@@ -1247,10 +1273,25 @@ def save_dict_data(
         None
     """
     for key, value in dict_data.items():
+        save_dtype = _get_save_dtype(key,
+                                     default_dtype=dtype,
+                                     save_dtype_dict=save_dtype_dict)
         util.save_variable(
-            output_directory, key, value, dtype=dtype, encrypt_key=encrypt_key)
+            output_directory,
+            key, value, dtype=save_dtype, encrypt_key=encrypt_key)
     (output_directory / finished_file).touch()
     return
+
+
+def _get_save_dtype(variable_name: str,
+                    default_dtype: np.dtype,
+                    save_dtype_dict: Dict = None):
+    if save_dtype_dict is None:
+        return default_dtype
+    if variable_name in save_dtype_dict:
+        return save_dtype_dict[variable_name]
+    else:
+        return default_dtype
 
 
 def determine_output_directory(
