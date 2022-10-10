@@ -27,12 +27,17 @@ trainer:
     - area_normal_inc_facet2cell_y
     - area_normal_inc_facet2cell_z
   outputs:
-    - name: cell_last_phi
+    - name: cell_phi
       dim: 1
+      time_series: true
+      time_slice:
+        - 2
+        - null
+        - 2
   prune: true
-  batch_size: 5
-  n_epoch: 1000
-  log_trigger_epoch: 10
+  batch_size: 1
+  n_epoch: 100
+  log_trigger_epoch: 1
   stop_trigger_epoch: 10
   seed: 0
   lazy: false
@@ -53,7 +58,9 @@ model:
       nodes:
         - -1
         - 16
+        - 16
       activations:
+        - leaky_relu
         - identity
     - name: IN_BOUNDARY
       type: identity
@@ -92,9 +99,10 @@ model:
   groups:
     - name: GROUP1
       debug: false
-      repeat: 10
+      repeat: 2
       mode: implicit
-      convergence_threshold: 1.0e-3
+      convergence_threshold: 1.0e-10
+      time_series_length: 5
       inputs:
         grank0:
           - name: IN_RANK0
