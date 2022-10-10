@@ -10,7 +10,7 @@ inferer:
   write_simulation_base: tests/data/advection/interim
   write_simulation_type: 'vtu'
 trainer:
-  output_directory: tests/data/advection/dggnn
+  # output_directory: tests/data/advection/dggnn
   inputs:
     rank0:
       - name: cell_initial_phi
@@ -31,14 +31,14 @@ trainer:
       dim: 1
   prune: true
   batch_size: 5
-  n_epoch: 1000
+  n_epoch: 10000
   log_trigger_epoch: 10
-  stop_trigger_epoch: 10
+  stop_trigger_epoch: 100
   seed: 0
   lazy: false
   num_workers: 0
-  # optimizer_setting:
-  #   lr: 1.0e-2
+  optimizer_setting:
+    lr: 1.0e-2
 model:
   blocks:
     - name: IN_RANK0
@@ -53,7 +53,9 @@ model:
       nodes:
         - -1
         - 16
+        - 16
       activations:
+        - leaky_relu
         - identity
     - name: IN_BOUNDARY
       type: identity
