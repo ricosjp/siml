@@ -1,0 +1,204 @@
+data:
+  preprocessed:
+    - tests/data/advection/preprocessed
+  train:
+    - tests/data/advection/preprocessed/train
+  validation:
+    - tests/data/advection/preprocessed/validation
+inferer:
+  write_simulation: true
+  write_simulation_base: tests/data/advection/interim
+  write_simulation_type: 'vtu'
+trainer:
+  output_directory: tests/data/advection/dggnn
+  inputs:
+    rank0:
+      - name: cell_initial_phi
+        dim: 1
+    boundary:
+      - name: facet_periodic_flag
+        dim: 1
+    speed:
+      - name: cell_speed
+        dim: 1
+  support_inputs:
+    - signed_inc_cell2facet
+    - area_normal_inc_facet2cell_x
+    - area_normal_inc_facet2cell_y
+    - area_normal_inc_facet2cell_z
+  outputs:
+    - name: cell_last_phi
+      dim: 1
+  prune: true
+  batch_size: 5
+  n_epoch: 1000
+  log_trigger_epoch: 10
+  stop_trigger_epoch: 10
+  seed: 0
+  lazy: false
+  num_workers: 0
+  # optimizer_setting:
+  #   lr: 1.0e-2
+model:
+  blocks:
+    - name: IN_RANK0
+      type: mlp
+      is_first: true
+      bias: false
+      input_keys:
+        - rank0
+      output_key: grank0
+      destinations:
+        - GROUP1
+      nodes:
+        - -1
+        - 16
+      activations:
+        - identity
+    - name: IN_BOUNDARY
+      type: identity
+      is_first: true
+      input_keys:
+        - boundary
+      output_key: gboundary
+      destinations:
+        - GROUP1
+    - name: IN_SPEED
+      type: mlp
+      is_first: true
+      bias: false
+      input_keys:
+        - speed
+      output_key: gspeed
+      destinations:
+        - GROUP1
+      nodes:
+        - -1
+        - 16
+      activations:
+        - identity
+
+    - name: GROUP1
+      type: group
+      destinations:
+        - DECODER
+
+    - name: DECODER
+      type: pinv_mlp
+      input_keys:
+        - grank0
+      reference_block_name: IN_RANK0
+
+  groups:
+    - name: GROUP1
+      debug: false
+      repeat: 10
+      mode: implicit
+      convergence_threshold: 1.0e-3
+      inputs:
+        grank0:
+          - name: IN_RANK0
+            dim: 16
+            skip: false
+        gboundary:
+          - name: IN_BOUNDARY
+            dim: 1
+            skip: true
+        gspeed:
+          - name: IN_SPEED
+            dim: 16
+            skip: true
+      support_inputs:
+        - signed_inc_cell2facet
+        - area_normal_inc_facet2cell_x
+        - area_normal_inc_facet2cell_y
+        - area_normal_inc_facet2cell_z
+      outputs:
+        grank0:
+          - name: OUT_LINEAR
+            dim: 16
+      blocks:
+        - name: DGGNN_CELL2FACET
+          type: dggnn
+          is_first: true
+          input_keys:
+            - grank0
+          destinations:
+            - BOUNDARY
+          support_input_indices:
+            - 0
+            - 1
+            - 2
+            - 3
+          nodes:
+            - 16
+            - 16
+            - 16
+          activations:
+            - tanh
+            - tanh
+          optional:
+            propagations:
+              - spread
+        - name: IN_BOUNDARY
+          type: identity
+          is_first: true
+          input_keys:
+            - gboundary
+          destinations:
+            - BOUNDARY
+        - name: BOUNDARY
+          type: projection
+          input_names:
+            - DGGNN_CELL2FACET
+            - IN_BOUNDARY
+          destinations:
+            - MUL
+          optional:
+            operator: mean
+        - name: DGGNN_SPEED_CELL2FACET
+          type: dggnn
+          is_first: true
+          input_keys:
+            - gspeed
+          destinations:
+            - MUL
+          support_input_indices:
+            - 0
+            - 1
+            - 2
+            - 3
+          nodes:
+            - 16
+            - 16
+            - 16
+          activations:
+            - tanh
+            - tanh
+          optional:
+            propagations:
+              - spread
+        - name: MUL
+          type: reducer
+          destinations:
+            - DGGNN_FACET2CELL
+          optional:
+            operator: mul
+        - name: DGGNN_FACET2CELL
+          type: dggnn
+          output_key: grank0
+          support_input_indices:
+            - 0
+            - 1
+            - 2
+            - 3
+          nodes:
+            - 16
+            - 16
+            - 16
+          activations:
+            - tanh
+            - tanh
+          optional:
+            propagations:
+              - contraction
