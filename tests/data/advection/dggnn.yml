@@ -2,14 +2,16 @@ data:
   preprocessed:
     - tests/data/advection/preprocessed
   train:
-    - tests/data/advection/preprocessed/train
+    - tests/data/advection/preprocessed/train/0
   validation:
-    - tests/data/advection/preprocessed/validation
+    - tests/data/advection/preprocessed/train/0
+    # - tests/data/advection/preprocessed/validation
 inferer:
   write_simulation: true
   write_simulation_base: tests/data/advection/interim
   write_simulation_type: 'vtu'
 trainer:
+  # clip_grad_norm: 1.0
   output_directory: tests/data/advection/dggnn
   inputs:
     rank0:
@@ -17,6 +19,9 @@ trainer:
         dim: 1
     boundary:
       - name: facet_periodic_flag
+        dim: 1
+    inverse_boundary:
+      - name: facet_inverse_periodic_flag
         dim: 1
     speed:
       - name: cell_speed
@@ -36,14 +41,14 @@ trainer:
         - 2
   prune: true
   batch_size: 1
-  n_epoch: 100
+  n_epoch: 1000
   log_trigger_epoch: 1
   stop_trigger_epoch: 10
   seed: 0
   lazy: false
   num_workers: 0
-  # optimizer_setting:
-  #   lr: 1.0e-2
+  optimizer_setting:
+    lr: 1.0e-1
 model:
   blocks:
     - name: IN_RANK0
@@ -57,10 +62,8 @@ model:
         - GROUP1
       nodes:
         - -1
-        - 16
-        - 16
+        - 1
       activations:
-        - leaky_relu
         - identity
     - name: IN_BOUNDARY
       type: identity
@@ -68,6 +71,14 @@ model:
       input_keys:
         - boundary
       output_key: gboundary
+      destinations:
+        - GROUP1
+    - name: IN_INVERSE_BOUNDARY
+      type: identity
+      is_first: true
+      input_keys:
+        - inverse_boundary
+      output_key: ginverse_boundary
       destinations:
         - GROUP1
     - name: IN_SPEED
@@ -81,7 +92,7 @@ model:
         - GROUP1
       nodes:
         - -1
-        - 16
+        - 1
       activations:
         - identity
 
@@ -106,15 +117,19 @@ model:
       inputs:
         grank0:
           - name: IN_RANK0
-            dim: 16
+            dim: 1
             skip: false
         gboundary:
           - name: IN_BOUNDARY
             dim: 1
             skip: true
+        ginverse_boundary:
+          - name: IN_INVERSE_BOUNDARY
+            dim: 1
+            skip: true
         gspeed:
           - name: IN_SPEED
-            dim: 16
+            dim: 1
             skip: true
       support_inputs:
         - signed_inc_cell2facet
@@ -124,30 +139,34 @@ model:
       outputs:
         grank0:
           - name: OUT_LINEAR
-            dim: 16
+            dim: 1
       blocks:
         - name: DGGNN_CELL2FACET
           type: dggnn
+          coeff: 1
           is_first: true
           input_keys:
             - grank0
           destinations:
             - BOUNDARY
+            - INVERSE_BOUNDARY
+          bias: false
           support_input_indices:
             - 0
             - 1
             - 2
             - 3
           nodes:
-            - 16
-            - 16
-            - 16
+            - 1
+            - 1
           activations:
-            - tanh
-            - tanh
+            - identity
           optional:
             propagations:
               - spread
+            # riemann_solver: lax_friedrichs
+            use_mlp: true
+            trainable: false
         - name: IN_BOUNDARY
           type: identity
           is_first: true
@@ -161,31 +180,56 @@ model:
             - DGGNN_CELL2FACET
             - IN_BOUNDARY
           destinations:
-            - MUL
+            - MEAN
           optional:
             operator: mean
+        - name: IN_INVERSE_BOUNDARY
+          type: identity
+          is_first: true
+          input_keys:
+            - ginverse_boundary
+          destinations:
+            - INVERSE_BOUNDARY
+        - name: INVERSE_BOUNDARY
+          type: projection
+          input_names:
+            - DGGNN_CELL2FACET
+            - IN_INVERSE_BOUNDARY
+          destinations:
+            - MEAN
+          optional:
+            operator: mean
+        - name: MEAN
+          type: reducer
+          coeff: 0.5  # Mean
+          destinations:
+            - MUL
+          optional:
+            operator: add
         - name: DGGNN_SPEED_CELL2FACET
           type: dggnn
+          coeff: 1
           is_first: true
           input_keys:
             - gspeed
           destinations:
             - MUL
+          bias: false
           support_input_indices:
             - 0
             - 1
             - 2
             - 3
           nodes:
-            - 16
-            - 16
-            - 16
+            - 1
+            - 1
           activations:
-            - tanh
-            - tanh
+            - identity
           optional:
             propagations:
               - spread
+            trainable: false
+            # riemann_solver: lax_friedrichs
         - name: MUL
           type: reducer
           destinations:
@@ -194,19 +238,20 @@ model:
             operator: mul
         - name: DGGNN_FACET2CELL
           type: dggnn
+          coeff: -1.0
           output_key: grank0
+          bias: false
           support_input_indices:
             - 0
             - 1
             - 2
             - 3
           nodes:
-            - 16
-            - 16
-            - 16
+            - 1
+            - 1
           activations:
-            - tanh
-            - tanh
+            - identity
           optional:
             propagations:
               - contraction
+            trainable: false

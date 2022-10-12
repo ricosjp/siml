@@ -223,6 +223,7 @@ class DataGenerator:
             'cell_position': cell_position,
             'facet_position': facet_position,
             'facet_periodic_flag': periodic_flag,
+            'facet_inverse_periodic_flag': -periodic_flag,
         }
         dict_data.update(target_dict_data)
 

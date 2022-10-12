@@ -1,8 +1,11 @@
 
+import copy
+
 import numpy as np
 import torch
 
 from . import abstract_equivariant_gnn
+from . import identity
 from . import mlp
 from . import sparse
 from . import tensor_operations
@@ -38,28 +41,40 @@ class DGGNN(abstract_equivariant_gnn.AbstractEquivariantGNN):
                 f"Set only one propagation function for: {block_setting}")
 
         self.use_mlp = self.block_setting.optional.get('use_mlp', None)
+        self.trainable = self.block_setting.optional.get('trainable', True)
         self.riemann_solver = self.block_setting.optional.get(
             'riemann_solver', None)
 
-        self.mlp = self._create_mlp()
+        self.mlp = self._create_mlp(trainable=self.trainable)
         if self.riemann_solver is not None:
-            self.solver_mlp = self._create_mlp()
+            if self.riemann_solver == 'lax_friedrichs':
+                bias = False
+
+            self.solver_mlp = self._create_mlp(
+                trainable=self.trainable, bias=bias)
 
         return
 
-    def _create_mlp(self):
+    def _create_mlp(self, trainable, bias=None):
+        block_setting = copy.copy(self.block_setting)
+
+        if not trainable:
+            return identity.Identity(block_setting)
+
+        if bias is not None:
+            block_setting.bias = bias
+            print(f"Bias set to {bias=}")
+
         if self.use_mlp is None:
-            if self.block_setting.optional['propagations'] == 'contraction':
-                return mlp.MLP(self.block_setting)
+            if block_setting.optional['propagations'] == 'contraction':
+                return mlp.MLP(block_setting)
             else:
-                return tensor_operations.EquivariantMLP(
-                    self.block_setting)
+                return tensor_operations.EquivariantMLP(block_setting)
 
         if self.use_mlp:
-            return mlp.MLP(self.block_setting)
+            return mlp.MLP(block_setting)
         else:
-            return tensor_operations.EquivariantMLP(
-                self.block_setting)
+            return tensor_operations.EquivariantMLP(block_setting)
 
     def _separate_supports(self, supports):
         """Separate supports matrices to the desired format.
@@ -125,7 +140,7 @@ class DGGNN(abstract_equivariant_gnn.AbstractEquivariantGNN):
         if self.riemann_solver == 'lax_friedrichs':
             # Lax--Friedrichs method
             diff_facet_values = self.solver_mlp(
-                signed_inc_cell2facet.mm(cell_x))
+                signed_inc_cell2facet.mm(cell_x) / 2)
             # TODO: Determine CFL number
             facet_values = ave_facet_values + diff_facet_values
         else:
@@ -176,10 +191,10 @@ class DGGNN(abstract_equivariant_gnn.AbstractEquivariantGNN):
         signed_inc_cell2facet, area_normal_inc_facet2cell \
             = self._separate_supports(supports)
 
-        facet_h = self.mlp(torch.stack([
+        cell_h = self.mlp(torch.stack([
             sparse.mul(grad_inc, facet_x)
             for grad_inc in area_normal_inc_facet2cell], axis=1))
-        return facet_h
+        return cell_h
 
     def _contraction(self, facet_x, *args, supports):
         """Calculate contraction to compute divergence.
@@ -203,7 +218,15 @@ class DGGNN(abstract_equivariant_gnn.AbstractEquivariantGNN):
                      tensor rank - 1 repetition
         """
         cell_h = self._tensor_product(facet_x, *args, supports=supports)
+        # raise ValueError(cell_h[:10, :, :, 0])
         cell_h = torch.einsum('ikk...->i...', cell_h)
+        # print(facet_x.shape)
+        # raise ValueError(
+        #     facet_x[:10, 0, 0], cell_h[:10, 0],
+        #     supports[1].coalesce().values()[:10])
+        # print(
+        #     facet_x[:10, 0, 0], cell_h[:10, 0],
+        #     supports[1].coalesce().values()[:10])
         return cell_h
 
     def _rotation(self, x, *args, supports):

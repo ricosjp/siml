@@ -31,5 +31,6 @@ preprocess:
   facet_position: identity
   facet_area_normal: identity
   facet_periodic_flag: identity
+  facet_inverse_periodic_flag: identity
 
   global_speed: identity
