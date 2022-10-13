@@ -1,6 +1,6 @@
 CI_REGISTRY_IMAGE ?= registry.ritc.jp/ricos/machine_learning/siml
 GHCR_IMAGE ?= ghcr.io/ricosjp/siml
-TAG ?= 0.2.8
+TAG ?= 0.2.9
 
 all: build
 

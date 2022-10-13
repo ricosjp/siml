@@ -1,4 +1,4 @@
-FROM nvidia/cuda:11.1.1-runtime-ubuntu20.04
+FROM nvidia/cuda:11.6.2-runtime-ubuntu20.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -38,20 +38,23 @@ COPY ./siml /src/siml
 # COPY ./poetry.lock /src/poetry.lock
 WORKDIR /src
 
-ENV PATH $PATH:/root/.poetry/bin
+ENV PATH $PATH:/root/.local/bin
 
-RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python3.9 \
-  && sed -i.bak s/python3/python3.9/g ~/.poetry/bin/poetry \
+RUN \
+  curl -sSL https://install.python-poetry.org | python3.9 - \
   && python3.9 -m pip install -U pip \
   && python3.9 -m pip install -U setuptools \
   && python3.9 -m pip install -U wheel \
   && python3.9 -m pip install --ignore-installed -U PyYAML \
   && python3.9 -m pip install Cython \
-  && poetry config virtualenvs.create false \
-  && poetry install \
-  && python3.9 -m pip install torch==1.10.1+cu111 torchvision==0.11.2+cu111 -f https://download.pytorch.org/whl/torch_stable.html \
-  && python3.9 -m pip install torch-scatter==2.0.9 -f https://pytorch-geometric.com/whl/torch-1.10.1+cu111.html \
-  && python3.9 -m pip install torch-sparse==0.6.13 -f https://pytorch-geometric.com/whl/torch-1.10.1+cu111.html \
-  && python3.9 -m pip install torch-cluster==1.6.0 -f https://pytorch-geometric.com/whl/torch-1.10.1+cu111.html \
-  && python3.9 -m pip install torch-spline-conv==1.2.1 -f https://pytorch-geometric.com/whl/torch-1.10.1+cu111.html \
-  && python3.9 -m pip install torch-geometric
+  && python3.9 -m pip install numpy \
+  && python3.9 -m pip install vtk==9.1.0 \
+  && python3.9 -m pip install mayavi==4.8 \
+  && python3.9 -m pip install femio \
+  && python3.9 -m pip install PyYAML einops joblib optuna pandas pycryptodomex pydot \
+  && python3.9 -m pip install sqlalchemy PyQt5 toml metis \
+  && python3.9 -m pip install torch==1.12.0 --extra-index-url https://download.pytorch.org/whl/cu116 \
+  && python3.9 -m pip install pytorch-ignite \
+  && python3.9 -m pip install torch-scatter torch-sparse torch-cluster torch-spline-conv torch-geometric -f https://data.pyg.org/whl/torch-1.12.0+cu116.html
+  # && poetry config virtualenvs.create false \
+  # && poetry install
