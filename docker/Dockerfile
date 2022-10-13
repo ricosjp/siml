@@ -40,6 +40,7 @@ WORKDIR /src
 
 ENV PATH $PATH:/root/.local/bin
 
+# TODO: poetry not working due to mayavi, will investigate a solution
 RUN \
   curl -sSL https://install.python-poetry.org | python3.9 - \
   && python3.9 -m pip install -U pip \
@@ -53,6 +54,7 @@ RUN \
   && python3.9 -m pip install femio \
   && python3.9 -m pip install PyYAML einops joblib optuna pandas pycryptodomex pydot \
   && python3.9 -m pip install sqlalchemy PyQt5 toml metis \
+  && python3.9 -m pip install chainer pytest autopep8 sphinx sphinx_rtd_theme sphinx-gallery flake8 \
   && python3.9 -m pip install torch==1.12.0 --extra-index-url https://download.pytorch.org/whl/cu116 \
   && python3.9 -m pip install pytorch-ignite \
   && python3.9 -m pip install torch-scatter torch-sparse torch-cluster torch-spline-conv torch-geometric -f https://data.pyg.org/whl/torch-1.12.0+cu116.html
