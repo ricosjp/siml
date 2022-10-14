@@ -12,7 +12,7 @@ inferer:
   write_simulation_type: 'vtu'
 trainer:
   # clip_grad_norm: 1.0
-  output_directory: tests/data/advection/dggnn
+  output_directory: tests/data/advection/simplest_dggnn
   inputs:
     rank0:
       - name: cell_initial_phi
