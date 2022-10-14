@@ -12,9 +12,9 @@ preprocess:
   noraml_inc_facet2cell_x: identity
   noraml_inc_facet2cell_y: identity
   noraml_inc_facet2cell_z: identity
-  area_normal_inc_facet2cell_x: identity
-  area_normal_inc_facet2cell_y: identity
-  area_normal_inc_facet2cell_z: identity
+  weighted_normal_inc_facet2cell_x: identity
+  weighted_normal_inc_facet2cell_y: identity
+  weighted_normal_inc_facet2cell_z: identity
   inc_cell2facet: identity
 
   cell_volume: identity

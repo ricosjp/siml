@@ -2,11 +2,11 @@ data:
   preprocessed:
     - tests/data/advection/preprocessed
   train:
-    # - tests/data/advection/preprocessed/train/0
-    - tests/data/advection/preprocessed/train
+    - tests/data/advection/preprocessed/train/0
+    # - tests/data/advection/preprocessed/train
   validation:
-    # - tests/data/advection/preprocessed/train/0
-    - tests/data/advection/preprocessed/validation
+    - tests/data/advection/preprocessed/train/0
+    # - tests/data/advection/preprocessed/validation
 inferer:
   write_simulation: true
   write_simulation_base: tests/data/advection/interim
@@ -29,17 +29,17 @@ trainer:
         dim: 1
   support_inputs:
     - signed_inc_cell2facet
-    - area_normal_inc_facet2cell_x
-    - area_normal_inc_facet2cell_y
-    - area_normal_inc_facet2cell_z
+    - weighted_normal_inc_facet2cell_x
+    - weighted_normal_inc_facet2cell_y
+    - weighted_normal_inc_facet2cell_z
   outputs:
     - name: cell_phi
       dim: 1
       time_series: true
       time_slice:
-        - 2
-        - null
-        - 2
+        - 1
+        - 11
+        - 1
   prune: true
   batch_size: 1
   n_epoch: 1000
@@ -114,7 +114,7 @@ model:
       repeat: 2
       mode: implicit
       convergence_threshold: 1.0e-10
-      time_series_length: 5
+      time_series_length: 10
       inputs:
         grank0:
           - name: IN_RANK0
@@ -144,7 +144,7 @@ model:
       blocks:
         - name: DGGNN_CELL2FACET
           type: dggnn
-          coeff: 100
+          # coeff: 100
           is_first: true
           input_keys:
             - grank0
@@ -167,7 +167,7 @@ model:
           optional:
             propagations:
               - spread
-            # riemann_solver: lax_friedrichs
+            riemann_solver: lax_friedrichs
             use_mlp: true
         - name: IN_BOUNDARY
           type: identity
@@ -210,7 +210,7 @@ model:
             operator: add
         - name: DGGNN_SPEED_CELL2FACET
           type: dggnn
-          coeff: 100
+          # coeff: 100
           is_first: true
           input_keys:
             - gspeed
@@ -231,7 +231,6 @@ model:
             propagations:
               - spread
             trainable: true
-            # riemann_solver: lax_friedrichs
         - name: MUL
           type: reducer
           destinations:
@@ -246,7 +245,13 @@ model:
             - 1
             - 2
             - 3
+          nodes:
+            - 4
+            - 4
+            - 4
+          activations:
+            - tanh
+            - identity
           optional:
             propagations:
               - contraction
-            trainable: true
