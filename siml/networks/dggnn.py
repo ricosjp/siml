@@ -41,7 +41,11 @@ class DGGNN(abstract_equivariant_gnn.AbstractEquivariantGNN):
                 f"Set only one propagation function for: {block_setting}")
 
         self.use_mlp = self.block_setting.optional.get('use_mlp', None)
-        self.trainable = self.block_setting.optional.get('trainable', True)
+        if self.block_setting.optional['propagations'][0] == 'spread':
+            self.trainable = self.block_setting.optional.get('trainable', True)
+        else:
+            self.trainable = False  # No trainable parameter for cell feature
+
         self.riemann_solver = self.block_setting.optional.get(
             'riemann_solver', None)
 
@@ -193,7 +197,10 @@ class DGGNN(abstract_equivariant_gnn.AbstractEquivariantGNN):
 
         cell_h = self.mlp(torch.stack([
             sparse.mul(grad_inc, facet_x)
-            for grad_inc in area_normal_inc_facet2cell], axis=1))
+            for grad_inc in area_normal_inc_facet2cell], axis=1)) \
+            + torch.stack([
+                sparse.mul(grad_inc, facet_x)
+                for grad_inc in area_normal_inc_facet2cell], axis=1)
         return cell_h
 
     def _contraction(self, facet_x, *args, supports):
