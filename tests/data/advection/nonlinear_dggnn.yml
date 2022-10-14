@@ -64,9 +64,7 @@ model:
       nodes:
         - -1
         - 4
-        - 4
       activations:
-        - tanh
         - identity
     - name: IN_BOUNDARY
       type: identity
@@ -171,7 +169,6 @@ model:
               - spread
             # riemann_solver: lax_friedrichs
             use_mlp: true
-            trainable: true
         - name: IN_BOUNDARY
           type: identity
           is_first: true
