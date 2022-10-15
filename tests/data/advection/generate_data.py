@@ -134,15 +134,16 @@ class DataGenerator:
         x_left = np.min(nodes[:, 0])
         x_right = np.max(nodes[:, 0])
 
-        coeff = np.random.rand()
-        phase = np.random.rand()
+        coeff = (np.random.rand() + 1) / 2  # Varies [.5, 1.]
+        phase = np.random.rand()  # Varies [0., 1.]
+        speed = np.random.rand() + 1  # Varies [1., 2.]
+
         init_phi = coeff * np.sin(
-            2 * np.pi * cell_x / (x_right - x_left) + phase)[:, None]
-        speed = np.random.rand()
+            2 * np.pi / (x_right - x_left) * (cell_x + phase))[:, None]
         phi = np.stack([
             coeff * np.sin(
-                2 * np.pi * cell_x
-                / (x_right - x_left) + phase - speed * t)[:, None]
+                2 * np.pi / (x_right - x_left) * (cell_x + phase)
+                - speed * t)[:, None]
             for t in np.linspace(0., 1., 11)], axis=0)
 
         speed_vec = np.zeros((1, 3, 1))
@@ -179,13 +180,16 @@ class DataGenerator:
             signed_inc_facet2cell.multiply(
                 facet_normal_vectors[:, [2]].T),
         ]  # (dim, n_cell, n_facet)-shape, where n_facet does not double count.
-        area_normal_inc = [
+        weighted_normal_inc = [
             signed_inc_facet2cell.multiply(
-                facet_area_normal_vectors[:, [0]].T),
+                facet_area_normal_vectors[:, [0]].T).multiply(
+                    1 / cell_volume),
             signed_inc_facet2cell.multiply(
-                facet_area_normal_vectors[:, [1]].T),
+                facet_area_normal_vectors[:, [1]].T).multiply(
+                    1 / cell_volume),
             signed_inc_facet2cell.multiply(
-                facet_area_normal_vectors[:, [2]].T),
+                facet_area_normal_vectors[:, [2]].T).multiply(
+                    1 / cell_volume),
         ]  # (dim, n_cell, n_facet)-shape, where n_facet does not double count.
 
         cell_adj = fem_data.calculate_adjacency_matrix_element()
@@ -210,9 +214,9 @@ class DataGenerator:
             'noraml_inc_facet2cell_x': normal_inc[0],
             'noraml_inc_facet2cell_y': normal_inc[1],
             'noraml_inc_facet2cell_z': normal_inc[2],
-            'area_normal_inc_facet2cell_x': area_normal_inc[0],
-            'area_normal_inc_facet2cell_y': area_normal_inc[1],
-            'area_normal_inc_facet2cell_z': area_normal_inc[2],
+            'weighted_normal_inc_facet2cell_x': weighted_normal_inc[0],
+            'weighted_normal_inc_facet2cell_y': weighted_normal_inc[1],
+            'weighted_normal_inc_facet2cell_z': weighted_normal_inc[2],
             'inc_cell2facet': inc_cell2facet,
             'cell_volume': cell_volume,
             'facet_area': facet_area,

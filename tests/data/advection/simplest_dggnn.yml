@@ -28,9 +28,9 @@ trainer:
         dim: 1
   support_inputs:
     - signed_inc_cell2facet
-    - area_normal_inc_facet2cell_x
-    - area_normal_inc_facet2cell_y
-    - area_normal_inc_facet2cell_z
+    - weighted_normal_inc_facet2cell_x
+    - weighted_normal_inc_facet2cell_y
+    - weighted_normal_inc_facet2cell_z
   outputs:
     - name: cell_phi
       dim: 1

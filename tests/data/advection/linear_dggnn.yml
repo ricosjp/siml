@@ -29,9 +29,9 @@ trainer:
         dim: 1
   support_inputs:
     - signed_inc_cell2facet
-    - area_normal_inc_facet2cell_x
-    - area_normal_inc_facet2cell_y
-    - area_normal_inc_facet2cell_z
+    - weighted_normal_inc_facet2cell_x
+    - weighted_normal_inc_facet2cell_y
+    - weighted_normal_inc_facet2cell_z
   outputs:
     - name: cell_phi
       dim: 1
@@ -42,9 +42,9 @@ trainer:
         - 2
   prune: true
   batch_size: 1
-  n_epoch: 10000
+  n_epoch: 300
   log_trigger_epoch: 10
-  stop_trigger_epoch: 1000
+  stop_trigger_epoch: 100
   seed: 0
   lazy: false
   num_workers: 0
@@ -144,7 +144,7 @@ model:
       blocks:
         - name: DGGNN_CELL2FACET
           type: dggnn
-          coeff: 100
+          # coeff: 100
           is_first: true
           input_keys:
             - grank0
@@ -209,7 +209,7 @@ model:
             operator: add
         - name: DGGNN_SPEED_CELL2FACET
           type: dggnn
-          coeff: 100
+          # coeff: 100
           is_first: true
           input_keys:
             - gspeed
@@ -248,4 +248,4 @@ model:
           optional:
             propagations:
               - contraction
-            trainable: true
+            trainable: false
