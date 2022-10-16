@@ -22,11 +22,20 @@ else:
 
 class TestDGGNN(equivariance_base.EquivarianceBase):
 
-    def validate(self, main_setting, model_directory, decimal=1e-7):
+    def validate(
+            self, main_setting, model_directory,
+            decimal=1e-7, time_length=None):
+
         ir = inferer.Inferer(
             main_setting,
             converter_parameters_pkl=main_setting.data.preprocessed_root
             / 'preprocessors.pkl')
+
+        if time_length is not None:
+            ir.setting.trainer.outputs[0].time_slice = slice(
+                1, time_length + 1, 1)
+            ir.setting.model.groups[0].time_series_length = time_length
+
         results = ir.infer(
             model=main_setting.trainer.output_directory,
             output_directory_base=model_directory,
@@ -136,4 +145,5 @@ class TestDGGNN(equivariance_base.EquivarianceBase):
         loss = tr.train()
         np.testing.assert_array_less(loss, 1.)
 
-        self.validate(main_setting, tr.setting.trainer.output_directory)
+        self.validate(
+            main_setting, tr.setting.trainer.output_directory, time_length=10)

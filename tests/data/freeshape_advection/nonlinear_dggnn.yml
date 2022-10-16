@@ -43,8 +43,8 @@ trainer:
         - 1
   prune: true
   batch_size: 1
-  n_epoch: 30
-  log_trigger_epoch: 1
+  n_epoch: 100
+  log_trigger_epoch: 10
   stop_trigger_epoch: 10
   seed: 0
   lazy: false
@@ -162,6 +162,7 @@ model:
           input_keys:
             - gfacet_length
           destinations:
+            - DGGNN_SPEED_CELL2FACET
             - DGGNN_FACET2CELL
 
         - name: DGGNN_CELL2FACET
@@ -233,11 +234,19 @@ model:
             - MUL
           optional:
             operator: add
-        - name: DGGNN_SPEED_CELL2FACET
-          type: dggnn
+
+        - name: IN_CELL_SPEED
+          type: identity
           is_first: true
           input_keys:
             - gspeed
+          destinations:
+            - DGGNN_SPEED_CELL2FACET
+        - name: DGGNN_SPEED_CELL2FACET
+          type: dggnn
+          input_names:
+            - IN_CELL_SPEED
+            - IN_FACET_LENGTH
           destinations:
             - MUL
           bias: false
@@ -249,13 +258,14 @@ model:
           nodes:
             - 32
             - 32
+            - 32
           activations:
+            - tanh
             - identity
           optional:
             propagations:
               - spread
             trainable: true
-            use_mlp: true
             dimension:
               length: 1
               time: -1
