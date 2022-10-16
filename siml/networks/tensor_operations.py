@@ -189,5 +189,71 @@ class EquivariantMLP(siml_module.SimlModule):
             h = linear(h)
             h = torch.nn.functional.dropout(
                 h, p=dropout_ratio, training=self.training)
+
             h = activation(h)
         return torch.einsum('i...f,if->i...f', linear_x, h)
+
+
+class EnSEquivariantMLP(EquivariantMLP):
+
+    @staticmethod
+    def get_name():
+        return 'ens_equivariant_mlp'
+
+    @staticmethod
+    def accepts_multiple_inputs():
+        return True
+
+    def __init__(self, block_setting):
+        super().__init__(block_setting)
+        if 'dimension' not in block_setting.optional:
+            raise ValueError(f"Set optional.dimension for: {block_setting}")
+
+        dimension = block_setting.optional['dimension']
+        self.power_length = dimension['length']
+        self.power_time = dimension['time']
+        self.power_mass = dimension['mass']
+
+        return
+
+    def _forward_core(self, xs, supports=None, original_shapes=None):
+        """Execute the NN's forward computation.
+
+        Parameters
+        -----------
+        xs: list[torch.Tensor]
+            - 0: Input of the NN.
+            - 1: Length scales.
+            - 2: Time scales.
+            - 3: Mass scales.
+
+        Returns
+        --------
+        y: torch.Tensor
+            Output of the NN.
+        """
+        if len(xs) < 2:
+            raise ValueError(f"Feed dimension data for: {self.block_setting}")
+
+        x = xs[0]
+        length = xs[1][..., 0]
+        if len(xs) > 2:
+            time = xs[2][0, 0]  # NOTE: Assume global data
+        else:
+            time = 1
+        if len(xs) > 3:
+            mass = xs[3][0, 0]  # NOTE: Assume global data
+        else:
+            mass = 1
+        if len(xs) > 4:
+            raise ValueError(f"Unexpected input type: {xs}")
+
+        x = torch.einsum(
+            'i...,i->i...', x, 1 / length**self.power_length) \
+            / time**self.power_time \
+            / mass**self.power_mass
+        x = super()._forward_core(x)
+        return torch.einsum(
+            'i...,i->i...', x, length**self.power_length) \
+            * time**self.power_time \
+            * mass**self.power_mass

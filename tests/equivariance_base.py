@@ -167,16 +167,69 @@ class EquivarianceBase(unittest.TestCase):
             Path(g) for g in glob.glob(str(root_path), recursive=recursive)]
 
     def load_orthogonal_matrix(self, preprocessed_path):
-        ortho_path = Path(
+        matrix_path = Path(
             str(preprocessed_path / 'orthogonal_matrix.txt').replace(
                 'preprocessed', 'raw'))
-        rotation_path = Path(
+        if matrix_path.is_file():
+            return np.loadtxt(matrix_path)
+
+        matrix_path = Path(
+            str(preprocessed_path / 'orthogonal_matrix.txt').replace(
+                'preprocessed', 'interim'))
+        if matrix_path.is_file():
+            return np.loadtxt(matrix_path)
+
+        matrix_path = Path(
+            str(preprocessed_path / 'rotation_matrix.npy').replace(
+                'preprocessed', 'raw'))
+        if matrix_path.is_file():
+            return np.loadtxt(matrix_path)
+
+        matrix_path = Path(
             str(preprocessed_path.parent / 'rotation_matrix.npy').replace(
                 'preprocessed', 'raw'))
-        if ortho_path.is_file():
-            return np.loadtxt(ortho_path)
-        elif rotation_path.is_file():
-            return np.load(rotation_path)
+        if matrix_path.is_file():
+            return np.loadtxt(matrix_path)
+
+        matrix_path = Path(
+            str(preprocessed_path / 'rotation_matrix.npy').replace(
+                'preprocessed', 'interim'))
+        if matrix_path.is_file():
+            return np.loadtxt(matrix_path)
+
+        matrix_path = Path(
+            str(preprocessed_path.parent / 'rotation_matrix.npy').replace(
+                'preprocessed', 'interim'))
+        if matrix_path.is_file():
+            return np.loadtxt(matrix_path)
+
+        raise ValueError(
+            f"Transformation matrix not found for: {preprocessed_path}")
+
+    def evaluate_conservation(
+            self, target, prediction, *,
+            volume=None,
+            target_time_series=False, prediction_time_series=False,
+            decimal=7):
+
+        if volume is None:
+            if target_time_series:
+                volume = np.ones(len(target[0]))[..., None]
+            else:
+                volume = np.ones(len(target))[..., None]
+
+        if target_time_series:
+            target_conservation = np.sum(target[0] * volume) / np.sum(volume)
         else:
-            raise ValueError(
-                f"Transformation matrix not found for: {preprocessed_path}")
+            target_conservation = np.sum(target * volume) / np.sum(volume)
+
+        if prediction_time_series:
+            prediction_conservation = np.einsum(
+                'ti...,i->t...', prediction, volume[..., 0]) / np.sum(volume)
+        else:
+            prediction_conservation = np.einsum(
+                'i...,i->...', prediction, volume[..., 0]) / np.sum(volume)
+        print(prediction_conservation - target_conservation)
+        np.testing.assert_almost_equal(
+            prediction_conservation - target_conservation, 0., decimal=decimal)
+        return

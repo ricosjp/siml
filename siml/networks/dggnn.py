@@ -70,12 +70,12 @@ class DGGNN(abstract_equivariant_gnn.AbstractEquivariantGNN):
             if block_setting.optional['propagations'] == 'contraction':
                 return mlp.MLP(block_setting)
             else:
-                return tensor_operations.EquivariantMLP(block_setting)
+                return tensor_operations.EnSEquivariantMLP(block_setting)
 
         if self.use_mlp:
             return mlp.MLP(block_setting)
         else:
-            return tensor_operations.EquivariantMLP(block_setting)
+            return tensor_operations.EnSEquivariantMLP(block_setting)
 
     def _separate_supports(self, supports):
         """Separate supports matrices to the desired format.
@@ -108,6 +108,12 @@ class DGGNN(abstract_equivariant_gnn.AbstractEquivariantGNN):
 
         return signed_inc_cell2facet, area_normal_inc_facet2cell
 
+    def _call_mlp(self, mlp, x, *args):
+        if self.use_mlp:
+            return mlp(x)  # No other arguments
+        else:
+            return mlp([x] + list(args))
+
     def _spread(self, cell_x, *args, supports, top=True):
         """Spread cell features to facet features.
 
@@ -117,6 +123,10 @@ class DGGNN(abstract_equivariant_gnn.AbstractEquivariantGNN):
             [n_cell, dim, dim, ..., n_feature]-shaped tensor.
                      ~~~~~~~~~~~~~~
                      tensor rank repetition
+        args: list[torch.Tensor]
+            - 0: Length scales.
+            - 1: Time scales.
+            - 2: Mass scales.
         supports: list[torch.Tensor]
             - 0: [n_facet, n_cell]-shaped signed incidence matrix.
             - 1, 2, ...: [n_cell, n_facet]-shaped area-weighted normal
@@ -134,14 +144,16 @@ class DGGNN(abstract_equivariant_gnn.AbstractEquivariantGNN):
 
         inc_facet2cell = torch.abs(signed_inc_cell2facet)
         scale = 1 / torch.sparse.sum(inc_facet2cell, dim=1).to_dense()
-        ave_facet_values = self.mlp(
+        ave_facet_values = self._call_mlp(
+            self.mlp,
             torch.einsum(
-                'i,i...->i...', scale, sparse.mul(inc_facet2cell, cell_x)))
+                'i,i...->i...', scale, sparse.mul(inc_facet2cell, cell_x)),
+            *args)
 
         if self.riemann_solver == 'lax_friedrichs':
             # Lax--Friedrichs method
-            diff_facet_values = self.solver_mlp(
-                signed_inc_cell2facet.mm(cell_x) / 2)
+            diff_facet_values = self._call_mlp(
+                self.solver_mlp, signed_inc_cell2facet.mm(cell_x) / 2, *args)
             # TODO: Determine CFL number
             facet_values = ave_facet_values + diff_facet_values
         else:
@@ -155,6 +167,10 @@ class DGGNN(abstract_equivariant_gnn.AbstractEquivariantGNN):
         ----------
         x: torch.Tensor
             [n_facet, n_feature]-shaped tensor.
+        args: list[torch.Tensor]
+            - 0: Length scales.
+            - 1: Time scales.
+            - 2: Mass scales.
         supports: list[torch.Tensor]
             - 0: [n_facet, n_cell]-shaped signed incidence matrix.
             - 1, 2, ...: [n_cell, n_facet]-shaped area-weighted normal
@@ -177,6 +193,10 @@ class DGGNN(abstract_equivariant_gnn.AbstractEquivariantGNN):
             [n_facet, dim, dim, ..., n_feature]-shaped tensor.
                       ~~~~~~~~~~~~~~
                       tensor rank repetition
+        args: list[torch.Tensor]
+            - 0: Length scales.
+            - 1: Time scales.
+            - 2: Mass scales.
         supports: list[torch.Tensor]
             - 0: [n_facet, n_cell]-shaped signed incidence matrix.
             - 1, 2, ...: [n_cell, n_facet]-shaped area-weighted normal
@@ -193,7 +213,7 @@ class DGGNN(abstract_equivariant_gnn.AbstractEquivariantGNN):
             = self._separate_supports(supports)
 
         cell_h = torch.stack([
-            sparse.mul(grad_inc, self.mlp(facet_x))
+            sparse.mul(grad_inc, self._call_mlp(self.mlp, facet_x, *args))
             for grad_inc in area_normal_inc_facet2cell], axis=1)
         return cell_h
 
@@ -206,6 +226,10 @@ class DGGNN(abstract_equivariant_gnn.AbstractEquivariantGNN):
             [n_facet, dim, dim, ..., n_feature]-shaped tensor.
                       ~~~~~~~~~~~~~~
                       tensor rank repetition
+        args: list[torch.Tensor]
+            - 0: Length scales.
+            - 1: Time scales.
+            - 2: Mass scales.
         supports: list[torch.Tensor]
             - 0: [n_facet, n_cell]-shaped signed incidence matrix.
             - 1, 2, ...: [n_cell, n_facet]-shaped area-weighted normal
@@ -219,15 +243,7 @@ class DGGNN(abstract_equivariant_gnn.AbstractEquivariantGNN):
                      tensor rank - 1 repetition
         """
         cell_h = self._tensor_product(facet_x, *args, supports=supports)
-        # raise ValueError(cell_h[:10, :, :, 0])
         cell_h = torch.einsum('ikk...->i...', cell_h)
-        # print(facet_x.shape)
-        # raise ValueError(
-        #     facet_x[:10, 0, 0], cell_h[:10, 0],
-        #     supports[1].coalesce().values()[:10])
-        # print(
-        #     facet_x[:10, 0, 0], cell_h[:10, 0],
-        #     supports[1].coalesce().values()[:10])
         return cell_h
 
     def _rotation(self, x, *args, supports):
@@ -237,6 +253,10 @@ class DGGNN(abstract_equivariant_gnn.AbstractEquivariantGNN):
         ----------
         x: torch.Tensor
             [n_vertex, dim, n_feature]-shaped tensor.
+        args: list[torch.Tensor]
+            - 0: Length scales.
+            - 1: Time scales.
+            - 2: Mass scales.
         inversed_moment_tensors: torch.Tensor
             [n_vertex, 3, 3, 1]-shaped inversed moment tensors.
         supports: list[torch.Tensor]
