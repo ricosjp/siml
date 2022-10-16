@@ -52,7 +52,7 @@ generate_heat_steady:
 generate_advection:
   stage: preprocess
   script:
-    - python3.9 tests/data/advection/generate_data.py tests/data/advection
+    - python3.9 tests/data/advection/generate_data.py tests/data/advection -n 2 -v 1
     - python3.9 tests/data/freeshape_advection/generate_data.py tests/data/freeshape_advection
   artifacts:
     paths:

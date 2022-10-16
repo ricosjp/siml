@@ -2,10 +2,8 @@ data:
   preprocessed:
     - tests/data/advection/preprocessed
   train:
-    # - tests/data/advection/preprocessed/train/0
     - tests/data/advection/preprocessed/train
   validation:
-    # - tests/data/advection/preprocessed/train/0
     - tests/data/advection/preprocessed/validation
 inferer:
   write_simulation: true
