@@ -2,11 +2,9 @@ data:
   preprocessed:
     - tests/data/freeshape_advection/preprocessed
   train:
-    - tests/data/freeshape_advection/preprocessed/train/0
-    # - tests/data/freeshape_advection/preprocessed/train
+    - tests/data/freeshape_advection/preprocessed/train
   validation:
-    - tests/data/freeshape_advection/preprocessed/train/0
-    # - tests/data/freeshape_advection/preprocessed/validation
+    - tests/data/freeshape_advection/preprocessed/validation
 inferer:
   write_simulation: true
   write_simulation_base: tests/data/freeshape_advection/interim

@@ -13,11 +13,14 @@ preprocess:
   noraml_inc_facet2cell_y: identity
   noraml_inc_facet2cell_z: identity
   weighted_normal_inc_facet2cell_x:
-    same_as: inverse_facet_length
+    method: isoam_scale
+    other_components:
+      - weighted_normal_inc_facet2cell_y
+      - weighted_normal_inc_facet2cell_z
   weighted_normal_inc_facet2cell_y:
-    same_as: inverse_facet_length
+    same_as: weighted_normal_inc_facet2cell_x
   weighted_normal_inc_facet2cell_z:
-    same_as: inverse_facet_length
+    same_as: weighted_normal_inc_facet2cell_x
   inc_cell2facet: identity
 
   cell_volume: identity

@@ -39,8 +39,9 @@ class TestDGGNN(equivariance_base.EquivarianceBase):
             volume=volume, decimal=decimal,
             target_time_series=False, prediction_time_series=True)
 
-        transformed_path = main_setting.data.validation[0].parent \
-            / f"transformed_{main_setting.data.validation[0].name}"
+        transformed_path = Path(
+            str(main_setting.data.validation[0].parent) + '_transformed') \
+            / main_setting.data.validation[0].name
         if not transformed_path.exists():
             return
 

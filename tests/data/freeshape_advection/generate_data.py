@@ -129,15 +129,15 @@ class DataGenerator:
         transformed_target_dict_data, transformed_fem_data \
             = self.transform_data(fem_data, target_dict_data)
         transformed_dict_data = self.extract_feature(
-            fem_data, transformed_target_dict_data)
+            transformed_fem_data, transformed_target_dict_data)
         transformed_dict_data.update({
             'facet_periodic_flag':
             dict_data['facet_periodic_flag'],
             'facet_inverse_periodic_flag':
             dict_data['facet_inverse_periodic_flag'],
         })
-        transformed_output_directory = self.output_directory / self.mode \
-            / f"transformed_{i_data}"
+        transformed_output_directory = self.output_directory \
+            / f"{self.mode}_transformed" / str(i_data)
         self.save(
             transformed_output_directory,
             transformed_dict_data, transformed_fem_data)
