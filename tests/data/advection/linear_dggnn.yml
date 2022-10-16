@@ -2,10 +2,11 @@ data:
   preprocessed:
     - tests/data/advection/preprocessed
   train:
-    - tests/data/advection/preprocessed/train/0
+    # - tests/data/advection/preprocessed/train/0
+    - tests/data/advection/preprocessed/train
   validation:
-    - tests/data/advection/preprocessed/train/0
-    # - tests/data/advection/preprocessed/validation
+    # - tests/data/advection/preprocessed/train/0
+    - tests/data/advection/preprocessed/validation
 inferer:
   write_simulation: true
   write_simulation_base: tests/data/advection/interim
@@ -43,7 +44,7 @@ trainer:
   batch_size: 1
   n_epoch: 300
   log_trigger_epoch: 10
-  stop_trigger_epoch: 10
+  stop_trigger_epoch: 100
   seed: 0
   lazy: false
   num_workers: 0
