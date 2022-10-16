@@ -97,17 +97,17 @@ class TestDGGNN(equivariance_base.EquivarianceBase):
 
         self.validate(main_setting, tr.setting.trainer.output_directory)
 
-    def test_nonlinear_dggnn(self):
-        main_setting = setting.MainSetting.read_settings_yaml(
-            Path('tests/data/advection/nonlinear_dggnn.yml'))
-        main_setting.trainer.gpu_id = GPU_ID
-        tr = trainer.Trainer(main_setting)
-        if tr.setting.trainer.output_directory.exists():
-            shutil.rmtree(tr.setting.trainer.output_directory)
-        loss = tr.train()
-        np.testing.assert_array_less(loss, 1.)
-
-        self.validate(main_setting, tr.setting.trainer.output_directory)
+    # def test_nonlinear_dggnn(self):
+    #     main_setting = setting.MainSetting.read_settings_yaml(
+    #         Path('tests/data/advection/nonlinear_dggnn.yml'))
+    #     main_setting.trainer.gpu_id = GPU_ID
+    #     tr = trainer.Trainer(main_setting)
+    #     if tr.setting.trainer.output_directory.exists():
+    #         shutil.rmtree(tr.setting.trainer.output_directory)
+    #     loss = tr.train()
+    #     np.testing.assert_array_less(loss, 1.)
+    #
+    #     self.validate(main_setting, tr.setting.trainer.output_directory)
 
     def test_freeshape_simplest_dggnn(self):
         main_setting = setting.MainSetting.read_settings_yaml(
