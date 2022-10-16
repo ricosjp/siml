@@ -1,0 +1,41 @@
+data:
+  raw: tests/data/freeshape_advection/raw
+  interim: tests/data/freeshape_advection/interim
+  preprocessed: tests/data/freeshape_advection/preprocessed
+  inferred: tests/data/freeshape_advection/inferred
+  train:
+    - tests/data/freeshape_advection/preprocessed
+  validation:
+    - tests/data/freeshape_advection/preprocessed
+preprocess:
+  signed_inc_cell2facet: identity
+  noraml_inc_facet2cell_x: identity
+  noraml_inc_facet2cell_y: identity
+  noraml_inc_facet2cell_z: identity
+  weighted_normal_inc_facet2cell_x:
+    same_as: inverse_facet_length
+  weighted_normal_inc_facet2cell_y:
+    same_as: inverse_facet_length
+  weighted_normal_inc_facet2cell_z:
+    same_as: inverse_facet_length
+  inc_cell2facet: identity
+
+  cell_volume: identity
+  cell_adj: identity
+  cell_nadj: identity
+  cell_position: identity
+  cell_speed: identity
+  cell_initial_phi: identity
+  cell_last_phi: identity
+  cell_phi: identity
+
+  facet_area: identity
+  facet_length: std_scale
+  inverse_facet_length: std_scale
+  facet_normal: identity
+  facet_position: identity
+  facet_area_normal: identity
+  facet_periodic_flag: identity
+  facet_inverse_periodic_flag: identity
+
+  global_speed: identity
