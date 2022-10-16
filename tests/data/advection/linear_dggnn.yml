@@ -228,6 +228,7 @@ model:
             propagations:
               - spread
             trainable: true
+            use_mlp: true
             # riemann_solver: lax_friedrichs
         - name: MUL
           type: reducer
@@ -247,3 +248,4 @@ model:
             propagations:
               - contraction
             trainable: false
+            use_mlp: true

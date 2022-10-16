@@ -162,7 +162,7 @@ model:
           input_keys:
             - gfacet_length
           destinations:
-            - DGGNN_SPEED_CELL2FACET
+            # - DGGNN_SPEED_CELL2FACET
             - DGGNN_FACET2CELL
 
         - name: DGGNN_CELL2FACET
@@ -244,9 +244,9 @@ model:
             - DGGNN_SPEED_CELL2FACET
         - name: DGGNN_SPEED_CELL2FACET
           type: dggnn
-          input_names:
-            - IN_CELL_SPEED
-            - IN_FACET_LENGTH
+          # input_names:
+          #   - IN_CELL_SPEED
+          #   - IN_FACET_LENGTH
           destinations:
             - MUL
           bias: false
@@ -258,14 +258,15 @@ model:
           nodes:
             - 32
             - 32
-            - 32
+            # - 32
           activations:
-            - tanh
+            # - tanh
             - identity
           optional:
             propagations:
               - spread
             trainable: true
+            use_mlp: true
             dimension:
               length: 1
               time: -1
