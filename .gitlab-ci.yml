@@ -53,9 +53,11 @@ generate_advection:
   stage: preprocess
   script:
     - python3.9 tests/data/advection/generate_data.py tests/data/advection
+    - python3.9 tests/data/freeshape_advection/generate_data.py tests/data/freeshape_advection
   artifacts:
     paths:
       - tests/data/advection
+      - tests/data/freeshape_advection
     expire_in: 180min
 
 autopep8:
