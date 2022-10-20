@@ -3,10 +3,12 @@ import io
 import pathlib
 import random
 import re
+from typing import Callable
 
 import numpy as np
 import pandas as pd
 import torch
+from torch import Tensor
 import torch.nn.functional as functional
 
 from . import data_parallel
@@ -32,7 +34,12 @@ class SimlManager():
         main_setting = setting.MainSetting.read_settings_yaml(settings_yaml)
         return cls(main_setting)
 
-    def __init__(self, settings, *, optuna_trial=None):
+    def __init__(self,
+                 settings,
+                 *,
+                 optuna_trial=None,
+                 user_loss_fundtion:
+                 Callable[[Tensor, Tensor], Tensor] = None):
         """Initialize SimlManager object.
 
         Parameters
@@ -58,6 +65,7 @@ class SimlManager():
             raise ValueError(
                 f"Unknown type for settings: {settings.__class__}")
         self.inference_mode = False
+        self.user_loss_function = user_loss_fundtion
 
         self._update_setting_if_needed()
         self.optuna_trial = optuna_trial
@@ -299,7 +307,8 @@ class SimlManager():
             loss_name=loss_name, output_is_dict=output_is_dict,
             time_series=self.setting.trainer.time_series,
             output_skips=self.setting.trainer.output_skips,
-            output_dims=self.setting.trainer.output_dims)
+            output_dims=self.setting.trainer.output_dims,
+            user_loss_function=self.user_loss_function)
 
     def min_len(self, x):
         if isinstance(x, torch.Tensor):
@@ -313,12 +322,16 @@ class SimlManager():
 class LossFunction:
 
     def __init__(
-            self, *, loss_name='mse', time_series=False,
-            output_is_dict=False, output_skips=None, output_dims=None):
-        if loss_name == 'mse':
-            self.loss_core = functional.mse_loss
-        else:
-            raise ValueError(f"Unknown loss function name: {loss_name}")
+            self,
+            *,
+            loss_name='mse',
+            time_series=False,
+            output_is_dict=False,
+            output_skips=None,
+            output_dims=None,
+            user_loss_function: Callable[[Tensor, Tensor], Tensor] = None):
+
+        self.loss_core = self._get_loss_core(loss_name, user_loss_function)
         self.output_is_dict = output_is_dict
         self.output_dims = output_dims
         self.time_series = time_series
@@ -338,6 +351,19 @@ class LossFunction:
 
     def __call__(self, y_pred, y, original_shapes=None, **kwargs):
         return self.loss(y_pred, y, original_shapes)
+
+    def _get_loss_core(
+            self,
+            loss_name: str,
+            user_loss_function: Callable[[Tensor, Tensor], Tensor] = None):
+
+        if user_loss_function is not None:
+            return user_loss_function
+
+        if loss_name == 'mse':
+            return functional.mse_loss
+
+        raise ValueError(f"Unknown loss function name: {loss_name}")
 
     def loss_function_dict(self, y_pred, y, original_shapes=None):
         masked_y_pred, masked_y = self.mask_function(y_pred, y)
