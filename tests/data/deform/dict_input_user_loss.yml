@@ -1,0 +1,144 @@
+data:
+  train:
+    - tests/data/deform/preprocessed/train
+  validation:
+    - tests/data/deform/preprocessed/train
+conversion:
+  mandatory:
+    - elemental_strain
+    - modulus
+    - poisson_ratio
+  optional:
+    - elemental_stress
+trainer:
+  lazy: false
+  num_workers: 0
+  output_directory: tests/data/deform/mlp
+  inputs:
+    rank0:
+      - name: modulus
+        dim: 1
+      - name: poisson_ratio
+        dim: 1
+    rank2:
+      - name: tensor_stress
+        shape:
+          - 3
+          - 3
+      - name: tensor_strain
+        shape:
+          - 3
+          - 3
+  outputs:
+    out_rank0:
+      - name: elemental_strain
+        dim: 6
+    out_rank2_gauss1_2:
+      - name: tensor_gauss_strain1
+        shape:
+          - 3
+          - 3
+      - name: tensor_gauss_strain2
+        shape:
+          - 3
+          - 3
+    out_rank2_gauss3_4:
+      - name: tensor_gauss_strain3
+        shape:
+          - 3
+          - 3
+      - name: tensor_gauss_strain4
+        shape:
+          - 3
+          - 3
+  prune: true
+  batch_size: 2
+  n_epoch: 100
+  log_trigger_epoch: 10
+  stop_trigger_epoch: 100
+  seed: 0
+  loss_function: 
+    out_rank0: mse
+    out_rank2_gauss1_2: user_mspe
+    out_rank2_gauss3_4: mse
+model:
+  blocks:
+    - name: MLP_RANK0
+      type: adjustable_mlp
+      destinations:
+        - REDUCER
+      input_keys:
+        - rank0
+      nodes:
+        - -1
+        - 10
+        - 10
+      activations:
+        - relu
+        - relu
+      dropouts:
+        - 0.0
+        - 0.0
+    - name: MLP_RANK2
+      type: adjustable_mlp
+      is_first: true
+      destinations:
+        - REDUCER
+      input_keys:
+        - rank2
+      nodes:
+        - -1
+        - 10
+        - 10
+      activations:
+        - relu
+        - relu
+    - name: REDUCER
+      type: reducer
+      destinations:
+        - OUT_MLP_RANK2_GAUSS12
+        - OUT_MLP_RANK2_GAUSS34
+        - RESHAPE
+      optional:
+        operator: mul
+    - name: RESHAPE
+      type: reshape
+      destinations:
+        - OUT_MLP_RANK0
+      optional:
+        new_shape:
+          - -1
+          - 90
+    - name: OUT_MLP_RANK0
+      type: mlp
+      is_last: true
+      output_key: out_rank0
+      nodes:
+        - -1
+        - 10
+        - -1
+      activations:
+        - relu
+        - identity
+    - name: OUT_MLP_RANK2_GAUSS12
+      type: mlp
+      is_last: true
+      output_key: out_rank2_gauss1_2
+      nodes:
+        - -1
+        - 10
+        - -1
+      activations:
+        - relu
+        - identity
+    - name: OUT_MLP_RANK2_GAUSS34
+      type: mlp
+      is_last: true
+      output_key: out_rank2_gauss3_4
+      nodes:
+        - -1
+        - 10
+        - -1
+      activations:
+        - relu
+        - identity
