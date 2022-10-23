@@ -10,6 +10,7 @@ class LossFunctionSelector():
     """
     Resposibility: Select loss function for each variable name
     """
+
     def __init__(
         self,
         loss_assignment: ILossAssignment,
@@ -38,7 +39,7 @@ class LossFunctionSelector():
             self,
             user_loss_function_dic:
             dict[str, Callable[[Tensor, Tensor], Tensor]] = None
-            ) -> dict[str, Callable[[Tensor, Tensor], Tensor]]:
+    ) -> dict[str, Callable[[Tensor, Tensor], Tensor]]:
         """Create dictionary of which key is function name and\
             value is funciton object.
 

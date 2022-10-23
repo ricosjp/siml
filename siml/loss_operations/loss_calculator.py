@@ -78,6 +78,7 @@ class LossCalculator:
 class CoreLossCalculator():
     """Calculate loss according to variable name and function name
     """
+
     def __init__(
             self,
             *,
