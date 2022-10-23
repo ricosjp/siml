@@ -119,7 +119,7 @@ class CoreLossCalculator():
         return self.func_name_to_func_obj[loss_name]
 
     def _check_loss_functions(self) -> None:
-        for loss_name in self.loss_assignment.loss_names():
+        for loss_name in self.loss_assignment.loss_names:
             if loss_name not in self.func_name_to_func_obj.keys():
                 raise ValueError(f"Unknown loss function name: {loss_name}")
 

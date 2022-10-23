@@ -3,8 +3,9 @@ from typing import List, Union
 
 
 class ILossAssignment(metaclass=abc.ABCMeta):
-    @abc.abstractproperty
-    def loss_names() -> List[str]:
+    @property
+    @abc.abstractmethod
+    def loss_names(self) -> List[str]:
         raise NotImplementedError()
 
     @abc.abstractmethod
@@ -27,25 +28,25 @@ class LossAssignmentCreator():
 
 class DictLossAssignment(ILossAssignment):
     def __init__(self, loss_setting: dict):
-        self.loss_setting = loss_setting
+        self._loss_setting = loss_setting
 
     @property
-    def loss_names(self):
-        return list(self.loss_setting.values())
+    def loss_names(self) -> List[str]:
+        return list(self._loss_setting.values())
 
     def __getitem__(self,
                     variable_name: str) -> str:
-        return self.loss_setting[variable_name]
+        return self._loss_setting[variable_name]
 
 
 class StrLossAssignment(ILossAssignment):
     def __init__(self, loss_setting: str):
-        self.loss_setting = loss_setting
+        self._loss_setting = loss_setting
 
     @property
-    def loss_names(self):
-        return self.loss_setting
+    def loss_names(self) -> List[str]:
+        return [self._loss_setting]
 
     def __getitem__(self,
                     variable_name: str) -> str:
-        return self.loss_setting
+        return self._loss_setting

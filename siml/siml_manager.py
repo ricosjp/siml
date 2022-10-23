@@ -65,7 +65,7 @@ class SimlManager():
             raise ValueError(
                 f"Unknown type for settings: {settings.__class__}")
         self.inference_mode = False
-        self.user_loss_fundtion_dic = user_loss_fundtion_dic
+        self.user_loss_function_dic = user_loss_fundtion_dic
 
         self._update_setting_if_needed()
         self.optuna_trial = optuna_trial
