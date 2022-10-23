@@ -1117,7 +1117,7 @@ class VariableMask:
             for x in xs
         ]
 
-        # check key names are same in pair
+        # check whether key names are same
         for i in range(len(masked_keys) - 1):
             if masked_keys[i] != masked_keys[i + 1]:
                 raise Exception(f"Key names are not matched."
