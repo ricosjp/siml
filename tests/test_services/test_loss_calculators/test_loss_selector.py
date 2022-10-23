@@ -64,6 +64,5 @@ def test_can_detect_invalid_inputs(prepare_user_invalid_inputs):
             loss_assignment,
             user_loss_function_dic=user_loss_function_dic
         )
-    
-    assert str(ex.value) == "Unknown loss function name: USER_FUNC"
 
+    assert str(ex.value) == "Unknown loss function name: USER_FUNC"

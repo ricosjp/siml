@@ -95,10 +95,10 @@ test_trainer_long:
   extends: .test
   script: python3.9 -m pytest tests/test_trainer_long.py --capture=no
 
-test_assistance:
+test_services:
   extends: .test
   script:
-    - python3.9 -m pytest tests/test_assistance --capture=no
+    - python3.9 -m pytest tests/test_services --capture=no
 
 test_group:
   extends: .test
