@@ -1,12 +1,11 @@
 from typing import Callable, Union
 import torch
 from torch import Tensor
-import torch.nn.functional as functional
 
 from siml import util
-from .loss_type import LossType
 from .loss_assignment import ILossAssignment
 from .loss_assignment import LossAssignmentCreator
+from .loss_selector import LossFunctionSelector
 
 
 class LossCalculator:
@@ -86,11 +85,10 @@ class CoreLossCalculator():
             user_loss_function_dic:
             dict[str, Callable[[Tensor, Tensor], Tensor]] = None):
 
-        self.loss_assignment = loss_assignment
-        self.func_name_to_func_obj = self._create_loss_function_dict(
-            user_loss_function_dic
+        self.loss_selector = LossFunctionSelector(
+            loss_assignment,
+            user_loss_function_dic=user_loss_function_dic
         )
-        self._check_loss_functions()
         return
 
     def __call__(self,
@@ -109,43 +107,5 @@ class CoreLossCalculator():
         Returns:
             Tensor: Loss value
         """
-        loss_func = self._select_core_loss_function(variable_name)
+        loss_func = self.loss_selector.get_loss_function(variable_name)
         return loss_func(input_tensor, target_tensor)
-
-    def _select_core_loss_function(self,
-                                   variable_name: str
-                                   ) -> Callable[[Tensor, Tensor], Tensor]:
-        loss_name = self.loss_assignment[variable_name]
-        return self.func_name_to_func_obj[loss_name]
-
-    def _check_loss_functions(self) -> None:
-        for loss_name in self.loss_assignment.loss_names:
-            if loss_name not in self.func_name_to_func_obj.keys():
-                raise ValueError(f"Unknown loss function name: {loss_name}")
-
-    def _create_loss_function_dict(
-            self,
-            user_loss_function_dic:
-            dict[str, Callable[[Tensor, Tensor], Tensor]] = None
-            ) -> dict[str, Callable[[Tensor, Tensor], Tensor]]:
-        """Create dictionary of which key is function name and\
-            value is funciton object.
-
-        Args:
-            user_loss_function_dic
-             (dict[str, Callable[[Tensor, Tensor], Tensor]], optional):
-              Loss function dictionary defined by user. Defaults to None.
-
-        Returns:
-            dict[str, Callable[[Tensor, Tensor], Tensor]]:
-             Key is function name and value is function object
-        """
-
-        name_to_function = {
-            LossType.mse.name: functional.mse_loss
-        }
-
-        if user_loss_function_dic is not None:
-            name_to_function.update(user_loss_function_dic)
-
-        return name_to_function

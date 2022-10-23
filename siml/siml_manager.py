@@ -13,7 +13,7 @@ from torch import Tensor
 from . import data_parallel
 from . import setting
 from . import util
-from .loss_calculators.loss_function import LossCalculator
+from .loss_operations.loss_calculator import LossCalculator
 
 
 class SimlManager():

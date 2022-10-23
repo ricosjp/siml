@@ -1087,7 +1087,7 @@ class VariableMask:
 
         if with_key_names:
             keys = self._get_masked_key_names(*xs)
-            return tensors, keys
+            return *tensors, keys
         else:
             return tensors
 

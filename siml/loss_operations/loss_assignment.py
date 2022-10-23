@@ -25,6 +25,9 @@ class LossAssignmentCreator():
         if type(loss_setting) is str:
             return StrLossAssignment(loss_setting)
 
+        raise NotImplementedError(
+            f"Loss Assignment for {type(loss_setting)} is not implemented.")
+
 
 class DictLossAssignment(ILossAssignment):
     def __init__(self, loss_setting: dict):
