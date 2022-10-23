@@ -15,7 +15,7 @@ import siml.setting as setting
 import siml.trainer as trainer
 
 sys.path.insert(0, 'tests')
-import equivariance_base  # NOQA
+import tests.equivariance_base as equivariance_base  # NOQA
 import preprocess  # NOQA
 
 PLOT = False
