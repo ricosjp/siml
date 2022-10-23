@@ -141,6 +141,9 @@ class TypedDataClass:
                     return None
                 else:
                     return str(x)
+        elif field.type == typing.Union[str, dict]:
+            def type_function(x):
+                return x
         else:
             type_function = field.type
 
