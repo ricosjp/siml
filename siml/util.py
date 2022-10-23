@@ -8,6 +8,7 @@ import re
 import shutil
 import subprocess
 import pickle
+from typing import List
 
 from Cryptodome.Cipher import AES
 
@@ -1073,31 +1074,74 @@ class VariableMask:
         return [
             [x[key] for key in xs[0].keys()] for x in xs]
 
-    def _dict_mask(self, *xs, keep_empty_data=True):
+    def _dict_mask(self,
+                   *xs,
+                   keep_empty_data=True,
+                   with_key_names=False):
+        masked_tensors = self._calc_masked_tensors(*xs)
+
+        if keep_empty_data:
+            tensors = self._replace_zero_element_tensor(masked_tensors)
+        else:
+            tensors = self._remove_zero_element_tensor(masked_tensors)
+
+        if with_key_names:
+            keys = self._get_masked_key_names(*xs)
+            return tensors, keys
+        else:
+            return tensors
+
+    def _array_mask(self, *xs):
+        return [x[..., self.mask] for x in xs]
+
+    def _calc_masked_tensors(self, *xs):
         try:
             masked = [
                 [
-                    x[key][..., self.mask[key]] for key in self.mask.keys()
-                    if key in x]
-                for x in xs]
+                    x[key][..., self.mask[key]]
+                    for key in self.mask.keys() if key in x
+                ]
+                for x in xs
+            ]
+            return masked
         except IndexError as e:
             x = xs[0]
             raise ValueError(f"{e}\n", {
                 key: (x[key].shape, self.mask[key].shape)
-                for key in self.mask.keys() if key in x})
-        if keep_empty_data:
-            return [
-                [
-                    torch.zeros(1).to(m_.device)
-                    if torch.numel(m_) == 0 else m_
-                    for m_ in m]
-                for m in masked]
-        else:
-            return [
-                [m_ for m_ in m if torch.numel(m_) > 0] for m in masked]
+                for key in self.mask.keys() if key in x}
+            )
 
-    def _array_mask(self, *xs):
-        return [x[..., self.mask] for x in xs]
+    def _get_masked_key_names(self, *xs):
+        masked_keys = [
+            [key for key in self.mask.keys() if key in x]
+            for x in xs
+        ]
+
+        # check key names are same in pair
+        for i in range(len(masked_keys) - 1):
+            if masked_keys[i] != masked_keys[i + 1]:
+                raise Exception(f"Key names are not matched."
+                                f"{i}: {masked_keys[i]},"
+                                f" {i + 1}: {masked_keys[i+1]}")
+
+        return masked_keys[0]
+
+    def _remove_zero_element_tensor(self,
+                                    tensors: List[torch.Tensor]):
+        return [
+            [m_ for m_ in m if torch.numel(m_) > 0]
+            for m in tensors
+        ]
+
+    def _replace_zero_element_tensor(self,
+                                     tensors: List[torch.Tensor]):
+        return [
+            [
+                torch.zeros(1).to(m_.device)
+                if torch.numel(m_) == 0 else m_ for m_ in m
+            ]
+            for m in tensors
+        ]
 
 
 def cat_time_series(x, time_series_keys):
