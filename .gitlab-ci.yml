@@ -60,18 +60,10 @@ autopep8:
   tags:
     - avx
 
-test_gpu_networks:
-  extends: .test
-  script:
-    - python3.9 -m pytest tests/gpu/test_networks_gpu.py --capture=no
-  tags:
-    - multi-gpu
-    - avx
-
 test_gpu:
   extends: .test
   script:
-    - python3.9 -m pytest tests/gpu/test_optimize_gpu.py tests/gpu/test_trainer_gpu.py tests/gpu/test_inferer_gpu.py --capture=no
+    - python3.9 -m pytest tests/test_gpu --capture=no
   tags:
     - multi-gpu
     - avx
@@ -79,58 +71,34 @@ test_gpu:
 test_gpu_parallel:
   extends: .test
   script:
-    - python3.9 -m pytest tests/gpu/test_trainer_gpu_parallel.py --capture=no
+    - python3.9 -m pytest tests/test_gpu_parallel --capture=no
   allow_failure: true
   tags:
     - multi-gpu
     - avx
 
-test_network:
-  extends: .test
-  script: python3.9 -m pytest tests/test_network.py --capture=no
-
 test_networks:
   extends: .test
-  script: python3.9 -m pytest tests/test_networks.py --capture=no
+  script: python3.9 -m pytest tests/test_networks --capture=no
 
-test_geo:
+test_operation:
   extends: .test
-  script: python3.9 -m pytest tests/test_geo.py --capture=no
-
-test_iso_gcn:
-  extends: .test
-  script: python3.9 -m pytest tests/test_iso_gcn.py tests/test_boundary.py --capture=no
-
-test_penn:
-  extends: .test
-  script: python3.9 -m pytest tests/test_penn.py --capture=no
-
-test_optimize:
-  extends: .test
-  script: python3.9 -m pytest tests/test_optimize.py --capture=no
-
-test_study:
-  extends: .test
-  script: python3.9 -m pytest tests/test_study.py --capture=no
-
-test_trainer:
-  extends: .test
-  script: python3.9 -m pytest tests/test_trainer.py --capture=no
+  script: python3.9 -m pytest tests/test_operations --capture=no
 
 test_trainer_wo_pyg:
   extends: .test
   script:
     - python3.9 -m pip uninstall torch-geometric -y
-    - python3.9 -m pytest tests/test_trainer.py --capture=no -k test_whole_process
+    - python3.9 -m pytest tests/test_operations/test_trainer.py --capture=no -k test_whole_process
 
 test_trainer_long:
   extends: .test
   script: python3.9 -m pytest tests/test_trainer_long.py --capture=no
 
-test_other:
+test_services:
   extends: .test
   script:
-    - python3.9 -m pytest tests/test_prepost.py tests/test_setting.py tests/test_util.py tests/test_inferer.py tests/test_activations.py tests/test_sparse.py tests/test_projection.py tests/test_threshold.py --capture=no
+    - python3.9 -m pytest tests/test_services --capture=no
 
 test_group:
   extends: .test

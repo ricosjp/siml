@@ -3,15 +3,17 @@ import io
 import pathlib
 import random
 import re
+from typing import Callable
 
 import numpy as np
 import pandas as pd
 import torch
-import torch.nn.functional as functional
+from torch import Tensor
 
 from . import data_parallel
 from . import setting
 from . import util
+from .loss_operations.loss_calculator import LossCalculator
 
 
 class SimlManager():
@@ -32,7 +34,12 @@ class SimlManager():
         main_setting = setting.MainSetting.read_settings_yaml(settings_yaml)
         return cls(main_setting)
 
-    def __init__(self, settings, *, optuna_trial=None):
+    def __init__(self,
+                 settings,
+                 *,
+                 optuna_trial=None,
+                 user_loss_fundtion_dic:
+                 dict[str, Callable[[Tensor, Tensor], Tensor]] = None):
         """Initialize SimlManager object.
 
         Parameters
@@ -58,6 +65,7 @@ class SimlManager():
             raise ValueError(
                 f"Unknown type for settings: {settings.__class__}")
         self.inference_mode = False
+        self.user_loss_function_dic = user_loss_fundtion_dic
 
         self._update_setting_if_needed()
         self.optuna_trial = optuna_trial
@@ -292,14 +300,16 @@ class SimlManager():
                     return None
             return loss_function_with_allowing_no_answer
 
-        loss_name = self.setting.trainer.loss_function.lower()
+        loss_setting = self.setting.trainer.loss_function
         output_is_dict = isinstance(
             self.setting.trainer.outputs.variables, dict)
-        return LossFunction(
-            loss_name=loss_name, output_is_dict=output_is_dict,
+        return LossCalculator(
+            loss_setting=loss_setting,
+            output_is_dict=output_is_dict,
             time_series=self.setting.trainer.time_series,
             output_skips=self.setting.trainer.output_skips,
-            output_dims=self.setting.trainer.output_dims)
+            output_dims=self.setting.trainer.output_dims,
+            user_loss_function_dic=self.user_loss_function_dic)
 
     def min_len(self, x):
         if isinstance(x, torch.Tensor):
@@ -308,57 +318,3 @@ class SimlManager():
             return np.min([self.min_len(x_) for x_ in x])
         elif isinstance(x, dict):
             return np.min([self.min_len(v) for v in x.values()])
-
-
-class LossFunction:
-
-    def __init__(
-            self, *, loss_name='mse', time_series=False,
-            output_is_dict=False, output_skips=None, output_dims=None):
-        if loss_name == 'mse':
-            self.loss_core = functional.mse_loss
-        else:
-            raise ValueError(f"Unknown loss function name: {loss_name}")
-        self.output_is_dict = output_is_dict
-        self.output_dims = output_dims
-        self.time_series = time_series
-
-        self.mask_function = util.VariableMask(
-            output_skips, output_dims, output_is_dict)
-
-        if self.time_series:
-            self.loss = self.loss_function_time_with_padding
-        else:
-            if self.output_is_dict:
-                self.loss = self.loss_function_dict
-            else:
-                self.loss = self.loss_function_without_padding
-
-        return
-
-    def __call__(self, y_pred, y, original_shapes=None, **kwargs):
-        return self.loss(y_pred, y, original_shapes)
-
-    def loss_function_dict(self, y_pred, y, original_shapes=None):
-        masked_y_pred, masked_y = self.mask_function(y_pred, y)
-        return torch.mean(torch.stack([
-            self.loss_core(myp.view(my.shape), my)
-            for myp, my in zip(masked_y_pred, masked_y)
-        ]))
-
-    def loss_function_without_padding(self, y_pred, y, original_shapes=None):
-        return self.loss_core(*self.mask_function(y_pred.view(y.shape), y))
-
-    def loss_function_time_with_padding(self, y_pred, y, original_shapes):
-        split_y_pred = torch.split(
-            y_pred, list(original_shapes[:, 1]), dim=1)
-        concatenated_y_pred = torch.cat([
-            sy[:s].reshape(-1)
-            for s, sy in zip(original_shapes[:, 0], split_y_pred)])
-        split_y = torch.split(
-            y, list(original_shapes[:, 1]), dim=1)
-        concatenated_y = torch.cat([
-            sy[:s].reshape(-1)
-            for s, sy in zip(original_shapes[:, 0], split_y)])
-        return self.loss_core(
-            *self.mask_function(concatenated_y_pred, concatenated_y))

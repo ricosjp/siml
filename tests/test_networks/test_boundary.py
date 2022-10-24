@@ -1,7 +1,6 @@
 
 from pathlib import Path
 import shutil
-import sys
 import unittest
 
 import femio
@@ -17,8 +16,7 @@ import siml.networks.mlp as mlp
 import siml.setting as setting
 import siml.trainer as trainer
 
-sys.path.append('tests')
-import preprocess  # NOQA
+import preprocess
 
 
 PLOT = False

@@ -1,7 +1,6 @@
 
 from pathlib import Path
 import shutil
-import sys
 
 import numpy as np
 import scipy.sparse as sp
@@ -14,9 +13,8 @@ import siml.networks.penn as penn
 import siml.setting as setting
 import siml.trainer as trainer
 
-sys.path.insert(0, 'tests')
-import equivariance_base  # NOQA
-import preprocess  # NOQA
+import equivariance_base as equivariance_base
+import preprocess
 
 PLOT = False
 
