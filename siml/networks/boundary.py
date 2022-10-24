@@ -71,6 +71,7 @@ class Dirichlet(siml_module.SimlModule):
         x = xs[0]
         dirichlet = xs[1]
         filter_not_nan = ~ torch.isnan(dirichlet)
+        # raise ValueError(x[..., filter_not_nan], dirichlet[filter_not_nan])
         if torch.sum(filter_not_nan) == 0:
             raise ValueError(f"Dirichlet all NaN: {dirichlet}")
         x[..., filter_not_nan] = dirichlet[filter_not_nan]

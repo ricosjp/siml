@@ -42,6 +42,8 @@ class DGGNN(abstract_equivariant_gnn.AbstractEquivariantGNN):
 
         self.use_mlp = self.block_setting.optional.get('use_mlp', None)
         self.trainable = self.block_setting.optional.get('trainable', True)
+        if not self.trainable:
+            self.use_mlp = True
 
         self.riemann_solver = self.block_setting.optional.get(
             'riemann_solver', None)
@@ -60,6 +62,7 @@ class DGGNN(abstract_equivariant_gnn.AbstractEquivariantGNN):
         block_setting = copy.copy(self.block_setting)
 
         if not trainable:
+            block_setting
             return identity.Identity(block_setting)
 
         if bias is not None:
@@ -110,6 +113,8 @@ class DGGNN(abstract_equivariant_gnn.AbstractEquivariantGNN):
 
     def _call_mlp(self, mlp, x, *args):
         if self.use_mlp:
+            if isinstance(x, (list, tuple)):
+                raise ValueError(len(x))
             return mlp(x)  # No other arguments
         else:
             return mlp([x] + list(args))

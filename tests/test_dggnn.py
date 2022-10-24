@@ -24,7 +24,7 @@ class TestDGGNN(equivariance_base.EquivarianceBase):
 
     def validate(
             self, main_setting, model_directory,
-            decimal=1e-7, time_length=None):
+            decimal=7, time_length=None):
 
         ir = inferer.Inferer(
             main_setting,
@@ -147,3 +147,43 @@ class TestDGGNN(equivariance_base.EquivarianceBase):
 
         self.validate(
             main_setting, tr.setting.trainer.output_directory, time_length=10)
+
+    def test_diffusion_simplest_dggnn(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/diffusion/simplest_dggnn.yml'))
+        main_setting.trainer.gpu_id = GPU_ID
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, 1.)
+
+        self.validate(
+            main_setting, tr.setting.trainer.output_directory)
+
+    def test_diffusion_linear_dggnn(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/diffusion/linear_dggnn.yml'))
+        main_setting.trainer.gpu_id = GPU_ID
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, 1.)
+
+        self.validate(
+            main_setting, tr.setting.trainer.output_directory, decimal=2)
+
+    def test_diffusion_nonlinear_dggnn(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/diffusion/nonlinear_dggnn.yml'))
+        main_setting.trainer.gpu_id = GPU_ID
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, 1.)
+
+        self.validate(
+            main_setting, tr.setting.trainer.output_directory,
+            decimal=2)
