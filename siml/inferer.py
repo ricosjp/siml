@@ -152,7 +152,8 @@ class Inferer(siml_manager.SimlManager):
 
     def infer(
             self, *, data_directories=None, model=None,
-            perform_preprocess=None, output_directory_base=None):
+            perform_preprocess=None, output_directory_base=None,
+            dump_all=False):
         """Perform infererence.
 
         Parameters
@@ -198,7 +199,11 @@ class Inferer(siml_manager.SimlManager):
 
         if self.setting.inferer.save:
             self.save(inference_state.metrics['results'])
-        return inference_state.metrics['results']
+
+        if dump_all:
+            return inference_state
+        else:
+            return inference_state.metrics['results']
 
     def infer_simplified_model(
             self, model_path, raw_dict_x, *, answer_raw_dict_y=None):
