@@ -31,9 +31,9 @@ class UpperLimit(siml_module.SimlModule):
         x = xs[0]
         max_value: torch.Tensor = xs[1]
 
-        if max_value.size() != 1:
+        if max_value.numel() != 1:
             raise ValueError("max_value has only one element."
-                             f"{max_value.size()} given")
+                             f"{max_value.numel()} given")
 
         x[x > max_value] = max_value
         return x
