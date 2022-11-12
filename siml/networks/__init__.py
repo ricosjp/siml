@@ -34,6 +34,7 @@ from . import time_norm
 from . import translator
 from . import projection
 from . import threshold
+from . import upper_limit
 
 
 # Add block information
@@ -64,6 +65,7 @@ blocks = [
     translator.Translator,
     projection.Projection,
     threshold.Threshold,
+    upper_limit.UpperLimit,
 
     # Layers with weights
     deepsets.DeepSets,

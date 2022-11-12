@@ -161,5 +161,5 @@ DICT_ACTIVATIONS = {
     'inversed_leaky_relu': InversedLeakyReLU(),
     'smooth_leaky_relu': smooth_leaky_relu,
     'inversed_smooth_leaky_relu': inversed_smooth_leaky_relu,
-    'derivative_smooth_leaky_relu': derivative_smooth_leaky_relu,
+    'derivative_smooth_leaky_relu': derivative_smooth_leaky_relu
 }
