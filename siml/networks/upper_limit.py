@@ -29,11 +29,13 @@ class UpperLimit(siml_module.SimlModule):
                 supports=None,
                 original_shapes=None) -> torch.Tensor:
         x = xs[0]
-        max_value: torch.Tensor = xs[1]
+        max_values = xs[1]
 
-        if max_value.numel() != 1:
-            raise ValueError("max_value has only one element."
-                             f"{max_value.numel()} given")
+        if x.shape != max_values.shape:
+            raise ValueError("max_value has the same shape as input."
+                             f"max_value is {max_values.shape} given, "
+                             f"inputs {x.shape} given")
 
-        x[x > max_value] = max_value
+        flag = x > max_values
+        x[flag] = max_values[flag]
         return x

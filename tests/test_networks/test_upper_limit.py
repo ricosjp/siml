@@ -7,9 +7,9 @@ from siml import setting
 
 
 @pytest.mark.parametrize("inputs, max_value, expects", [
-    ([4., 5., 6.], [-1], [-1, -1, -1]),
-    ([4., 10.1, 12.0], [5.], [4., 5., 5.]),
-    ([4., 3.1, 2.0], [5.], [4., 3.1, 2.])
+    ([4., 5., 6.], [-1., -1., -1.], [-1., -1., -1.]),
+    ([4., 10.1, 12.0], [5., 5., 5.], [4., 5., 5.]),
+    ([4., 3.1, 2.0], [5., 5., 5.], [4., 3.1, 2.])
 ])
 def test__upper_limit(inputs, max_value, expects):
     block_setting = setting.BlockSetting(
