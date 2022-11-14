@@ -1017,12 +1017,14 @@ class Converter:
                 variable_name:
                 dict_post_function[variable_name](data)
                 for value in dict_data_x.values()
-                for variable_name, data in value.items()}
+                for variable_name, data in value.items()
+                if variable_name in dict_post_function.keys()}
         else:
             return_dict_data_x = {
                 variable_name:
                 dict_post_function[variable_name](data)
-                for variable_name, data in dict_data_x.items()}
+                for variable_name, data in dict_data_x.items()
+                if variable_name in dict_post_function.keys()}
 
         if dict_data_y_answer is not None and len(dict_data_y_answer) > 0:
             if isinstance(list(dict_data_y_answer.values())[0], dict):
@@ -1030,12 +1032,14 @@ class Converter:
                     variable_name:
                     dict_post_function[variable_name](data)
                     for value in dict_data_y_answer.values()
-                    for variable_name, data in value.items()}
+                    for variable_name, data in value.items()
+                    if variable_name in dict_post_function.keys()}
             else:
                 return_dict_data_y_answer = {
                     variable_name:
                     dict_post_function[variable_name](data)
-                    for variable_name, data in dict_data_y_answer.items()}
+                    for variable_name, data in dict_data_y_answer.items()
+                    if variable_name in dict_post_function.keys()}
         else:
             return_dict_data_y_answer = None
 
