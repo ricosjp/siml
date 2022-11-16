@@ -23,3 +23,20 @@ def test__upper_limit(inputs, max_value, expects):
 
     y = layer.forward(x, x_max)
     np.testing.assert_array_almost_equal(y.numpy(), expects.numpy())
+
+
+def test__can_backward():
+    block_setting = setting.BlockSetting(
+        type='upper_limit'
+    )
+    layer = UpperLimit(block_setting)
+
+    intputs = torch.tensor([[1., 2., 3., 4.]],
+                           dtype=torch.float32,
+                           requires_grad=True)
+    limits = torch.tensor([[3., 3., 3., 3.]],
+                          dtype=torch.float32)
+
+    out = layer.forward(intputs, limits)
+    loss = torch.sum(out)
+    loss.backward()

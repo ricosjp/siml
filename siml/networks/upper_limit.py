@@ -36,6 +36,6 @@ class UpperLimit(siml_module.SimlModule):
                              f"max_value is {max_values.shape} given, "
                              f"inputs {x.shape} given")
 
-        flag = x > max_values
-        x[flag] = max_values[flag]
-        return x
+        flags = x > max_values
+        y = x * ~flags + max_values * flags
+        return y

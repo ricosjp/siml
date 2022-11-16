@@ -1049,12 +1049,14 @@ class Converter:
                     variable_name:
                     dict_post_function[variable_name](data)
                     for value in dict_data_y.values()
-                    for variable_name, data in value.items()}
+                    for variable_name, data in value.items()
+                    if variable_name in dict_post_function.keys()}
             else:
                 return_dict_data_y = {
                     variable_name:
                     dict_post_function[variable_name](data)
-                    for variable_name, data in dict_data_y.items()}
+                    for variable_name, data in dict_data_y.items()
+                    if variable_name in dict_post_function.keys()}
         else:
             return_dict_data_y = {}
 
