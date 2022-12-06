@@ -133,4 +133,5 @@ class Postprocessor(Metric):
             key:
             torch.from_numpy(np.concatenate([
                 data_dict[variable_name] for variable_name in value]))
-            for key, value in dict_names.items()}
+            for key, value in dict_names.items()
+            if key in data_dict.keys()}
