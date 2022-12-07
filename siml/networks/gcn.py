@@ -13,8 +13,11 @@ class GCN(abstract_gcn.AbstractGCN):
         return 'gcn'
 
     def __init__(self, block_setting):
+        self.create_subchains_flag = block_setting.optional.get(
+            'create_subchains', True)
         super().__init__(
-            block_setting, create_subchain=True,
+            block_setting,
+            create_subchain=self.create_subchains_flag,
             residual=block_setting.residual)
 
         self.factor = block_setting.optional.get(
@@ -38,6 +41,11 @@ class GCN(abstract_gcn.AbstractGCN):
 
     def _forward_single_core(self, x, subchain_index, support):
         h = x
+
+        if not self.create_subchains_flag:
+            h = self._propagate(x, support)
+            return h
+
         for subchain, dropout_ratio, activation in zip(
                 self.subchains[subchain_index],
                 self.dropout_ratios, self.activations):
