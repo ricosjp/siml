@@ -43,6 +43,13 @@ class TestIsoGCN(equivariance_base.EquivarianceBase):
             x, rotation_matrix, h,
             rotate_y=self.transform_rank2, iso_gcn_=ig, check_symmetric=True)
 
+        _, _, g_tilde = self.generate_gs(x)
+        y = self.conv(ig, h, g_tilde, rank_g=1)
+        expected = (
+            + np.einsum('ijp,jkq,kf->ipqf', g_tilde, g_tilde, h)
+            + np.einsum('ijp,jkq,kf->iqpf', g_tilde, g_tilde, h)) / 2
+        np.testing.assert_almost_equal(y, expected)
+
     def test_vector_laplacian_rank1_rank1(self):
         x = np.random.rand(4, 3)
         h = np.random.rand(4, 3, 2)
@@ -94,7 +101,7 @@ class TestIsoGCN(equivariance_base.EquivarianceBase):
 
         _, _, g_tilde = self.generate_gs(x)
         y = self.conv(ig, h, g_tilde, rank_g=1)
-        expected = np.einsum('ijp,jkp,kqf->iqf', g_tilde, g_tilde, h)
+        expected = np.einsum('ijp,jkq,kqpf->if', g_tilde, g_tilde, h)
         np.testing.assert_almost_equal(y, expected)
 
     def trial(
