@@ -1,7 +1,6 @@
 from pathlib import Path
 import pickle
 import shutil
-import sys
 import unittest
 
 import numpy as np
@@ -13,8 +12,7 @@ import siml.setting as setting
 import siml.trainer as trainer
 import siml.util as util
 
-sys.path.append('tests')
-import preprocess  # NOQA
+import preprocess
 
 
 def load_function(data_files, data_directory):

@@ -657,3 +657,17 @@ class TestTrainer(unittest.TestCase):
             tr0.evaluator.state.metrics['GROUP1/residual'])
         np.testing.assert_almost_equal(
             loss0, ref_loss_implicit, decimal=5)
+
+    def test_trainer_train_with_user_loss_function(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/deform/dict_input_user_loss.yml'))
+        shutil.rmtree(
+            main_setting.trainer.output_directory, ignore_errors=True)
+        tr = trainer.Trainer(
+            main_setting,
+            user_loss_fundtion_dic={
+                "user_mspe": lambda x, y:
+                torch.mean(torch.square((x - y) / (torch.norm(y) + 0.0001)))
+            })
+        loss = tr.train()
+        np.testing.assert_array_less(loss, 1.)
