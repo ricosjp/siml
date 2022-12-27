@@ -479,12 +479,13 @@ class Trainer(siml_manager.SimlManager):
             model.reset()
 
             loss = self.loss(y_pred, y)
-            return loss
+            return float(loss)
 
         def update_standard(x, y, model, optimizer):
             split_xs, split_ys = self._split_data_if_needed(
                 x, y, self.setting.trainer.time_series_split)
 
+            loss_value = np.nan
             for split_x, split_y in zip(split_xs, split_ys):
                 optimizer.zero_grad()
                 split_x['x'] = self._send(split_x['x'], self.device)
@@ -501,10 +502,14 @@ class Trainer(siml_manager.SimlManager):
                     self._slice(split_y),
                     split_x['original_shapes'])
                 (loss + other_loss).backward()
+
+                loss_value = float(loss)
+                del loss
+                del other_loss
                 model = _clip_if_needed(model)
                 self.optimizer.step()
                 model.reset()
-            return loss
+            return loss_value
 
         if not self.element_wise \
                 and self.setting.trainer.element_batch_size > 0:
@@ -529,7 +534,7 @@ class Trainer(siml_manager.SimlManager):
             loss = update_function(x, y, self.model, self.optimizer)
             if self.setting.trainer.output_stats:
                 self.output_stats()
-            return loss.item()
+            return loss
 
         return ignite.engine.Engine(update_model)
 
