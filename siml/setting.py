@@ -392,6 +392,8 @@ class TrainerSetting(TypedDataClass):
         Variable settings of outputs.
     train_directories: list[str] or pathlib.Path
         Training data directories.
+    output_directory_base: str or pathlib.Path
+        Output directory base name.
     output_directory: str or pathlib.Path
         Output directory name.
     validation_directories: list[str] or pathlib.Path, optional
@@ -497,6 +499,7 @@ class TrainerSetting(TypedDataClass):
         default=None, metadata={'allow_none': True})
     outputs: CollectionVariableSetting = dc.field(
         default_factory=CollectionVariableSetting)
+    output_directory_base: Path = Path('models')
     output_directory: Path = None
 
     name: str = 'default'
@@ -666,7 +669,7 @@ class TrainerSetting(TypedDataClass):
 
     def update_output_directory(self, *, id_=None, base=None):
         if base is None:
-            base = Path('models')
+            base = Path(self.output_directory_base)
         else:
             base = Path(base)
         if id_ is None:
