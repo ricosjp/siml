@@ -4,6 +4,7 @@ import io
 import os
 from pathlib import Path
 import typing
+from typing import Union
 
 import numpy as np
 import optuna
@@ -1043,6 +1044,7 @@ class ConversionSetting(TypedDataClass):
         default_factory=list)
     optional: list[str] = dc.field(
         default_factory=list)
+    output_base_directory: Union[str, Path] = None
     finished_file: str = 'converted'
     file_type: str = 'fistr'
     required_file_names: list[str] = dc.field(default_factory=list)
