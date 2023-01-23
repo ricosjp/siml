@@ -144,6 +144,9 @@ class TypedDataClass:
         elif field.type == typing.Union[str, dict]:
             def type_function(x):
                 return x
+        elif field.type == typing.Optional[typing.Union[str, Path]]:
+            def type_function(x):
+                return x
         else:
             type_function = field.type
 
@@ -1043,6 +1046,7 @@ class ConversionSetting(TypedDataClass):
         default_factory=list)
     optional: list[str] = dc.field(
         default_factory=list)
+    output_base_directory: typing.Optional[typing.Union[Path, str]] = None
     finished_file: str = 'converted'
     file_type: str = 'fistr'
     required_file_names: list[str] = dc.field(default_factory=list)
