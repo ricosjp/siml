@@ -4,7 +4,6 @@ import io
 import os
 from pathlib import Path
 import typing
-from typing import Union
 
 import numpy as np
 import optuna
@@ -143,6 +142,9 @@ class TypedDataClass:
                 else:
                     return str(x)
         elif field.type == typing.Union[str, dict]:
+            def type_function(x):
+                return x
+        elif field.type == typing.Optional[typing.Union[str, Path]]:
             def type_function(x):
                 return x
         else:
@@ -1044,7 +1046,7 @@ class ConversionSetting(TypedDataClass):
         default_factory=list)
     optional: list[str] = dc.field(
         default_factory=list)
-    output_base_directory: Union[str, Path] = None
+    output_base_directory: typing.Optional[typing.Union[Path, str]] = None
     finished_file: str = 'converted'
     file_type: str = 'fistr'
     required_file_names: list[str] = dc.field(default_factory=list)
