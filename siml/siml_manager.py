@@ -170,10 +170,10 @@ class SimlManager():
 
         if trainer_has_key:
             self.setting.trainer.model_key = key
-            self.setting.data.decrypt_key = key
+            self.setting.data.encrypt_key = key
         if inferer_has_key:
             self.setting.inferer.model_key = key
-            self.setting.data.decrypt_key = key
+            self.setting.data.encrypt_key = key
 
         if not self.inference_mode:
             if self.setting.trainer.output_directory.exists():
