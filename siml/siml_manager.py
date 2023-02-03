@@ -159,6 +159,8 @@ class SimlManager():
         else:
             inferer_has_key = False
 
+        output_directory = self.setting.trainer.output_directory
+
         if 'enc' in str(yaml_file):
             yaml_file = util.decrypt_file(key, yaml_file, return_stringio=True)
 
@@ -176,12 +178,14 @@ class SimlManager():
             self.setting.data.encrypt_key = key
 
         if not self.inference_mode:
-            if self.setting.trainer.output_directory.exists():
+            if output_directory.exists():
                 print(
                     f"{self.setting.trainer.output_directory} exists "
                     'so reset output directory.')
                 self.setting.trainer.output_directory = \
                     setting.TrainerSetting([], []).output_directory
+            else:
+                self.setting.trainer.output_directory = output_directory
         return
 
     def _update_setting_if_needed(self):

@@ -18,3 +18,18 @@ def test_match_encryption_keys_when_restart():
 
     assert tr.setting.trainer.model_key == test_key
     assert tr.setting.data.encrypt_key == test_key
+
+
+def test_match_output_directory_when_restart():
+    main_setting = setting.MainSetting.read_settings_yaml(
+        pathlib.Path('tests/data/deform/mlp.yml'))
+    main_setting.trainer.restart_directory = \
+        pathlib.Path("tests/data/deform/mlp")
+
+    output_directory = \
+        pathlib.Path("tests/data/deform/mlp/out/restart")
+    main_setting.trainer.output_directory = output_directory
+
+    tr = trainer.Trainer(main_setting)
+
+    assert tr.setting.trainer.output_directory == output_directory
