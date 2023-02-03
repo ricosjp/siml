@@ -17,6 +17,49 @@ else:
     GPU_ID = -1
 
 
+def test_heat_multigrid():
+    ref_main_setting = setting.MainSetting.read_settings_yaml(Path(
+        'tests/data/heat_boundary/nl_rep20.yml'))
+    ref_main_setting.trainer.gpu_id = GPU_ID
+    ref_tr = trainer.Trainer(ref_main_setting)
+    if ref_tr.setting.trainer.output_directory.exists():
+        shutil.rmtree(ref_tr.setting.trainer.output_directory)
+    ref_loss = ref_tr.train()
+
+    ref_ir = inferer.Inferer(
+        ref_main_setting,
+        converter_parameters_pkl=ref_main_setting.data.preprocessed_root
+        / 'preprocessors.pkl')
+    ref_ir.infer(
+        model=ref_main_setting.trainer.output_directory,
+        output_directory_base=ref_tr.setting.trainer.output_directory,
+        data_directories=Path(
+            'tests/data/heat_boundary/preprocessed/cylinder/clscale0.3/'
+            'steepness1.0_rep0'))
+
+    main_setting = setting.MainSetting.read_settings_yaml(Path(
+        'tests/data/heat_boundary/multigrid.yml'))
+    main_setting.trainer.gpu_id = GPU_ID
+    tr = trainer.Trainer(main_setting)
+    if tr.setting.trainer.output_directory.exists():
+        shutil.rmtree(tr.setting.trainer.output_directory)
+    loss = tr.train()
+    np.testing.assert_array_less(loss, .1)
+    print(f"loss: {loss}, ref_loss: {ref_loss}")
+    assert loss < ref_loss
+
+    ir = inferer.Inferer(
+        main_setting,
+        converter_parameters_pkl=main_setting.data.preprocessed_root
+        / 'preprocessors.pkl')
+    ir.infer(
+        model=main_setting.trainer.output_directory,
+        output_directory_base=tr.setting.trainer.output_directory,
+        data_directories=Path(
+            'tests/data/heat_boundary/preprocessed/cylinder/clscale0.3/'
+            'steepness1.0_rep0'))
+
+
 class TestGroups(unittest.TestCase):
 
     def test_group_simple(self):
@@ -304,6 +347,7 @@ class TestGroups(unittest.TestCase):
         loss = tr.train()
         np.testing.assert_array_less(loss, .1)
         self.assertLess(loss, ref_loss)
+        print(f"loss: {loss}, ref_loss: {ref_loss}")
 
         ir = inferer.Inferer(
             main_setting,
