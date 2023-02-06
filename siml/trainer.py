@@ -59,16 +59,28 @@ class Trainer(siml_manager.SimlManager):
                 'validation/' + self._display_mergin(k)
                 for k in self.model.get_loss_keys()])
             + self._display_mergin('elapsed_time'))
-        with open(self.log_file, 'w') as f:
-            f.write(
-                'epoch, train_loss, '
-                + ''.join([
-                    f"train/{k}, " for k in self.model.get_loss_keys()])
-                + 'validation_loss, '
-                + ''.join([
-                    f"validation/{k}, " for k in self.model.get_loss_keys()])
-                + 'elapsed_time\n')
+        if not restart_mode:
+            with open(self.log_file, 'w') as f:
+                f.write(
+                    'epoch, train_loss, '
+                    + ''.join([
+                        f"train/{k}, " for k in self.model.get_loss_keys()])
+                    + 'validation_loss, '
+                    + ''.join([
+                        f"validation/{k}, " for k in self.model.get_loss_keys()
+                        ])
+                    + 'elapsed_time\n')
         self.start_time = time.time()
+        if not restart_mode:
+            self.offset_start_time = 0
+        else:
+            df = pd.read_csv(
+                self.log_file,
+                header=0,
+                index_col=None,
+                skipinitialspace=True
+            )
+            self.offset_start_time = df.tail(1).loc[:, "elapsed_time"].item()
 
         self.pbar = self.create_pbar(
             len(self.train_loader) * self.setting.trainer.log_trigger_epoch)
@@ -329,7 +341,8 @@ class Trainer(siml_manager.SimlManager):
                 validation_other_losses = {}
             self.evaluation_pbar.close()
 
-            elapsed_time = time.time() - self.start_time
+            elapsed_time = (time.time() - self.start_time) \
+                + self.offset_start_time
 
             # Print log
             tqdm.write(
