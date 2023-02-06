@@ -41,8 +41,8 @@ class Trainer(siml_manager.SimlManager):
 
         self.prepare_training()
 
-        yaml_file_name = f"settings_restart_{util.date_string()}.yaml" \
-            if overwrite_restart_mode else "settings.yaml"
+        yaml_file_name = f"settings_restart_{util.date_string()}.yml" \
+            if overwrite_restart_mode else "settings.yml"
         setting.write_yaml(
             self.setting,
             self.setting.trainer.output_directory / yaml_file_name,
