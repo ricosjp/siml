@@ -34,15 +34,15 @@ class Trainer(siml_manager.SimlManager):
         """
 
         print(f"Output directory: {self.setting.trainer.output_directory}")
-        restart_mode = (self.setting.trainer.restart_directory is not None)
-        if not restart_mode:
+        overwrite_restart_mode = self._overwrite_restart_mode()
+        if not overwrite_restart_mode:
             # When restart training, output directory already exists
             self.setting.trainer.output_directory.mkdir(parents=True)
 
         self.prepare_training()
 
         yaml_file_name = f"settings_restart_{util.date_string()}.yaml" \
-            if restart_mode else "settings.yaml"
+            if overwrite_restart_mode else "settings.yaml"
         setting.write_yaml(
             self.setting,
             self.setting.trainer.output_directory / yaml_file_name,
@@ -59,7 +59,7 @@ class Trainer(siml_manager.SimlManager):
                 'validation/' + self._display_mergin(k)
                 for k in self.model.get_loss_keys()])
             + self._display_mergin('elapsed_time'))
-        if not restart_mode:
+        if not overwrite_restart_mode:
             with open(self.log_file, 'w') as f:
                 f.write(
                     'epoch, train_loss, '
@@ -71,7 +71,7 @@ class Trainer(siml_manager.SimlManager):
                         ])
                     + 'elapsed_time\n')
         self.start_time = time.time()
-        if not restart_mode:
+        if not overwrite_restart_mode:
             self.offset_start_time = 0
         else:
             df = pd.read_csv(
@@ -111,6 +111,16 @@ class Trainer(siml_manager.SimlManager):
             return train_state, validation_state, test_state
         else:
             return train_state, validation_state
+
+    def _overwrite_restart_mode(self) -> bool:
+        if self.setting.trainer.restart_directory is None:
+            return False
+
+        if self.setting.trainer.output_directory == \
+                self.setting.trainer.restart_directory:
+            return True
+
+        return False
 
     def _display_mergin(self, input_string, reference_string=None):
         if not reference_string:
