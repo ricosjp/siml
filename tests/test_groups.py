@@ -29,6 +29,31 @@ class TestGroups(unittest.TestCase):
         loss = tr.train()
         np.testing.assert_array_less(loss, 1.)
 
+    def test_group_simple_restart(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/rotation_thermal_stress/group_simple.yml'))
+        main_setting.trainer.gpu_id = GPU_ID
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+
+        last_checkpoint = main_setting.trainer.output_directory \
+            / "snapshot_epoch_100.pth"
+        # early stoppingにより100Epochまで行かない
+        assert not last_checkpoint.exists()
+
+        # restart training
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/rotation_thermal_stress/group_simple.yml'))
+        main_setting.trainer.restart_directory = \
+            main_setting.trainer.output_directory
+        tr = trainer.Trainer(main_setting)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, 1.)
+
+        assert last_checkpoint.exists()
+
     def test_group_repeat(self):
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/rotation_thermal_stress/group_repeat.yml'))

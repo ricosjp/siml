@@ -131,21 +131,28 @@ class SimlManager():
         torch.manual_seed(seed)
         return
 
-    def _update_setting(self, path, *, only_model=False):
+    def _find_settings_yaml(self, path: pathlib.Path) -> pathlib.Path:
         if path.is_file():
-            yaml_file = path
-        elif path.is_dir():
+            return path
+        if path.is_dir():
             yamls = list(path.glob('*.y*ml')) + list(path.glob('*.y*ml.enc'))
-            if len(yamls) != 1:
-                yaml_file_candidates = [
-                    y for y in yamls if 'setting' in str(y)]
-                if len(yaml_file_candidates) == 1:
-                    yaml_file = yaml_file_candidates[0]
-                else:
-                    raise ValueError(
-                        f"{len(yamls)} yaml files found in {path}")
+            if len(yamls) == 1:
+                return yamls[0]
+
+            yaml_file_candidates = [
+                y for y in yamls if 'setting' in str(y)]
+            if len(yaml_file_candidates) == 1:
+                return yaml_file_candidates[0]
             else:
-                yaml_file = yamls[0]
+                raise ValueError(
+                    f"{len(yamls)} yaml files found in {path}")
+
+        raise NotImplementedError(
+            f"type of Path: {type(path)} is not expected."
+            f"Possibly, Path: {path} is not existed")
+
+    def _update_setting(self, path, *, only_model=False):
+        yaml_file = self._find_settings_yaml(path)
 
         key = None
         if self.setting.trainer.model_key is not None:
@@ -178,14 +185,7 @@ class SimlManager():
             self.setting.data.encrypt_key = key
 
         if not self.inference_mode:
-            if output_directory.exists():
-                print(
-                    f"{self.setting.trainer.output_directory} exists "
-                    'so reset output directory.')
-                self.setting.trainer.output_directory = \
-                    setting.TrainerSetting([], []).output_directory
-            else:
-                self.setting.trainer.output_directory = output_directory
+            self.setting.trainer.output_directory = output_directory
         return
 
     def _update_setting_if_needed(self):

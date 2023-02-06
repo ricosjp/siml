@@ -34,13 +34,18 @@ class Trainer(siml_manager.SimlManager):
         """
 
         print(f"Output directory: {self.setting.trainer.output_directory}")
-        self.setting.trainer.output_directory.mkdir(parents=True)
+        restart_mode = (self.setting.trainer.restart_directory is not None)
+        if not restart_mode:
+            # When restart training, output directory already exists
+            self.setting.trainer.output_directory.mkdir(parents=True)
 
         self.prepare_training()
 
+        yaml_file_name = "settings_restart.yaml" \
+            if restart_mode else "settings.yaml"
         setting.write_yaml(
             self.setting,
-            self.setting.trainer.output_directory / 'settings.yml',
+            self.setting.trainer.output_directory / yaml_file_name,
             key=self.setting.trainer.model_key)
 
         print(
@@ -810,7 +815,6 @@ class Trainer(siml_manager.SimlManager):
             'max_epochs': self.setting.trainer.n_epoch,
             'epoch_length': len(self.train_loader),
         })
-        self.trainer.state.epoch = checkpoint['epoch']
         # self.loss = checkpoint['loss']
         print(f"{snapshot} loaded for restart.")
         return
