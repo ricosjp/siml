@@ -68,7 +68,7 @@ class Trainer(siml_manager.SimlManager):
                     + 'validation_loss, '
                     + ''.join([
                         f"validation/{k}, " for k in self.model.get_loss_keys()
-                        ])
+                    ])
                     + 'elapsed_time\n')
         self.start_time = time.time()
         if not overwrite_restart_mode:
