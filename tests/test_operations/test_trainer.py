@@ -436,6 +436,48 @@ class TestTrainer(unittest.TestCase):
             header=0, index_col=None, skipinitialspace=True)
         self.assertEqual(len(restart_df.values), 8)
 
+    def test_restart_overwrite(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/linear/linear_short.yml'))
+
+        # Complete training for reference
+        complete_tr = trainer.Trainer(main_setting)
+        complete_tr.setting.trainer.output_directory = Path(
+            'tests/data/linear/linear_short_completed')
+        if complete_tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(complete_tr.setting.trainer.output_directory)
+        complete_tr.train()
+
+        # Incomplete training
+        incomplete_tr = trainer.Trainer(main_setting)
+        incomplete_tr.setting.trainer.n_epoch = 20
+        incomplete_tr.setting.trainer.output_directory = Path(
+            'tests/data/linear/linear_short_incomplete')
+        if incomplete_tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(incomplete_tr.setting.trainer.output_directory)
+        incomplete_tr.train()
+
+        # Restart training
+        main_setting.trainer.restart_directory \
+            = incomplete_tr.setting.trainer.output_directory
+        main_setting.trainer.output_directory \
+            = incomplete_tr.setting.trainer.output_directory
+        restart_tr = trainer.Trainer(main_setting)
+        restart_tr.setting.trainer.n_epoch = 100
+        loss = restart_tr.train()
+
+        df = pd.read_csv(
+            'tests/data/linear/linear_short_completed/log.csv',
+            header=0, index_col=None, skipinitialspace=True)
+        np.testing.assert_almost_equal(
+            loss, df['validation_loss'].values[-1], decimal=3)
+
+        print(restart_tr.setting.trainer.output_directory)
+        restart_df = pd.read_csv(
+            restart_tr.setting.trainer.output_directory / 'log.csv',
+            header=0, index_col=None, skipinitialspace=True)
+        self.assertEqual(len(restart_df.values), 10)
+
     def test_pretrain(self):
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/linear/linear_short.yml'))

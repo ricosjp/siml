@@ -237,7 +237,7 @@ class Study():
         output_names = self.original_setting.trainer.output_names
         if len(output_names) != 1:
             raise NotImplementedError(
-                f"Output names more than 1 cannot be converted automatically")
+                "Output names more than 1 cannot be converted automatically")
         else:
             output_name = output_names[0]
 
