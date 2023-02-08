@@ -41,7 +41,7 @@ class Trainer(siml_manager.SimlManager):
 
         self.prepare_training()
 
-        yaml_file_name = f"settings_restart_{util.date_string()}.yml" \
+        yaml_file_name = f"restart_settings_{util.date_string()}.yml" \
             if overwrite_restart_mode else "settings.yml"
         setting.write_yaml(
             self.setting,
@@ -838,6 +838,13 @@ class Trainer(siml_manager.SimlManager):
             'max_epochs': self.setting.trainer.n_epoch,
             'epoch_length': len(self.train_loader),
         })
+
+        if self.setting.trainer.n_epoch == checkpoint['epoch']:
+            raise FileExistsError(
+                "Checkpoint at last epoch exists. "
+                "Model to restart has already finished"
+            )
+
         # self.loss = checkpoint['loss']
         print(f"{snapshot} loaded for restart.")
         return

@@ -140,7 +140,7 @@ class SimlManager():
                 return yamls[0]
 
             yaml_file_candidates = [
-                y for y in yamls if 'setting' in str(y)]
+                y for y in yamls if str(y.name).startswith('setting')]
             if len(yaml_file_candidates) == 1:
                 return yaml_file_candidates[0]
             else:
@@ -151,7 +151,7 @@ class SimlManager():
             f"type of Path: {type(path)} is not expected."
             f"Possibly, Path: {path} is not existed")
 
-    def _update_setting(self, path, *, only_model=False):
+    def _replace_setting(self, path, *, only_model=False):
         yaml_file = self._find_settings_yaml(path)
 
         key = None
@@ -197,7 +197,7 @@ class SimlManager():
 
         if self.setting.trainer.restart_directory is not None:
             restart_directory = self.setting.trainer.restart_directory
-            self._update_setting(self.setting.trainer.restart_directory)
+            self._replace_setting(self.setting.trainer.restart_directory)
             self.setting.trainer.restart_directory = restart_directory
         return
 

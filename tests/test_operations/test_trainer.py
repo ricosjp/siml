@@ -2,6 +2,7 @@ from pathlib import Path
 import pickle
 import shutil
 import unittest
+import pytest
 
 from Cryptodome import Random
 import numpy as np
@@ -477,6 +478,62 @@ class TestTrainer(unittest.TestCase):
             restart_tr.setting.trainer.output_directory / 'log.csv',
             header=0, index_col=None, skipinitialspace=True)
         self.assertEqual(len(restart_df.values), 10)
+
+    def test_restart_multiple_times(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/linear/linear_short.yml'))
+        # Incomplete training
+        incomplete_tr = trainer.Trainer(main_setting)
+        incomplete_tr.setting.trainer.n_epoch = 20
+        incomplete_tr.setting.trainer.output_directory = Path(
+            'tests/data/linear/linear_short_incomplete')
+        if incomplete_tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(incomplete_tr.setting.trainer.output_directory)
+        incomplete_tr.train()
+
+        # Restart training several times
+        for n_epoch in [100, 120]:
+            main_setting.trainer.restart_directory \
+                = incomplete_tr.setting.trainer.output_directory
+            main_setting.trainer.output_directory \
+                = incomplete_tr.setting.trainer.output_directory
+            restart_tr = trainer.Trainer(main_setting)
+            restart_tr.setting.trainer.n_epoch = n_epoch
+            _ = restart_tr.train()
+
+        print(restart_tr.setting.trainer.output_directory)
+        restart_df = pd.read_csv(
+            restart_tr.setting.trainer.output_directory / 'log.csv',
+            header=0, index_col=None, skipinitialspace=True)
+        self.assertEqual(len(restart_df.values), 12)
+
+    def test_restart_deny(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/linear/linear_short.yml'))
+        # Incomplete training
+        incomplete_tr = trainer.Trainer(main_setting)
+        incomplete_tr.setting.trainer.n_epoch = 20
+        incomplete_tr.setting.trainer.output_directory = Path(
+            'tests/data/linear/linear_short_incomplete')
+        if incomplete_tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(incomplete_tr.setting.trainer.output_directory)
+        incomplete_tr.train()
+
+        # Restart training
+        with pytest.raises(FileExistsError):
+            main_setting.trainer.restart_directory \
+                = incomplete_tr.setting.trainer.output_directory
+            main_setting.trainer.output_directory \
+                = incomplete_tr.setting.trainer.output_directory
+            restart_tr = trainer.Trainer(main_setting)
+            restart_tr.setting.trainer.n_epoch = 20
+            _ = restart_tr.train()
+
+        print(restart_tr.setting.trainer.output_directory)
+        restart_df = pd.read_csv(
+            restart_tr.setting.trainer.output_directory / 'log.csv',
+            header=0, index_col=None, skipinitialspace=True)
+        self.assertEqual(len(restart_df.values), 2)
 
     def test_pretrain(self):
         main_setting = setting.MainSetting.read_settings_yaml(
