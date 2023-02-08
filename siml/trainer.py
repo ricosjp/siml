@@ -840,7 +840,10 @@ class Trainer(siml_manager.SimlManager):
         })
 
         if self.setting.trainer.n_epoch == checkpoint['epoch']:
-            raise Exception("Model to restart has already finished")
+            raise FileExistsError(
+                "Checkpoint at last epoch exists. "
+                "Model to restart has already finished"
+            )
 
         # self.loss = checkpoint['loss']
         print(f"{snapshot} loaded for restart.")
