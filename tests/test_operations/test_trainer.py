@@ -507,6 +507,41 @@ class TestTrainer(unittest.TestCase):
             header=0, index_col=None, skipinitialspace=True)
         self.assertEqual(len(restart_df.values), 12)
 
+    def test_restart_yaml_files(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/linear/linear_short.yml'))
+        # Incomplete training
+        incomplete_tr = trainer.Trainer(main_setting)
+        incomplete_tr.setting.trainer.n_epoch = 20
+        incomplete_tr.setting.trainer.output_directory = Path(
+            'tests/data/linear/linear_short_incomplete')
+        if incomplete_tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(incomplete_tr.setting.trainer.output_directory)
+        incomplete_tr.train()
+
+        # Restart training several times
+        output_dir = Path("tests/data/linear/linear_short_restart")
+        if output_dir.exists():
+            shutil.rmtree(output_dir)
+        for n_epoch in [100, 120]:
+            main_setting.trainer.restart_directory \
+                = incomplete_tr.setting.trainer.output_directory
+            main_setting.trainer.output_directory = output_dir
+            restart_tr = trainer.Trainer(main_setting)
+            restart_tr.setting.trainer.n_epoch = n_epoch
+            _ = restart_tr.train()
+
+        yaml_files = list(output_dir.glob("*.yml*"))
+        assert len(yaml_files) > 0
+
+        for file_path in yaml_files:
+            with open(file_path) as fr:
+                content = yaml.safe_load(fr)
+            assert content['trainer']['pretrain_directory'] is None
+
+            # can load in inferer
+            _ = inferer.Inferer.read_settings(file_path)
+
     def test_restart_deny(self):
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/linear/linear_short.yml'))
