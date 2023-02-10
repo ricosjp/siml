@@ -2,11 +2,13 @@ import io
 import pathlib
 import shutil
 import time
+from typing import Callable
 
 import ignite
 import numpy as np
 import pandas as pd
 import torch
+from torch import Tensor
 
 from . import datasets
 from . import networks
@@ -102,7 +104,10 @@ class Inferer(siml_manager.SimlManager):
             model=None, converter_parameters_pkl=None, save=None,
             conversion_function=None, load_function=None,
             data_addition_function=None, postprocess_function=None,
-            save_function=None):
+            save_function=None,
+            optuna_trial=None,
+            user_loss_fundtion_dic:
+            dict[str, Callable[[Tensor, Tensor], Tensor]] = None):
         """Initialize Inferer object.
 
         Parameters
@@ -132,7 +137,18 @@ class Inferer(siml_manager.SimlManager):
             Function to save results. If not fed the default save function
             will be used.
         """
-        super().__init__(settings)
+        if isinstance(settings, pathlib.Path) or isinstance(
+                settings, io.TextIOBase):
+            self.setting = setting.MainSetting.read_settings_yaml(
+                settings)
+        elif isinstance(settings, setting.MainSetting):
+            self.setting = settings
+        else:
+            raise ValueError(
+                f"Unknown type for settings: {settings.__class__}")
+        self.user_loss_function_dic = user_loss_fundtion_dic
+        self.optuna_trial = optuna_trial
+
         self.conversion_function = conversion_function
         self.load_function = load_function
         self.data_addition_function = data_addition_function

@@ -1,14 +1,11 @@
 from collections import OrderedDict
-import io
 import pathlib
 import random
 import re
-from typing import Callable
 
 import numpy as np
 import pandas as pd
 import torch
-from torch import Tensor
 
 from . import data_parallel
 from . import setting
@@ -33,43 +30,6 @@ class SimlManager():
         """
         main_setting = setting.MainSetting.read_settings_yaml(settings_yaml)
         return cls(main_setting)
-
-    def __init__(self,
-                 settings,
-                 *,
-                 optuna_trial=None,
-                 user_loss_fundtion_dic:
-                 dict[str, Callable[[Tensor, Tensor], Tensor]] = None):
-        """Initialize SimlManager object.
-
-        Parameters
-        ----------
-        settings: siml.setting.MainSetting object or pathlib.Path
-            Setting descriptions.
-        model: siml.networks.Network object
-            Model to be trained.
-        optuna_trial: optuna.Trial
-            Optuna trial object. Used for pruning.
-
-        Returns
-        --------
-        None
-        """
-        if isinstance(settings, pathlib.Path) or isinstance(
-                settings, io.TextIOBase):
-            self.setting = setting.MainSetting.read_settings_yaml(
-                settings)
-        elif isinstance(settings, setting.MainSetting):
-            self.setting = settings
-        else:
-            raise ValueError(
-                f"Unknown type for settings: {settings.__class__}")
-        self.inference_mode = False
-        self.user_loss_function_dic = user_loss_fundtion_dic
-
-        self._update_setting_if_needed()
-        self.optuna_trial = optuna_trial
-        return
 
     def _select_device(self, gpu_id=None):
         if gpu_id is None:
@@ -199,6 +159,7 @@ class SimlManager():
             restart_directory = self.setting.trainer.restart_directory
             self._replace_setting(self.setting.trainer.restart_directory)
             self.setting.trainer.restart_directory = restart_directory
+            self.setting.trainer.pretrain_directory = None
         return
 
     def _load_pretrained_model_if_needed(self, *, model_file=None):
