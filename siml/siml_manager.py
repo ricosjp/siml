@@ -199,6 +199,7 @@ class SimlManager():
             restart_directory = self.setting.trainer.restart_directory
             self._replace_setting(self.setting.trainer.restart_directory)
             self.setting.trainer.restart_directory = restart_directory
+            self.setting.trainer.pretrain_directory = None
         return
 
     def _load_pretrained_model_if_needed(self, *, model_file=None):
