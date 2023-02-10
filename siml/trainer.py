@@ -1,6 +1,8 @@
 import enum
 import io
 import time
+import pathlib
+from typing import Callable
 
 import ignite
 import matplotlib.pyplot as plt
@@ -8,6 +10,7 @@ import numpy as np
 import optuna
 import pandas as pd
 import torch
+from torch import Tensor
 from tqdm import tqdm
 import yaml
 
@@ -19,6 +22,43 @@ from . import util
 
 
 class Trainer(siml_manager.SimlManager):
+
+    def __init__(self,
+                 settings,
+                 *,
+                 optuna_trial=None,
+                 user_loss_fundtion_dic:
+                 dict[str, Callable[[Tensor, Tensor], Tensor]] = None):
+        """Initialize SimlManager object.
+
+        Parameters
+        ----------
+        settings: siml.setting.MainSetting object or pathlib.Path
+            Setting descriptions.
+        model: siml.networks.Network object
+            Model to be trained.
+        optuna_trial: optuna.Trial
+            Optuna trial object. Used for pruning.
+
+        Returns
+        --------
+        None
+        """
+        if isinstance(settings, pathlib.Path) or isinstance(
+                settings, io.TextIOBase):
+            self.setting = setting.MainSetting.read_settings_yaml(
+                settings)
+        elif isinstance(settings, setting.MainSetting):
+            self.setting = settings
+        else:
+            raise ValueError(
+                f"Unknown type for settings: {settings.__class__}")
+        self.inference_mode = False
+        self.user_loss_function_dic = user_loss_fundtion_dic
+
+        self._update_setting_if_needed()
+        self.optuna_trial = optuna_trial
+        return
 
     def train(self):
         """Perform training.
