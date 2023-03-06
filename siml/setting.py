@@ -561,6 +561,7 @@ class TrainerSetting(TypedDataClass):
     output_stats: bool = False
     split_ratio: dict = dc.field(default_factory=dict)
     figure_format: str = 'pdf'
+    pseudo_batch: bool = False
     time_series_split: list[int] = dc.field(
         default=None, metadata={'allow_none': True})
     time_series_split_evaluation: list[int] = dc.field(
