@@ -110,11 +110,11 @@ class PseudoBatchStep(IStepUpdateFunction):
             self._update_loss(_loss, _other_loss)
 
             # average
-            loss_value = float(self._cached_loss) / (self.counter + 1)
+            loss_value = float(self._cached_loss) / (self._counter.value + 1)
             if self._allow_update():
                 self._cached_loss.backward()
                 self._cached_loss = None
-                model = self._clip_if_needed(model)
+                self._clip_if_needed(model)
                 optimizer.step()
                 model.reset()
 

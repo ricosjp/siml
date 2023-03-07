@@ -579,13 +579,10 @@ class Trainer(siml_manager.SimlManager):
                 model.reset()
             return loss_value
 
-        if not self.element_wise \
-                and self.setting.trainer.element_batch_size > 0:
-            update_function = update_with_element_batch
-        if self.setting.trainer.pseudo_batch:
-            from trainings.update_functions import PseudoBatchStep
+        if self.setting.trainer.pseudo_batch_size >= 1:
+            from siml.trainings.update_functions import PseudoBatchStep
             update_function = PseudoBatchStep(
-                batch_size=self.setting.trainer.batch_size,
+                batch_size=self.setting.trainer.pseudo_batch_size,
                 loss_func=self.loss,
                 other_loss_func=self._calculate_other_loss,
                 split_data_func=self._split_data_if_needed,
@@ -594,6 +591,9 @@ class Trainer(siml_manager.SimlManager):
                 loss_slice=self.setting.trainer.loss_slice,
                 time_series_split=self.setting.trainer.time_series_split
             )
+        elif not self.element_wise \
+                and self.setting.trainer.element_batch_size > 0:
+            update_function = update_with_element_batch
         else:
             update_function = update_standard
 
