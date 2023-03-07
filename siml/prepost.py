@@ -1244,8 +1244,7 @@ def extract_variables(
 def _extract_single_variable(
         fem_data, variable_name, *, mandatory=True, ravel=True):
     if variable_name in fem_data.nodal_data:
-        return fem_data.convert_nodal2elemental(
-            variable_name, ravel=ravel)
+        return fem_data.nodal_data.get_attribute_data(variable_name)
     elif variable_name in fem_data.elemental_data:
         return fem_data.elemental_data.get_attribute_data(variable_name)
     else:
