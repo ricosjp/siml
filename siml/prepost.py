@@ -177,9 +177,9 @@ class RawConverter():
 
         # Main process
         print(f"Processing: {raw_path}")
+        dict_data = {}
         if conversion_setting.skip_femio:
             fem_data = None
-            dict_data = {}
         else:
             if self.read_npy and (output_directory / FEMIO_FILE).exists():
                 fem_data = femio.FEMData.read_npy_directory(
@@ -202,15 +202,6 @@ class RawConverter():
                     (output_directory / 'failed').touch()
                     return
 
-            if conversion_setting.mandatory_variables is not None \
-                    and len(conversion_setting.mandatory_variables) > 0:
-                dict_data = extract_variables(
-                    fem_data, conversion_setting.mandatory_variables,
-                    optional_variables=conversion_setting.optional_variables
-                )
-            else:
-                dict_data = {}
-
         if self.conversion_function is not None:
             try:
                 dict_data.update(
@@ -232,6 +223,14 @@ class RawConverter():
         if self.filter_function is not None and not self.filter_function(
                 fem_data, raw_path, dict_data):
             return
+
+        if fem_data is not None:
+            if conversion_setting.mandatory_variables is not None \
+                    and len(conversion_setting.mandatory_variables) > 0:
+                dict_data.update(extract_variables(
+                    fem_data, conversion_setting.mandatory_variables,
+                    optional_variables=conversion_setting.optional_variables
+                ))
 
         # Save data
         output_directory.mkdir(parents=True, exist_ok=True)
