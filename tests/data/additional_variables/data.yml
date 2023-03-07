@@ -1,0 +1,13 @@
+data:
+  raw: tests/data/additional_variables/raw
+  interim: tests/data/additional_variables/interim
+  preprocessed: tests/data/additional_variables/preprocessed
+conversion:
+  required_file_names:
+    - mesh.vtu
+  skip_femio: true
+  save_femio: true
+  mandatory:
+    - a
+  optional:
+    - b
