@@ -79,6 +79,46 @@ class TestUtil(unittest.TestCase):
         np.testing.assert_almost_equal(
             lazy_std.inverse(transformed_new_data), new_data)
 
+    def test_standardizer_with_nan(self):
+        n_data = 5
+        dim = 3
+        all_data = np.random.rand(n_data, 10, dim)
+        all_data[0] = np.nan
+        all_data[2, :, 0] = np.nan
+        all_data[3, -1, 2] = np.nan
+
+        out_directory = Path('tests/data/util_std_with_nan')
+        shutil.rmtree(out_directory, ignore_errors=True)
+        data_files = [out_directory / f"data_{i}/x.npy" for i in range(n_data)]
+        for data_file, d in zip(data_files, all_data):
+            data_file.parent.mkdir(parents=True)
+            np.save(data_file, d)
+
+        lazy_std = util.PreprocessConverter(
+            'standardize', data_files=data_files, componentwise=False)
+        self.assertFalse(np.any(np.isnan(lazy_std.converter.mean_)))
+        self.assertFalse(np.any(np.isnan(lazy_std.converter.var_)))
+
+    def test_standardizer_with_nan_componentwise(self):
+        n_data = 5
+        dim = 3
+        all_data = np.random.rand(n_data, 10, dim)
+        all_data[0] = np.nan
+        all_data[2, :, 0] = np.nan
+        all_data[3, -1, 2] = np.nan
+
+        out_directory = Path('tests/data/util_std_with_nan')
+        shutil.rmtree(out_directory, ignore_errors=True)
+        data_files = [out_directory / f"data_{i}/x.npy" for i in range(n_data)]
+        for data_file, d in zip(data_files, all_data):
+            data_file.parent.mkdir(parents=True)
+            np.save(data_file, d)
+
+        lazy_std = util.PreprocessConverter(
+            'standardize', data_files=data_files, componentwise=True)
+        self.assertFalse(np.any(np.isnan(lazy_std.converter.mean_)))
+        self.assertFalse(np.any(np.isnan(lazy_std.converter.var_)))
+
     def test_std_scale(self):
         n_data = 5
         dim = 3
