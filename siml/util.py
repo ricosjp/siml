@@ -516,8 +516,6 @@ class PreprocessConverter():
                 data, function, return_applied=return_applied,
                 skip_nan=skip_nan)
         elif isinstance(data, (sp.coo_matrix, sp.csr_matrix, sp.csc_matrix)):
-            if skip_nan:
-                raise ValueError('Cannot set skip_nan=True for sparse data')
             result = self.apply_sparse_data_with_reshape_if_needed(
                 data, function, return_applied=return_applied,
                 use_diagonal=use_diagonal)
