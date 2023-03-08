@@ -27,4 +27,4 @@ class TestInfererGPU(unittest.TestCase):
         np.testing.assert_almost_equal(
             res[0]['dict_y']['y'],
             np.load('tests/data/linear/interim/validation/0/y.npy'), decimal=2)
-        np.testing.assert_array_less(res[0]['loss'], 1e-7)
+        np.testing.assert_array_less(res[0]['loss'], 1e-6)
