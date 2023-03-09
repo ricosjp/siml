@@ -57,7 +57,6 @@ class PseudoBatchStep(IStepUpdateFunction):
         self._loss_func = loss_func
         self._other_loss_func = other_loss_func
         self._split_data_func = split_data_func
-        self._cached_loss = None
 
         self.device = device
         self.output_device = output_device
@@ -107,13 +106,14 @@ class PseudoBatchStep(IStepUpdateFunction):
                 SimlVariable(split_y).slice(self.loss_slice).get_value(),
                 split_x['original_shapes'])
 
-            self._update_loss(_loss, _other_loss)
-
+            total_loss = _loss + _other_loss
+            total_loss.backward()
             # average
-            loss_value = float(self._cached_loss) / (self._counter.value + 1)
+            loss_value = float(total_loss) / (self._counter.value + 1)
+
+            del total_loss
+
             if self._allow_update():
-                self._cached_loss.backward()
-                self._cached_loss = None
                 self._clip_if_needed(model)
                 optimizer.step()
                 model.reset()
@@ -121,12 +121,6 @@ class PseudoBatchStep(IStepUpdateFunction):
             self._counter.increment()
 
         return loss_value
-
-    def _update_loss(self, loss, other_loss) -> None:
-        if self._cached_loss is None:
-            self._cached_loss = loss + other_loss
-        else:
-            self._cached_loss += (loss + other_loss)
 
     def _clip_if_needed(
             self,
