@@ -9,21 +9,21 @@ BuiltInVars = TypeVar(
 )
 
 
-class ISimlVaraibles():
+class ISimlVariables():
     def __init__(self, value: BuiltInVars) -> None:
         raise NotImplementedError()
 
     def get_value(self) -> BuiltInVars:
         raise NotImplementedError()
 
-    def slice(self, loss_slice: slice) -> ISimlVaraibles:
+    def slice(self, loss_slice: slice) -> ISimlVariables:
         raise NotImplementedError()
 
-    def send(self, device: str) -> ISimlVaraibles:
+    def send(self, device: str) -> ISimlVariables:
         raise NotImplementedError()
 
 
-def siml_varaibles(values: BuiltInVars) -> ISimlVaraibles:
+def siml_variables(values: BuiltInVars) -> ISimlVariables:
     if isinstance(values, torch.Tensor):
         return TensorSimlVariables(values)
     if isinstance(values, dict):
@@ -36,7 +36,7 @@ def siml_varaibles(values: BuiltInVars) -> ISimlVaraibles:
     )
 
 
-class TensorSimlVariables(ISimlVaraibles):
+class TensorSimlVariables(ISimlVariables):
     def __init__(self, value: torch.Tensor):
         self._x = value
 
@@ -52,7 +52,7 @@ class TensorSimlVariables(ISimlVaraibles):
         return TensorSimlVariables(tmp)
 
 
-class DictSimlVariables(ISimlVaraibles):
+class DictSimlVariables(ISimlVariables):
     def __init__(self, value: dict[str, torch.Tensor]):
         self._x = {k: TensorSimlVariables(v) for k, v in value.items()}
 
@@ -69,7 +69,7 @@ class DictSimlVariables(ISimlVaraibles):
         return DictSimlVariables(tmp)
 
 
-class ListSimlVaraiables(ISimlVaraibles):
+class ListSimlVaraiables(ISimlVariables):
     def __init__(self, value: list[torch.Tensor]):
         self._x = [TensorSimlVariables(v) for v in value]
 

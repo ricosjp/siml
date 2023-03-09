@@ -6,7 +6,7 @@ import numpy as np
 import torch
 
 from siml.networks.network import Network
-from siml.trainings.siml_variables import siml_varaibles
+from siml.trainings.siml_variables import siml_variables
 
 
 class IStepUpdateFunction(metaclass=abc.ABCMeta):
@@ -90,8 +90,8 @@ class PseudoBatchStep(IStepUpdateFunction):
             if self._allow_zero_grad():
                 optimizer.zero_grad()
 
-            siml_x = siml_varaibles(split_x['x'])
-            siml_y = siml_varaibles(split_y)
+            siml_x = siml_variables(split_x['x'])
+            siml_y = siml_variables(split_y)
 
             split_x['x'] = \
                 siml_x.send(self.device).get_value()
@@ -100,7 +100,7 @@ class PseudoBatchStep(IStepUpdateFunction):
 
             split_y_pred = model(split_x)
 
-            siml_y_pred = siml_varaibles(split_y_pred)
+            siml_y_pred = siml_variables(split_y_pred)
 
             _loss = self._loss_func(
                 siml_y_pred.slice(self.loss_slice).get_value(),
