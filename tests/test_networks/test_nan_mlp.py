@@ -1,10 +1,13 @@
+import pathlib
+import shutil
 import unittest
 
 import numpy as np
 import torch
 
-import siml.setting as setting
 import siml.networks.nan_mlp as nan_mlp
+import siml.setting as setting
+import siml.trainer as trainer
 
 
 class TestNaNMLP(unittest.TestCase):
@@ -54,3 +57,12 @@ class TestNaNMLP(unittest.TestCase):
         pred = tensor_pred.detach().numpy()
         np.testing.assert_almost_equal(pred[:, 2], pad_value)
         np.testing.assert_almost_equal(pred[:, -1], pad_value)
+
+    def test_train_nan_mlp(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            pathlib.Path('tests/data/data_with_nan/model.yml'))
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, .1)
