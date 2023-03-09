@@ -6,7 +6,7 @@ import numpy as np
 import torch
 
 from siml.networks.network import Network
-from siml.trainings.siml_variables import SimlVariable
+from siml.trainings.siml_variables import siml_varaibles
 
 
 class IStepUpdateFunction(metaclass=abc.ABCMeta):
@@ -90,28 +90,35 @@ class PseudoBatchStep(IStepUpdateFunction):
             if self._allow_zero_grad():
                 optimizer.zero_grad()
 
+            siml_x = siml_varaibles(split_x['x'])
+            siml_y = siml_varaibles(split_y)
+
             split_x['x'] = \
-                SimlVariable(split_x['x']).send(self.device).get_value()
+                siml_x.send(self.device).get_value()
             split_y = \
-                SimlVariable(split_y).send(self.output_device).get_value()
+                siml_y.send(self.output_device).get_value()
 
             split_y_pred = model(split_x)
+
+            siml_y_pred = siml_varaibles(split_y_pred)
+
             _loss = self._loss_func(
-                SimlVariable(split_y_pred).slice(self.loss_slice).get_value(),
-                SimlVariable(split_y).slice(self.loss_slice).get_value(),
-                split_x['original_shapes'])
+                siml_y_pred.slice(self.loss_slice).get_value(),
+                siml_y.slice(self.loss_slice).get_value(),
+                split_x['original_shapes']
+            )
             _other_loss = self._other_loss_func(
                 model,
-                SimlVariable(split_y_pred).slice(self.loss_slice).get_value(),
-                SimlVariable(split_y).slice(self.loss_slice).get_value(),
-                split_x['original_shapes'])
+                siml_y_pred.slice(self.loss_slice).get_value(),
+                siml_y.slice(self.loss_slice).get_value(),
+                split_x['original_shapes']
+            )
 
-            total_loss = _loss + _other_loss
-            total_loss.backward()
+            (_loss + _other_loss).backward()
             # average
-            loss_value = float(total_loss) / (self._counter.value + 1)
-
-            del total_loss
+            loss_value = float(_loss) / (self._counter.value + 1)
+            del _loss
+            del _other_loss
 
             if self._allow_update():
                 self._clip_if_needed(model)
