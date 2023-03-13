@@ -1,0 +1,71 @@
+data:
+  train:
+    - tests/data/data_with_nan/preprocessed
+  validation:
+    - tests/data/data_with_nan/preprocessed
+  test: []
+trainer:
+  output_directory: tests/data/linear/long
+  lazy: false
+  num_workers: 0
+  inputs:
+    x:
+      - name: x
+        dim: 3
+    t:
+      - name: t
+        dim: 3
+  outputs:
+    - name: y
+      dim: 3
+  batch_size: 1
+  n_epoch: 10
+  log_trigger_epoch: 1
+  stop_trigger_epoch: 10
+  seed: 0
+model:
+  blocks:
+    - name: MLP_X
+      type: mlp
+      is_first: true
+      input_keys:
+        - x
+      destinations:
+        - MUL
+      nodes:
+        - -1
+        - 16
+        - 16
+      activations:
+        - tanh
+        - identity
+    - name: MLP_T
+      type: nan_mlp
+      is_first: true
+      input_keys:
+        - t
+      destinations:
+        - MUL
+      nodes:
+        - -1
+        - 16
+        - 16
+      activations:
+        - tanh
+        - identity
+      optional:
+        pad_value: 0.
+        axis: 0
+    - name: MUL
+      type: reducer
+      destinations:
+        - OUT_MLP
+    - name: OUT_MLP
+      type: mlp
+      nodes:
+        - -1
+        - 16
+        - -1
+      activations:
+        - tanh
+        - identity

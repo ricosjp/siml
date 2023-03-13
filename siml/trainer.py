@@ -1,6 +1,8 @@
 import enum
 import io
 import time
+import pathlib
+from typing import Callable
 import random
 
 import ignite
@@ -9,6 +11,7 @@ import numpy as np
 import optuna
 import pandas as pd
 import torch
+from torch import Tensor
 from tqdm import tqdm
 import yaml
 
@@ -20,6 +23,43 @@ from . import util
 
 
 class Trainer(siml_manager.SimlManager):
+
+    def __init__(self,
+                 settings,
+                 *,
+                 optuna_trial=None,
+                 user_loss_fundtion_dic:
+                 dict[str, Callable[[Tensor, Tensor], Tensor]] = None):
+        """Initialize SimlManager object.
+
+        Parameters
+        ----------
+        settings: siml.setting.MainSetting object or pathlib.Path
+            Setting descriptions.
+        model: siml.networks.Network object
+            Model to be trained.
+        optuna_trial: optuna.Trial
+            Optuna trial object. Used for pruning.
+
+        Returns
+        --------
+        None
+        """
+        if isinstance(settings, pathlib.Path) or isinstance(
+                settings, io.TextIOBase):
+            self.setting = setting.MainSetting.read_settings_yaml(
+                settings)
+        elif isinstance(settings, setting.MainSetting):
+            self.setting = settings
+        else:
+            raise ValueError(
+                f"Unknown type for settings: {settings.__class__}")
+        self.inference_mode = False
+        self.user_loss_function_dic = user_loss_fundtion_dic
+
+        self._update_setting_if_needed()
+        self.optuna_trial = optuna_trial
+        return
 
     def train(self):
         """Perform training.
@@ -35,13 +75,18 @@ class Trainer(siml_manager.SimlManager):
         """
 
         print(f"Output directory: {self.setting.trainer.output_directory}")
-        self.setting.trainer.output_directory.mkdir(parents=True)
+        overwrite_restart_mode = self._overwrite_restart_mode()
+        if not overwrite_restart_mode:
+            # When restart training, output directory already exists
+            self.setting.trainer.output_directory.mkdir(parents=True)
 
         self.prepare_training()
 
+        yaml_file_name = f"restart_settings_{util.date_string()}.yml" \
+            if overwrite_restart_mode else "settings.yml"
         setting.write_yaml(
             self.setting,
-            self.setting.trainer.output_directory / 'settings.yml',
+            self.setting.trainer.output_directory / yaml_file_name,
             key=self.setting.trainer.model_key)
 
         print(
@@ -55,16 +100,28 @@ class Trainer(siml_manager.SimlManager):
                 'validation/' + self._display_mergin(k)
                 for k in self.model.get_loss_keys()])
             + self._display_mergin('elapsed_time'))
-        with open(self.log_file, 'w') as f:
-            f.write(
-                'epoch, train_loss, '
-                + ''.join([
-                    f"train/{k}, " for k in self.model.get_loss_keys()])
-                + 'validation_loss, '
-                + ''.join([
-                    f"validation/{k}, " for k in self.model.get_loss_keys()])
-                + 'elapsed_time\n')
+        if not overwrite_restart_mode:
+            with open(self.log_file, 'w') as f:
+                f.write(
+                    'epoch, train_loss, '
+                    + ''.join([
+                        f"train/{k}, " for k in self.model.get_loss_keys()])
+                    + 'validation_loss, '
+                    + ''.join([
+                        f"validation/{k}, " for k in self.model.get_loss_keys()
+                    ])
+                    + 'elapsed_time\n')
         self.start_time = time.time()
+        if not overwrite_restart_mode:
+            self.offset_start_time = 0
+        else:
+            df = pd.read_csv(
+                self.log_file,
+                header=0,
+                index_col=None,
+                skipinitialspace=True
+            )
+            self.offset_start_time = df.tail(1).loc[:, "elapsed_time"].item()
 
         self.pbar = self.create_pbar(
             len(self.train_loader) * self.setting.trainer.log_trigger_epoch)
@@ -95,6 +152,16 @@ class Trainer(siml_manager.SimlManager):
             return train_state, validation_state, test_state
         else:
             return train_state, validation_state
+
+    def _overwrite_restart_mode(self) -> bool:
+        if self.setting.trainer.restart_directory is None:
+            return False
+
+        if self.setting.trainer.output_directory == \
+                self.setting.trainer.restart_directory:
+            return True
+
+        return False
 
     def _display_mergin(self, input_string, reference_string=None):
         if not reference_string:
@@ -325,7 +392,8 @@ class Trainer(siml_manager.SimlManager):
                 validation_other_losses = {}
             self.evaluation_pbar.close()
 
-            elapsed_time = time.time() - self.start_time
+            elapsed_time = (time.time() - self.start_time) \
+                + self.offset_start_time
 
             # Print log
             tqdm.write(
@@ -512,7 +580,19 @@ class Trainer(siml_manager.SimlManager):
                 model.reset()
             return loss_value
 
-        if not self.element_wise \
+        if self.setting.trainer.pseudo_batch_size >= 1:
+            from siml.trainings.update_functions import PseudoBatchStep
+            update_function = PseudoBatchStep(
+                batch_size=self.setting.trainer.pseudo_batch_size,
+                loss_func=self.loss,
+                other_loss_func=self._calculate_other_loss,
+                split_data_func=self._split_data_if_needed,
+                device=self.device,
+                output_device=self.output_device,
+                loss_slice=self.setting.trainer.loss_slice,
+                time_series_split=self.setting.trainer.time_series_split
+            )
+        elif not self.element_wise \
                 and self.setting.trainer.element_batch_size > 0:
             update_function = update_with_element_batch
         else:
@@ -835,7 +915,13 @@ class Trainer(siml_manager.SimlManager):
             'max_epochs': self.setting.trainer.n_epoch,
             'epoch_length': len(self.train_loader),
         })
-        self.trainer.state.epoch = checkpoint['epoch']
+
+        if self.setting.trainer.n_epoch == checkpoint['epoch']:
+            raise FileExistsError(
+                "Checkpoint at last epoch exists. "
+                "Model to restart has already finished"
+            )
+
         # self.loss = checkpoint['loss']
         print(f"{snapshot} loaded for restart.")
         return

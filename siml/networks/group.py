@@ -237,12 +237,7 @@ class Group(siml_module.SimlModule):
         h = self.group({
             'x': x, 'supports': supports,
             'original_shapes': original_shapes})
-
-        if isinstance(x, dict):
-            # Make output dict structure the same for time loop
-            return {k: h[k] if k in h else x[k] for k in x.keys()}
-        else:
-            return h
+        return h
 
     def forward_w_loop(self, x, supports, original_shapes=None):
         h = x

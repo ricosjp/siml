@@ -507,12 +507,14 @@ class PreprocessConverter():
         return
 
     def apply_data_with_rehspe_if_needed(
-            self, data, function, return_applied=True, use_diagonal=False):
+            self, data, function, return_applied=True, use_diagonal=False,
+            skip_nan=False):
         if isinstance(data, np.ndarray):
             if use_diagonal:
                 raise ValueError('Cannot set use_diagonal=True for dense data')
             result = self.apply_numpy_data_with_reshape_if_needed(
-                data, function, return_applied=return_applied)
+                data, function, return_applied=return_applied,
+                skip_nan=skip_nan)
         elif isinstance(data, (sp.coo_matrix, sp.csr_matrix, sp.csc_matrix)):
             result = self.apply_sparse_data_with_reshape_if_needed(
                 data, function, return_applied=return_applied,
@@ -561,46 +563,47 @@ class PreprocessConverter():
                 return
 
     def apply_numpy_data_with_reshape_if_needed(
-            self, data, function, return_applied=True):
+            self, data, function, return_applied=True, skip_nan=False):
+        if skip_nan:
+            if return_applied:
+                raise ValueError(
+                    'Cannot set return_applied=True when skip_nan=True')
         shape = data.shape
 
         if self.componentwise:
-            if len(shape) == 2:
-                applied = function(data)
-                if return_applied:
-                    return applied
-                else:
+            reshaped = np.reshape(data, (np.prod(shape[:-1]), shape[-1]))
+            if skip_nan:
+                isnan = np.isnan(np.prod(reshaped, axis=-1))
+                reshaped_wo_nan = reshaped[~isnan]
+                if reshaped_wo_nan.size == 0:
                     return
-            elif len(shape) == 3:
-                # Time series
-                reshaped = np.reshape(data, (shape[0] * shape[1], shape[2]))
-                applied_reshaped = function(reshaped)
-                if return_applied:
-                    applied = np.reshape(applied_reshaped, shape)
-                    return applied
-                else:
-                    return
-            elif len(shape) == 4:
-                # Batched time series
-                reshaped = np.reshape(
-                    data, (shape[0] * shape[1] * shape[2], shape[3]))
-                applied_reshaped = function(reshaped)
-                if return_applied:
-                    applied = np.reshape(applied_reshaped, shape)
-                    return applied
-                else:
-                    return
+                applied_reshaped = function(reshaped_wo_nan)
+                return
             else:
-                raise ValueError(f"Data shape {data.shape} not understood")
-
-        else:
-            reshaped = np.reshape(data, (-1, 1))
-            applied_reshaped = function(reshaped)
+                applied_reshaped = function(reshaped)
             if return_applied:
                 applied = np.reshape(applied_reshaped, shape)
                 return applied
             else:
                 return
+
+        else:
+            reshaped = np.reshape(data, (-1, 1))
+            if skip_nan:
+                reshaped_wo_nan = reshaped[~np.isnan(reshaped)][:, None]
+                if reshaped_wo_nan.size == 0:
+                    return
+                applied_reshaped = function(reshaped_wo_nan)
+                return
+
+            else:
+                applied_reshaped = function(reshaped)
+
+                if return_applied:
+                    applied = np.reshape(applied_reshaped, shape)
+                    return applied
+                else:
+                    return
 
     def lazy_read_files(self, data_files):
         for data_file in data_files:
@@ -611,7 +614,7 @@ class PreprocessConverter():
             print(dt.datetime.now())
             self.apply_data_with_rehspe_if_needed(
                 data, self.converter.partial_fit, return_applied=False,
-                use_diagonal=self.use_diagonal)
+                use_diagonal=self.use_diagonal, skip_nan=True)
             print(f"Start del: {data_file}")
             print(dt.datetime.now())
             del data
@@ -620,21 +623,6 @@ class PreprocessConverter():
             gc.collect()
             print(f"Finish one iter: {data_file}")
             print(dt.datetime.now())
-
-        if self.is_erroneous is not None:
-            # NOTE: Check varianve is not none for StandardScaler with sparse
-            # data. Related to
-            # https://github.com/scikit-learn/scikit-learn/issues/16448
-            if self.is_erroneous():
-                if self.retry_count < self.MAX_RETRY:
-                    print(
-                        f"Retry for {data_file.stem}: {self.retry_count + 1}")
-                    self.retry_count = self.retry_count + 1
-                    np.random.shuffle(data_files)
-                    self._init_converter()
-                    self.lazy_read_files(data_files)
-                else:
-                    raise ValueError('Retry exhausted. Check the data.')
 
         return
 

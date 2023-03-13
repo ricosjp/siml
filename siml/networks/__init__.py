@@ -19,6 +19,7 @@ from . import iso_gcn
 from . import lstm
 from . import message_passing
 from . import mlp
+from . import nan_mlp
 from . import normalized_mlp
 from . import penn
 from . import pinv_mlp
@@ -78,6 +79,7 @@ blocks = [
     lstm.LSTM,
     message_passing.MessagePassing,
     mlp.MLP,
+    nan_mlp.NaNMLP,
     normalized_mlp.NormalizedMLP,
     penn.PENN,
     pinv_mlp.PInvMLP,
