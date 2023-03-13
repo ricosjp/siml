@@ -86,23 +86,23 @@ class PseudoBatchStep(IStepUpdateFunction):
             siml_y = siml_variables(split_y)
 
             split_x['x'] = \
-                siml_x.send(self.device).get_value()
+                siml_x.send(self.device).get_values()
             split_y = \
-                siml_y.send(self.output_device).get_value()
+                siml_y.send(self.output_device).get_values()
 
             split_y_pred = model(split_x)
 
             siml_y_pred = siml_variables(split_y_pred)
 
             _loss = self._loss_func(
-                siml_y_pred.slice(self.loss_slice).get_value(),
-                siml_y.slice(self.loss_slice).get_value(),
+                siml_y_pred.slice(self.loss_slice).get_values(),
+                siml_y.slice(self.loss_slice).get_values(),
                 split_x['original_shapes']
             )
             _other_loss = self._other_loss_func(
                 model,
-                siml_y_pred.slice(self.loss_slice).get_value(),
-                siml_y.slice(self.loss_slice).get_value(),
+                siml_y_pred.slice(self.loss_slice).get_values(),
+                siml_y.slice(self.loss_slice).get_values(),
                 split_x['original_shapes']
             )
 
@@ -113,6 +113,7 @@ class PseudoBatchStep(IStepUpdateFunction):
             del _other_loss
 
             if self._allow_update():
+                model.clip_if_needed()
                 model.clip_uniform_if_needed(
                     clip_grad_value=self._clip_grad_value,
                     clip_grad_norm=self._clip_grad_norm

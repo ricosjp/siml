@@ -53,22 +53,22 @@ class StandardUpdate(IStepUpdateFunction):
             siml_y = siml_variables(split_y)
 
             split_x['x'] = \
-                siml_x.send(self.device).get_value()
+                siml_x.send(self.device).get_values()
             split_y = \
-                siml_y.send(self.output_device).get_value()
+                siml_y.send(self.output_device).get_values()
 
             split_y_pred = model(split_x)
             siml_y_pred = siml_variables(split_y_pred)
 
             loss = self._loss_func(
-                siml_y_pred.slice(self.loss_slice).get_value(),
-                siml_y.slice(self.loss_slice).get_value(),
+                siml_y_pred.slice(self.loss_slice).get_values(),
+                siml_y.slice(self.loss_slice).get_values(),
                 split_x['original_shapes']
             )
             other_loss = self._other_loss_func(
                 model,
-                siml_y_pred.slice(self.loss_slice).get_value(),
-                siml_y.slice(self.loss_slice).get_value(),
+                siml_y_pred.slice(self.loss_slice).get_values(),
+                siml_y.slice(self.loss_slice).get_values(),
                 split_x['original_shapes']
             )
             (loss + other_loss).backward()
@@ -76,6 +76,7 @@ class StandardUpdate(IStepUpdateFunction):
             loss_value = float(loss)
             del loss
             del other_loss
+            model.clip_if_needed()
             model.clip_uniform_if_needed(
                 clip_grad_value=self._clip_grad_value,
                 clip_grad_norm=self._clip_grad_norm

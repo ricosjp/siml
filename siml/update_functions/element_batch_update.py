@@ -49,6 +49,7 @@ class ElementBatchUpdate(IStepUpdateFunction):
             (loss + other_loss).backward(retain_graph=True)
             loss.backward(retain_graph=True)
 
+        model.clip_if_needed()
         model.clip_uniform_if_needed(
             clip_grad_value=self._clip_grad_value,
             clip_grad_norm=self._clip_grad_norm
