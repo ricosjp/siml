@@ -99,6 +99,8 @@ test_services:
   extends: .test
   script:
     - python3.9 -m pytest tests/test_services --capture=no
+  tags:
+    - gpu
 
 test_group:
   extends: .test
