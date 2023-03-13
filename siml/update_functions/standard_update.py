@@ -49,13 +49,13 @@ class StandardUpdate(IStepUpdateFunction):
         loss_value = np.nan
         for split_x, split_y in zip(split_xs, split_ys):
             optimizer.zero_grad()
-            siml_x = siml_variables(split_x['x'])
-            siml_y = siml_variables(split_y)
+            siml_x = siml_variables(split_x['x']).send(self.device)
+            siml_y = siml_variables(split_y).send(self.output_device)
 
             split_x['x'] = \
-                siml_x.send(self.device).get_values()
+                siml_x.get_values()
             split_y = \
-                siml_y.send(self.output_device).get_values()
+                siml_y.get_values()
 
             split_y_pred = model(split_x)
             siml_y_pred = siml_variables(split_y_pred)

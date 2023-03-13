@@ -82,13 +82,11 @@ class PseudoBatchStep(IStepUpdateFunction):
             if self._allow_zero_grad():
                 optimizer.zero_grad()
 
-            siml_x = siml_variables(split_x['x'])
-            siml_y = siml_variables(split_y)
+            siml_x = siml_variables(split_x['x']).send(self.device)
+            siml_y = siml_variables(split_y).send(self.output_device)
 
-            split_x['x'] = \
-                siml_x.send(self.device).get_values()
-            split_y = \
-                siml_y.send(self.output_device).get_values()
+            split_x['x'] = siml_x.get_values()
+            split_y = siml_y.get_values()
 
             split_y_pred = model(split_x)
 
