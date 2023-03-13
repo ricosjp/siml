@@ -20,6 +20,9 @@ from . import setting
 from . import siml_manager
 from . import util
 
+from . import update_functions
+from .variables import siml_variables
+
 
 class Trainer(siml_manager.SimlManager):
 
@@ -516,72 +519,11 @@ class Trainer(siml_manager.SimlManager):
             * self.setting.trainer.log_trigger_epoch,
             desc=self.desc.format(0), ncols=80, ascii=True)
 
-    def _create_supervised_trainer(self):
-
-        def _clip_if_needed(model):
-            model.clip_if_needed()
-            if self.setting.trainer.clip_grad_value is not None:
-                torch.nn.utils.clip_grad_value_(
-                    model.parameters(), self.setting.trainer.clip_grad_value)
-            if self.setting.trainer.clip_grad_norm is not None:
-                torch.nn.utils.clip_grad_norm_(
-                    model.parameters(), self.setting.trainer.clip_grad_norm)
-            return model
-
-        def update_with_element_batch(x, y, model, optimizer):
-            y_pred = model(x)
-
-            optimizer.zero_grad()
-            split_y_pred = torch.split(
-                y_pred, self.setting.trainer.element_batch_size)
-            split_y = torch.split(
-                y, self.setting.trainer.element_batch_size)
-            for syp, sy in zip(split_y_pred, split_y):
-                optimizer.zero_grad()
-                loss = self.loss(y_pred, y)
-                other_loss = self._calculate_other_loss(model, y_pred, y)
-                (loss + other_loss).backward(retain_graph=True)
-                loss.backward(retain_graph=True)
-            model = _clip_if_needed(model)
-            self.optimizer.step()
-            model.reset()
-
-            loss = self.loss(y_pred, y)
-            return float(loss)
-
-        def update_standard(x, y, model, optimizer):
-            split_xs, split_ys = self._split_data_if_needed(
-                x, y, self.setting.trainer.time_series_split)
-
-            loss_value = np.nan
-            for split_x, split_y in zip(split_xs, split_ys):
-                optimizer.zero_grad()
-                split_x['x'] = self._send(split_x['x'], self.device)
-                split_y = self._send(split_y, self.output_device)
-
-                split_y_pred = model(split_x)
-                loss = self.loss(
-                    self._slice(split_y_pred),
-                    self._slice(split_y),
-                    split_x['original_shapes'])
-                other_loss = self._calculate_other_loss(
-                    model,
-                    self._slice(split_y_pred),
-                    self._slice(split_y),
-                    split_x['original_shapes'])
-                (loss + other_loss).backward()
-
-                loss_value = float(loss)
-                del loss
-                del other_loss
-                model = _clip_if_needed(model)
-                self.optimizer.step()
-                model.reset()
-            return loss_value
-
+    def _select_step_update_function(
+        self
+    ) -> update_functions.IStepUpdateFunction:
         if self.setting.trainer.pseudo_batch_size >= 1:
-            from siml.trainings.update_functions import PseudoBatchStep
-            update_function = PseudoBatchStep(
+            return update_functions.PseudoBatchStep(
                 batch_size=self.setting.trainer.pseudo_batch_size,
                 loss_func=self.loss,
                 other_loss_func=self._calculate_other_loss,
@@ -589,13 +531,36 @@ class Trainer(siml_manager.SimlManager):
                 device=self.device,
                 output_device=self.output_device,
                 loss_slice=self.setting.trainer.loss_slice,
-                time_series_split=self.setting.trainer.time_series_split
+                time_series_split=self.setting.trainer.time_series_split,
+                clip_grad_norm=self.setting.trainer.clip_grad_norm,
+                clip_grad_value=self.setting.trainer.clip_grad_value
             )
         elif not self.element_wise \
                 and self.setting.trainer.element_batch_size > 0:
-            update_function = update_with_element_batch
+            return update_functions.ElementBatchUpdate(
+                element_batch_size=self.setting.trainer.element_batch_size,
+                loss_func=self.loss,
+                other_loss_func=self._calculate_other_loss,
+                split_data_func=self._split_data_if_needed,
+                clip_grad_norm=self.setting.trainer.clip_grad_norm,
+                clip_grad_value=self.setting.trainer.clip_grad_value
+            )
         else:
-            update_function = update_standard
+            return update_functions.StandardUpdate(
+                loss_func=self.loss,
+                other_loss_func=self._calculate_other_loss,
+                split_data_func=self._split_data_if_needed,
+                device=self.device,
+                output_device=self.output_device,
+                loss_slice=self.setting.trainer.loss_slice,
+                time_series_split=self.setting.trainer.time_series_split,
+                clip_grad_norm=self.setting.trainer.clip_grad_norm,
+                clip_grad_value=self.setting.trainer.clip_grad_value
+            )
+
+    def _create_supervised_trainer(self):
+
+        update_function = self._select_step_update_function()
 
         def update_model(engine, batch):
             self.model.train()
@@ -617,26 +582,6 @@ class Trainer(siml_manager.SimlManager):
             return loss
 
         return ignite.engine.Engine(update_model)
-
-    def _slice(self, x):
-        if isinstance(x, torch.Tensor):
-            return x[self.setting.trainer.loss_slice]
-        elif isinstance(x, dict):
-            return {k: self._slice(v) for k, v in x.items()}
-        elif isinstance(x, list):
-            return [self._slice(v) for v in x]
-        else:
-            raise ValueError(f"Invalid format: {x.__class__}")
-
-    def _send(self, x, device):
-        if isinstance(x, torch.Tensor):
-            return x.to(device)
-        elif isinstance(x, dict):
-            return {k: self._send(v, device) for k, v in x.items()}
-        elif isinstance(x, list):
-            return [self._send(v, device) for v in x]
-        else:
-            raise ValueError(f"Invalid format: {x.__class__}")
 
     def _split_data_if_needed(self, x, y, time_series_split):
         if time_series_split is None:
@@ -731,7 +676,8 @@ class Trainer(siml_manager.SimlManager):
 
                 y_pred = []
                 for split_x in split_xs:
-                    split_x['x'] = self._send(split_x['x'], self.device)
+                    siml_x = siml_variables(split_x['x'])
+                    split_x['x'] = siml_x.send(self.device).get_value()
                     y_pred.append(self.model(split_x))
 
                 if self.setting.trainer.time_series_split_evaluation is None:
@@ -744,11 +690,13 @@ class Trainer(siml_manager.SimlManager):
                         cat_x, x['original_shapes'])
                 y_pred = util.cat_time_series(
                     y_pred, time_series_keys=self.output_time_series_keys)
-                y = self._send(
-                    util.cat_time_series(
-                        split_ys,
-                        time_series_keys=self.output_time_series_keys),
-                    self.output_device)
+
+                ans_y = util.cat_time_series(
+                    split_ys,
+                    time_series_keys=self.output_time_series_keys
+                )
+                ans_siml_y = siml_variables(ans_y)
+                y = ans_siml_y.send(self.output_device).get_value()
                 return y_pred, y, {
                     'original_shapes': original_shapes,
                     'model': self.model}
