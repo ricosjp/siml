@@ -4,6 +4,9 @@ import io
 import os
 from pathlib import Path
 import typing
+import pydantic.dataclasses as pydc
+import json
+from pydantic.json import pydantic_encoder
 
 import numpy as np
 import optuna
@@ -385,6 +388,24 @@ class CollectionVariableSetting(TypedDataClass):
             raise ValueError(f"Unexpected self.variables: {self.variables}")
 
 
+@pydc.dataclass(init=True)
+class OptimizerSetting:
+    lr: float = 0.001
+    betas: typing.Tuple[float, ...] = (0.9, 0.99)
+    eps: float = 1e-8
+    weight_decay: float = 0
+
+    def to_dict(self):
+        json_data = json.dumps(self, indent=4, default=pydantic_encoder)
+        dict_data = json.loads(json_data)
+
+        for k, v in dict_data.items():
+            if k == 'betas':
+                dict_data[k] = tuple(v)
+
+        return dict_data
+
+
 @dc.dataclass
 class TrainerSetting(TypedDataClass):
 
@@ -541,8 +562,7 @@ class TrainerSetting(TypedDataClass):
         default=None, metadata={'allow_none': True})
     use_siml_updater: bool = True
     iterator: Iter = Iter.SERIAL
-    optimizer_setting: dict = dc.field(
-        default=None, metadata={'convert': False, 'allow_none': True})
+    optimizer_setting: dict = dc.field(default_factory=dict)
     lazy: bool = True
     num_workers: int = dc.field(
         default=None, metadata={'allow_none': True})
@@ -597,12 +617,10 @@ class TrainerSetting(TypedDataClass):
                         'inconsistently.')
             else:
                 self.support_inputs = [self.support_input]
-        if self.optimizer_setting is None:
-            self.optimizer_setting = {
-                'lr': 0.001,
-                'betas': (0.9, 0.99),
-                'eps': 1e-8,
-                'weight_decay': 0}
+
+        self.optimizer_setting = \
+            OptimizerSetting(**self.optimizer_setting).to_dict()
+
         if self.element_wise or self.simplified_model:
             self.use_siml_updater = False
 
