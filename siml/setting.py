@@ -4,9 +4,6 @@ import io
 import os
 from pathlib import Path
 import typing
-import pydantic.dataclasses as pydc
-import json
-from pydantic.json import pydantic_encoder
 
 import numpy as np
 import optuna
@@ -388,22 +385,13 @@ class CollectionVariableSetting(TypedDataClass):
             raise ValueError(f"Unexpected self.variables: {self.variables}")
 
 
-@pydc.dataclass(init=True)
-class OptimizerSetting:
+@dc.dataclass
+class OptimizerSetting(TypedDataClass):
     lr: float = 0.001
-    betas: typing.Tuple[float, ...] = (0.9, 0.99)
+    betas: typing.Tuple = \
+        dc.field(default=(0.9, 0.99))
     eps: float = 1e-8
     weight_decay: float = 0
-
-    def to_dict(self):
-        json_data = json.dumps(self, indent=4, default=pydantic_encoder)
-        dict_data = json.loads(json_data)
-
-        for k, v in dict_data.items():
-            if k == 'betas':
-                dict_data[k] = tuple(v)
-
-        return dict_data
 
 
 @dc.dataclass
@@ -619,7 +607,7 @@ class TrainerSetting(TypedDataClass):
                 self.support_inputs = [self.support_input]
 
         self.optimizer_setting = \
-            OptimizerSetting(**self.optimizer_setting).to_dict()
+            dc.asdict(OptimizerSetting(**self.optimizer_setting))
 
         if self.element_wise or self.simplified_model:
             self.use_siml_updater = False
