@@ -1,25 +1,12 @@
 from __future__ import annotations
 from typing import Any, Callable
-
-import abc
 import numpy as np
 import torch
 
 from siml.networks.network import Network
-from siml.trainings.siml_variables import siml_variables
+from siml.variables import siml_variables
 
-
-class IStepUpdateFunction(metaclass=abc.ABCMeta):
-    @abc.abstractmethod
-    def __call__(
-            self,
-            x: torch.Tensor,
-            y: torch.Tensor,
-            model: Network,
-            optimizer: torch.optim.Optimizer,
-            *args: Any,
-            **kwds: Any) -> float:
-        raise NotImplementedError()
+from .update_interface import IStepUpdateFunction
 
 
 class Counter():
@@ -51,7 +38,9 @@ class PseudoBatchStep(IStepUpdateFunction):
         device: str,
         output_device: str,
         loss_slice: slice,
-        time_series_split: bool
+        time_series_split: bool,
+        clip_grad_value: float = None,
+        clip_grad_norm: float = None
     ) -> None:
         self.batch_size = batch_size
         self._loss_func = loss_func
@@ -62,6 +51,9 @@ class PseudoBatchStep(IStepUpdateFunction):
         self.output_device = output_device
         self.loss_slice = loss_slice
         self.time_series_split = time_series_split
+
+        self._clip_grad_value = clip_grad_value
+        self._clip_grad_norm = clip_grad_norm
 
         # HACK: Incompatible with parallel execution
         self._counter = Counter(batch_size)
@@ -90,27 +82,25 @@ class PseudoBatchStep(IStepUpdateFunction):
             if self._allow_zero_grad():
                 optimizer.zero_grad()
 
-            siml_x = siml_variables(split_x['x'])
-            siml_y = siml_variables(split_y)
+            siml_x = siml_variables(split_x['x']).send(self.device)
+            siml_y = siml_variables(split_y).send(self.output_device)
 
-            split_x['x'] = \
-                siml_x.send(self.device).get_value()
-            split_y = \
-                siml_y.send(self.output_device).get_value()
+            split_x['x'] = siml_x.get_values()
+            split_y = siml_y.get_values()
 
             split_y_pred = model(split_x)
 
             siml_y_pred = siml_variables(split_y_pred)
 
             _loss = self._loss_func(
-                siml_y_pred.slice(self.loss_slice).get_value(),
-                siml_y.slice(self.loss_slice).get_value(),
+                siml_y_pred.slice(self.loss_slice).get_values(),
+                siml_y.slice(self.loss_slice).get_values(),
                 split_x['original_shapes']
             )
             _other_loss = self._other_loss_func(
                 model,
-                siml_y_pred.slice(self.loss_slice).get_value(),
-                siml_y.slice(self.loss_slice).get_value(),
+                siml_y_pred.slice(self.loss_slice).get_values(),
+                siml_y.slice(self.loss_slice).get_values(),
                 split_x['original_shapes']
             )
 
@@ -121,26 +111,14 @@ class PseudoBatchStep(IStepUpdateFunction):
             del _other_loss
 
             if self._allow_update():
-                self._clip_if_needed(model)
+                model.clip_if_needed()
+                model.clip_uniform_if_needed(
+                    clip_grad_value=self._clip_grad_value,
+                    clip_grad_norm=self._clip_grad_norm
+                )
                 optimizer.step()
                 model.reset()
 
             self._counter.increment()
 
         return loss_value
-
-    def _clip_if_needed(
-            self,
-            model: Network,
-            clip_grad_value: float = None,
-            clip_grad_norm: float = None
-    ) -> None:
-        model.clip_if_needed()
-        if clip_grad_value is not None:
-            torch.nn.utils.clip_grad_value_(
-                model.parameters(), clip_grad_value
-            )
-        if clip_grad_norm is not None:
-            torch.nn.utils.clip_grad_norm_(
-                model.parameters(), clip_grad_norm
-            )
