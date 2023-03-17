@@ -100,7 +100,7 @@ test_services:
   script:
     - python3.9 -m pytest tests/test_services --capture=no
 
-test_reprodicibility:
+test_reproducibility:
   extends: .test
   script:
     - python3.9 tests/test_reproducibility/training_functions.py 11 0

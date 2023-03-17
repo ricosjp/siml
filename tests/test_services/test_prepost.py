@@ -16,8 +16,6 @@ import siml.util as util
 
 import preprocess
 
-from siml import prepost
-
 
 def load_function(data_files, data_directory):
     # To be used in test_convert_raw_data_bypass_femio
@@ -581,7 +579,7 @@ class TestPrepost(unittest.TestCase):
      Path("/aaa/bbbb"))
 ])
 def test__common_parent(input_dir, output_dir, expect):
-    common_dir = prepost.common_parent(
+    common_dir = pre.common_parent(
         input_dir,
         output_dir
     )
