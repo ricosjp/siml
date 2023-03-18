@@ -3,6 +3,7 @@ import io
 import time
 import pathlib
 from typing import Callable
+import random
 
 import ignite
 import matplotlib.pyplot as plt
@@ -721,6 +722,11 @@ class Trainer(siml_manager.SimlManager):
             raise ValueError(f"Unexpected loss type: {loss_key}")
         return metric
 
+    def _seed_worker(worker_id) -> None:
+        worker_seed = torch.initial_seed() % 2**32
+        np.random.seed(worker_seed)
+        random.seed(worker_seed)
+
     def _get_data_loaders(
             self, dataset_generator, batch_size, validation_batch_size=None,
             decrypt_key=None):
@@ -749,18 +755,37 @@ class Trainer(siml_manager.SimlManager):
             test_directories, supports=supports, num_workers=num_workers,
             recursive=recursive, allow_no_data=True, decrypt_key=decrypt_key)
 
+        random_generator = torch.Generator()
+        random_generator.manual_seed(self.setting.trainer.seed)
+
         print(f"num_workers for data_loader: {num_workers}")
         train_loader = torch.utils.data.DataLoader(
-            train_dataset, collate_fn=self.collate_fn,
-            batch_size=batch_size, shuffle=True, num_workers=num_workers)
+            train_dataset,
+            collate_fn=self.collate_fn,
+            batch_size=batch_size,
+            shuffle=True,
+            num_workers=num_workers,
+            worker_init_fn=self._seed_worker,
+            generator=random_generator
+        )
         validation_loader = torch.utils.data.DataLoader(
-            validation_dataset, collate_fn=self.collate_fn,
-            batch_size=validation_batch_size, shuffle=False,
-            num_workers=num_workers)
+            validation_dataset,
+            collate_fn=self.collate_fn,
+            batch_size=validation_batch_size,
+            shuffle=False,
+            num_workers=num_workers,
+            worker_init_fn=self._seed_worker,
+            generator=random_generator
+        )
         test_loader = torch.utils.data.DataLoader(
-            test_dataset, collate_fn=self.collate_fn,
-            batch_size=validation_batch_size, shuffle=False,
-            num_workers=num_workers)
+            test_dataset,
+            collate_fn=self.collate_fn,
+            batch_size=validation_batch_size,
+            shuffle=False,
+            num_workers=num_workers,
+            worker_init_fn=self._seed_worker,
+            generator=random_generator
+        )
 
         return train_loader, validation_loader, test_loader
 

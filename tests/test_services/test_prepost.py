@@ -2,6 +2,7 @@ from pathlib import Path
 import pickle
 import shutil
 import unittest
+import pytest
 
 import femio
 import numpy as np
@@ -564,3 +565,23 @@ class TestPrepost(unittest.TestCase):
         actual_p = np.load(actual_directory / 'p.npy')
         np.testing.assert_almost_equal(
             actual_p, answer_fem_data.nodal_data.get_attribute_data('p'))
+
+
+@pytest.mark.parametrize("input_dir, output_dir, expect", [
+    (Path("/home/aaaa/ssss/cccc"),
+     Path("/home/aaaa/ssss/c"),
+     Path("/home/aaaa/ssss")),
+    (Path("/aaaa/ssss/cccc"),
+     Path("/home/aaaa/ssss/c"),
+     Path("/")),
+    (Path("/aaa/bbbb/prepocess"),
+     Path("/aaa/bbbb/predict"),
+     Path("/aaa/bbbb"))
+])
+def test__common_parent(input_dir, output_dir, expect):
+    common_dir = pre.common_parent(
+        input_dir,
+        output_dir
+    )
+
+    assert common_dir == expect
