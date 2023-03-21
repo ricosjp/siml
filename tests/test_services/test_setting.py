@@ -79,3 +79,19 @@ class TestSetting(unittest.TestCase):
             new_setting.trainer.inputs[1].name, 'something')
         self.assertEqual(
             new_setting.trainer.inputs[1].dim, 100)
+
+
+def test__default_optimizer_setting():
+    trainer_setting = setting.TrainerSetting()
+    assert trainer_setting.optimizer_setting['lr'] == 0.001
+    assert trainer_setting.optimizer_setting['betas'] == (0.9, 0.99)
+    assert trainer_setting.optimizer_setting['eps'] == 1e-8
+    assert trainer_setting.optimizer_setting['weight_decay'] == 0
+
+
+def test__enable_to_get_lr():
+    trainer_setting = setting.TrainerSetting(
+        optimizer_setting={'betas': (0.1, 0.9)}
+    )
+    assert trainer_setting.optimizer_setting['lr'] == 0.001
+    assert trainer_setting.optimizer_setting['betas'] == (0.1, 0.9)

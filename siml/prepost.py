@@ -177,9 +177,9 @@ class RawConverter():
 
         # Main process
         print(f"Processing: {raw_path}")
+        dict_data = {}
         if conversion_setting.skip_femio:
             fem_data = None
-            dict_data = {}
         else:
             if self.read_npy and (output_directory / FEMIO_FILE).exists():
                 fem_data = femio.FEMData.read_npy_directory(
@@ -202,15 +202,6 @@ class RawConverter():
                     (output_directory / 'failed').touch()
                     return
 
-            if conversion_setting.mandatory_variables is not None \
-                    and len(conversion_setting.mandatory_variables) > 0:
-                dict_data = extract_variables(
-                    fem_data, conversion_setting.mandatory_variables,
-                    optional_variables=conversion_setting.optional_variables
-                )
-            else:
-                dict_data = {}
-
         if self.conversion_function is not None:
             try:
                 dict_data.update(
@@ -232,6 +223,14 @@ class RawConverter():
         if self.filter_function is not None and not self.filter_function(
                 fem_data, raw_path, dict_data):
             return
+
+        if fem_data is not None:
+            if conversion_setting.mandatory_variables is not None \
+                    and len(conversion_setting.mandatory_variables) > 0:
+                dict_data.update(extract_variables(
+                    fem_data, conversion_setting.mandatory_variables,
+                    optional_variables=conversion_setting.optional_variables
+                ))
 
         # Save data
         output_directory.mkdir(parents=True, exist_ok=True)
@@ -1017,12 +1016,14 @@ class Converter:
                 variable_name:
                 dict_post_function[variable_name](data)
                 for value in dict_data_x.values()
-                for variable_name, data in value.items()}
+                for variable_name, data in value.items()
+                if variable_name in dict_post_function.keys()}
         else:
             return_dict_data_x = {
                 variable_name:
                 dict_post_function[variable_name](data)
-                for variable_name, data in dict_data_x.items()}
+                for variable_name, data in dict_data_x.items()
+                if variable_name in dict_post_function.keys()}
 
         if dict_data_y_answer is not None and len(dict_data_y_answer) > 0:
             if isinstance(list(dict_data_y_answer.values())[0], dict):
@@ -1030,12 +1031,14 @@ class Converter:
                     variable_name:
                     dict_post_function[variable_name](data)
                     for value in dict_data_y_answer.values()
-                    for variable_name, data in value.items()}
+                    for variable_name, data in value.items()
+                    if variable_name in dict_post_function.keys()}
             else:
                 return_dict_data_y_answer = {
                     variable_name:
                     dict_post_function[variable_name](data)
-                    for variable_name, data in dict_data_y_answer.items()}
+                    for variable_name, data in dict_data_y_answer.items()
+                    if variable_name in dict_post_function.keys()}
         else:
             return_dict_data_y_answer = None
 
@@ -1045,12 +1048,14 @@ class Converter:
                     variable_name:
                     dict_post_function[variable_name](data)
                     for value in dict_data_y.values()
-                    for variable_name, data in value.items()}
+                    for variable_name, data in value.items()
+                    if variable_name in dict_post_function.keys()}
             else:
                 return_dict_data_y = {
                     variable_name:
                     dict_post_function[variable_name](data)
-                    for variable_name, data in dict_data_y.items()}
+                    for variable_name, data in dict_data_y.items()
+                    if variable_name in dict_post_function.keys()}
         else:
             return_dict_data_y = {}
 
@@ -1239,8 +1244,7 @@ def extract_variables(
 def _extract_single_variable(
         fem_data, variable_name, *, mandatory=True, ravel=True):
     if variable_name in fem_data.nodal_data:
-        return fem_data.convert_nodal2elemental(
-            variable_name, ravel=ravel)
+        return fem_data.nodal_data.get_attribute_data(variable_name)
     elif variable_name in fem_data.elemental_data:
         return fem_data.elemental_data.get_attribute_data(variable_name)
     else:
@@ -1314,8 +1318,10 @@ def determine_output_directory(
     output_directory: pathlib.Path
         Detemined output directory path.
     """
-    common_prefix = Path(os.path.commonprefix(
-        [input_directory, output_base_directory]))
+    common_prefix = common_parent(
+        input_directory,
+        output_base_directory
+    )
     relative_input_path = Path(os.path.relpath(input_directory, common_prefix))
     parts = list(relative_input_path.parts)
 
@@ -1333,6 +1339,36 @@ def determine_output_directory(
     output_directory = output_base_directory / '/'.join(parts).lstrip('/')
 
     return output_directory
+
+
+def common_parent(
+        directory_1: Path,
+        directory_2: Path) -> Path:
+    """Search common parent directory
+
+    Parameters
+    ----------
+    directory_1 : pathlib.Path
+    directory_2 : pathlib.Path
+
+    Returns
+    -------
+    common_parent: pathlib.Path
+        Path to common parent directory
+    """
+    parents_1 = directory_1.parents
+    parents_2 = directory_2.parents
+    min_idx_1 = len(parents_1) - 1
+    min_idx_2 = len(parents_2) - 1
+    min_idx = min(len(parents_1), len(parents_2))
+
+    common_parent = Path("")
+    for i in range(min_idx):
+        if parents_1[min_idx_1 - i] == parents_2[min_idx_2 - i]:
+            common_parent = parents_1[min_idx_1 - i]
+        else:
+            break
+    return common_parent
 
 
 def normalize_adjacency_matrix(adj):

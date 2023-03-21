@@ -144,6 +144,9 @@ class TypedDataClass:
         elif field.type == typing.Union[str, dict]:
             def type_function(x):
                 return x
+        elif field.type == typing.Optional[typing.Union[str, Path]]:
+            def type_function(x):
+                return x
         else:
             type_function = field.type
 
@@ -383,6 +386,15 @@ class CollectionVariableSetting(TypedDataClass):
 
 
 @dc.dataclass
+class OptimizerSetting(TypedDataClass):
+    lr: float = 0.001
+    betas: typing.Tuple = \
+        dc.field(default=(0.9, 0.99))
+    eps: float = 1e-8
+    weight_decay: float = 0
+
+
+@dc.dataclass
 class TrainerSetting(TypedDataClass):
 
     """
@@ -392,6 +404,8 @@ class TrainerSetting(TypedDataClass):
         Variable settings of outputs.
     train_directories: list[str] or pathlib.Path
         Training data directories.
+    output_directory_base: str or pathlib.Path
+        Output directory base name.
     output_directory: str or pathlib.Path
         Output directory name.
     validation_directories: list[str] or pathlib.Path, optional
@@ -497,6 +511,7 @@ class TrainerSetting(TypedDataClass):
         default=None, metadata={'allow_none': True})
     outputs: CollectionVariableSetting = dc.field(
         default_factory=CollectionVariableSetting)
+    output_directory_base: Path = Path('models')
     output_directory: Path = None
 
     name: str = 'default'
@@ -535,8 +550,7 @@ class TrainerSetting(TypedDataClass):
         default=None, metadata={'allow_none': True})
     use_siml_updater: bool = True
     iterator: Iter = Iter.SERIAL
-    optimizer_setting: dict = dc.field(
-        default=None, metadata={'convert': False, 'allow_none': True})
+    optimizer_setting: dict = dc.field(default_factory=dict)
     lazy: bool = True
     num_workers: int = dc.field(
         default=None, metadata={'allow_none': True})
@@ -555,6 +569,8 @@ class TrainerSetting(TypedDataClass):
     output_stats: bool = False
     split_ratio: dict = dc.field(default_factory=dict)
     figure_format: str = 'pdf'
+
+    pseudo_batch_size: int = 0
     time_series_split: list[int] = dc.field(
         default=None, metadata={'allow_none': True})
     time_series_split_evaluation: list[int] = dc.field(
@@ -589,12 +605,10 @@ class TrainerSetting(TypedDataClass):
                         'inconsistently.')
             else:
                 self.support_inputs = [self.support_input]
-        if self.optimizer_setting is None:
-            self.optimizer_setting = {
-                'lr': 0.001,
-                'betas': (0.9, 0.99),
-                'eps': 1e-8,
-                'weight_decay': 0}
+
+        self.optimizer_setting = \
+            dc.asdict(OptimizerSetting(**self.optimizer_setting))
+
         if self.element_wise or self.simplified_model:
             self.use_siml_updater = False
 
@@ -666,7 +680,7 @@ class TrainerSetting(TypedDataClass):
 
     def update_output_directory(self, *, id_=None, base=None):
         if base is None:
-            base = Path('models')
+            base = Path(self.output_directory_base)
         else:
             base = Path(base)
         if id_ is None:
@@ -1040,6 +1054,7 @@ class ConversionSetting(TypedDataClass):
         default_factory=list)
     optional: list[str] = dc.field(
         default_factory=list)
+    output_base_directory: typing.Optional[typing.Union[Path, str]] = None
     finished_file: str = 'converted'
     file_type: str = 'fistr'
     required_file_names: list[str] = dc.field(default_factory=list)

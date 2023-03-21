@@ -1,6 +1,9 @@
 import enum
 import io
 import time
+import pathlib
+from typing import Callable
+import random
 
 import ignite
 import matplotlib.pyplot as plt
@@ -8,6 +11,7 @@ import numpy as np
 import optuna
 import pandas as pd
 import torch
+from torch import Tensor
 from tqdm import tqdm
 import yaml
 
@@ -17,8 +21,48 @@ from . import setting
 from . import siml_manager
 from . import util
 
+from . import update_functions
+from .variables import siml_variables
+
 
 class Trainer(siml_manager.SimlManager):
+
+    def __init__(self,
+                 settings,
+                 *,
+                 optuna_trial=None,
+                 user_loss_fundtion_dic:
+                 dict[str, Callable[[Tensor, Tensor], Tensor]] = None):
+        """Initialize SimlManager object.
+
+        Parameters
+        ----------
+        settings: siml.setting.MainSetting object or pathlib.Path
+            Setting descriptions.
+        model: siml.networks.Network object
+            Model to be trained.
+        optuna_trial: optuna.Trial
+            Optuna trial object. Used for pruning.
+
+        Returns
+        --------
+        None
+        """
+        if isinstance(settings, pathlib.Path) or isinstance(
+                settings, io.TextIOBase):
+            self.setting = setting.MainSetting.read_settings_yaml(
+                settings)
+        elif isinstance(settings, setting.MainSetting):
+            self.setting = settings
+        else:
+            raise ValueError(
+                f"Unknown type for settings: {settings.__class__}")
+        self.inference_mode = False
+        self.user_loss_function_dic = user_loss_fundtion_dic
+
+        self._update_setting_if_needed()
+        self.optuna_trial = optuna_trial
+        return
 
     def train(self):
         """Perform training.
@@ -34,13 +78,18 @@ class Trainer(siml_manager.SimlManager):
         """
 
         print(f"Output directory: {self.setting.trainer.output_directory}")
-        self.setting.trainer.output_directory.mkdir(parents=True)
+        overwrite_restart_mode = self._overwrite_restart_mode()
+        if not overwrite_restart_mode:
+            # When restart training, output directory already exists
+            self.setting.trainer.output_directory.mkdir(parents=True)
 
         self.prepare_training()
 
+        yaml_file_name = f"restart_settings_{util.date_string()}.yml" \
+            if overwrite_restart_mode else "settings.yml"
         setting.write_yaml(
             self.setting,
-            self.setting.trainer.output_directory / 'settings.yml',
+            self.setting.trainer.output_directory / yaml_file_name,
             key=self.setting.trainer.model_key)
 
         print(
@@ -54,16 +103,28 @@ class Trainer(siml_manager.SimlManager):
                 'validation/' + self._display_mergin(k)
                 for k in self.model.get_loss_keys()])
             + self._display_mergin('elapsed_time'))
-        with open(self.log_file, 'w') as f:
-            f.write(
-                'epoch, train_loss, '
-                + ''.join([
-                    f"train/{k}, " for k in self.model.get_loss_keys()])
-                + 'validation_loss, '
-                + ''.join([
-                    f"validation/{k}, " for k in self.model.get_loss_keys()])
-                + 'elapsed_time\n')
+        if not overwrite_restart_mode:
+            with open(self.log_file, 'w') as f:
+                f.write(
+                    'epoch, train_loss, '
+                    + ''.join([
+                        f"train/{k}, " for k in self.model.get_loss_keys()])
+                    + 'validation_loss, '
+                    + ''.join([
+                        f"validation/{k}, " for k in self.model.get_loss_keys()
+                    ])
+                    + 'elapsed_time\n')
         self.start_time = time.time()
+        if not overwrite_restart_mode:
+            self.offset_start_time = 0
+        else:
+            df = pd.read_csv(
+                self.log_file,
+                header=0,
+                index_col=None,
+                skipinitialspace=True
+            )
+            self.offset_start_time = df.tail(1).loc[:, "elapsed_time"].item()
 
         self.pbar = self.create_pbar(
             len(self.train_loader) * self.setting.trainer.log_trigger_epoch)
@@ -94,6 +155,16 @@ class Trainer(siml_manager.SimlManager):
             return train_state, validation_state, test_state
         else:
             return train_state, validation_state
+
+    def _overwrite_restart_mode(self) -> bool:
+        if self.setting.trainer.restart_directory is None:
+            return False
+
+        if self.setting.trainer.output_directory == \
+                self.setting.trainer.restart_directory:
+            return True
+
+        return False
 
     def _display_mergin(self, input_string, reference_string=None):
         if not reference_string:
@@ -324,7 +395,8 @@ class Trainer(siml_manager.SimlManager):
                 validation_other_losses = {}
             self.evaluation_pbar.close()
 
-            elapsed_time = time.time() - self.start_time
+            elapsed_time = (time.time() - self.start_time) \
+                + self.offset_start_time
 
             # Print log
             tqdm.write(
@@ -448,69 +520,48 @@ class Trainer(siml_manager.SimlManager):
             * self.setting.trainer.log_trigger_epoch,
             desc=self.desc.format(0), ncols=80, ascii=True)
 
+    def _select_step_update_function(
+        self
+    ) -> update_functions.IStepUpdateFunction:
+        if self.setting.trainer.pseudo_batch_size >= 1:
+            return update_functions.PseudoBatchStep(
+                batch_size=self.setting.trainer.pseudo_batch_size,
+                loss_func=self.loss,
+                other_loss_func=self._calculate_other_loss,
+                split_data_func=self._split_data_if_needed,
+                device=self.device,
+                output_device=self.output_device,
+                loss_slice=self.setting.trainer.loss_slice,
+                time_series_split=self.setting.trainer.time_series_split,
+                clip_grad_norm=self.setting.trainer.clip_grad_norm,
+                clip_grad_value=self.setting.trainer.clip_grad_value
+            )
+        elif not self.element_wise \
+                and self.setting.trainer.element_batch_size > 0:
+            return update_functions.ElementBatchUpdate(
+                element_batch_size=self.setting.trainer.element_batch_size,
+                loss_func=self.loss,
+                other_loss_func=self._calculate_other_loss,
+                split_data_func=self._split_data_if_needed,
+                clip_grad_norm=self.setting.trainer.clip_grad_norm,
+                clip_grad_value=self.setting.trainer.clip_grad_value
+            )
+        else:
+            return update_functions.StandardUpdate(
+                loss_func=self.loss,
+                other_loss_func=self._calculate_other_loss,
+                split_data_func=self._split_data_if_needed,
+                device=self.device,
+                output_device=self.output_device,
+                loss_slice=self.setting.trainer.loss_slice,
+                time_series_split=self.setting.trainer.time_series_split,
+                clip_grad_norm=self.setting.trainer.clip_grad_norm,
+                clip_grad_value=self.setting.trainer.clip_grad_value
+            )
+
     def _create_supervised_trainer(self):
 
-        def _clip_if_needed(model):
-            model.clip_if_needed()
-            if self.setting.trainer.clip_grad_value is not None:
-                torch.nn.utils.clip_grad_value_(
-                    model.parameters(), self.setting.trainer.clip_grad_value)
-            if self.setting.trainer.clip_grad_norm is not None:
-                torch.nn.utils.clip_grad_norm_(
-                    model.parameters(), self.setting.trainer.clip_grad_norm)
-            return model
-
-        def update_with_element_batch(x, y, model, optimizer):
-            y_pred = model(x)
-
-            optimizer.zero_grad()
-            split_y_pred = torch.split(
-                y_pred, self.setting.trainer.element_batch_size)
-            split_y = torch.split(
-                y, self.setting.trainer.element_batch_size)
-            for syp, sy in zip(split_y_pred, split_y):
-                optimizer.zero_grad()
-                loss = self.loss(y_pred, y)
-                other_loss = self._calculate_other_loss(model, y_pred, y)
-                (loss + other_loss).backward(retain_graph=True)
-                loss.backward(retain_graph=True)
-            model = _clip_if_needed(model)
-            self.optimizer.step()
-            model.reset()
-
-            loss = self.loss(y_pred, y)
-            return loss
-
-        def update_standard(x, y, model, optimizer):
-            split_xs, split_ys = self._split_data_if_needed(
-                x, y, self.setting.trainer.time_series_split)
-
-            for split_x, split_y in zip(split_xs, split_ys):
-                optimizer.zero_grad()
-                split_x['x'] = self._send(split_x['x'], self.device)
-                split_y = self._send(split_y, self.output_device)
-
-                split_y_pred = model(split_x)
-                loss = self.loss(
-                    self._slice(split_y_pred),
-                    self._slice(split_y),
-                    split_x['original_shapes'])
-                other_loss = self._calculate_other_loss(
-                    model,
-                    self._slice(split_y_pred),
-                    self._slice(split_y),
-                    split_x['original_shapes'])
-                (loss + other_loss).backward()
-                model = _clip_if_needed(model)
-                self.optimizer.step()
-                model.reset()
-            return loss
-
-        if not self.element_wise \
-                and self.setting.trainer.element_batch_size > 0:
-            update_function = update_with_element_batch
-        else:
-            update_function = update_standard
+        update_function = self._select_step_update_function()
 
         def update_model(engine, batch):
             self.model.train()
@@ -529,29 +580,9 @@ class Trainer(siml_manager.SimlManager):
             loss = update_function(x, y, self.model, self.optimizer)
             if self.setting.trainer.output_stats:
                 self.output_stats()
-            return loss.item()
+            return loss
 
         return ignite.engine.Engine(update_model)
-
-    def _slice(self, x):
-        if isinstance(x, torch.Tensor):
-            return x[self.setting.trainer.loss_slice]
-        elif isinstance(x, dict):
-            return {k: self._slice(v) for k, v in x.items()}
-        elif isinstance(x, list):
-            return [self._slice(v) for v in x]
-        else:
-            raise ValueError(f"Invalid format: {x.__class__}")
-
-    def _send(self, x, device):
-        if isinstance(x, torch.Tensor):
-            return x.to(device)
-        elif isinstance(x, dict):
-            return {k: self._send(v, device) for k, v in x.items()}
-        elif isinstance(x, list):
-            return [self._send(v, device) for v in x]
-        else:
-            raise ValueError(f"Invalid format: {x.__class__}")
 
     def _split_data_if_needed(self, x, y, time_series_split):
         if time_series_split is None:
@@ -646,7 +677,8 @@ class Trainer(siml_manager.SimlManager):
 
                 y_pred = []
                 for split_x in split_xs:
-                    split_x['x'] = self._send(split_x['x'], self.device)
+                    siml_x = siml_variables(split_x['x'])
+                    split_x['x'] = siml_x.send(self.device).get_values()
                     y_pred.append(self.model(split_x))
 
                 if self.setting.trainer.time_series_split_evaluation is None:
@@ -659,11 +691,13 @@ class Trainer(siml_manager.SimlManager):
                         cat_x, x['original_shapes'])
                 y_pred = util.cat_time_series(
                     y_pred, time_series_keys=self.output_time_series_keys)
-                y = self._send(
-                    util.cat_time_series(
-                        split_ys,
-                        time_series_keys=self.output_time_series_keys),
-                    self.output_device)
+
+                ans_y = util.cat_time_series(
+                    split_ys,
+                    time_series_keys=self.output_time_series_keys
+                )
+                ans_siml_y = siml_variables(ans_y)
+                y = ans_siml_y.send(self.output_device).get_values()
                 return y_pred, y, {
                     'original_shapes': original_shapes,
                     'model': self.model}
@@ -687,6 +721,11 @@ class Trainer(siml_manager.SimlManager):
         else:
             raise ValueError(f"Unexpected loss type: {loss_key}")
         return metric
+
+    def _seed_worker(worker_id) -> None:
+        worker_seed = torch.initial_seed() % 2**32
+        np.random.seed(worker_seed)
+        random.seed(worker_seed)
 
     def _get_data_loaders(
             self, dataset_generator, batch_size, validation_batch_size=None,
@@ -716,18 +755,37 @@ class Trainer(siml_manager.SimlManager):
             test_directories, supports=supports, num_workers=num_workers,
             recursive=recursive, allow_no_data=True, decrypt_key=decrypt_key)
 
+        random_generator = torch.Generator()
+        random_generator.manual_seed(self.setting.trainer.seed)
+
         print(f"num_workers for data_loader: {num_workers}")
         train_loader = torch.utils.data.DataLoader(
-            train_dataset, collate_fn=self.collate_fn,
-            batch_size=batch_size, shuffle=True, num_workers=num_workers)
+            train_dataset,
+            collate_fn=self.collate_fn,
+            batch_size=batch_size,
+            shuffle=True,
+            num_workers=num_workers,
+            worker_init_fn=self._seed_worker,
+            generator=random_generator
+        )
         validation_loader = torch.utils.data.DataLoader(
-            validation_dataset, collate_fn=self.collate_fn,
-            batch_size=validation_batch_size, shuffle=False,
-            num_workers=num_workers)
+            validation_dataset,
+            collate_fn=self.collate_fn,
+            batch_size=validation_batch_size,
+            shuffle=False,
+            num_workers=num_workers,
+            worker_init_fn=self._seed_worker,
+            generator=random_generator
+        )
         test_loader = torch.utils.data.DataLoader(
-            test_dataset, collate_fn=self.collate_fn,
-            batch_size=validation_batch_size, shuffle=False,
-            num_workers=num_workers)
+            test_dataset,
+            collate_fn=self.collate_fn,
+            batch_size=validation_batch_size,
+            shuffle=False,
+            num_workers=num_workers,
+            worker_init_fn=self._seed_worker,
+            generator=random_generator
+        )
 
         return train_loader, validation_loader, test_loader
 
@@ -805,7 +863,13 @@ class Trainer(siml_manager.SimlManager):
             'max_epochs': self.setting.trainer.n_epoch,
             'epoch_length': len(self.train_loader),
         })
-        self.trainer.state.epoch = checkpoint['epoch']
+
+        if self.setting.trainer.n_epoch == checkpoint['epoch']:
+            raise FileExistsError(
+                "Checkpoint at last epoch exists. "
+                "Model to restart has already finished"
+            )
+
         # self.loss = checkpoint['loss']
         print(f"{snapshot} loaded for restart.")
         return

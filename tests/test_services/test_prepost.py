@@ -2,7 +2,9 @@ from pathlib import Path
 import pickle
 import shutil
 import unittest
+import pytest
 
+import femio
 import numpy as np
 import pandas as pd
 import scipy.sparse as sp
@@ -22,6 +24,15 @@ def load_function(data_files, data_directory):
         'a': np.reshape(df['a'].to_numpy(), (-1, 1)),
         'b': np.reshape(df['b'].to_numpy(), (-1, 1)),
         'c': np.reshape(df['c'].to_numpy(), (-1, 1))}, None
+
+
+def fluid_load_function(data_files, data_directory):
+    fem_data = femio.read_files('vtu', data_files)
+    dict_data = {
+        'u': fem_data.nodal_data.get_attribute_data('U'),
+        'p': fem_data.nodal_data.get_attribute_data('p'),
+    }
+    return dict_data, fem_data
 
 
 def filter_function(fem_data, raw_directory=None, data_dict=None):
@@ -522,3 +533,55 @@ class TestPrepost(unittest.TestCase):
         interim_data = np.load(interim_directory / 'a.npy')
 
         assert interim_data.dtype == np.int32
+
+    def test_convert_raw_data_with_load_function_and_additional_variables(
+            self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/additional_variables/data.yml'))
+        shutil.rmtree(main_setting.data.interim_root, ignore_errors=True)
+
+        raw_converter = pre.RawConverter(
+            main_setting, load_function=fluid_load_function)
+        raw_converter.convert()
+
+        actual_directory = sorted(util.collect_data_directories(
+            main_setting.data.interim,
+            required_file_names=['a.npy']))[0]
+        answer_fem_data = femio.read_files(
+            'vtu', 'tests/data/additional_variables/raw/step1.0_u1.0/mesh.vtu')
+
+        actual_a = np.load(actual_directory / 'a.npy')
+        np.testing.assert_almost_equal(
+            actual_a, answer_fem_data.nodal_data.get_attribute_data('a'))
+
+        actual_b = np.load(actual_directory / 'b.npy')
+        np.testing.assert_almost_equal(
+            actual_b, answer_fem_data.nodal_data.get_attribute_data('b'))
+
+        actual_u = np.load(actual_directory / 'u.npy')
+        np.testing.assert_almost_equal(
+            actual_u, answer_fem_data.nodal_data.get_attribute_data('U'))
+
+        actual_p = np.load(actual_directory / 'p.npy')
+        np.testing.assert_almost_equal(
+            actual_p, answer_fem_data.nodal_data.get_attribute_data('p'))
+
+
+@pytest.mark.parametrize("input_dir, output_dir, expect", [
+    (Path("/home/aaaa/ssss/cccc"),
+     Path("/home/aaaa/ssss/c"),
+     Path("/home/aaaa/ssss")),
+    (Path("/aaaa/ssss/cccc"),
+     Path("/home/aaaa/ssss/c"),
+     Path("/")),
+    (Path("/aaa/bbbb/prepocess"),
+     Path("/aaa/bbbb/predict"),
+     Path("/aaa/bbbb"))
+])
+def test__common_parent(input_dir, output_dir, expect):
+    common_dir = pre.common_parent(
+        input_dir,
+        output_dir
+    )
+
+    assert common_dir == expect

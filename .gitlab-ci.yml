@@ -118,6 +118,18 @@ test_services:
   extends: .test
   script:
     - python3.9 -m pytest tests/test_services --capture=no
+  tags:
+    - gpu
+
+test_reproducibility:
+  extends: .test
+  script:
+    - python3.9 tests/test_reproducibility/training_functions.py 11 0
+    - python3.9 tests/test_reproducibility/training_functions.py 11 1
+    - python3.9 tests/test_reproducibility/training_functions.py 23 0
+    - python3.9 -m pytest tests/test_reproducibility/test_reproducibility.py --capture=no
+  tags:
+    - no-gpu
 
 test_group:
   extends: .test

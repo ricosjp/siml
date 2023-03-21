@@ -1,14 +1,11 @@
 from collections import OrderedDict
-import io
 import pathlib
 import random
 import re
-from typing import Callable
 
 import numpy as np
 import pandas as pd
 import torch
-from torch import Tensor
 
 from . import data_parallel
 from . import setting
@@ -33,43 +30,6 @@ class SimlManager():
         """
         main_setting = setting.MainSetting.read_settings_yaml(settings_yaml)
         return cls(main_setting)
-
-    def __init__(self,
-                 settings,
-                 *,
-                 optuna_trial=None,
-                 user_loss_fundtion_dic:
-                 dict[str, Callable[[Tensor, Tensor], Tensor]] = None):
-        """Initialize SimlManager object.
-
-        Parameters
-        ----------
-        settings: siml.setting.MainSetting object or pathlib.Path
-            Setting descriptions.
-        model: siml.networks.Network object
-            Model to be trained.
-        optuna_trial: optuna.Trial
-            Optuna trial object. Used for pruning.
-
-        Returns
-        --------
-        None
-        """
-        if isinstance(settings, pathlib.Path) or isinstance(
-                settings, io.TextIOBase):
-            self.setting = setting.MainSetting.read_settings_yaml(
-                settings)
-        elif isinstance(settings, setting.MainSetting):
-            self.setting = settings
-        else:
-            raise ValueError(
-                f"Unknown type for settings: {settings.__class__}")
-        self.inference_mode = False
-        self.user_loss_function_dic = user_loss_fundtion_dic
-
-        self._update_setting_if_needed()
-        self.optuna_trial = optuna_trial
-        return
 
     def _select_device(self, gpu_id=None):
         if gpu_id is None:
@@ -131,21 +91,28 @@ class SimlManager():
         torch.manual_seed(seed)
         return
 
-    def _update_setting(self, path, *, only_model=False):
+    def _find_settings_yaml(self, path: pathlib.Path) -> pathlib.Path:
         if path.is_file():
-            yaml_file = path
-        elif path.is_dir():
+            return path
+        if path.is_dir():
             yamls = list(path.glob('*.y*ml')) + list(path.glob('*.y*ml.enc'))
-            if len(yamls) != 1:
-                yaml_file_candidates = [
-                    y for y in yamls if 'setting' in str(y)]
-                if len(yaml_file_candidates) == 1:
-                    yaml_file = yaml_file_candidates[0]
-                else:
-                    raise ValueError(
-                        f"{len(yamls)} yaml files found in {path}")
+            if len(yamls) == 1:
+                return yamls[0]
+
+            yaml_file_candidates = [
+                y for y in yamls if str(y.name).startswith('setting')]
+            if len(yaml_file_candidates) == 1:
+                return yaml_file_candidates[0]
             else:
-                yaml_file = yamls[0]
+                raise ValueError(
+                    f"{len(yamls)} yaml files found in {path}")
+
+        raise NotImplementedError(
+            f"type of Path: {type(path)} is not expected."
+            f"Possibly, Path: {path} is not existed")
+
+    def _replace_setting(self, path, *, only_model=False):
+        yaml_file = self._find_settings_yaml(path)
 
         key = None
         if self.setting.trainer.model_key is not None:
@@ -159,6 +126,8 @@ class SimlManager():
         else:
             inferer_has_key = False
 
+        output_directory = self.setting.trainer.output_directory
+
         if 'enc' in str(yaml_file):
             yaml_file = util.decrypt_file(key, yaml_file, return_stringio=True)
 
@@ -170,18 +139,13 @@ class SimlManager():
 
         if trainer_has_key:
             self.setting.trainer.model_key = key
-            self.setting.data.decrypt_key = key
+            self.setting.data.encrypt_key = key
         if inferer_has_key:
             self.setting.inferer.model_key = key
-            self.setting.data.decrypt_key = key
+            self.setting.data.encrypt_key = key
 
         if not self.inference_mode:
-            if self.setting.trainer.output_directory.exists():
-                print(
-                    f"{self.setting.trainer.output_directory} exists "
-                    'so reset output directory.')
-                self.setting.trainer.output_directory = \
-                    setting.TrainerSetting([], []).output_directory
+            self.setting.trainer.output_directory = output_directory
         return
 
     def _update_setting_if_needed(self):
@@ -193,8 +157,9 @@ class SimlManager():
 
         if self.setting.trainer.restart_directory is not None:
             restart_directory = self.setting.trainer.restart_directory
-            self._update_setting(self.setting.trainer.restart_directory)
+            self._replace_setting(self.setting.trainer.restart_directory)
             self.setting.trainer.restart_directory = restart_directory
+            self.setting.trainer.pretrain_directory = None
         return
 
     def _load_pretrained_model_if_needed(self, *, model_file=None):

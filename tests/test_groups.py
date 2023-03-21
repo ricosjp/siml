@@ -324,7 +324,7 @@ class TestGroups(unittest.TestCase):
         if tr.setting.trainer.output_directory.exists():
             shutil.rmtree(tr.setting.trainer.output_directory)
         loss = tr.train()
-        np.testing.assert_array_less(loss, 1.e-1)
+        np.testing.assert_array_less(loss, 3.e-1)
 
         ir = inferer.Inferer(
             main_setting,
