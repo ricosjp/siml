@@ -389,7 +389,7 @@ class CollectionVariableSetting(TypedDataClass):
 class OptimizerSetting(TypedDataClass):
     lr: float = 0.001
     betas: typing.Tuple = \
-        dc.field(default=(0.9, 0.99))
+        dc.field(default=(0.9, 0.999))
     eps: float = 1e-8
     weight_decay: float = 0
 
