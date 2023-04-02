@@ -216,7 +216,9 @@ class EnSEquivariantMLP(EquivariantMLP):
 
         return
 
-    def _forward_core(self, xs, supports=None, original_shapes=None):
+    def _forward_core(
+            self, xs, supports=None, original_shapes=None,
+            power_length=None, power_time=None, power_mass=None):
         """Execute the NN's forward computation.
 
         Parameters
@@ -248,12 +250,89 @@ class EnSEquivariantMLP(EquivariantMLP):
         if len(xs) > 4:
             raise ValueError(f"Unexpected input type: {xs}")
 
+        if power_length is None:
+            power_length = self.power_length
+        if power_time is None:
+            power_time = self.power_time
+        if power_mass is None:
+            power_mass = self.power_mass
+
         x = torch.einsum(
-            'i...,i->i...', x, 1 / length**self.power_length) \
-            / time**self.power_time \
-            / mass**self.power_mass
+            'i...,i->i...', x, 1 / length**power_length) \
+            / time**power_time \
+            / mass**power_mass
         x = super()._forward_core(x)
         return torch.einsum(
-            'i...,i->i...', x, length**self.power_length) \
-            * time**self.power_time \
-            * mass**self.power_mass
+            'i...,i->i...', x, length**power_length) \
+            * time**power_time \
+            * mass**power_mass
+
+
+class SharedEnSEquivariantMLP(siml_module.SimlModule):
+    """
+    EnSEquivariantMLP layer tied with the reference EnSEquivariantMLP.
+    Useful for emcoders of Neumann conditions.
+    """
+
+    @staticmethod
+    def get_name():
+        return 'shared_ens_equivariant_mlp'
+
+    @staticmethod
+    def is_trainable():
+        return True
+
+    @staticmethod
+    def accepts_multiple_inputs():
+        return False
+
+    @staticmethod
+    def uses_support():
+        return False
+
+    @classmethod
+    def _get_n_input_node(
+            cls, block_setting, predecessors, dict_block_setting,
+            input_length, **kwargs):
+        return dict_block_setting[block_setting.reference_block_name].nodes[0]
+
+    @classmethod
+    def _get_n_output_node(
+            cls, input_node, block_setting, predecessors, dict_block_setting,
+            output_length, **kwargs):
+        return dict_block_setting[block_setting.reference_block_name].nodes[-1]
+
+    def __init__(self, block_setting, reference_block):
+        super().__init__(
+            block_setting, create_linears=False,
+            create_activations=False, create_dropouts=False,
+            no_parameter=True)
+        self.reference_block = reference_block
+
+        if 'dimension' not in block_setting.optional:
+            raise ValueError(f"Set optional.dimension for: {block_setting}")
+        dimension = block_setting.optional['dimension']
+        self.power_length = dimension['length']
+        self.power_time = dimension['time']
+        self.power_mass = dimension['mass']
+
+        return
+
+    @property
+    def linears(self):
+        return self.reference_block.linears
+
+    def _forward_core(self, xs, supports=None, original_shapes=None):
+        """Execute the NN's forward computation.
+
+        Parameters
+        ----------
+        x: torch.Tensor
+            Input of the NN.
+
+        Returns
+        -------
+        y: torch.Tensor
+            Output of the NN.
+        """
+        return self.reference_block(xs)

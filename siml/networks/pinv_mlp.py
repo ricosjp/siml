@@ -6,6 +6,7 @@ from . import id_mlp
 from . import mlp
 from . import normalized_mlp
 from . import siml_module
+from . import tensor_operations
 
 
 class PInvMLP(siml_module.SimlModule):
@@ -53,6 +54,9 @@ class PInvMLP(siml_module.SimlModule):
             self.option = 'id_mlp'
         elif isinstance(self.reference_block, mlp.MLP):
             self.option = 'mlp'
+        elif isinstance(
+                self.reference_block, tensor_operations.EnSEquivariantMLP):
+            self.option = 'ens_equivariant_mlp'
         else:
             raise ValueError(
                 f"Unexpected reference block {self.reference_block}"
@@ -67,7 +71,7 @@ class PInvMLP(siml_module.SimlModule):
 
         return
 
-    def _forward_core(self, x, supports=None, original_shapes=None):
+    def _forward_core(self, xs, supports=None, original_shapes=None):
         """Execute the NN's forward computation.
 
         Parameters
@@ -80,6 +84,36 @@ class PInvMLP(siml_module.SimlModule):
         y: torch.Tensor
             Output of the NN.
         """
+        if self.option == 'ens_equivariant_mlp':
+            if not isinstance(xs, list):
+                raise ValueError(
+                    f"Input should be list for: {self.block_setting}")
+
+            x = xs[0]
+            length = xs[1][..., 0]
+            if len(xs) > 2:
+                time = xs[2][0, 0]  # NOTE: Assume global data
+            else:
+                time = 1
+            if len(xs) > 3:
+                mass = xs[3][0, 0]  # NOTE: Assume global data
+            else:
+                mass = 1
+            if len(xs) > 4:
+                raise ValueError(f"Unexpected input type: {xs}")
+
+            power_length = self.reference_block.power_length
+            power_time = self.reference_block.power_time
+            power_mass = self.reference_block.power_mass
+
+            raise ValueError(length, time)
+            x = torch.einsum(
+                'i...,i->i...', x, 1 / length**power_length) \
+                / time**power_time \
+                / mass**power_mass
+        else:
+            x = xs
+
         if self.clone:
             h = x.clone()
         else:
@@ -87,6 +121,13 @@ class PInvMLP(siml_module.SimlModule):
         for linear, activation in zip(self.linears, self.activations):
             h = activation(h)  # Activation first, because it is inverse
             h = linear(h)
+
+        if self.option == 'ens_equivariant_mlp':
+            h = torch.einsum(
+                'i...,i->i...', h, length**power_length) \
+                * time**power_time \
+                * mass**power_mass
+
         if self.clone:
             return h.clone()
         else:
@@ -124,7 +165,7 @@ class PInvLinear(torch.nn.Module):
             w = self.ref.weight / torch.max(torch.abs(self.ref.weight))
         elif self.option == 'id_mlp':
             w = self.ref.weight + 1
-        elif self.option == 'mlp':
+        elif self.option in ['mlp', 'ens_equivariant_mlp']:
             w = self.ref.weight
         else:
             raise ValueError(f"Unexpected option: {self.option}")

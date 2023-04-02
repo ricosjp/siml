@@ -88,11 +88,14 @@ class AbstractEquivariantGNN(abstract_gcn.AbstractGCN):
         else:
             print('Matrix multiplication mode: A (HW)')
 
-        if 'propagations' not in block_setting.optional:
-            raise ValueError(
-                f"Specify 'propagations' in optional for: {block_setting}")
+        skip_propagation_function = block_setting.optional.get(
+            'skip_propagation_function', False)
+        if not skip_propagation_function:
+            if 'propagations' not in block_setting.optional:
+                raise ValueError(
+                    f"Specify 'propagations' in optional for: {block_setting}")
 
-        self.propagation_functions = self._create_propagation_functions()
+            self.propagation_functions = self._create_propagation_functions()
 
         # Setting for Neumann BC
         if self.block_setting.input_names is not None:
