@@ -250,6 +250,14 @@ class SimlModule(torch.nn.Module, metaclass=abc.ABCMeta):
         return
 
     def forward(self, x, supports=None, original_shapes=None):
+        if self.block_setting.clone:
+            if isinstance(x, list):
+                h = [_.clone() for _ in x]
+            else:
+                h = x.clone()
+        else:
+            h = x
+
         try:
             if self.block_setting.no_grad:
                 with torch.no_grad():
@@ -260,7 +268,11 @@ class SimlModule(torch.nn.Module, metaclass=abc.ABCMeta):
                     x, supports=supports, original_shapes=original_shapes)
         except Exception as e:
             raise ValueError(f"{e}\nError occured in: {self.block_setting}")
-        return h
+
+        if self.block_setting.clone:
+            return h.clone()
+        else:
+            return h
 
     def _forward(self, x, supports=None, original_shapes=None):
         h = self._forward_core(

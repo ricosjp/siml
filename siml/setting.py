@@ -825,6 +825,7 @@ class BlockSetting(TypedDataClass):
         default=None, metadata={'allow_none': True})
     clip_grad_norm: float = dc.field(
         default=None, metadata={'allow_none': True})
+    clone: bool = False
 
     optional: dict = dc.field(default_factory=dict)
 
