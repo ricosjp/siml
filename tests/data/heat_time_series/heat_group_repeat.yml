@@ -34,6 +34,10 @@ trainer:
   log_trigger_epoch: 10
   stop_trigger_epoch: 100
   seed: 0
+  optimizer_setting:
+    betas:
+      - 0.9
+      - 0.99
 model:
   blocks:
     - name: IN_RANK0
