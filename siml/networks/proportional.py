@@ -1,6 +1,5 @@
 
 import torch
-import torch.nn.functional as functional
 
 from . import siml_module
 

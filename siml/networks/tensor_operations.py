@@ -4,6 +4,7 @@ import torch
 
 from .. import setting
 from . import activations
+from . import proportional
 from . import siml_module
 from . import reducer
 
@@ -160,13 +161,27 @@ class EquivariantMLP(siml_module.SimlModule):
             setting.BlockSetting(optional={'operator': 'mul'}))
         self.create_linear_weight = self.block_setting.optional.get(
             'create_linear_weight', False)
+        self.positive = self.block_setting.optional.get(
+            'positive', False)
         self.sqrt = self.block_setting.optional.get('sqrt', False)
         if block_setting.nodes[0] == block_setting.nodes[-1] and \
                 not self.create_linear_weight:
             self.linear_weight = activations.identity
         else:
-            self.linear_weight = torch.nn.Linear(
-                block_setting.nodes[0], block_setting.nodes[-1], bias=False)
+            self.linear_weight = proportional.Proportional(
+                setting.BlockSetting(
+                    nodes=[
+                        block_setting.nodes[0],
+                        block_setting.nodes[1],
+                    ],
+                    activations=['identity'],
+                    optional={'positive_weight': self.positive},
+                ))
+
+        if self.positive:
+            self.filter_coeff = torch.abs
+        else:
+            self.filter_coeff = activations.identity
         self.contraction = Contraction(setting.BlockSetting())
         return
 
@@ -194,7 +209,7 @@ class EquivariantMLP(siml_module.SimlModule):
                 h, p=dropout_ratio, training=self.training)
 
             h = activation(h)
-        return torch.einsum('i...f,if->i...f', linear_x, h)
+        return torch.einsum('i...f,if->i...f', linear_x, self.filter_coeff(h))
 
 
 class EnSEquivariantMLP(EquivariantMLP):
