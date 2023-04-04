@@ -47,6 +47,10 @@ trainer:
   lazy: false
   batch_size: 1
   num_workers: 0
+  optimizer_setting:
+    betas:
+      - 0.9
+      - 0.99
 
 model:
   blocks:

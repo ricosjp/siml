@@ -84,7 +84,7 @@ class TestSetting(unittest.TestCase):
 def test__default_optimizer_setting():
     trainer_setting = setting.TrainerSetting()
     assert trainer_setting.optimizer_setting['lr'] == 0.001
-    assert trainer_setting.optimizer_setting['betas'] == (0.9, 0.99)
+    assert trainer_setting.optimizer_setting['betas'] == (0.9, 0.999)
     assert trainer_setting.optimizer_setting['eps'] == 1e-8
     assert trainer_setting.optimizer_setting['weight_decay'] == 0
 
