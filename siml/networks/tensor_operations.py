@@ -157,6 +157,7 @@ class EquivariantMLP(siml_module.SimlModule):
 
     def __init__(self, block_setting):
         super().__init__(block_setting)
+
         self.mul = reducer.Reducer(
             setting.BlockSetting(optional={'operator': 'mul'}))
         self.create_linear_weight = self.block_setting.optional.get(
@@ -185,6 +186,13 @@ class EquivariantMLP(siml_module.SimlModule):
         self.contraction = Contraction(setting.BlockSetting())
         return
 
+    def _forward(self, x, supports=None, original_shapes=None):
+        # NOTE: We define _forward instead of _forward_core to manage
+        #       residual connection by itself.
+        h = self._forward_core(
+            x, supports=supports, original_shapes=original_shapes)
+        return h
+
     def _forward_core(self, x, supports=None, original_shapes=None):
         """Execute the NN's forward computation.
 
@@ -201,6 +209,8 @@ class EquivariantMLP(siml_module.SimlModule):
         h = self.contraction(x)
         if self.sqrt:
             h = torch.sqrt(h + 1e-5)  # To avoid infinite gradient
+        if self.residual:
+            original_h = torch.clone(h)
         linear_x = self.linear_weight(x)
         for linear, dropout_ratio, activation in zip(
                 self.linears, self.dropout_ratios, self.activations):
@@ -209,6 +219,9 @@ class EquivariantMLP(siml_module.SimlModule):
                 h, p=dropout_ratio, training=self.training)
 
             h = activation(h)
+
+        if self.residual:
+            h = h + self.shortcut(original_h)
         return torch.einsum('i...f,if->i...f', linear_x, self.filter_coeff(h))
 
 
@@ -289,6 +302,7 @@ class EnSEquivariantMLP(EquivariantMLP):
                 torch.einsum('i...,i->i...', x, volume), dim=0, keepdim=True) \
                 / torch.sum(volume)
             x = x - mean
+
         h = super()._forward_core(x)
 
         if self.diff:
