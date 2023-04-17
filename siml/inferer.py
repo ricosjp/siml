@@ -17,6 +17,7 @@ from . import prepost
 from . import setting
 from . import siml_manager
 from . import util
+from .utils import path_utils
 
 
 class Inferer(siml_manager.SimlManager):
@@ -615,13 +616,13 @@ class Inferer(siml_manager.SimlManager):
         subdirectory = self._determine_subdirectory()
         base = self.setting.inferer.output_directory_base / subdirectory
         if 'preprocessed' in str(data_directory):
-            output_directory = prepost.determine_output_directory(
+            output_directory = path_utils.determine_output_directory(
                 data_directory, base, 'preprocessed')
         elif 'interim' in str(data_directory):
-            output_directory = prepost.determine_output_directory(
+            output_directory = path_utils.determine_output_directory(
                 data_directory, base, 'interim')
         elif 'raw' in str(data_directory):
-            output_directory = prepost.determine_output_directory(
+            output_directory = path_utils.determine_output_directory(
                 data_directory, base, 'raw')
         else:
             output_directory = base
@@ -663,13 +664,13 @@ class Inferer(siml_manager.SimlManager):
                     return None
 
         if 'preprocessed' in str(data_directory):
-            write_simulation_base = prepost.determine_output_directory(
+            write_simulation_base = path_utils.determine_output_directory(
                 data_directory,
                 self.setting.inferer.write_simulation_base,
                 'preprocessed')
 
         elif 'interim' in str(data_directory):
-            write_simulation_base = prepost.determine_output_directory(
+            write_simulation_base = path_utils.determine_output_directory(
                 data_directory,
                 self.setting.inferer.write_simulation_base,
                 'interim')

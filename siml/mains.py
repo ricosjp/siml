@@ -2,7 +2,7 @@ import argparse
 from distutils.util import strtobool
 import pathlib
 
-from . import prepost
+from .preprocessing import converter
 
 
 def convert_raw_data(
@@ -32,7 +32,7 @@ def convert_raw_data(
     parser = add_argument(parser)
     args = parser.parse_args()
 
-    raw_converter = prepost.RawConverter.read_settings(
+    raw_converter = converter.RawConverter.read_settings(
         args.settings_yaml,
         conversion_function=conversion_function,
         filter_function=filter_function,

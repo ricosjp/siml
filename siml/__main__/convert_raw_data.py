@@ -2,7 +2,7 @@ import argparse
 from distutils.util import strtobool
 import pathlib
 
-import siml
+from siml.preprocessing import converter
 
 
 def main(
@@ -31,7 +31,7 @@ def main(
         help='If True, process directory recursively [True]')
     args = parser.parse_args()
 
-    raw_converter = siml.prepost.RawConverter.read_settings(
+    raw_converter = converter.RawConverter.read_settings(
         args.settings_yaml,
         conversion_function=conversion_function,
         filter_function=filter_function,

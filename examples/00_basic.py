@@ -169,7 +169,7 @@ def conversion_function(fem_data, raw_directory):
 
 
 settings_yaml = pathlib.Path('00_basic_data/data.yml')
-raw_converter = siml.prepost.RawConverter.read_settings(
+raw_converter = siml.preprocessing.converter.RawConverter.read_settings(
     settings_yaml, conversion_function=conversion_function)
 raw_converter.convert()
 

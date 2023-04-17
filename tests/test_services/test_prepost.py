@@ -13,32 +13,59 @@ import siml.prepost as pre
 import siml.setting as setting
 import siml.trainer as trainer
 import siml.util as util
+import siml.preprocessing.converter as converter
+from siml.utils import path_utils
 
 import preprocess
 
 
-def load_function(data_files, data_directory):
-    # To be used in test_convert_raw_data_bypass_femio
-    df = pd.read_csv(data_files[0], header=0, index_col=None)
-    return {
-        'a': np.reshape(df['a'].to_numpy(), (-1, 1)),
-        'b': np.reshape(df['b'].to_numpy(), (-1, 1)),
-        'c': np.reshape(df['c'].to_numpy(), (-1, 1))}, None
+class LoadFunction(converter.ILoadFunction):
+    def __init__(self) -> None:
+        pass
+
+    def __call__(
+        self,
+        data_files: list[Path],
+        raw_path: Path
+    ) -> tuple[dict, femio.FEMData]:
+        # To be used in test_convert_raw_data_bypass_femio
+        df = pd.read_csv(data_files[0], header=0, index_col=None)
+        return {
+            'a': np.reshape(df['a'].to_numpy(), (-1, 1)),
+            'b': np.reshape(df['b'].to_numpy(), (-1, 1)),
+            'c': np.reshape(df['c'].to_numpy(), (-1, 1))}, None
 
 
-def fluid_load_function(data_files, data_directory):
-    fem_data = femio.read_files('vtu', data_files)
-    dict_data = {
-        'u': fem_data.nodal_data.get_attribute_data('U'),
-        'p': fem_data.nodal_data.get_attribute_data('p'),
-    }
-    return dict_data, fem_data
+class FluidLoadFunction(converter.ILoadFunction):
+    def __init__(self) -> None:
+        pass
+
+    def __call__(
+        self,
+        data_files: list[Path],
+        raw_path: Path
+    ) -> tuple[dict, femio.FEMData]:
+        fem_data = femio.read_files('vtu', data_files)
+        dict_data = {
+            'u': fem_data.nodal_data.get_attribute_data('U'),
+            'p': fem_data.nodal_data.get_attribute_data('p'),
+        }
+        return dict_data, fem_data
 
 
-def filter_function(fem_data, raw_directory=None, data_dict=None):
-    # To be used in test_convert_raw_data_with_filter_function
-    strain = fem_data.elemental_data.get_attribute_data('ElementalSTRAIN')
-    return np.max(np.abs(strain)) < 1e2
+class FilterFunction(converter.IFilterFunction):
+    def __init__(self) -> None:
+        pass
+
+    def __call__(
+        self,
+        fem_data: femio.FEMData,
+        raw_path: Path = None,
+        dict_data: dict[str, np.ndarray] = None
+    ) -> bool:
+        # To be used in test_convert_raw_data_with_filter_function
+        strain = fem_data.elemental_data.get_attribute_data('ElementalSTRAIN')
+        return np.max(np.abs(strain)) < 1e2
 
 
 class TestPrepost(unittest.TestCase):
@@ -52,11 +79,11 @@ class TestPrepost(unittest.TestCase):
 
     def test_determine_output_directory(self):
         self.assertEqual(
-            pre.determine_output_directory(
+            path_utils.determine_output_directory(
                 Path('data/raw/a/b'), Path('data/sth'), 'raw'),
             Path('data/sth/a/b'))
         self.assertEqual(
-            pre.determine_output_directory(
+            path_utils.determine_output_directory(
                 Path('tests/data/list/data/tet2_3_modulusx0.9000/interim'),
                 Path('tests/data/list/preprocessed'), 'interim'),
             Path('tests/data/list/preprocessed/data/tet2_3_modulusx0.9000'))
@@ -147,8 +174,8 @@ class TestPrepost(unittest.TestCase):
         shutil.rmtree(data_setting.interim_root, ignore_errors=True)
         shutil.rmtree(data_setting.preprocessed_root, ignore_errors=True)
 
-        rc = pre.RawConverter(
-            main_setting, recursive=True, load_function=load_function)
+        rc = converter.RawConverter(
+            main_setting, recursive=True, load_function=LoadFunction())
         rc.convert()
 
         interim_directory = data_setting.interim_root / 'train/1'
@@ -317,9 +344,9 @@ class TestPrepost(unittest.TestCase):
         shutil.rmtree(main_setting.data.interim_root, ignore_errors=True)
         shutil.rmtree(main_setting.data.preprocessed_root, ignore_errors=True)
 
-        raw_converter = pre.RawConverter(
+        raw_converter = converter.RawConverter(
             main_setting,
-            conversion_function=preprocess.conversion_function)
+            conversion_function=preprocess.ConversionFunction())
         raw_converter.convert()
         p = pre.Preprocessor(main_setting)
         p.preprocess_interim_data()
@@ -350,8 +377,8 @@ class TestPrepost(unittest.TestCase):
             Path('tests/data/test_prepost_to_filter/data.yml'))
         shutil.rmtree(main_setting.data.interim_root, ignore_errors=True)
 
-        raw_converter = pre.RawConverter(
-            main_setting, filter_function=filter_function)
+        raw_converter = converter.RawConverter(
+            main_setting, filter_function=FilterFunction())
         raw_converter.convert()
 
         actual_directories = sorted(util.collect_data_directories(
@@ -491,10 +518,10 @@ class TestPrepost(unittest.TestCase):
 
         shutil.rmtree(main_setting.data.interim_root, ignore_errors=True)
 
-        rc = pre.RawConverter(
+        rc = converter.RawConverter(
             main_setting, recursive=True, write_ucd=False,
-            conversion_function=preprocess
-            .conversion_function_heat_time_series)
+            conversion_function=preprocess.ConversionFunctionHeatTimeSeries()
+        )
         rc.convert()
 
     def test_preprocess_interim_list(self):
@@ -525,8 +552,8 @@ class TestPrepost(unittest.TestCase):
         shutil.rmtree(data_setting.interim_root, ignore_errors=True)
         shutil.rmtree(data_setting.preprocessed_root, ignore_errors=True)
 
-        rc = pre.RawConverter(
-            main_setting, recursive=True, load_function=load_function)
+        rc = converter.RawConverter(
+            main_setting, recursive=True, load_function=LoadFunction())
         rc.convert()
 
         interim_directory = data_setting.interim_root / 'train/1'
@@ -540,8 +567,8 @@ class TestPrepost(unittest.TestCase):
             Path('tests/data/additional_variables/data.yml'))
         shutil.rmtree(main_setting.data.interim_root, ignore_errors=True)
 
-        raw_converter = pre.RawConverter(
-            main_setting, load_function=fluid_load_function)
+        raw_converter = converter.RawConverter(
+            main_setting, load_function=FluidLoadFunction())
         raw_converter.convert()
 
         actual_directory = sorted(util.collect_data_directories(
@@ -579,7 +606,7 @@ class TestPrepost(unittest.TestCase):
      Path("/aaa/bbbb"))
 ])
 def test__common_parent(input_dir, output_dir, expect):
-    common_dir = pre.common_parent(
+    common_dir = path_utils.common_parent(
         input_dir,
         output_dir
     )
