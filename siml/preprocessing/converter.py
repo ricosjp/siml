@@ -1,7 +1,7 @@
 import abc
 import multiprocessing as multi
 import pathlib
-from functools import cache, reduce
+from functools import cache, reduce, partial
 from operator import or_
 from typing import Dict, Tuple, Union
 
@@ -14,8 +14,8 @@ from siml.utils import fem_data_utils, path_utils
 
 class IConvertFunction(metaclass=abc.ABCMeta):
     def __call__(
-        self, 
-        fem_data: femio.FEMData, 
+        self,
+        fem_data: femio.FEMData,
         data_directory: pathlib.Path
     ) -> dict[str, np.ndarray]:
         raise NotImplementedError()
@@ -57,13 +57,13 @@ class SingleDataConverter:
         setting: setting.ConversionSetting,
         raw_path: pathlib.Path,
         load_function: ILoadFunction,
-        save_function: ISaveFunction,
         filter_function: IFilterFunction,
         *,
+        save_function: ISaveFunction = None,
         output_directory: pathlib.Path = None,
         raise_when_overwrite: bool = False,
         force_renew: bool = False,
-        do_save_results: bool = False
+        save_results: bool = True
     ) -> None:
 
         self.setting = setting
@@ -75,7 +75,12 @@ class SingleDataConverter:
         self._output_directory = output_directory
         self.force_renew = force_renew
         self.raise_when_overwrite = raise_when_overwrite
-        self.do_save_results = do_save_results
+        self.save_results = save_results
+
+        if self.save_results and (self.save_function is None):
+            raise ValueError(
+                "save_function is None when save_results option is True."
+            )
 
     @property
     @cache
@@ -99,7 +104,7 @@ class SingleDataConverter:
             return None
 
         dict_data, fem_data = values
-        if not self.do_save_results:
+        if not self.save_results:
             return dict_data
 
         self.save_function(
@@ -112,9 +117,20 @@ class SingleDataConverter:
     def _convert(
         self
     ) -> Union[Tuple[dict[str, np.ndarray], femio.FEMData], None]:
+        """
+        conversion process. Convert to feature array from data files
+
+        Raises:
+            ValueError: When load function raise Exception
+
+        Returns:
+            Union[Tuple[dict[str, np.ndarray], femio.FEMData], None]:
+                When success, return dict_data and fem_data.
+                When failed, return empty dictionary and None
+        """
         is_valid = self._check_directory()
         if not is_valid:
-            return None
+            return {}, None
 
         data_files = util.collect_files(
             self.raw_path,
@@ -142,6 +158,8 @@ class SingleDataConverter:
         return dict_data, fem_data
 
     def _check_directory(self) -> bool:
+
+        # check raw path
         valid_raw_path = self._check_raw_path()
         if not valid_raw_path:
             return False
@@ -202,13 +220,13 @@ class RawConverter:
         conversion_function: IConvertFunction = None,
         filter_function: IFilterFunction = None,
         load_function: ILoadFunction = None,
-        save_function=None,
-        force_renew=False,
-        read_npy=False,
-        write_ucd=True,
-        read_res=True,
-        max_process=None,
-        to_first_order=False
+        save_function: ISaveFunction = None,
+        force_renew: bool = False,
+        read_npy: bool = False,
+        write_ucd: bool = True,
+        read_res: bool = True,
+        max_process: int = None,
+        to_first_order: bool = False
     ) -> None:
         """Initialize converter of raw data and save them in interim directory.
 
@@ -275,27 +293,47 @@ class RawConverter:
                 "cannot set at the same time"
             )
 
-    def convert(self, raw_directory=None):
+    def convert(
+        self,
+        raw_directory: pathlib.Path = None,
+        *,
+        save_results: bool = True
+    ) -> dict[str, Union[dict, None]]:
         """Perform conversion.
 
         Parameters
         ----------
-        raw_directory: str or pathlib.Path, optional
+        raw_directory: pathlib.Path, optional
             Raw data directory name. If not fed, self.setting.data.raw is used
             instead.
+
+        save_results: bool, optional
+            If True, save results and dump files
+
+        Returns
+        -------
+        dict[str, Union[dict, None]]:
+            key is a path to raw directory.
+            If save_results is True, values is a list of None.
+            If save_results is False, values is a dictionary
+             of converted values.
         """
         print(f"# process: {self.max_process}")
         raw_directories = self._search_raw_directories(raw_directory)
         chunksize = max(len(raw_directories) // self.max_process // 16, 1)
 
         with multi.Pool(self.max_process) as pool:
-            pool.map(
-                self.convert_single_data,
+            results = pool.map(
+                partial(
+                    self.convert_single_data,
+                    save_results=save_results
+                ),
                 raw_directories,
                 chunksize=chunksize
             )
 
-        return
+        flatten_results = reduce(lambda x, y: x | y, results)
+        return flatten_results
 
     def convert_single_data(
         self,
@@ -303,8 +341,8 @@ class RawConverter:
         *,
         output_directory: pathlib.Path = None,
         raise_when_overwrite: bool = False,
-        do_save_results: bool = True
-    ) -> Union[None, dict]:
+        save_results: bool = True
+    ) -> dict[str, Union[dict, None]]:
         """Convert single directory.
 
         Parameters
@@ -319,7 +357,11 @@ class RawConverter:
 
         Returns
         -------
-        None
+        dict[str, Union[dict, None]]:
+            key is a path to raw directory.
+            If save_results is True, values is a list of None.
+            If save_results is False, values is a dictionary
+             of converted values.
         """
 
         load_function = self._create_load_function()
@@ -335,10 +377,11 @@ class RawConverter:
             output_directory=output_directory,
             raise_when_overwrite=raise_when_overwrite,
             force_renew=self.force_renew,
-            do_save_results=do_save_results
+            save_results=save_results
         )
 
-        return single_converter.run()
+        result = single_converter.run()
+        return {str(raw_path): result}
 
     def _search_raw_directories(
         self,
@@ -513,6 +556,11 @@ class DefaultSaveFunction(ISaveFunction):
             )
 
         if self.setting.skip_save:
+            return
+
+        if len(dict_data) == 0:
+            output_directory.mkdir(parents=True, exist_ok=True)
+            (output_directory / "failed").touch()
             return
 
         save_dict_data(
