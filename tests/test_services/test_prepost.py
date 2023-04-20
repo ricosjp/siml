@@ -4,41 +4,17 @@ import shutil
 import unittest
 import pytest
 
-import femio
 import numpy as np
-import pandas as pd
 import scipy.sparse as sp
 
 import siml.prepost as pre
 import siml.setting as setting
 import siml.trainer as trainer
 import siml.util as util
+import siml.preprocessing.converter as converter
+from siml.utils import path_utils
 
 import preprocess
-
-
-def load_function(data_files, data_directory):
-    # To be used in test_convert_raw_data_bypass_femio
-    df = pd.read_csv(data_files[0], header=0, index_col=None)
-    return {
-        'a': np.reshape(df['a'].to_numpy(), (-1, 1)),
-        'b': np.reshape(df['b'].to_numpy(), (-1, 1)),
-        'c': np.reshape(df['c'].to_numpy(), (-1, 1))}, None
-
-
-def fluid_load_function(data_files, data_directory):
-    fem_data = femio.read_files('vtu', data_files)
-    dict_data = {
-        'u': fem_data.nodal_data.get_attribute_data('U'),
-        'p': fem_data.nodal_data.get_attribute_data('p'),
-    }
-    return dict_data, fem_data
-
-
-def filter_function(fem_data, raw_directory=None, data_dict=None):
-    # To be used in test_convert_raw_data_with_filter_function
-    strain = fem_data.elemental_data.get_attribute_data('ElementalSTRAIN')
-    return np.max(np.abs(strain)) < 1e2
 
 
 class TestPrepost(unittest.TestCase):
@@ -52,11 +28,11 @@ class TestPrepost(unittest.TestCase):
 
     def test_determine_output_directory(self):
         self.assertEqual(
-            pre.determine_output_directory(
+            path_utils.determine_output_directory(
                 Path('data/raw/a/b'), Path('data/sth'), 'raw'),
             Path('data/sth/a/b'))
         self.assertEqual(
-            pre.determine_output_directory(
+            path_utils.determine_output_directory(
                 Path('tests/data/list/data/tet2_3_modulusx0.9000/interim'),
                 Path('tests/data/list/preprocessed'), 'interim'),
             Path('tests/data/list/preprocessed/data/tet2_3_modulusx0.9000'))
@@ -133,34 +109,6 @@ class TestPrepost(unittest.TestCase):
             array_stds[0], np.ones(array_stds.shape[1:]) * .1, decimal=1)
         np.testing.assert_array_almost_equal(
             array_stds[1], np.ones(array_stds.shape[1:]) * .05, decimal=1)
-
-    def test_convert_raw_data_bypass_femio(self):
-        data_setting = setting.DataSetting(
-            raw=Path('tests/data/csv_prepost/raw'),
-            interim=Path('tests/data/csv_prepost/interim'))
-        conversion_setting = setting.ConversionSetting(
-            required_file_names=['*.csv'], skip_femio=True)
-
-        main_setting = setting.MainSetting(
-            data=data_setting, conversion=conversion_setting)
-
-        shutil.rmtree(data_setting.interim_root, ignore_errors=True)
-        shutil.rmtree(data_setting.preprocessed_root, ignore_errors=True)
-
-        rc = pre.RawConverter(
-            main_setting, recursive=True, load_function=load_function)
-        rc.convert()
-
-        interim_directory = data_setting.interim_root / 'train/1'
-        expected_a = np.array([[1], [2], [3], [4]])
-        expected_b = np.array([[2.1], [4.1], [6.1], [8.1]])
-        expected_c = np.array([[3.2], [7.2], [8.2], [10.2]])
-        np.testing.assert_almost_equal(
-            np.load(interim_directory / 'a.npy'), expected_a)
-        np.testing.assert_almost_equal(
-            np.load(interim_directory / 'b.npy'), expected_b, decimal=5)
-        np.testing.assert_almost_equal(
-            np.load(interim_directory / 'c.npy'), expected_c, decimal=5)
 
     def test_preprocessor(self):
         data_setting = setting.DataSetting(
@@ -317,9 +265,9 @@ class TestPrepost(unittest.TestCase):
         shutil.rmtree(main_setting.data.interim_root, ignore_errors=True)
         shutil.rmtree(main_setting.data.preprocessed_root, ignore_errors=True)
 
-        raw_converter = pre.RawConverter(
+        raw_converter = converter.RawConverter(
             main_setting,
-            conversion_function=preprocess.conversion_function)
+            conversion_function=preprocess.ConversionFunction())
         raw_converter.convert()
         p = pre.Preprocessor(main_setting)
         p.preprocess_interim_data()
@@ -344,25 +292,6 @@ class TestPrepost(unittest.TestCase):
         ratio_y_grad = interim_y_grad.data \
             / preprocessed_y_grad.data
         np.testing.assert_almost_equal(np.var(ratio_y_grad), 0.)
-
-    def test_convert_raw_data_with_filter_function(self):
-        main_setting = setting.MainSetting.read_settings_yaml(
-            Path('tests/data/test_prepost_to_filter/data.yml'))
-        shutil.rmtree(main_setting.data.interim_root, ignore_errors=True)
-
-        raw_converter = pre.RawConverter(
-            main_setting, filter_function=filter_function)
-        raw_converter.convert()
-
-        actual_directories = sorted(util.collect_data_directories(
-            main_setting.data.interim,
-            required_file_names=['elemental_strain.npy']))
-        expected_directories = sorted([
-            main_setting.data.interim_root / 'tet2_3_modulusx0.9000',
-            main_setting.data.interim_root / 'tet2_3_modulusx1.1000',
-            main_setting.data.interim_root / 'tet2_4_modulusx1.0000',
-            main_setting.data.interim_root / 'tet2_4_modulusx1.1000'])
-        np.testing.assert_array_equal(actual_directories, expected_directories)
 
     def test_generate_converters(self):
         preprocessors_file = Path('tests/data/prepost/preprocessors.pkl')
@@ -485,18 +414,6 @@ class TestPrepost(unittest.TestCase):
             preprocess_converter.converter.inverse_transform(
                 preprocessed_x_grad).toarray(), reference_x_grad)
 
-    def test_convert_heat_time_series(self):
-        main_setting = setting.MainSetting.read_settings_yaml(
-            Path('tests/data/heat_time_series/data.yml'))
-
-        shutil.rmtree(main_setting.data.interim_root, ignore_errors=True)
-
-        rc = pre.RawConverter(
-            main_setting, recursive=True, write_ucd=False,
-            conversion_function=preprocess
-            .conversion_function_heat_time_series)
-        rc.convert()
-
     def test_preprocess_interim_list(self):
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/list/data.yml'))
@@ -511,61 +428,6 @@ class TestPrepost(unittest.TestCase):
             'tests/data/list/preprocessed/data/tet2_4_modulusx0.9000'
         ).exists())
 
-    def test_save_dtype_is_applied(self):
-        data_setting = setting.DataSetting(
-            raw=Path('tests/data/csv_prepost/raw'),
-            interim=Path('tests/data/csv_prepost/interim'))
-        conversion_setting = setting.ConversionSetting(
-            required_file_names=['*.csv'], skip_femio=True)
-
-        main_setting = setting.MainSetting(
-            data=data_setting, conversion=conversion_setting,
-            misc={"save_dtype_dict": {"a": 'int32'}})
-
-        shutil.rmtree(data_setting.interim_root, ignore_errors=True)
-        shutil.rmtree(data_setting.preprocessed_root, ignore_errors=True)
-
-        rc = pre.RawConverter(
-            main_setting, recursive=True, load_function=load_function)
-        rc.convert()
-
-        interim_directory = data_setting.interim_root / 'train/1'
-        interim_data = np.load(interim_directory / 'a.npy')
-
-        assert interim_data.dtype == np.int32
-
-    def test_convert_raw_data_with_load_function_and_additional_variables(
-            self):
-        main_setting = setting.MainSetting.read_settings_yaml(
-            Path('tests/data/additional_variables/data.yml'))
-        shutil.rmtree(main_setting.data.interim_root, ignore_errors=True)
-
-        raw_converter = pre.RawConverter(
-            main_setting, load_function=fluid_load_function)
-        raw_converter.convert()
-
-        actual_directory = sorted(util.collect_data_directories(
-            main_setting.data.interim,
-            required_file_names=['a.npy']))[0]
-        answer_fem_data = femio.read_files(
-            'vtu', 'tests/data/additional_variables/raw/step1.0_u1.0/mesh.vtu')
-
-        actual_a = np.load(actual_directory / 'a.npy')
-        np.testing.assert_almost_equal(
-            actual_a, answer_fem_data.nodal_data.get_attribute_data('a'))
-
-        actual_b = np.load(actual_directory / 'b.npy')
-        np.testing.assert_almost_equal(
-            actual_b, answer_fem_data.nodal_data.get_attribute_data('b'))
-
-        actual_u = np.load(actual_directory / 'u.npy')
-        np.testing.assert_almost_equal(
-            actual_u, answer_fem_data.nodal_data.get_attribute_data('U'))
-
-        actual_p = np.load(actual_directory / 'p.npy')
-        np.testing.assert_almost_equal(
-            actual_p, answer_fem_data.nodal_data.get_attribute_data('p'))
-
 
 @pytest.mark.parametrize("input_dir, output_dir, expect", [
     (Path("/home/aaaa/ssss/cccc"),
@@ -579,7 +441,7 @@ class TestPrepost(unittest.TestCase):
      Path("/aaa/bbbb"))
 ])
 def test__common_parent(input_dir, output_dir, expect):
-    common_dir = pre.common_parent(
+    common_dir = path_utils.common_parent(
         input_dir,
         output_dir
     )

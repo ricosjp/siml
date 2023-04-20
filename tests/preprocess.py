@@ -10,6 +10,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import metis
 import scipy.sparse as sp
+import siml.preprocessing.converter as converter
 import siml.prepost as prepost
 import siml.setting as setting
 import torch
@@ -23,374 +24,402 @@ np.random.seed(SEED)
 torch.manual_seed(SEED)
 
 
-def conversion_function(fem_data, data_directory):
-    adj = fem_data.calculate_adjacency_matrix_element()
-    nadj = prepost.normalize_adjacency_matrix(adj)
+class ConversionFunction(converter.IConvertFunction):
+    def __init__(self) -> None:
+        pass
 
-    facet_fem_data = fem_data.to_first_order().to_facets()
-    inc_facet2cell = fem_data.calculate_relative_incidence_metrix_element(
-        facet_fem_data, minimum_n_sharing=3)
-    inc_cell2facet = inc_facet2cell.T
+    def __call__(self, fem_data: femio.FEMData, data_directory: pathlib.Path):
+        adj = fem_data.calculate_adjacency_matrix_element()
+        nadj = prepost.normalize_adjacency_matrix(adj)
 
-    x_grad, y_grad, z_grad = \
-        fem_data.calculate_spatial_gradient_adjacency_matrices('elemental')
-    x_grad_2, y_grad_2, z_grad_2 = \
-        fem_data.calculate_spatial_gradient_adjacency_matrices(
-            'elemental', n_hop=2)
-    global_modulus = np.mean(
-        fem_data.elemental_data.get_attribute_data('modulus'), keepdims=True)
+        facet_fem_data = fem_data.to_first_order().to_facets()
+        inc_facet2cell = fem_data.calculate_relative_incidence_metrix_element(
+            facet_fem_data, minimum_n_sharing=3)
+        inc_cell2facet = inc_facet2cell.T
 
-    tensor_stress = femio.functions.convert_array2symmetric_matrix(
-        fem_data.elemental_data.get_attribute_data('ElementalSTRESS'),
-        from_engineering=False)[:, :, :, None]
-    tensor_strain = femio.functions.convert_array2symmetric_matrix(
-        fem_data.elemental_data.get_attribute_data('ElementalSTRAIN'),
-        from_engineering=True)[:, :, :, None]
-    tensor_gauss_strain1 = femio.functions.convert_array2symmetric_matrix(
-        fem_data.elemental_data.get_attribute_data('GaussSTRAIN1'),
-        from_engineering=True)[:, :, :, None]
-    tensor_gauss_strain2 = femio.functions.convert_array2symmetric_matrix(
-        fem_data.elemental_data.get_attribute_data('GaussSTRAIN2'),
-        from_engineering=True)[:, :, :, None]
-    tensor_gauss_strain3 = femio.functions.convert_array2symmetric_matrix(
-        fem_data.elemental_data.get_attribute_data('GaussSTRAIN3'),
-        from_engineering=True)[:, :, :, None]
-    tensor_gauss_strain4 = femio.functions.convert_array2symmetric_matrix(
-        fem_data.elemental_data.get_attribute_data('GaussSTRAIN4'),
-        from_engineering=True)[:, :, :, None]
-    return {
-        'adj': adj, 'nadj': nadj, 'global_modulus': global_modulus,
-        'inc_cell2facet': inc_cell2facet, 'inc_facet2cell': inc_facet2cell,
-        'x_grad': x_grad, 'y_grad': y_grad, 'z_grad': z_grad,
-        'x_grad_2': x_grad_2, 'y_grad_2': y_grad_2, 'z_grad_2': z_grad_2,
-        'tensor_stress': tensor_stress, 'tensor_strain': tensor_strain,
-        'tensor_gauss_strain1': tensor_gauss_strain1,
-        'tensor_gauss_strain2': tensor_gauss_strain2,
-        'tensor_gauss_strain3': tensor_gauss_strain3,
-        'tensor_gauss_strain4': tensor_gauss_strain4,
-    }
+        x_grad, y_grad, z_grad = \
+            fem_data.calculate_spatial_gradient_adjacency_matrices('elemental')
+        x_grad_2, y_grad_2, z_grad_2 = \
+            fem_data.calculate_spatial_gradient_adjacency_matrices(
+                'elemental', n_hop=2)
+        global_modulus = np.mean(
+            fem_data.elemental_data.get_attribute_data('modulus'),
+            keepdims=True)
 
-
-def conversion_function_grad(fem_data, raw_directory=None):
-    fem_data.nodes.data = fem_data.nodes.data
-    node = fem_data.nodes.data
-
-    phi = fem_data.nodal_data.get_attribute_data('phi')
-    grad = fem_data.nodal_data.get_attribute_data('grad')[..., None]
-
-    nodal_adj = fem_data.calculate_adjacency_matrix_node()
-    nodal_nadj = prepost.normalize_adjacency_matrix(nodal_adj)
-
-    nodal_surface_normal = fem_data.calculate_surface_normals(
-        mode='effective')
-    nodal_grad_x, nodal_grad_y, nodal_grad_z = \
-        fem_data.calculate_spatial_gradient_adjacency_matrices(
-            'nodal', n_hop=1, moment_matrix=True, normals=nodal_surface_normal,
-            normal_weight=10., consider_volume=False)
-    inversed_moment_tensor = fem_data.nodal_data.pop(
-        'inversed_moment_tensors').data[..., None]
-    weighted_normal = fem_data.nodal_data.pop(
-        'weighted_surface_normals').data
-
-    neumann = np.einsum('ij,ij->i', nodal_surface_normal, grad[..., 0])
-    directed_neumann = np.einsum(
-        'ij,i->ij', weighted_normal, neumann)[..., None]
-
-    inc_grad, inc_int = fem_data.calculate_spatial_gradient_incidence_matrix(
-        'nodal', moment_matrix=True, normals=nodal_surface_normal,
-        normal_weight=10.)
-    inc_inversed_moment_tensor = fem_data.nodal_data.pop(
-        'inversed_moment_tensors').data[..., None]
-    inc_weighted_normal = fem_data.nodal_data.pop(
-        'weighted_surface_normals').data
-
-    np.testing.assert_almost_equal(
-        inversed_moment_tensor, inc_inversed_moment_tensor)
-    np.testing.assert_almost_equal(
-        weighted_normal, inc_weighted_normal)
-
-    x_component = fem_data.nodes.data[:, [0]]
-    grad_x_component = np.zeros(fem_data.nodes.data.shape)[..., None]
-    grad_x_component[:, 0, 0] = 1.
-    x_component_neumann = np.einsum(
-        'ij,ij->i', nodal_surface_normal, grad_x_component[..., 0])[..., None]
-    directed_x_component_neumann = np.einsum(
-        'ij,i->ij',
-        weighted_normal, x_component_neumann[..., 0])[..., None]
-
-    dict_data = {
-        'node': node,
-        'phi': phi,
-        'grad': grad,
-        'directed_neumann': directed_neumann,
-        'neumann': neumann[..., None],
-        'x_component': x_component,
-        'grad_x_component': grad_x_component,
-        'x_component_neumann': x_component_neumann,
-        'directed_x_component_neumann': directed_x_component_neumann,
-        'nodal_nadj': nodal_nadj,
-        'nodal_grad_x': nodal_grad_x,
-        'nodal_grad_y': nodal_grad_y,
-        'nodal_grad_z': nodal_grad_z,
-        'inc_grad_x': inc_grad[0],
-        'inc_grad_y': inc_grad[1],
-        'inc_grad_z': inc_grad[2],
-        'inc_int': inc_int,
-        'inversed_moment_tensor': inversed_moment_tensor,
-        'nodal_surface_normal': nodal_surface_normal[..., None],
-        'nodal_weighted_normal': weighted_normal[..., None],
-    }
-    return dict_data
-
-
-def conversion_function_heat_time_series(fem_data, raw_directory=None):
-    nodal_grad_x, nodal_grad_y, nodal_grad_z = \
-        fem_data.calculate_spatial_gradient_adjacency_matrices(
-            'nodal', n_hop=2)
-    nodal_laplacian = (
-        nodal_grad_x.dot(nodal_grad_x)
-        + nodal_grad_y.dot(nodal_grad_y)
-        + nodal_grad_z.dot(nodal_grad_z)).tocoo() / 6
-
-    facet_fem_data = fem_data.to_facets()
-    inc_facet2cell = fem_data.calculate_relative_incidence_metrix_element(
-        facet_fem_data, minimum_n_sharing=3)
-    inc_cell2facet = inc_facet2cell.T
-    facet_area = facet_fem_data.calculate_element_areas()
-    volume = fem_data.calculate_element_volumes()
-    inc_node2facet = facet_fem_data.calculate_incidence_matrix() \
-        .T.astype(int)
-    inc_node2cell = fem_data.calculate_incidence_matrix() \
-        .T.astype(int)
-
-    temperature = fem_data.nodal_data.get_attribute_data('TEMPERATURE')
-    raw_conductivity = fem_data.elemental_data.get_attribute_data(
-        'thermal_conductivity')
-    elemental_conductivity = np.array([a[0][:, 0] for a in raw_conductivity])
-    nodal_conductivity = fem_data.convert_elemental2nodal(
-        elemental_conductivity, mode='mean')
-    global_conductivity = np.mean(
-        elemental_conductivity, axis=0, keepdims=True)
-
-    dict_data = {
-        f"t_{i}": t for i, t in enumerate(temperature)}
-    dict_data.update({
-        f"elemental_{k}":
-        fem_data.convert_nodal2elemental(v, calc_average=True)
-        for k, v in dict_data.items()})
-    dict_data.update({
-        'nodal_grad_x': nodal_grad_x,
-        'nodal_grad_y': nodal_grad_y,
-        'nodal_grad_z': nodal_grad_z,
-        'nodal_laplacian': nodal_laplacian,
-        'inc_facet2cell': inc_facet2cell,
-        'inc_cell2facet': inc_cell2facet,
-        'inc_node2facet': inc_node2facet,
-        'inc_node2cell': inc_node2cell,
-        'facet_area': facet_area,
-        'volume': volume,
-        'elemental_conductivity': elemental_conductivity,
-        'nodal_conductivity': nodal_conductivity,
-        'global_conductivity': global_conductivity})
-
-    # # Graph reduction for multigrid
-    # output_directory = pathlib.Path(
-    #     str(raw_directory).replace('raw', 'interim'))
-    # nodal_adj = fem_data.calculate_adjacency_matrix_node()
-    #
-    # reduce0to1, reduced_adj1, reduced_nodes1, part1, gx1, gy1, gz1 \
-    #     = reduce_graph(
-    #         output_directory, nodal_adj, fem_data.nodes.data, 500, n_hop=2)
-    # dict_data.update({
-    #     'reduce0to1': reduce0to1,
-    #     'reduced_adj1': reduced_adj1,
-    #     'reduced_nadj1': prepost.normalize_adjacency_matrix(reduced_adj1),
-    #     'reduced_gx1': gx1,
-    #     'reduced_gy1': gy1,
-    #     'reduced_gz1': gz1,
-    # })
-    #
-    # reduce1to2, reduced_adj2, reduced_nodes2, part2, gx2, gy2, gz2 \
-    #     = reduce_graph(
-    #         output_directory, reduced_adj1, reduced_nodes1, 50, n_hop=10)
-    # dict_data.update({
-    #     'reduce1to2': reduce1to2,
-    #     'reduced_adj2': reduced_adj2,
-    #     'reduced_nadj2': prepost.normalize_adjacency_matrix(reduced_adj2),
-    #     'reduced_gx2': gx2,
-    #     'reduced_gy2': gy2,
-    #     'reduced_gz2': gz2,
-    # })
-    #
-    # reduce2to3, reduced_adj3, reduced_nodes3, part3, gx3, gy3, gz3 \
-    #     = reduce_graph(
-    #         output_directory, reduced_adj2, reduced_nodes2, 5, n_hop=5)
-    # dict_data.update({
-    #     'reduce2to3': reduce2to3,
-    #     'reduced_adj3': reduced_adj3,
-    #     'reduced_nadj3': prepost.normalize_adjacency_matrix(reduced_adj3),
-    #     'reduced_gx3': gx3,
-    #     'reduced_gy3': gy3,
-    #     'reduced_gz3': gz3,
-    # })
-
-    return dict_data
-
-
-def conversion_function_heat_boundary(fem_data, raw_directory=None):
-
-    node = fem_data.nodal_data.get_attribute_data('node')
-    elemental_volume = fem_data.calculate_element_volumes(
-        raise_negative_volume=False, return_abs_volume=False)
-
-    nodal_mean_volume = fem_data.convert_elemental2nodal(
-        elemental_volume, mode='mean', raise_negative_volume=False)
-    nodal_effective_volume = fem_data.convert_elemental2nodal(
-        elemental_volume, mode='effective', raise_negative_volume=False)
-
-    nodal_surface_normal = fem_data.calculate_surface_normals(
-        mode='effective')
-    nodal_grad_x_1, nodal_grad_y_1, nodal_grad_z_1 = \
-        fem_data.calculate_spatial_gradient_adjacency_matrices(
-            'nodal', n_hop=1, moment_matrix=True,
-            normals=nodal_surface_normal,
-            consider_volume=False, normal_weight=10.)
-    inversed_moment_tensors_1 = fem_data.nodal_data.pop(
-        'inversed_moment_tensors').data[..., None]
-    weighted_surface_normal_1 = fem_data.nodal_data.pop(
-        'weighted_surface_normals').data[..., None]
-
-    inc_grad, inc_int = fem_data.calculate_spatial_gradient_incidence_matrix(
-        'nodal', moment_matrix=True, normals=nodal_surface_normal,
-        normal_weight=10.)
-    inc_inversed_moment_tensor = fem_data.nodal_data.pop(
-        'inversed_moment_tensors').data[..., None]
-    inc_weighted_normal = fem_data.nodal_data.pop(
-        'weighted_surface_normals').data[..., None]
-
-    np.testing.assert_almost_equal(
-        inversed_moment_tensors_1, inc_inversed_moment_tensor)
-    np.testing.assert_almost_equal(
-        weighted_surface_normal_1, inc_weighted_normal)
-
-    dict_data = {
-        'node': node,
-        'nodal_mean_volume': nodal_mean_volume,
-        'elemental_volume': elemental_volume,
-        'nodal_effective_volume': nodal_effective_volume,
-        'nodal_grad_x_1': nodal_grad_x_1,
-        'nodal_grad_y_1': nodal_grad_y_1,
-        'nodal_grad_z_1': nodal_grad_z_1,
-        'inc_grad_x': inc_grad[0],
-        'inc_grad_y': inc_grad[1],
-        'inc_grad_z': inc_grad[2],
-        'inc_int': inc_int,
-        'inversed_moment_tensors_1': inversed_moment_tensors_1,
-        'weighted_surface_normal_1': weighted_surface_normal_1,
-    }
-
-    raw_conductivity = fem_data.elemental_data.get_attribute_data(
-        'thermal_conductivity_full')
-    elemental_thermal_conductivity_array = np.stack([
-        c[0, :-1] for c in raw_conductivity[:, 0]])
-    elemental_thermal_conductivity \
-        = femio.functions.convert_array2symmetric_matrix(
-            elemental_thermal_conductivity_array,
+        tensor_stress = femio.functions.convert_array2symmetric_matrix(
+            fem_data.elemental_data.get_attribute_data('ElementalSTRESS'),
             from_engineering=False)[:, :, :, None]
-    nodal_thermal_conductivity_array \
-        = fem_data.convert_elemental2nodal(
-            elemental_thermal_conductivity_array, mode='mean',
-            raise_negative_volume=False)
-    nodal_thermal_conductivity \
-        = femio.functions.convert_array2symmetric_matrix(
-            nodal_thermal_conductivity_array, from_engineering=False)[
-                :, :, :, None]
+        tensor_strain = femio.functions.convert_array2symmetric_matrix(
+            fem_data.elemental_data.get_attribute_data('ElementalSTRAIN'),
+            from_engineering=True)[:, :, :, None]
+        tensor_gauss_strain1 = femio.functions.convert_array2symmetric_matrix(
+            fem_data.elemental_data.get_attribute_data('GaussSTRAIN1'),
+            from_engineering=True)[:, :, :, None]
+        tensor_gauss_strain2 = femio.functions.convert_array2symmetric_matrix(
+            fem_data.elemental_data.get_attribute_data('GaussSTRAIN2'),
+            from_engineering=True)[:, :, :, None]
+        tensor_gauss_strain3 = femio.functions.convert_array2symmetric_matrix(
+            fem_data.elemental_data.get_attribute_data('GaussSTRAIN3'),
+            from_engineering=True)[:, :, :, None]
+        tensor_gauss_strain4 = femio.functions.convert_array2symmetric_matrix(
+            fem_data.elemental_data.get_attribute_data('GaussSTRAIN4'),
+            from_engineering=True)[:, :, :, None]
+        return {
+            'adj': adj, 'nadj': nadj, 'global_modulus': global_modulus,
+            'inc_cell2facet': inc_cell2facet, 'inc_facet2cell': inc_facet2cell,
+            'x_grad': x_grad, 'y_grad': y_grad, 'z_grad': z_grad,
+            'x_grad_2': x_grad_2, 'y_grad_2': y_grad_2, 'z_grad_2': z_grad_2,
+            'tensor_stress': tensor_stress, 'tensor_strain': tensor_strain,
+            'tensor_gauss_strain1': tensor_gauss_strain1,
+            'tensor_gauss_strain2': tensor_gauss_strain2,
+            'tensor_gauss_strain3': tensor_gauss_strain3,
+            'tensor_gauss_strain4': tensor_gauss_strain4,
+        }
 
-    nodal_t_0 = fem_data.nodal_data.get_attribute_data(
-        'INITIAL_TEMPERATURE')
-    global_thermal_conductivity = np.mean(
-        elemental_thermal_conductivity, keepdims=True, axis=0)
 
-    dict_data.update({
-        'nodal_thermal_conductivity': nodal_thermal_conductivity,
-        'nodal_t_0': nodal_t_0,
-        'global_thermal_conductivity': global_thermal_conductivity,
-    })
-    temperatures = fem_data.nodal_data.get_attribute_data(
-        'TEMPERATURE')
-    if len(temperatures.shape) != 3:
-        raise ValueError(
-            'Temperature is not time series '
-            f"(shape: {temperatures.shape}).\n"
-            'Set conversion.time_series = true in the YAML file.')
-    if 'time_steps' not in fem_data.settings:
-        raise ValueError(fem_data.settings)
-    dict_t_data = {
-        f"nodal_t_{step}": t for step, t in zip(
-            fem_data.settings['time_steps'], temperatures)}
-    max_timestep = max(fem_data.settings['time_steps'])
-    dict_data.update(dict_t_data)
-    dict_data.update({
-        'nodal_t_diff':
-        dict_data[f"nodal_t_{max_timestep}"] - dict_data['nodal_t_0']})
+class ConversionFunctionGrad(converter.IConvertFunction):
+    def __init__(self) -> None:
+        pass
 
-    nodal_adj = fem_data.calculate_adjacency_matrix_node()
-    nodal_nadj = prepost.normalize_adjacency_matrix(nodal_adj)
-    dict_data.update({
-        'nodal_adj': nodal_adj, 'nodal_nadj': nodal_nadj,
-        'nodal_grad_x_1': nodal_grad_x_1,
-        'nodal_grad_y_1': nodal_grad_y_1,
-        'nodal_grad_z_1': nodal_grad_z_1,
-        'ts_temperature': temperatures,
-        'ts_mean_temperature': np.mean(temperatures, axis=1, keepdims=True),
-        'inversed_moment_tensors_1': inversed_moment_tensors_1,
-        'weighted_surface_normal_1': weighted_surface_normal_1,
-        'nodal_surface_normal': nodal_surface_normal[..., None],
-    })
+    def __call__(self, fem_data: femio.FEMData, data_directory: pathlib.Path):
+        fem_data.nodes.data = fem_data.nodes.data
+        node = fem_data.nodes.data
 
-    dict_data.update(_extract_boundary(fem_data, dict_data))
+        phi = fem_data.nodal_data.get_attribute_data('phi')
+        grad = fem_data.nodal_data.get_attribute_data('grad')[..., None]
 
-    # Graph reduction for multigrid
-    output_directory = pathlib.Path(
-        str(raw_directory).replace('raw', 'interim'))
+        nodal_adj = fem_data.calculate_adjacency_matrix_node()
+        nodal_nadj = prepost.normalize_adjacency_matrix(nodal_adj)
 
-    reduce0to1, reduced_adj1, reduced_nodes1, part1, gx1, gy1, gz1 \
-        = reduce_graph(
-            output_directory, nodal_adj, fem_data.nodes.data, 500, n_hop=2)
-    dict_data.update({
-        'reduce0to1': reduce0to1,
-        'reduced_adj1': reduced_adj1,
-        'reduced_nadj1': prepost.normalize_adjacency_matrix(reduced_adj1),
-        'reduced_gx1': gx1,
-        'reduced_gy1': gy1,
-        'reduced_gz1': gz1,
-    })
+        nodal_surface_normal = fem_data.calculate_surface_normals(
+            mode='effective')
+        nodal_grad_x, nodal_grad_y, nodal_grad_z = \
+            fem_data.calculate_spatial_gradient_adjacency_matrices(
+                'nodal', n_hop=1, moment_matrix=True,
+                normals=nodal_surface_normal,
+                normal_weight=10., consider_volume=False)
+        inversed_moment_tensor = fem_data.nodal_data.pop(
+            'inversed_moment_tensors').data[..., None]
+        weighted_normal = fem_data.nodal_data.pop(
+            'weighted_surface_normals').data
 
-    reduce1to2, reduced_adj2, reduced_nodes2, part2, gx2, gy2, gz2 \
-        = reduce_graph(
-            output_directory, reduced_adj1, reduced_nodes1, 50, n_hop=10)
-    dict_data.update({
-        'reduce1to2': reduce1to2,
-        'reduced_adj2': reduced_adj2,
-        'reduced_nadj2': prepost.normalize_adjacency_matrix(reduced_adj2),
-        'reduced_gx2': gx2,
-        'reduced_gy2': gy2,
-        'reduced_gz2': gz2,
-    })
+        neumann = np.einsum('ij,ij->i', nodal_surface_normal, grad[..., 0])
+        directed_neumann = np.einsum(
+            'ij,i->ij', weighted_normal, neumann)[..., None]
 
-    reduce2to3, reduced_adj3, reduced_nodes3, part3, gx3, gy3, gz3 \
-        = reduce_graph(
-            output_directory, reduced_adj2, reduced_nodes2, 5, n_hop=5)
-    dict_data.update({
-        'reduce2to3': reduce2to3,
-        'reduced_adj3': reduced_adj3,
-        'reduced_nadj3': prepost.normalize_adjacency_matrix(reduced_adj3),
-        'reduced_gx3': gx3,
-        'reduced_gy3': gy3,
-        'reduced_gz3': gz3,
-    })
+        inc_grad, inc_int = \
+            fem_data.calculate_spatial_gradient_incidence_matrix(
+                'nodal', moment_matrix=True, normals=nodal_surface_normal,
+                normal_weight=10.)
+        inc_inversed_moment_tensor = fem_data.nodal_data.pop(
+            'inversed_moment_tensors').data[..., None]
+        inc_weighted_normal = fem_data.nodal_data.pop(
+            'weighted_surface_normals').data
 
-    return dict_data
+        np.testing.assert_almost_equal(
+            inversed_moment_tensor, inc_inversed_moment_tensor)
+        np.testing.assert_almost_equal(
+            weighted_normal, inc_weighted_normal)
+
+        x_component = fem_data.nodes.data[:, [0]]
+        grad_x_component = np.zeros(fem_data.nodes.data.shape)[..., None]
+        grad_x_component[:, 0, 0] = 1.
+        x_component_neumann = np.einsum(
+            'ij,ij->i',
+            nodal_surface_normal, grad_x_component[..., 0]
+        )[..., None]
+        directed_x_component_neumann = np.einsum(
+            'ij,i->ij',
+            weighted_normal, x_component_neumann[..., 0])[..., None]
+
+        dict_data = {
+            'node': node,
+            'phi': phi,
+            'grad': grad,
+            'directed_neumann': directed_neumann,
+            'neumann': neumann[..., None],
+            'x_component': x_component,
+            'grad_x_component': grad_x_component,
+            'x_component_neumann': x_component_neumann,
+            'directed_x_component_neumann': directed_x_component_neumann,
+            'nodal_nadj': nodal_nadj,
+            'nodal_grad_x': nodal_grad_x,
+            'nodal_grad_y': nodal_grad_y,
+            'nodal_grad_z': nodal_grad_z,
+            'inc_grad_x': inc_grad[0],
+            'inc_grad_y': inc_grad[1],
+            'inc_grad_z': inc_grad[2],
+            'inc_int': inc_int,
+            'inversed_moment_tensor': inversed_moment_tensor,
+            'nodal_surface_normal': nodal_surface_normal[..., None],
+            'nodal_weighted_normal': weighted_normal[..., None],
+        }
+        return dict_data
+
+
+class ConversionFunctionHeatTimeSeries(converter.IConvertFunction):
+    def __init__(self) -> None:
+        pass
+
+    def __call__(self, fem_data: femio.FEMData, data_directory: pathlib.Path):
+
+        nodal_grad_x, nodal_grad_y, nodal_grad_z = \
+            fem_data.calculate_spatial_gradient_adjacency_matrices(
+                'nodal', n_hop=2)
+        nodal_laplacian = (
+            nodal_grad_x.dot(nodal_grad_x)
+            + nodal_grad_y.dot(nodal_grad_y)
+            + nodal_grad_z.dot(nodal_grad_z)).tocoo() / 6
+
+        facet_fem_data = fem_data.to_facets()
+        inc_facet2cell = fem_data.calculate_relative_incidence_metrix_element(
+            facet_fem_data, minimum_n_sharing=3)
+        inc_cell2facet = inc_facet2cell.T
+        facet_area = facet_fem_data.calculate_element_areas()
+        volume = fem_data.calculate_element_volumes()
+        inc_node2facet = facet_fem_data.calculate_incidence_matrix() \
+            .T.astype(int)
+        inc_node2cell = fem_data.calculate_incidence_matrix() \
+            .T.astype(int)
+
+        temperature = fem_data.nodal_data.get_attribute_data('TEMPERATURE')
+        raw_conductivity = fem_data.elemental_data.get_attribute_data(
+            'thermal_conductivity')
+        elemental_conductivity = \
+            np.array([a[0][:, 0] for a in raw_conductivity])
+        nodal_conductivity = fem_data.convert_elemental2nodal(
+            elemental_conductivity, mode='mean')
+        global_conductivity = np.mean(
+            elemental_conductivity, axis=0, keepdims=True)
+
+        dict_data = {
+            f"t_{i}": t for i, t in enumerate(temperature)}
+        dict_data.update({
+            f"elemental_{k}":
+            fem_data.convert_nodal2elemental(v, calc_average=True)
+            for k, v in dict_data.items()})
+        dict_data.update({
+            'nodal_grad_x': nodal_grad_x,
+            'nodal_grad_y': nodal_grad_y,
+            'nodal_grad_z': nodal_grad_z,
+            'nodal_laplacian': nodal_laplacian,
+            'inc_facet2cell': inc_facet2cell,
+            'inc_cell2facet': inc_cell2facet,
+            'inc_node2facet': inc_node2facet,
+            'inc_node2cell': inc_node2cell,
+            'facet_area': facet_area,
+            'volume': volume,
+            'elemental_conductivity': elemental_conductivity,
+            'nodal_conductivity': nodal_conductivity,
+            'global_conductivity': global_conductivity})
+
+        # # Graph reduction for multigrid
+        # output_directory = pathlib.Path(
+        #     str(raw_directory).replace('raw', 'interim'))
+        # nodal_adj = fem_data.calculate_adjacency_matrix_node()
+        #
+        # reduce0to1, reduced_adj1, reduced_nodes1, part1, gx1, gy1, gz1 \
+        #     = reduce_graph(
+        #         output_directory, nodal_adj,
+        #         fem_data.nodes.data, 500, n_hop=2)
+        # dict_data.update({
+        #     'reduce0to1': reduce0to1,
+        #     'reduced_adj1': reduced_adj1,
+        #     'reduced_nadj1': \
+        #           prepost.normalize_adjacency_matrix(reduced_adj1),
+        #     'reduced_gx1': gx1,
+        #     'reduced_gy1': gy1,
+        #     'reduced_gz1': gz1,
+        # })
+        #
+        # reduce1to2, reduced_adj2, reduced_nodes2, part2, gx2, gy2, gz2 \
+        #     = reduce_graph(
+        #         output_directory, reduced_adj1, reduced_nodes1, 50, n_hop=10)
+        # dict_data.update({
+        #     'reduce1to2': reduce1to2,
+        #     'reduced_adj2': reduced_adj2,
+        #     'reduced_nadj2': prepost.normalize_adjacency_matrix(
+        #                               reduced_adj2),
+        #     'reduced_gx2': gx2,
+        #     'reduced_gy2': gy2,
+        #     'reduced_gz2': gz2,
+        # })
+        #
+        # reduce2to3, reduced_adj3, reduced_nodes3, part3, gx3, gy3, gz3 \
+        #     = reduce_graph(
+        #         output_directory, reduced_adj2, reduced_nodes2, 5, n_hop=5)
+        # dict_data.update({
+        #     'reduce2to3': reduce2to3,
+        #     'reduced_adj3': reduced_adj3,
+        #     'reduced_nadj3': \
+        #           prepost.normalize_adjacency_matrix(reduced_adj3),
+        #     'reduced_gx3': gx3,
+        #     'reduced_gy3': gy3,
+        #     'reduced_gz3': gz3,
+        # })
+
+        return dict_data
+
+
+class ConversionFunctionHeatBoundary(converter.IConvertFunction):
+    def __init__(self) -> None:
+        pass
+
+    def __call__(self, fem_data: femio.FEMData, raw_directory: pathlib.Path):
+        node = fem_data.nodal_data.get_attribute_data('node')
+        elemental_volume = fem_data.calculate_element_volumes(
+            raise_negative_volume=False, return_abs_volume=False)
+
+        nodal_mean_volume = fem_data.convert_elemental2nodal(
+            elemental_volume, mode='mean', raise_negative_volume=False)
+        nodal_effective_volume = fem_data.convert_elemental2nodal(
+            elemental_volume, mode='effective', raise_negative_volume=False)
+
+        nodal_surface_normal = fem_data.calculate_surface_normals(
+            mode='effective')
+        nodal_grad_x_1, nodal_grad_y_1, nodal_grad_z_1 = \
+            fem_data.calculate_spatial_gradient_adjacency_matrices(
+                'nodal', n_hop=1, moment_matrix=True,
+                normals=nodal_surface_normal,
+                consider_volume=False, normal_weight=10.)
+        inversed_moment_tensors_1 = fem_data.nodal_data.pop(
+            'inversed_moment_tensors').data[..., None]
+        weighted_surface_normal_1 = fem_data.nodal_data.pop(
+            'weighted_surface_normals').data[..., None]
+
+        inc_grad, inc_int = \
+            fem_data.calculate_spatial_gradient_incidence_matrix(
+                'nodal', moment_matrix=True, normals=nodal_surface_normal,
+                normal_weight=10.)
+        inc_inversed_moment_tensor = fem_data.nodal_data.pop(
+            'inversed_moment_tensors').data[..., None]
+        inc_weighted_normal = fem_data.nodal_data.pop(
+            'weighted_surface_normals').data[..., None]
+
+        np.testing.assert_almost_equal(
+            inversed_moment_tensors_1, inc_inversed_moment_tensor)
+        np.testing.assert_almost_equal(
+            weighted_surface_normal_1, inc_weighted_normal)
+
+        dict_data = {
+            'node': node,
+            'nodal_mean_volume': nodal_mean_volume,
+            'elemental_volume': elemental_volume,
+            'nodal_effective_volume': nodal_effective_volume,
+            'nodal_grad_x_1': nodal_grad_x_1,
+            'nodal_grad_y_1': nodal_grad_y_1,
+            'nodal_grad_z_1': nodal_grad_z_1,
+            'inc_grad_x': inc_grad[0],
+            'inc_grad_y': inc_grad[1],
+            'inc_grad_z': inc_grad[2],
+            'inc_int': inc_int,
+            'inversed_moment_tensors_1': inversed_moment_tensors_1,
+            'weighted_surface_normal_1': weighted_surface_normal_1,
+        }
+
+        raw_conductivity = fem_data.elemental_data.get_attribute_data(
+            'thermal_conductivity_full')
+        elemental_thermal_conductivity_array = np.stack([
+            c[0, :-1] for c in raw_conductivity[:, 0]])
+        elemental_thermal_conductivity \
+            = femio.functions.convert_array2symmetric_matrix(
+                elemental_thermal_conductivity_array,
+                from_engineering=False)[:, :, :, None]
+        nodal_thermal_conductivity_array \
+            = fem_data.convert_elemental2nodal(
+                elemental_thermal_conductivity_array, mode='mean',
+                raise_negative_volume=False)
+        nodal_thermal_conductivity \
+            = femio.functions.convert_array2symmetric_matrix(
+                nodal_thermal_conductivity_array, from_engineering=False)[
+                    :, :, :, None]
+
+        nodal_t_0 = fem_data.nodal_data.get_attribute_data(
+            'INITIAL_TEMPERATURE')
+        global_thermal_conductivity = np.mean(
+            elemental_thermal_conductivity, keepdims=True, axis=0)
+
+        dict_data.update({
+            'nodal_thermal_conductivity': nodal_thermal_conductivity,
+            'nodal_t_0': nodal_t_0,
+            'global_thermal_conductivity': global_thermal_conductivity,
+        })
+        temperatures = fem_data.nodal_data.get_attribute_data(
+            'TEMPERATURE')
+        if len(temperatures.shape) != 3:
+            raise ValueError(
+                'Temperature is not time series '
+                f"(shape: {temperatures.shape}).\n"
+                'Set conversion.time_series = true in the YAML file.')
+        if 'time_steps' not in fem_data.settings:
+            raise ValueError(fem_data.settings)
+        dict_t_data = {
+            f"nodal_t_{step}": t for step, t in zip(
+                fem_data.settings['time_steps'], temperatures)}
+        max_timestep = max(fem_data.settings['time_steps'])
+        dict_data.update(dict_t_data)
+        dict_data.update({
+            'nodal_t_diff':
+            dict_data[f"nodal_t_{max_timestep}"] - dict_data['nodal_t_0']})
+
+        nodal_adj = fem_data.calculate_adjacency_matrix_node()
+        nodal_nadj = prepost.normalize_adjacency_matrix(nodal_adj)
+        dict_data.update({
+            'nodal_adj': nodal_adj, 'nodal_nadj': nodal_nadj,
+            'nodal_grad_x_1': nodal_grad_x_1,
+            'nodal_grad_y_1': nodal_grad_y_1,
+            'nodal_grad_z_1': nodal_grad_z_1,
+            'ts_temperature': temperatures,
+            'ts_mean_temperature':
+            np.mean(temperatures, axis=1, keepdims=True),
+            'inversed_moment_tensors_1': inversed_moment_tensors_1,
+            'weighted_surface_normal_1': weighted_surface_normal_1,
+            'nodal_surface_normal': nodal_surface_normal[..., None],
+        })
+
+        dict_data.update(_extract_boundary(fem_data, dict_data))
+
+        # Graph reduction for multigrid
+        output_directory = pathlib.Path(
+            str(raw_directory).replace('raw', 'interim'))
+
+        reduce0to1, reduced_adj1, reduced_nodes1, part1, gx1, gy1, gz1 \
+            = reduce_graph(
+                output_directory, nodal_adj, fem_data.nodes.data, 500, n_hop=2)
+        dict_data.update({
+            'reduce0to1': reduce0to1,
+            'reduced_adj1': reduced_adj1,
+            'reduced_nadj1': prepost.normalize_adjacency_matrix(reduced_adj1),
+            'reduced_gx1': gx1,
+            'reduced_gy1': gy1,
+            'reduced_gz1': gz1,
+        })
+
+        reduce1to2, reduced_adj2, reduced_nodes2, part2, gx2, gy2, gz2 \
+            = reduce_graph(
+                output_directory, reduced_adj1, reduced_nodes1, 50, n_hop=10)
+        dict_data.update({
+            'reduce1to2': reduce1to2,
+            'reduced_adj2': reduced_adj2,
+            'reduced_nadj2': prepost.normalize_adjacency_matrix(reduced_adj2),
+            'reduced_gx2': gx2,
+            'reduced_gy2': gy2,
+            'reduced_gz2': gz2,
+        })
+
+        reduce2to3, reduced_adj3, reduced_nodes3, part3, gx3, gy3, gz3 \
+            = reduce_graph(
+                output_directory, reduced_adj2, reduced_nodes2, 5, n_hop=5)
+        dict_data.update({
+            'reduce2to3': reduce2to3,
+            'reduced_adj3': reduced_adj3,
+            'reduced_nadj3': prepost.normalize_adjacency_matrix(reduced_adj3),
+            'reduced_gx3': gx3,
+            'reduced_gy3': gy3,
+            'reduced_gz3': gz3,
+        })
+
+        return dict_data
 
 
 def reduce_graph(output_directory, adj, nodes, n_part, n_hop=1):
@@ -436,23 +465,26 @@ def generate_fem_data_from_adjacency(nodes, adj):
     return fem_data
 
 
-def conversion_function_heat_interaction(fem_data, raw_directory=None):
+class ConversionFunctionHeatInteraction(converter.IConvertFunction):
+    def __init__(self) -> None:
+        pass
 
-    dict_data = {}
-    dict_data.update(_load_mesh(raw_directory / 'mesh_1.inp', '_1'))
-    dict_data.update(_load_mesh(raw_directory / 'mesh_2.inp', '_2'))
-    dict_data.update({
-        'incidence_2to1':
-        sp.load_npz('tests/data/heat_interaction/raw/incidence_2to1.npz'),
-        'periodic_2':
-        sp.load_npz('tests/data/heat_interaction/raw/periodic_2.npz'),
-        'coeff':
-        np.load(raw_directory / 'coeff.npy')[None, None],
-        'heat_transfer':
-        np.load(raw_directory / 'heat_transfer.npy')[None, None],
-    })
+    def __call__(self, fem_data: femio.FEMData, raw_directory: pathlib.Path):
+        dict_data = {}
+        dict_data.update(_load_mesh(raw_directory / 'mesh_1.inp', '_1'))
+        dict_data.update(_load_mesh(raw_directory / 'mesh_2.inp', '_2'))
+        dict_data.update({
+            'incidence_2to1':
+            sp.load_npz('tests/data/heat_interaction/raw/incidence_2to1.npz'),
+            'periodic_2':
+            sp.load_npz('tests/data/heat_interaction/raw/periodic_2.npz'),
+            'coeff':
+            np.load(raw_directory / 'coeff.npy')[None, None],
+            'heat_transfer':
+            np.load(raw_directory / 'heat_transfer.npy')[None, None],
+        })
 
-    return dict_data
+        return dict_data
 
 
 def _load_mesh(path, suffix):
@@ -523,127 +555,136 @@ def _extract_boundary(fem_data, dict_data):
         'neumann': neumann, 'directed_neumann': directed_neumann}
 
 
-def conversion_function_rotation_thermal_stress(fem_data, raw_directory=None):
-    adj = fem_data.calculate_adjacency_matrix_node()
-    nadj = prepost.normalize_adjacency_matrix(adj)
-    nodal_grad_x, nodal_grad_y, nodal_grad_z = \
-        fem_data.calculate_spatial_gradient_adjacency_matrices(
-            'nodal', n_hop=2)
-    nodal_hess_xx = nodal_grad_x.dot(nodal_grad_x).tocoo()
-    nodal_hess_xy = nodal_grad_x.dot(nodal_grad_y).tocoo()
-    nodal_hess_xz = nodal_grad_x.dot(nodal_grad_z).tocoo()
-    nodal_hess_yx = nodal_grad_y.dot(nodal_grad_x).tocoo()
-    nodal_hess_yy = nodal_grad_y.dot(nodal_grad_y).tocoo()
-    nodal_hess_yz = nodal_grad_y.dot(nodal_grad_z).tocoo()
-    nodal_hess_zx = nodal_grad_z.dot(nodal_grad_x).tocoo()
-    nodal_hess_zy = nodal_grad_z.dot(nodal_grad_y).tocoo()
-    nodal_hess_zz = nodal_grad_z.dot(nodal_grad_z).tocoo()
+class ConversionFunctionRotationThermalStress(converter.IConvertFunction):
+    def __init__(self) -> None:
+        pass
 
-    frame_adjs = fem_data.calculate_frame_tensor_adjs(mode='nodal', n_hop=2)
-    nodal_frame_xx = frame_adjs[0][0]
-    nodal_frame_xy = frame_adjs[0][1]
-    nodal_frame_xz = frame_adjs[0][2]
-    nodal_frame_yx = frame_adjs[1][0]
-    nodal_frame_yy = frame_adjs[1][1]
-    nodal_frame_yz = frame_adjs[1][2]
-    nodal_frame_zx = frame_adjs[2][0]
-    nodal_frame_zy = frame_adjs[2][1]
-    nodal_frame_zz = frame_adjs[2][2]
+    def __call__(self, fem_data: femio.FEMData, raw_directory: pathlib.Path):
 
-    filter_ = fem_data.filter_first_order_nodes()
+        adj = fem_data.calculate_adjacency_matrix_node()
+        nadj = prepost.normalize_adjacency_matrix(adj)
+        nodal_grad_x, nodal_grad_y, nodal_grad_z = \
+            fem_data.calculate_spatial_gradient_adjacency_matrices(
+                'nodal', n_hop=2)
+        nodal_hess_xx = nodal_grad_x.dot(nodal_grad_x).tocoo()
+        nodal_hess_xy = nodal_grad_x.dot(nodal_grad_y).tocoo()
+        nodal_hess_xz = nodal_grad_x.dot(nodal_grad_z).tocoo()
+        nodal_hess_yx = nodal_grad_y.dot(nodal_grad_x).tocoo()
+        nodal_hess_yy = nodal_grad_y.dot(nodal_grad_y).tocoo()
+        nodal_hess_yz = nodal_grad_y.dot(nodal_grad_z).tocoo()
+        nodal_hess_zx = nodal_grad_z.dot(nodal_grad_x).tocoo()
+        nodal_hess_zy = nodal_grad_z.dot(nodal_grad_y).tocoo()
+        nodal_hess_zz = nodal_grad_z.dot(nodal_grad_z).tocoo()
 
-    node = fem_data.nodes.data[filter_]
-    nodal_mean_volume = fem_data.convert_elemental2nodal(
-        fem_data.calculate_element_volumes(), mode='mean')
-    nodal_concentrated_volume = fem_data.convert_elemental2nodal(
-        fem_data.calculate_element_volumes(), mode='effective')
-    initial_temperature = fem_data.nodal_data.get_attribute_data(
-        'INITIAL_TEMPERATURE')[filter_]
-    cnt_temperature = fem_data.nodal_data.get_attribute_data(
-        'CNT_TEMPERATURE')[filter_]
+        frame_adjs = fem_data.calculate_frame_tensor_adjs(
+            mode='nodal', n_hop=2
+        )
+        nodal_frame_xx = frame_adjs[0][0]
+        nodal_frame_xy = frame_adjs[0][1]
+        nodal_frame_xz = frame_adjs[0][2]
+        nodal_frame_yx = frame_adjs[1][0]
+        nodal_frame_yy = frame_adjs[1][1]
+        nodal_frame_yz = frame_adjs[1][2]
+        nodal_frame_zx = frame_adjs[2][0]
+        nodal_frame_zy = frame_adjs[2][1]
+        nodal_frame_zz = frame_adjs[2][2]
 
-    elemental_lte_array = fem_data.elemental_data.get_attribute_data(
-        'linear_thermal_expansion_coefficient_full')
-    nodal_lte_array = fem_data.convert_elemental2nodal(
-        elemental_lte_array, mode='mean')
-    global_lte_array = np.mean(
-        elemental_lte_array, axis=0, keepdims=True)
+        filter_ = fem_data.filter_first_order_nodes()
 
-    elemental_lte_mat = femio.functions.convert_array2symmetric_matrix(
-        elemental_lte_array, from_engineering=True)
-    nodal_lte_mat = femio.functions.convert_array2symmetric_matrix(
-        nodal_lte_array, from_engineering=True)
-    global_lte_mat = np.mean(
-        elemental_lte_mat, axis=0, keepdims=True)
+        node = fem_data.nodes.data[filter_]
+        nodal_mean_volume = fem_data.convert_elemental2nodal(
+            fem_data.calculate_element_volumes(), mode='mean')
+        nodal_concentrated_volume = fem_data.convert_elemental2nodal(
+            fem_data.calculate_element_volumes(), mode='effective')
+        initial_temperature = fem_data.nodal_data.get_attribute_data(
+            'INITIAL_TEMPERATURE')[filter_]
+        cnt_temperature = fem_data.nodal_data.get_attribute_data(
+            'CNT_TEMPERATURE')[filter_]
 
-    elemental_strain_array = fem_data.elemental_data.get_attribute_data(
-        'ElementalSTRAIN')
-    nodal_strain_array = fem_data.nodal_data.get_attribute_data(
-        'NodalSTRAIN')[filter_]
-    elemental_strain_mat = femio.functions.convert_array2symmetric_matrix(
-        elemental_strain_array, from_engineering=True)
-    nodal_strain_mat = femio.functions.convert_array2symmetric_matrix(
-        nodal_strain_array, from_engineering=True)
+        elemental_lte_array = fem_data.elemental_data.get_attribute_data(
+            'linear_thermal_expansion_coefficient_full')
+        nodal_lte_array = fem_data.convert_elemental2nodal(
+            elemental_lte_array, mode='mean')
+        global_lte_array = np.mean(
+            elemental_lte_array, axis=0, keepdims=True)
 
-    inc_grad, inc_int = fem_data.calculate_spatial_gradient_incidence_matrix(
-        'nodal', moment_matrix=True, normals=False)
-    inversed_moment_tensors = fem_data.nodal_data.pop(
-        'inversed_moment_tensors').data[..., None]
+        elemental_lte_mat = femio.functions.convert_array2symmetric_matrix(
+            elemental_lte_array, from_engineering=True)
+        nodal_lte_mat = femio.functions.convert_array2symmetric_matrix(
+            nodal_lte_array, from_engineering=True)
+        global_lte_mat = np.mean(
+            elemental_lte_mat, axis=0, keepdims=True)
 
-    dict_data = {
-        'nadj': nadj,
-        'nodal_grad_x': nodal_grad_x,
-        'nodal_grad_y': nodal_grad_y,
-        'nodal_grad_z': nodal_grad_z,
-        'inc_grad_x': inc_grad[0],
-        'inc_grad_y': inc_grad[1],
-        'inc_grad_z': inc_grad[2],
-        'inc_int': inc_int,
-        'minv': inversed_moment_tensors,
-        'nodal_hess_xx': nodal_hess_xx,
-        'nodal_hess_xy': nodal_hess_xy,
-        'nodal_hess_xz': nodal_hess_xz,
-        'nodal_hess_yx': nodal_hess_yx,
-        'nodal_hess_yy': nodal_hess_yy,
-        'nodal_hess_yz': nodal_hess_yz,
-        'nodal_hess_zx': nodal_hess_zx,
-        'nodal_hess_zy': nodal_hess_zy,
-        'nodal_hess_zz': nodal_hess_zz,
-        'nodal_frame_xx': nodal_frame_xx,
-        'nodal_frame_xy': nodal_frame_xy,
-        'nodal_frame_xz': nodal_frame_xz,
-        'nodal_frame_yx': nodal_frame_yx,
-        'nodal_frame_yy': nodal_frame_yy,
-        'nodal_frame_yz': nodal_frame_yz,
-        'nodal_frame_zx': nodal_frame_zx,
-        'nodal_frame_zy': nodal_frame_zy,
-        'nodal_frame_zz': nodal_frame_zz,
-        'node': node,
-        'nodal_strain_array': nodal_strain_array,
-        'elemental_strain_array': elemental_strain_array,
-        'nodal_strain_mat': nodal_strain_mat[..., None],
-        'elemental_strain_mat': elemental_strain_mat[..., None],
-        'nodal_mean_volume': nodal_mean_volume,
-        'nodal_concentrated_volume': nodal_concentrated_volume,
-        'initial_temperature': initial_temperature,
-        'cnt_temperature': cnt_temperature,
-        'elemental_lte_array': elemental_lte_array,
-        'nodal_lte_array': nodal_lte_array,
-        'global_lte_array': global_lte_array,
-        'elemental_lte_mat': elemental_lte_mat[..., None],
-        'nodal_lte_mat': nodal_lte_mat[..., None],
-        'global_lte_mat': global_lte_mat[..., None],
-    }
-    return dict_data
+        elemental_strain_array = fem_data.elemental_data.get_attribute_data(
+            'ElementalSTRAIN')
+        nodal_strain_array = fem_data.nodal_data.get_attribute_data(
+            'NodalSTRAIN')[filter_]
+        elemental_strain_mat = femio.functions.convert_array2symmetric_matrix(
+            elemental_strain_array, from_engineering=True)
+        nodal_strain_mat = femio.functions.convert_array2symmetric_matrix(
+            nodal_strain_array, from_engineering=True)
+
+        inc_grad, inc_int = \
+            fem_data.calculate_spatial_gradient_incidence_matrix(
+                'nodal', moment_matrix=True, normals=False)
+        inversed_moment_tensors = fem_data.nodal_data.pop(
+            'inversed_moment_tensors').data[..., None]
+
+        dict_data = {
+            'nadj': nadj,
+            'nodal_grad_x': nodal_grad_x,
+            'nodal_grad_y': nodal_grad_y,
+            'nodal_grad_z': nodal_grad_z,
+            'inc_grad_x': inc_grad[0],
+            'inc_grad_y': inc_grad[1],
+            'inc_grad_z': inc_grad[2],
+            'inc_int': inc_int,
+            'minv': inversed_moment_tensors,
+            'nodal_hess_xx': nodal_hess_xx,
+            'nodal_hess_xy': nodal_hess_xy,
+            'nodal_hess_xz': nodal_hess_xz,
+            'nodal_hess_yx': nodal_hess_yx,
+            'nodal_hess_yy': nodal_hess_yy,
+            'nodal_hess_yz': nodal_hess_yz,
+            'nodal_hess_zx': nodal_hess_zx,
+            'nodal_hess_zy': nodal_hess_zy,
+            'nodal_hess_zz': nodal_hess_zz,
+            'nodal_frame_xx': nodal_frame_xx,
+            'nodal_frame_xy': nodal_frame_xy,
+            'nodal_frame_xz': nodal_frame_xz,
+            'nodal_frame_yx': nodal_frame_yx,
+            'nodal_frame_yy': nodal_frame_yy,
+            'nodal_frame_yz': nodal_frame_yz,
+            'nodal_frame_zx': nodal_frame_zx,
+            'nodal_frame_zy': nodal_frame_zy,
+            'nodal_frame_zz': nodal_frame_zz,
+            'node': node,
+            'nodal_strain_array': nodal_strain_array,
+            'elemental_strain_array': elemental_strain_array,
+            'nodal_strain_mat': nodal_strain_mat[..., None],
+            'elemental_strain_mat': elemental_strain_mat[..., None],
+            'nodal_mean_volume': nodal_mean_volume,
+            'nodal_concentrated_volume': nodal_concentrated_volume,
+            'initial_temperature': initial_temperature,
+            'cnt_temperature': cnt_temperature,
+            'elemental_lte_array': elemental_lte_array,
+            'nodal_lte_array': nodal_lte_array,
+            'global_lte_array': global_lte_array,
+            'elemental_lte_mat': elemental_lte_mat[..., None],
+            'nodal_lte_mat': nodal_lte_mat[..., None],
+            'global_lte_mat': global_lte_mat[..., None],
+        }
+        return dict_data
 
 
 def preprocess_deform():
     main_setting = setting.MainSetting.read_settings_yaml(
         pathlib.Path('tests/data/deform/data.yml'))
 
-    raw_converter = prepost.RawConverter(
+    raw_converter = converter.RawConverter(
         main_setting, recursive=True, force_renew=True,
-        conversion_function=conversion_function)
+        conversion_function=ConversionFunction()
+    )
     raw_converter.convert()
 
     preprocessor = prepost.Preprocessor(main_setting, force_renew=True)
@@ -675,9 +716,10 @@ def preprocess_grad():
     main_setting = setting.MainSetting.read_settings_yaml(
         pathlib.Path('tests/data/grad/data.yml'))
 
-    raw_converter = prepost.RawConverter(
+    raw_converter = converter.RawConverter(
         main_setting, recursive=True, force_renew=True,
-        conversion_function=conversion_function_grad)
+        conversion_function=ConversionFunctionGrad()
+    )
     raw_converter.convert()
 
     preprocessor = prepost.Preprocessor(main_setting, force_renew=True)
@@ -746,10 +788,10 @@ def preprocess_rotation_thermal_stress():
     main_setting = setting.MainSetting.read_settings_yaml(
         pathlib.Path('tests/data/rotation_thermal_stress/data.yml'))
 
-    raw_converter = prepost.RawConverter(
+    raw_converter = converter.RawConverter(
         main_setting, recursive=True, force_renew=True,
         to_first_order=True,
-        conversion_function=conversion_function_rotation_thermal_stress)
+        conversion_function=ConversionFunctionRotationThermalStress())
     raw_converter.convert()
 
     preprocessor = prepost.Preprocessor(main_setting, force_renew=True)
@@ -761,9 +803,9 @@ def preprocess_heat_time_series():
     main_setting = setting.MainSetting.read_settings_yaml(
         pathlib.Path('tests/data/heat_time_series/data.yml'))
 
-    raw_converter = prepost.RawConverter(
+    raw_converter = converter.RawConverter(
         main_setting, recursive=True, force_renew=True,
-        conversion_function=conversion_function_heat_time_series,
+        conversion_function=ConversionFunctionHeatTimeSeries(),
         write_ucd=False)
     raw_converter.convert()
 
@@ -776,9 +818,9 @@ def preprocess_heat_boundary():
     main_setting = setting.MainSetting.read_settings_yaml(
         pathlib.Path('tests/data/heat_boundary/data.yml'))
 
-    raw_converter = prepost.RawConverter(
+    raw_converter = converter.RawConverter(
         main_setting, recursive=True, force_renew=True,
-        conversion_function=conversion_function_heat_boundary,
+        conversion_function=ConversionFunctionHeatBoundary(),
         write_ucd=False)
     raw_converter.convert()
 
@@ -791,9 +833,9 @@ def preprocess_heat_interaction():
     main_setting = setting.MainSetting.read_settings_yaml(
         pathlib.Path('tests/data/heat_interaction/data.yml'))
 
-    raw_converter = prepost.RawConverter(
+    raw_converter = converter.RawConverter(
         main_setting, recursive=True, force_renew=True,
-        conversion_function=conversion_function_heat_interaction,
+        conversion_function=ConversionFunctionHeatInteraction(),
         write_ucd=False)
     raw_converter.convert()
 
@@ -843,7 +885,7 @@ def preprocess_rotation():
     main_setting = setting.MainSetting.read_settings_yaml(
         pathlib.Path('tests/data/rotation/data.yml'))
 
-    raw_converter = prepost.RawConverter(
+    raw_converter = converter.RawConverter(
         main_setting, recursive=True, force_renew=True,
         conversion_function=rotation_conversion_function)
     raw_converter.convert()

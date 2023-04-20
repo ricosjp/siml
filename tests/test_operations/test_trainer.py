@@ -14,6 +14,7 @@ import siml.inferer as inferer
 import siml.prepost as prepost
 import siml.setting as setting
 import siml.trainer as trainer
+from siml.preprocessing import converter
 
 
 torch.autograd.set_detect_anomaly(True)
@@ -238,7 +239,7 @@ class TestTrainer(unittest.TestCase):
         shutil.rmtree(main_setting.data.interim_root, ignore_errors=True)
         shutil.rmtree(main_setting.data.preprocessed_root, ignore_errors=True)
 
-        raw_converter = prepost.RawConverter(
+        raw_converter = converter.RawConverter(
             main_setting, conversion_function=conversion_function)
         raw_converter.convert()
         p = prepost.Preprocessor(main_setting)
@@ -267,7 +268,7 @@ class TestTrainer(unittest.TestCase):
         shutil.rmtree(main_setting.data.interim_root, ignore_errors=True)
         shutil.rmtree(main_setting.data.preprocessed_root, ignore_errors=True)
 
-        raw_converter = prepost.RawConverter(
+        raw_converter = converter.RawConverter(
             main_setting, conversion_function=conversion_function)
         raw_converter.convert()
         p = prepost.Preprocessor(main_setting)
@@ -610,7 +611,7 @@ class TestTrainer(unittest.TestCase):
         shutil.rmtree(main_setting.data.interim_root, ignore_errors=True)
         shutil.rmtree(main_setting.data.preprocessed_root, ignore_errors=True)
 
-        raw_converter = prepost.RawConverter(
+        raw_converter = converter.RawConverter(
             main_setting, conversion_function=conversion_function)
         raw_converter.convert()
         p = prepost.Preprocessor(main_setting)

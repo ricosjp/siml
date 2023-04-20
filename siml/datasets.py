@@ -6,7 +6,7 @@ import numpy as np
 import torch
 from tqdm import tqdm
 
-from . import prepost
+from .utils import fem_data_utils
 from . import util
 
 
@@ -196,9 +196,11 @@ class PreprocessDataset(BaseDataset):
             fem_data = femio.FEMData.read_directory(
                 self.conversion_setting.file_type, raw_data_directory,
                 save=False)
-            dict_data = prepost.extract_variables(
-                fem_data, self.conversion_setting.mandatory,
-                optional_variables=self.conversion_setting.optional)
+            wrapped_data = fem_data_utils.FemDataWrapper(fem_data)
+            dict_data = wrapped_data.extract_variables(
+                self.conversion_setting.mandatory,
+                optional_variables=self.conversion_setting.optional
+            )
 
         if self.conversion_function is not None:
             dict_data.update(self.conversion_function(

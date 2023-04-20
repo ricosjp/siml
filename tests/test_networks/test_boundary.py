@@ -468,7 +468,7 @@ class TestBoundary(unittest.TestCase):
         # Test equivariance
         ir = inferer.Inferer(
             main_setting,
-            conversion_function=preprocess.conversion_function_grad,
+            conversion_function=preprocess.ConversionFunctionGrad(),
             converter_parameters_pkl=main_setting.data.preprocessed_root
             / 'preprocessors.pkl')
         results = ir.infer(
@@ -606,7 +606,7 @@ class TestBoundary(unittest.TestCase):
         # Test equivariance
         ir = inferer.Inferer(
             main_setting,
-            conversion_function=preprocess.conversion_function_grad,
+            conversion_function=preprocess.ConversionFunctionGrad(),
             converter_parameters_pkl=main_setting.data.preprocessed_root
             / 'preprocessors.pkl')
         results = ir.infer(
@@ -703,8 +703,7 @@ class TestBoundary(unittest.TestCase):
 
         ir = inferer.Inferer(
             main_setting,
-            conversion_function=preprocess
-            .conversion_function_heat_interaction,
+            conversion_function=preprocess.ConversionFunctionHeatInteraction(),
             converter_parameters_pkl=main_setting.data.preprocessed_root
             / 'preprocessors.pkl')
         results = ir.infer(

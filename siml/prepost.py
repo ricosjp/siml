@@ -1,356 +1,20 @@
 """Module for preprocessing."""
 
 import datetime as dt
-from functools import reduce
 import glob
 import io
 import itertools as it
 import multiprocessing as multi
-from operator import or_
-import os
-from pathlib import Path
 import pickle
-from typing import Dict
+from pathlib import Path
 
 import femio
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.sparse as sp
 
-from . import util
-from . import setting
-
-
-FEMIO_FILE = 'femio_npy_saved.npy'
-
-
-class RawConverter():
-
-    @classmethod
-    def read_settings(cls, settings_yaml, **args):
-        main_setting = setting.MainSetting.read_settings_yaml(
-            settings_yaml, replace_preprocessed=False)
-        return cls(main_setting, **args)
-
-    def __init__(
-            self, main_setting, *,
-            recursive=True,
-            conversion_function=None, filter_function=None, load_function=None,
-            save_function=None,
-            force_renew=False, read_npy=False, write_ucd=True, read_res=True,
-            max_process=None, to_first_order=False):
-        """Initialize converter of raw data and save them in interim directory.
-
-        Parameters
-        ----------
-        main_setting: siml.setting.MainSetting
-            MainSetting object.
-        recursive: bool, optional
-            If True, recursively convert data.
-        conversion_function: callable, optional
-            Conversion function which takes femio.FEMData object and
-            pathlib.Path (data directory) as only arguments and returns data
-            dict to be saved.
-        filter_function: callable, optional
-            Function to filter the data which can be converted. It should take
-            femio.FEMData object, pathlib.Path (data directory), and dict_data
-            as only arguments and returns True (for convertable data) or False
-            (for unconvertable data).
-        load_function: callable, optional
-            Function to load data, which take list of pathlib.Path objects
-            (as required files) and pathlib.Path object (as data directory)
-            and returns data_dictionary and fem_data (can be None) to be saved.
-        save_function: callable, optional
-            Function to save data, which take femio.FEMData object,
-            data_dict, pathliub.Path object as output directory,
-            and bool represents force renew.
-        force_renew: bool, optional
-            If True, renew npy files even if they are alerady exist.
-        read_npy: bool, optional
-            If True, read .npy files instead of original files if exists.
-        write_ucd: bool, optional
-            If True, write AVS UCD file with preprocessed variables.
-        read_res: bool, optional
-            If True, read res file of FrontISTR.
-        max_process: int, optional
-            The maximum number of processes to perform conversion.
-        """
-        self.setting: setting.MainSetting = main_setting
-        self.recursive = recursive
-        self.conversion_function = conversion_function
-        self.filter_function = filter_function
-        self.load_function = load_function
-        self.save_function = save_function
-        self.force_renew = force_renew
-        self.read_npy = read_npy
-        self.write_ucd = write_ucd
-        self.to_first_order = to_first_order
-        self.read_res = read_res
-        self.max_process = min(
-            main_setting.conversion.max_process,
-            util.determine_max_process(max_process))
-        self.setting.conversion.output_base_directory \
-            = self.setting.data.interim_root
-
-    def convert(self, raw_directory=None):
-        """Perform conversion.
-
-        Parameters
-        ----------
-        raw_directory: str or pathlib.Path, optional
-            Raw data directory name. If not fed, self.setting.data.raw is used
-            instead.
-        """
-        print(f"# process: {self.max_process}")
-        if raw_directory is None:
-            raw_directory = self.setting.data.raw
-
-        # Process all subdirectories when recursice is True
-        if self.recursive:
-            if isinstance(raw_directory, (list, tuple, set)):
-                raw_directories = reduce(or_, [
-                    set(util.collect_data_directories(
-                        Path(d), print_state=True))
-                    for d in raw_directory])
-            else:
-                raw_directories = util.collect_data_directories(
-                    Path(raw_directory), print_state=True)
-        else:
-            if isinstance(raw_directory, (list, tuple, set)):
-                raw_directories = raw_directory
-            else:
-                raw_directories = [raw_directory]
-
-        chunksize = max(len(raw_directories) // self.max_process // 16, 1)
-
-        with multi.Pool(self.max_process) as pool:
-            pool.map(
-                self.convert_single_data, raw_directories,
-                chunksize=chunksize)
-
-        return
-
-    def convert_single_data(
-            self, raw_path, *, output_directory=None,
-            raise_when_overwrite=False):
-        """Convert single directory.
-
-        Parameters
-        ----------
-        raw_path: pathlib.Path
-            Input data path of raw data.
-        output_directory: pathlib.Path, optional
-            If fed, use the fed path as the output directory.
-        raise_when_overwrite: bool, optional
-            If True, raise when the output directory exists. The default is
-            False.
-
-        Returns
-        -------
-        None
-        """
-        conversion_setting = self.setting.conversion
-
-        # Determine output directory
-        raw_path = Path(raw_path)
-        if output_directory is None:
-            output_directory = determine_output_directory(
-                raw_path, conversion_setting.output_base_directory, 'raw')
-
-        # Guard
-        if raw_path.is_dir():
-            if not util.files_exist(
-                    raw_path, conversion_setting.required_file_names):
-                return
-        elif raw_path.is_file():
-            pass
-        else:
-            raise ValueError(f"raw_path not understandable: {raw_path}")
-
-        if (output_directory / conversion_setting.finished_file).exists():
-            if raise_when_overwrite:
-                raise ValueError(f"{output_directory} already exists.")
-            if not self.force_renew:
-                print(
-                    f"Already converted. Skipped conversion: {raw_path}")
-                return
-
-        # Main process
-        print(f"Processing: {raw_path}")
-        dict_data = {}
-        if conversion_setting.skip_femio:
-            fem_data = None
-        else:
-            if self.read_npy and (output_directory / FEMIO_FILE).exists():
-                fem_data = femio.FEMData.read_npy_directory(
-                    output_directory)
-            else:
-                try:
-                    if raw_path.is_dir():
-                        fem_data = femio.FEMData.read_directory(
-                            conversion_setting.file_type, raw_path,
-                            read_npy=self.read_npy, save=False,
-                            read_res=self.read_res,
-                            time_series=conversion_setting.time_series)
-                    else:
-                        fem_data = femio.FEMData.read_files(
-                            conversion_setting.file_type, raw_path,
-                            time_series=conversion_setting.time_series)
-                except ValueError:
-                    print("femio read failed. Skipped.")
-                    output_directory.mkdir(parents=True, exist_ok=True)
-                    (output_directory / 'failed').touch()
-                    return
-
-        if self.conversion_function is not None:
-            try:
-                dict_data.update(
-                    self.conversion_function(fem_data, raw_path))
-            except BaseException as e:
-                raise ValueError(
-                    f"{e}\nconversion_function failed for: {raw_path}")
-
-        if self.load_function is not None:
-            data_files = util.collect_files(
-                raw_path, conversion_setting.required_file_names)
-            try:
-                loaded_dict_data, fem_data = self.load_function(
-                    data_files, raw_path)
-            except BaseException as e:
-                raise ValueError(f"{e}\nload_function failed for: {raw_path}")
-            dict_data.update(loaded_dict_data)
-
-        if self.filter_function is not None and not self.filter_function(
-                fem_data, raw_path, dict_data):
-            return
-
-        if fem_data is not None:
-            if conversion_setting.mandatory_variables is not None \
-                    and len(conversion_setting.mandatory_variables) > 0:
-                dict_data.update(extract_variables(
-                    fem_data, conversion_setting.mandatory_variables,
-                    optional_variables=conversion_setting.optional_variables
-                ))
-
-        # Save data
-        output_directory.mkdir(parents=True, exist_ok=True)
-        if fem_data is not None:
-            if self.setting.conversion.save_femio:
-                fem_data.save(output_directory)
-
-            if self.write_ucd:
-                if self.to_first_order:
-                    fem_data_to_save = fem_data.to_first_order()
-                else:
-                    fem_data_to_save = fem_data
-                fem_data_to_save = update_fem_data(
-                    fem_data_to_save, dict_data, allow_overwrite=True)
-                fem_data_to_save.to_first_order().write(
-                    'ucd', output_directory / 'mesh.inp',
-                    overwrite=self.force_renew)
-        if self.save_function is not None:
-            self.save_function(
-                fem_data, dict_data, output_directory, self.force_renew)
-
-        if not self.setting.conversion.skip_save:
-            save_dict_data(
-                output_directory, dict_data,
-                encrypt_key=self.setting.data.encrypt_key,
-                finished_file=self.setting.conversion.finished_file,
-                save_dtype_dict=self.setting.misc.get("save_dtype_dict"))
-
-        return
-
-
-def update_fem_data(
-        fem_data, dict_data, prefix='', *, allow_overwrite=False,
-        answer_keys=None, answer_prefix=''):
-    for key, value in dict_data.items():
-
-        if answer_keys is not None:
-            if key in answer_keys:
-                variable_name = answer_prefix + key
-            else:
-                variable_name = prefix + key
-        else:
-            variable_name = prefix + key
-        if isinstance(value, np.ndarray):
-            value = reshape_data_if_needed(value)
-            shape = value.shape
-
-            if shape[0] == len(fem_data.nodes.ids):
-                # Nodal data
-                dict_data_to_update = {
-                    variable_name: value}
-                fem_data.nodal_data.update_data(
-                    fem_data.nodes.ids, dict_data_to_update,
-                    allow_overwrite=allow_overwrite)
-            elif shape[1] == len(fem_data.nodes.ids):
-                # Nodal data with time series
-                if shape[0] == 1:
-                    dict_data_to_update = {
-                        variable_name: reshape_data_if_needed(value[0])}
-                else:
-                    dict_data_to_update = {
-                        f"{variable_name}_{i}": reshape_data_if_needed(v)
-                        for i, v in enumerate(value)}
-                fem_data.nodal_data.update_data(
-                    fem_data.nodes.ids, dict_data_to_update,
-                    allow_overwrite=allow_overwrite)
-            elif shape[0] == len(fem_data.elements.ids):
-                # Elemental data
-                dict_data_to_update = {
-                    variable_name: value}
-                fem_data.elemental_data.update_data(
-                    fem_data.elements.ids, dict_data_to_update,
-                    allow_overwrite=allow_overwrite)
-            elif shape[1] == len(fem_data.elements.ids):
-                # Elemental data with time series
-                if shape[0] == 1:
-                    dict_data_to_update = {
-                        variable_name: reshape_data_if_needed(value[0])}
-                else:
-                    dict_data_to_update = {
-                        f"{variable_name}_{i}": reshape_data_if_needed(v)
-                        for i, v in enumerate(value)}
-                fem_data.elemental_data.update_data(
-                    fem_data.nodes.ids, dict_data_to_update,
-                    allow_overwrite=allow_overwrite)
-            else:
-                print(f"{variable_name} is skipped to include in fem_data")
-                continue
-        else:
-            print(f"{variable_name} is skipped to include in fem_data")
-
-    return fem_data
-
-
-def reshape_data_if_needed(value):
-    """Reshape numpy.ndarray-like to be writable to visualization files.
-
-    Parameters
-    ----------
-    value: numpy.ndarray
-        Data to be processed.
-
-    Returns
-    -------
-    reshaped_data: numpy.ndarray
-    """
-    if len(value.shape) > 2 and value.shape[-1] == 1:
-        if len(value.shape) == 4 and value.shape[1] == 3 \
-                and value.shape[2] == 3:
-            # NOTE: Assume this is symmetric matrix
-            reshaped_value \
-                = femio.functions.convert_symmetric_matrix2array(
-                    value[..., 0])
-        else:
-            reshaped_value = value[..., 0]
-    elif len(value.shape) == 1:
-        reshaped_value = value[:, None]
-    else:
-        reshaped_value = value
-    return reshaped_value
+from . import setting, util
+from siml.utils import fem_data_utils, path_utils
 
 
 def add_difference(
@@ -368,9 +32,13 @@ def add_difference(
             dict_data[intersection], reference_dict_data[intersection].shape)
         - reference_dict_data[intersection]
         for intersection in intersections}
-    fem_data = update_fem_data(fem_data, difference_dict_data, prefix=prefix)
 
-    return fem_data
+    wrapped_data = fem_data_utils.FemDataWrapper(fem_data)
+    wrapped_data.update_fem_data(
+        difference_dict_data, prefix=prefix
+    )
+
+    return wrapped_data.fem_data
 
 
 def add_abs_difference(
@@ -390,9 +58,14 @@ def add_abs_difference(
                 reference_dict_data[intersection].shape)
             - reference_dict_data[intersection])
         for intersection in intersections}
-    fem_data = update_fem_data(fem_data, difference_dict_data, prefix=prefix)
 
-    return fem_data
+    wrapped_data = fem_data_utils.FemDataWrapper(fem_data)
+    wrapped_data.update_fem_data(
+        difference_dict_data,
+        prefix=prefix
+    )
+
+    return wrapped_data.fem_data
 
 
 def concatenate_preprocessed_data(
@@ -649,7 +322,7 @@ class Preprocessor:
 
         # Touch finished files
         for data_directory in self.interim_directories:
-            output_directory = determine_output_directory(
+            output_directory = path_utils.determine_output_directory(
                 data_directory, self.setting.data.preprocessed_root,
                 self.str_replace)
             (output_directory / self.FINISHED_FILE).touch()
@@ -848,7 +521,7 @@ class Preprocessor:
             # Shortcut preprocessing
 
             for data_directory in self.interim_directories:
-                output_directory = determine_output_directory(
+                output_directory = path_utils.determine_output_directory(
                     data_directory, self.setting.data.preprocessed_root,
                     self.str_replace)
                 if not self.force_renew \
@@ -864,7 +537,7 @@ class Preprocessor:
             return
 
         for data_directory in self.interim_directories:
-            output_directory = determine_output_directory(
+            output_directory = path_utils.determine_output_directory(
                 data_directory, self.setting.data.preprocessed_root,
                 self.str_replace)
             if not self.force_renew \
@@ -1127,8 +800,9 @@ class Converter:
                 write_simulation_base, required_file_names)
             data_dict, fem_data = load_function(
                 data_files, write_simulation_base)
-            fem_data = update_fem_data(
-                fem_data, data_dict, allow_overwrite=True)
+            wrapped_fem_data = fem_data_utils.FemDataWrapper(fem_data)
+            wrapped_fem_data.update_fem_data(data_dict, allow_overwrite=True)
+            fem_data = wrapped_fem_data.fem_data
         else:
             raise ValueError(
                 'When skip_femio is True, please feed load_function.')
@@ -1136,12 +810,15 @@ class Converter:
         if convert_to_order1:
             fem_data = fem_data.to_first_order()
 
-        fem_data = update_fem_data(
-            fem_data, dict_data_x, prefix='input_')
+        wrapped_fem_data = fem_data_utils.FemDataWrapper(fem_data)
+        wrapped_fem_data.update_fem_data(dict_data_x, prefix='input_')
         if dict_data_answer is not None:
-            fem_data = update_fem_data(
-                fem_data, dict_data_answer, prefix='answer_')
-        fem_data = update_fem_data(fem_data, dict_data_y, prefix='predicted_')
+            wrapped_fem_data.update_fem_data(
+                dict_data_answer, prefix='answer_'
+            )
+        wrapped_fem_data.update_fem_data(dict_data_y, prefix='predicted_')
+
+        fem_data = wrapped_fem_data.fem_data
         fem_data = add_difference(
             fem_data, dict_data_y, dict_data_answer, prefix='difference_')
         fem_data = add_abs_difference(
@@ -1207,168 +884,6 @@ class Converter:
         for variable_name, data in data_dict.items():
             np.save(output_directory / f"{variable_name}.npy", data)
         return
-
-
-def extract_variables(
-        fem_data, mandatory_variables, *, optional_variables=None):
-    """Extract variables from FEMData object to convert to data dictionary.
-
-    Parameters
-    ----------
-    fem_data: femio.FEMData
-        FEMData object to be extracted variables from.
-    mandatory_variables: list[str]
-        Mandatory variable names.
-    optional_variables: list[str], optional
-        Optional variable names.
-
-    Returns
-    -------
-        dict_data: dict
-            Data dictionary.
-    """
-    dict_data = {
-        mandatory_variable: _extract_single_variable(
-            fem_data, mandatory_variable, mandatory=True, ravel=True)
-        for mandatory_variable in mandatory_variables}
-
-    if optional_variables is not None and len(optional_variables) > 0:
-        for optional_variable in optional_variables:
-            optional_variable_data = _extract_single_variable(
-                fem_data, optional_variable, mandatory=False, ravel=True)
-            if optional_variable_data is not None:
-                dict_data.update({optional_variable: optional_variable_data})
-    return dict_data
-
-
-def _extract_single_variable(
-        fem_data, variable_name, *, mandatory=True, ravel=True):
-    if variable_name in fem_data.nodal_data:
-        return fem_data.nodal_data.get_attribute_data(variable_name)
-    elif variable_name in fem_data.elemental_data:
-        return fem_data.elemental_data.get_attribute_data(variable_name)
-    else:
-        if mandatory:
-            raise ValueError(
-                f"{variable_name} not found in {fem_data.nodal_data.keys()}, "
-                f"{fem_data.elemental_data.keys()}")
-        else:
-            return None
-
-
-def save_dict_data(
-        output_directory, dict_data, *, dtype=np.float32, encrypt_key=None,
-        finished_file='converted', save_dtype_dict: Dict = None):
-    """Save dict_data.
-
-    Parameters
-    ----------
-    output_directory: pathlib.Path
-        Output directory path.
-    dict_data: dict
-        Data dictionary to be saved.
-    dtype: type, optional
-        Data type to be saved.
-    encrypt_key: bytes, optional
-        Data for encryption.
-
-    Returns
-    -------
-        None
-    """
-    for key, value in dict_data.items():
-        save_dtype = _get_save_dtype(key,
-                                     default_dtype=dtype,
-                                     save_dtype_dict=save_dtype_dict)
-        util.save_variable(
-            output_directory,
-            key, value, dtype=save_dtype, encrypt_key=encrypt_key)
-    (output_directory / finished_file).touch()
-    return
-
-
-def _get_save_dtype(variable_name: str,
-                    default_dtype: np.dtype,
-                    save_dtype_dict: Dict = None):
-    if save_dtype_dict is None:
-        return default_dtype
-    if variable_name in save_dtype_dict:
-        return save_dtype_dict[variable_name]
-    else:
-        return default_dtype
-
-
-def determine_output_directory(
-        input_directory, output_base_directory, str_replace):
-    """Determine output directory by replacing a string (str_replace) in the
-    input_directory.
-
-    Parameters
-    ----------
-    input_directory: pathlib.Path
-        Input directory path.
-    output_base_directory: pathlib.Path
-        Output base directory path. The output directry name is under that
-        directory.
-    str_replace: str
-        The string to be replaced.
-
-    Returns
-    -------
-    output_directory: pathlib.Path
-        Detemined output directory path.
-    """
-    common_prefix = common_parent(
-        input_directory,
-        output_base_directory
-    )
-    relative_input_path = Path(os.path.relpath(input_directory, common_prefix))
-    parts = list(relative_input_path.parts)
-
-    replace_indices = np.where(
-        np.array(relative_input_path.parts) == str_replace)[0]
-    if len(replace_indices) == 0:
-        pass
-    elif len(replace_indices) == 1:
-        replace_index = replace_indices[0]
-        parts[replace_index] = ''
-    else:
-        raise ValueError(
-            f"Input directory {input_directory} contains several "
-            f"{str_replace} parts thus ambiguous.")
-    output_directory = output_base_directory / '/'.join(parts).lstrip('/')
-
-    return output_directory
-
-
-def common_parent(
-        directory_1: Path,
-        directory_2: Path) -> Path:
-    """Search common parent directory
-
-    Parameters
-    ----------
-    directory_1 : pathlib.Path
-    directory_2 : pathlib.Path
-
-    Returns
-    -------
-    common_parent: pathlib.Path
-        Path to common parent directory
-    """
-    parents_1 = directory_1.parents
-    parents_2 = directory_2.parents
-    min_idx_1 = len(parents_1) - 1
-    min_idx_2 = len(parents_2) - 1
-    min_idx = min(len(parents_1), len(parents_2))
-
-    common_parent = Path("")
-    for i in range(min_idx):
-        if parents_1[min_idx_1 - i] == parents_2[min_idx_2 - i]:
-            common_parent = parents_1[min_idx_1 - i]
-        else:
-            break
-    return common_parent
 
 
 def normalize_adjacency_matrix(adj):

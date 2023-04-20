@@ -7,6 +7,8 @@ import random
 import femio
 import numpy as np
 import siml
+from siml.preprocessing import converter
+from siml.utils import fem_data_utils
 
 
 def main():
@@ -180,9 +182,10 @@ class DataGenerator:
         return dict_data
 
     def save(self, output_directory, dict_data, fem_data):
-        siml.prepost.save_dict_data(output_directory, dict_data)
-        fem_data_to_save = siml.prepost.update_fem_data(
-            fem_data, dict_data, allow_overwrite=True)
+        converter.save_dict_data(output_directory, dict_data)
+        wrapped_data = fem_data_utils.FemDataWrapper(fem_data)
+        wrapped_data.update_fem_data(dict_data, allow_overwrite=True)
+        fem_data_to_save = wrapped_data.fem_data
         fem_data_to_save.save(output_directory)
         fem_data_to_save.write('polyvtk', output_directory / 'mesh.vtu')
         (output_directory / 'converted').touch()

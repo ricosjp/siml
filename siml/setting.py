@@ -1088,6 +1088,13 @@ class ConversionSetting(TypedDataClass):
         super().__post_init__()
         return
 
+    @property
+    def should_load_mandatory_variables(self) -> bool:
+        if self.mandatory_variables is None:
+            return False
+
+        return len(self.mandatory_variables) > 0
+
 
 @dc.dataclass
 class PreprocessSetting:
