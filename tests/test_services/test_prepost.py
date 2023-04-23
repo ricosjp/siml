@@ -10,8 +10,8 @@ import scipy.sparse as sp
 import siml.prepost as pre
 import siml.setting as setting
 import siml.trainer as trainer
-import siml.util as util
 import siml.preprocessing.converter as converter
+from siml.preprocessing import ScalingConverter, ScalersComposition
 from siml.utils import path_utils
 
 import preprocess
@@ -25,17 +25,6 @@ class TestPrepost(unittest.TestCase):
             dict_data = pickle.load(f)
         for value in dict_data.values():
             self.assertTrue(isinstance(value['preprocess_converter'], dict))
-
-    def test_determine_output_directory(self):
-        self.assertEqual(
-            path_utils.determine_output_directory(
-                Path('data/raw/a/b'), Path('data/sth'), 'raw'),
-            Path('data/sth/a/b'))
-        self.assertEqual(
-            path_utils.determine_output_directory(
-                Path('tests/data/list/data/tet2_3_modulusx0.9000/interim'),
-                Path('tests/data/list/preprocessed'), 'interim'),
-            Path('tests/data/list/preprocessed/data/tet2_3_modulusx0.9000'))
 
     def test_normalize_adjacency_matrix(self):
         adj = np.array([
@@ -151,8 +140,8 @@ class TestPrepost(unittest.TestCase):
             (interim_path / 'converted').touch()
 
         # Preprocess data
-        preprocessor = pre.Preprocessor(main_setting)
-        preprocessor.preprocess_interim_data()
+        preprocessor = ScalingConverter(main_setting)
+        preprocessor.fit_transform()
 
         # Test preprocessed data is as desired
         epsilon = 1e-5
@@ -230,11 +219,12 @@ class TestPrepost(unittest.TestCase):
             (interim_path / 'converted').touch()
 
         # Preprocess data
-        preprocessor = pre.Preprocessor(main_setting)
-        preprocessor.preprocess_interim_data()
+        preprocessor = ScalingConverter(main_setting)
+        preprocessor.fit_transform()
 
-        postprocessor = pre.Converter(
-            data_setting.preprocessed_root / 'preprocessors.pkl')
+        postprocessor = ScalersComposition.create(
+            data_setting.preprocessed_root / 'preprocessors.pkl'
+        )
         preprocessed_paths = [
             data_setting.preprocessed_root / 'a',
             data_setting.preprocessed_root / 'b']
@@ -245,8 +235,8 @@ class TestPrepost(unittest.TestCase):
                 'std_scale': np.load(preprocessed_path / 'std_scale.npy')}
             dict_data_y = {
                 'standardize': np.load(preprocessed_path / 'standardize.npy')}
-            inv_dict_data_x, inv_dict_data_y, _, _ = postprocessor.postprocess(
-                dict_data_x, dict_data_y)
+            inv_dict_data_x = postprocessor.inverse_transform_dict(dict_data_x)
+            inv_dict_data_y = postprocessor.inverse_transform_dict(dict_data_y)
             for k, v in inv_dict_data_x.items():
                 interim_data = np.load(interim_path / (k + '.npy'))
                 np.testing.assert_almost_equal(interim_data, v, decimal=5)
@@ -269,8 +259,9 @@ class TestPrepost(unittest.TestCase):
             main_setting,
             conversion_function=preprocess.ConversionFunction())
         raw_converter.convert()
-        p = pre.Preprocessor(main_setting)
-        p.preprocess_interim_data()
+
+        preprocessor = ScalingConverter(main_setting)
+        preprocessor.fit_transform()
 
         interim_strain = np.load(
             'tests/data/deform/test_prepost/interim/train/'
@@ -295,13 +286,14 @@ class TestPrepost(unittest.TestCase):
 
     def test_generate_converters(self):
         preprocessors_file = Path('tests/data/prepost/preprocessors.pkl')
-        real_file_converter = pre.Converter(preprocessors_file)
+        real_file_converter = ScalersComposition.create(preprocessors_file)
+
         with open(preprocessors_file, 'rb') as f:
             file_like_object_converter = pre.Converter(f)
         np.testing.assert_almost_equal(
-            real_file_converter.converters['standardize'].converter.var_,
-            file_like_object_converter.converters[
-                'standardize'].converter.var_)
+            real_file_converter.get_scaler('standardize').converter.var_,
+            file_like_object_converter
+            .converters['standardize'].converter.var_)
 
     def test_concatenate_preprocessed_data(self):
         preprocessed_base_directory = Path(
@@ -355,8 +347,8 @@ class TestPrepost(unittest.TestCase):
 
         shutil.rmtree(main_setting.data.preprocessed_root, ignore_errors=True)
 
-        p = pre.Preprocessor(main_setting)
-        p.preprocess_interim_data()
+        p = ScalingConverter(main_setting)
+        p.fit_transform()
 
         c = pre.Converter(
             main_setting.data.preprocessed_root / 'preprocessors.pkl')
@@ -378,8 +370,8 @@ class TestPrepost(unittest.TestCase):
             Path('tests/data/ode/data.yml'))
 
         shutil.rmtree(main_setting.data.preprocessed_root, ignore_errors=True)
-        preprocessor = pre.Preprocessor(main_setting, force_renew=True)
-        preprocessor.preprocess_interim_data()
+        preprocessor = ScalingConverter(main_setting, force_renew=True)
+        preprocessor.fit_transform()
         data_directory = main_setting.data.preprocessed_root / 'train/0'
         y0 = np.load(data_directory / 'y0.npy')
         y0_initial = np.load(data_directory / 'y0_initial.npy')
@@ -391,12 +383,11 @@ class TestPrepost(unittest.TestCase):
             Path('tests/data/deform/power.yml'))
 
         shutil.rmtree(main_setting.data.preprocessed_root, ignore_errors=True)
-        preprocessor = pre.Preprocessor(main_setting, force_renew=True)
-        preprocessor.preprocess_interim_data()
+        preprocessor = ScalingConverter(main_setting, force_renew=True)
+        preprocessor.fit_transform()
         data_directory = main_setting.data.preprocessed_root \
             / 'train/tet2_3_modulusx0.9000'
-        preprocessed_x_grad = sp.load_npz(
-            data_directory / 'x_grad.npz')
+        preprocessed_x_grad = sp.load_npz(data_directory / 'x_grad.npz')
         reference_x_grad = sp.load_npz(
             'tests/data/deform/interim/train/tet2_3_modulusx0.9000'
             '/x_grad.npz').toarray()
@@ -406,12 +397,14 @@ class TestPrepost(unittest.TestCase):
             preprocess_converter_setting = pickle.load(f)['x_grad'][
                 'preprocess_converter']
         std = preprocess_converter_setting['std_']
-        preprocess_converter = util.PreprocessConverter(
-            preprocess_converter_setting, method='sparse_std', power=.5)
+
+        scaler = preprocessor._scalers.get_scaler('x_grad')
+        scaler.converter.power = 0.5
         np.testing.assert_almost_equal(
             preprocessed_x_grad.toarray() * std**.5, reference_x_grad)
+        
         np.testing.assert_almost_equal(
-            preprocess_converter.converter.inverse_transform(
+            scaler.inverse_transform(
                 preprocessed_x_grad).toarray(), reference_x_grad)
 
     def test_preprocess_interim_list(self):
@@ -419,8 +412,9 @@ class TestPrepost(unittest.TestCase):
             Path('tests/data/list/data.yml'))
         shutil.rmtree(main_setting.data.preprocessed_root, ignore_errors=True)
 
-        preprocessor = pre.Preprocessor(main_setting)
-        preprocessor.preprocess_interim_data()
+        preprocessor = ScalingConverter(main_setting)
+        preprocessor.fit_transform()
+
         self.assertTrue(Path(
             'tests/data/list/preprocessed/data/tet2_3_modulusx0.9500'
         ).exists())

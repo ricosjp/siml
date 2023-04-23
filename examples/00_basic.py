@@ -189,9 +189,8 @@ raw_converter.convert()
 #     nodal_isoam_y: identity
 #     nodal_isoam_z: identity
 
-
-preprocessor = siml.prepost.Preprocessor.read_settings(settings_yaml)
-preprocessor.preprocess_interim_data()
+preprocessor = siml.preprocessing.ScalingConverter.read_settings(settings_yaml)
+preprocessor.fit_transform()
 
 ###############################################################################
 # Training

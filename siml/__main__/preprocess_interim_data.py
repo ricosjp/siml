@@ -19,9 +19,10 @@ def main():
         help='If True, overwrite existing data [False]')
     args = parser.parse_args()
 
-    preprocessor = siml.prepost.Preprocessor.read_settings(
-        args.settings_yaml, force_renew=args.force_renew)
-    preprocessor.preprocess_interim_data()
+    preprocessor = siml.preprocessing.ScalingConverter.read_settings(
+        args.settings_yaml, force_renew=args.force_renew
+    )
+    preprocessor.fit_transform()
 
     print('success')
     return
