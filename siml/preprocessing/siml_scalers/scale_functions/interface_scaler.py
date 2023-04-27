@@ -3,6 +3,8 @@ import abc
 
 import numpy as np
 
+from siml.preprocessing.siml_scalers.scale_variables import SimlScaleDataType
+
 
 class ISimlScaler(metaclass=abc.ABCMeta):
     @property
@@ -15,13 +17,13 @@ class ISimlScaler(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def transform(self, data: np.ndarray) -> np.ndarray:
+    def transform(self, data: SimlScaleDataType) -> np.ndarray:
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def partial_fit(self, data: np.ndarray) -> ISimlScaler:
+    def partial_fit(self, data: SimlScaleDataType) -> ISimlScaler:
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def inverse_transform(self, data: np.ndarray) -> np.ndarray:
+    def inverse_transform(self, data: SimlScaleDataType) -> np.ndarray:
         raise NotImplementedError()

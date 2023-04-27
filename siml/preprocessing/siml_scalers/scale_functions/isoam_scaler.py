@@ -15,10 +15,11 @@ class IsoAMScaler(TransformerMixin, BaseEstimator, ISimlScaler):
         self.std_ = 0.
         self.mean_square_ = 0.
         self.n_ = 0
-        if other_components is None:
-            other_components = []
+        self.other_components = []
+        if other_components is not None:
+            self.other_components = other_components
 
-        self.component_dim = len(other_components) + 1
+        self.component_dim = len(self.other_components) + 1
         if self.component_dim == 1:
             raise ValueError(
                 'To use IsoAMScaler, feed other_components: '

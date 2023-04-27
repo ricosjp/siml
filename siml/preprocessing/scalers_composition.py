@@ -4,7 +4,6 @@ import warnings
 import pathlib
 from typing import Optional, Union
 
-from siml import setting
 from siml import util
 from siml.path_like_objects import ISimlFile, SimlFileBulider
 
@@ -14,37 +13,69 @@ from .siml_scalers.scale_variables import SimlScaleDataType
 
 class ScalersComposition():
     @classmethod
-    def create(
+    def create_from_file(
         cls,
         converter_parameters_pkl: pathlib.Path,
+        max_process: Optional[int] = None,
         key: Optional[bytes] = None
     ) -> ScalersComposition:
         siml_file = SimlFileBulider.create(converter_parameters_pkl)
-        preprocess_setting = setting.PreprocessSetting(
-            siml_file.load(decrypt_key=key)
+        assert siml_file.get_file_extension() in [".enc.pkl", ".pkl"]
+
+        parameters: dict = siml_file.load(
+            decrypt_key=key
+        )
+        variable_name_to_scalers = parameters.pop(
+            "variable_name_to_scalers", None
+        )
+        scalers_dict = ScalersComposition._load_scalers(parameters, key=key)
+        if variable_name_to_scalers is None:
+            # When old version, key "varaible_name_to_scalers" does not exist
+            variable_name_to_scalers = {k: k for k in scalers_dict.keys()}
+
+        return cls(
+            variable_name_to_scalers=variable_name_to_scalers,
+            scalers_dict=scalers_dict,
+            max_process=max_process,
+            decrypt_key=key
+        )
+
+    @classmethod
+    def create_from_dict(
+        cls,
+        preprocess_dict: dict,
+        max_process: Optional[int] = None,
+        key: Optional[bytes] = None
+    ) -> ScalersComposition:
+        variable_name_to_scalers = \
+            ScalersComposition._init_scalers_relationship(preprocess_dict)
+        scalers_dict = ScalersComposition._init_scalers_dict(
+            preprocess_dict,
+            key=key
         )
         return cls(
-            preprocess_dict=preprocess_setting.preprocess,
+            variable_name_to_scalers=variable_name_to_scalers,
+            scalers_dict=scalers_dict,
+            max_process=max_process,
             decrypt_key=key
         )
 
     def __init__(
         self,
-        preprocess_dict: dict,
+        variable_name_to_scalers: dict[str, str],
+        scalers_dict: dict[str, SimlScalerWrapper],
         max_process: Optional[int] = None,
         decrypt_key: Optional[bytes] = None
     ) -> None:
 
-        self._setting = preprocess_dict
         self._decrypt_key = decrypt_key
         self.max_process = util.determine_max_process(max_process)
-        # varaible name to saler name (variable name except same_as)
-        self._variable_name_to_scaler: dict[str, str] \
-            = self._init_scalers_relationship()
+        # varaible name to saler name
+        # scaler name corresponds with variable name except same_as
+        self._variable_name_to_scaler = variable_name_to_scalers
 
         # variable_name to siml_scelar
-        self._scalers_dict: dict[str, SimlScalerWrapper] \
-            = self._init_scalers_dict()
+        self._scalers_dict = scalers_dict
 
     def get_variable_names(self, group_id: Optional[int] = None) -> list[str]:
         variable_names = list(self._variable_name_to_scaler.keys())
@@ -84,29 +115,15 @@ class ScalersComposition():
             )
         return scaler
 
-    def load(self, preprocessor_pkl: pathlib.Path) -> None:
-        siml_file = SimlFileBulider.create(preprocessor_pkl)
-        assert siml_file.get_file_extension() in [".enc.pkl", ".pkl"]
-
-        parameters: dict = siml_file.load(
-            decrypt_key=self._decrypt_key
-        )
-
-        for k in self._scalers_dict.keys():
-            if k in parameters.keys():
-                raise ValueError(
-                    "Attempted to load parameters, "
-                    f"but preprocessor for {k} is not defined "
-                    "in parameters file."
-                )
-            self._scalers_dict[k].converter = parameters[k]
-
-    def get_dumped_object(self) -> None:
-        dict_to_dump = {
-            k: vars(self.get_scaler(k).converter)
+    def get_dumped_object(self) -> dict:
+        dumped_dict = {
+            k: self.get_scaler(k).get_dumped_dict()
             for k in self.get_scaler_names()
         }
-        return dict_to_dump
+        # add relationship
+        dumped_dict["variable_name_to_scalers"] \
+            = self._variable_name_to_scaler
+        return dumped_dict
 
     def lazy_partial_fit(
         self,
@@ -209,12 +226,13 @@ class ScalersComposition():
         scaler.lazy_partial_fit(data_files)
         return (variable_name, scaler)
 
+    @staticmethod
     def _init_scalers_relationship(
-        self
+        setting_dict: dict
     ) -> dict[str, str]:
 
         _dict = {}
-        for variable_name, p_setting in self._setting.items():
+        for variable_name, p_setting in setting_dict.items():
             parent = p_setting.get('same_as')
             if parent is None:
                 _dict[variable_name] = variable_name
@@ -223,20 +241,22 @@ class ScalersComposition():
                 # same_as is set so no need to prepare preprocessor
         return _dict
 
+    @staticmethod
     def _init_scalers_dict(
-        self,
-        group_id: int = None
+        setting_dict: dict,
+        key: Optional[bytes] = None,
+        group_id: Optional[int] = None
     ) -> dict[str, SimlScalerWrapper]:
         preprocessor_inputs = [
             (variable_name, preprocess_setting)
             for variable_name, preprocess_setting
-            in self._setting.items()
+            in setting_dict.items()
             if group_id is None or preprocess_setting['group_id'] == group_id
         ]
 
         _scalers_dict: dict[str, SimlScalerWrapper] = {}
         for k, _setting in preprocessor_inputs:
-            v = self._init_siml_scaler(_setting)
+            v = ScalersComposition._init_siml_scaler(_setting, key=key)
             if v is None:
                 continue
 
@@ -244,9 +264,10 @@ class ScalersComposition():
 
         return _scalers_dict
 
+    @staticmethod
     def _init_siml_scaler(
-        self,
-        preprocess_setting: dict
+        preprocess_setting: dict,
+        key: Optional[bytes] = None
     ) -> Union[SimlScalerWrapper, None]:
 
         if preprocess_setting.get('same_as') is not None:
@@ -255,10 +276,23 @@ class ScalersComposition():
 
         preprocess_converter = SimlScalerWrapper(
             preprocess_setting["method"],
-            key=self._decrypt_key,
+            key=key,
             componentwise=preprocess_setting['componentwise'],
             power=preprocess_setting.get('power', 1.),
             other_components=preprocess_setting['other_components']
         )
 
         return preprocess_converter
+
+    @staticmethod
+    def _load_scalers(
+        parameters: dict,
+        key: Optional[bytes] = None
+    ) -> dict[str, SimlScalerWrapper]:
+        scalers_dict = {}
+        for k, dict_data in parameters.items():
+            scalers_dict[k] = SimlScalerWrapper.create(
+                dict_data,
+                key=key
+            )
+        return scalers_dict

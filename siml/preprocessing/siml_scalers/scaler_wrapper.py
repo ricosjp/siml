@@ -1,16 +1,31 @@
 import datetime as dt
 import gc
-from typing import Optional
+from typing import Optional, Union
 
 import numpy as np
 import scipy.sparse as sp
 
 from siml.path_like_objects import ISimlFile
-from siml.preprocessing.siml_scalers import (
-    scale_functions, scale_variables, ISimlScaler)
+from siml.preprocessing.siml_scalers \
+    import (ISimlScaler, scale_functions, scale_variables)
 
 
 class SimlScalerWrapper(ISimlScaler):
+    @classmethod
+    def create(cls, dict_data: dict, key: Optional[bytes] = None):
+
+        # Pass all dict_data['preprocess_converter'] items
+        # to avoid Exception by checking when initialization (Ex. IsoAMSclaer)
+        _cls = cls(
+            dict_data["method"],
+            componentwise=dict_data.get("componentwise", True),
+            key=key,
+            **dict_data['preprocess_converter']
+        )
+        # After initialization, set other private properties such as var_, max_
+        for k, v in dict_data['preprocess_converter'].items():
+            setattr(_cls.converter, k, v)
+        return _cls
 
     def __init__(
         self,
@@ -52,26 +67,32 @@ class SimlScalerWrapper(ISimlScaler):
         self.converter.partial_fit(reshaped_data)
         return
 
-    def transform(self, data: scale_variables.SimlScaleDataType) -> np.ndarray:
+    def transform(
+        self,
+        data: scale_variables.SimlScaleDataType
+    ) -> Union[np.ndarray, sp.coo_matrix]:
+
         wrapped_data = scale_variables.create_wrapper(data)
-        reshaped_data = wrapped_data.reshape(
+        result = wrapped_data.apply(
+            self.converter.transform,
             componentwise=self.componentwise,
             skip_nan=False,
             use_diagonal=self.converter.use_diagonal
         )
-        return self.converter.transform(reshaped_data)
+        return result
 
     def inverse_transform(
         self,
         data: scale_variables.SimlScaleDataType
-    ) -> scale_variables.SimlScaleDataType:
+    ) -> Union[np.ndarray, sp.coo_matrix]:
         wrapped_data = scale_variables.create_wrapper(data)
-        reshaped_data = wrapped_data.reshape(
+        result = wrapped_data.apply(
+            self.converter.inverse_transform,
             componentwise=self.componentwise,
             skip_nan=False,
             use_diagonal=self.converter.use_diagonal
         )
-        return self.converter.inverse_transform(reshaped_data)
+        return result
 
     def lazy_partial_fit(
         self,
@@ -93,6 +114,14 @@ class SimlScalerWrapper(ISimlScaler):
             print(f"Finish one iter: {data_file}")
             print(dt.datetime.now())
         return
+
+    def get_dumped_dict(self) -> dict:
+        dumped_dict = {
+            'method': self.setting_data,
+            'componentwise': self.componentwise,
+            'preprocess_converter': vars(self.converter)
+        }
+        return dumped_dict
 
     def _load_file(
         self,

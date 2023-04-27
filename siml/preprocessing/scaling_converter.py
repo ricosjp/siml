@@ -15,7 +15,13 @@ from .siml_scalers.scale_variables import SimlScaleDataType
 from .scalers_composition import ScalersComposition
 
 
-@dc.dataclass(init=True, frozen=True)
+class Config:
+    init = True
+    frozen = True
+    arbitrary_types_allowed = True
+
+
+@dc.dataclass(config=Config)
 class PreprocessInnerSettings():
     preprocess_dict: dict
     interim_directories: list[pathlib.Path]
@@ -72,9 +78,9 @@ class PreprocessInnerSettings():
         return preprocessor_pkl
 
     def collect_interim_directories(self) -> list[SimlDirectory]:
-        return self._cached_interim_directories
+        return self.cached_interim_directories
 
-    def collect_scaler_fitting_files(
+    def get_scaler_fitting_files(
         self,
         variable_name: str
     ) -> list[ISimlFile]:
@@ -135,11 +141,12 @@ class ScalingConverter:
             str_replace=str_replace
         )
 
-        self._scalers = ScalersComposition(
-            preprocess_dict=main_setting.preprocess,
-            max_process=max_process,
-            decrypt_key=main_setting.data.encrypt_key
-        )
+        self._scalers: ScalersComposition \
+            = ScalersComposition.create_from_dict(
+                preprocess_dict=main_setting.preprocess,
+                max_process=max_process,
+                key=main_setting.data.encrypt_key
+            )
 
         self._decrypt_key = main_setting.data.encrypt_key
         self.max_process = max_process
@@ -194,7 +201,7 @@ class ScalingConverter:
         """
 
         scaler_name_to_files = {
-            k: self._setting.collect_scaler_fitting_files(k)
+            k: self._setting.get_scaler_fitting_files(k)
             for k in self._scalers.get_scaler_names(group_id=group_id)
         }
         self._scalers.lazy_partial_fit(scaler_name_to_files)

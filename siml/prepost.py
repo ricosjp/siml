@@ -1,18 +1,17 @@
 """Module for preprocessing."""
 
 import datetime as dt
-import io
 import itertools as it
-import pickle
-from pathlib import Path
+from typing import Union
 
 import femio
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.sparse as sp
 
-from . import setting, util
+from siml import util
 from siml.utils import fem_data_utils
+from siml.preprocessing import ScalersComposition, SimlScaleDataType
 
 
 def add_difference(
@@ -68,7 +67,8 @@ def add_abs_difference(
 
 def concatenate_preprocessed_data(
         preprocessed_base_directories, output_directory_base, variable_names,
-        *, ratios=(.9, .05, .05), overwrite=False, finished_file='preprocessed'):
+        *, ratios=(.9, .05, .05), overwrite=False,
+        finished_file='preprocessed'):
     """Concatenate preprocessed data in the element direction.
 
     NOTE: It may lead data leakage so it is just for research use.
@@ -132,43 +132,18 @@ def concatenate_preprocessed_data(
 class Converter:
 
     def __init__(self, converter_parameters_pkl, key=None):
-        self.converters = self._generate_converters(
-            converter_parameters_pkl, key=key)
-        return
+        self.converters = ScalersComposition.create_from_file(
+            converter_parameters_pkl=converter_parameters_pkl,
+            key=key
+        )
 
-    def _generate_converters(self, converter_parameters_pkl, key=None):
-        if key is not None and converter_parameters_pkl.suffix == '.enc':
-            return self._generate_converters(
-                util.decrypt_file(key, converter_parameters_pkl))
+    def preprocess(self, dict_data_x: dict):
+        input_dict = {
+            name: v for name, v in dict_data_x.items()
+            if name in self.converters.get_scaler_names()
+        }
 
-        if isinstance(converter_parameters_pkl, io.BufferedIOBase):
-            converter_parameters = pickle.load(converter_parameters_pkl)
-        elif isinstance(converter_parameters_pkl, Path):
-            with open(converter_parameters_pkl, 'rb') as f:
-                converter_parameters = pickle.load(f)
-        else:
-            raise ValueError(
-                f"Input type {converter_parameters_pkl.__class__} not "
-                'understood')
-        preprocess_setting = setting.PreprocessSetting(
-            preprocess=converter_parameters)
-
-        converters = {
-            variable_name:
-            util.PreprocessConverter(
-                value['preprocess_converter'],
-                method=value['method'],
-                componentwise=value['componentwise'],
-                other_components=value['other_components'])
-            for variable_name, value in preprocess_setting.preprocess.items()}
-        return converters
-
-    def preprocess(self, dict_data_x):
-        converted_dict_data_x = {
-            variable_name:
-            self.converters[variable_name].transform(data)
-            for variable_name, data in dict_data_x.items()
-            if variable_name in self.converters.keys()}
+        converted_dict_data_x = self.converters.transform_dict(input_dict)
         if len(converted_dict_data_x) == 0:
             raise ValueError(
                 'No converted data found. '
@@ -176,7 +151,8 @@ class Converter:
         return converted_dict_data_x
 
     def postprocess(
-            self, dict_data_x, dict_data_y, output_directory=None, *,
+            self, dict_data_x: dict, dict_data_y: dict, output_directory=None,
+            *,
             dict_data_y_answer=None,
             overwrite=False, save_x=False, write_simulation=False,
             write_npy=True, write_simulation_stem=None,
@@ -239,60 +215,14 @@ class Converter:
             fem_data: femio.FEMData
                 FEMData object with input and output data.
         """
+        _dict_data_x = self._format_dict_shape(dict_data_x)
+        _dict_data_y = self._format_dict_shape(dict_data_y)
+        _dict_data_y_answer = self._format_dict_shape(dict_data_y_answer)
+
         if perform_inverse:
-            dict_post_function = {
-                k: v.inverse for k, v in self.converters.items()}
-        else:
-            dict_post_function = {
-                k: lambda x: x for k, v in self.converters.items()}
-
-        if isinstance(list(dict_data_x.values())[0], dict):
-            return_dict_data_x = {
-                variable_name:
-                dict_post_function[variable_name](data)
-                for value in dict_data_x.values()
-                for variable_name, data in value.items()
-                if variable_name in dict_post_function.keys()}
-        else:
-            return_dict_data_x = {
-                variable_name:
-                dict_post_function[variable_name](data)
-                for variable_name, data in dict_data_x.items()
-                if variable_name in dict_post_function.keys()}
-
-        if dict_data_y_answer is not None and len(dict_data_y_answer) > 0:
-            if isinstance(list(dict_data_y_answer.values())[0], dict):
-                return_dict_data_y_answer = {
-                    variable_name:
-                    dict_post_function[variable_name](data)
-                    for value in dict_data_y_answer.values()
-                    for variable_name, data in value.items()
-                    if variable_name in dict_post_function.keys()}
-            else:
-                return_dict_data_y_answer = {
-                    variable_name:
-                    dict_post_function[variable_name](data)
-                    for variable_name, data in dict_data_y_answer.items()
-                    if variable_name in dict_post_function.keys()}
-        else:
-            return_dict_data_y_answer = None
-
-        if len(dict_data_y) > 0:
-            if isinstance(list(dict_data_y.values())[0], dict):
-                return_dict_data_y = {
-                    variable_name:
-                    dict_post_function[variable_name](data)
-                    for value in dict_data_y.values()
-                    for variable_name, data in value.items()
-                    if variable_name in dict_post_function.keys()}
-            else:
-                return_dict_data_y = {
-                    variable_name:
-                    dict_post_function[variable_name](data)
-                    for variable_name, data in dict_data_y.items()
-                    if variable_name in dict_post_function.keys()}
-        else:
-            return_dict_data_y = {}
+            _dict_data_x = self._inverse_process(_dict_data_x)
+            _dict_data_y = self._inverse_process(_dict_data_y)
+            _dict_data_y_answer = self._inverse_process(_dict_data_y_answer)
 
         # Save data
         if skip_fem_data_creation or write_simulation_base is None \
@@ -301,8 +231,8 @@ class Converter:
         else:
             try:
                 fem_data = self._create_fem_data(
-                    return_dict_data_x, return_dict_data_y,
-                    dict_data_answer=return_dict_data_y_answer,
+                    _dict_data_x, _dict_data_y,
+                    dict_data_answer=_dict_data_y_answer,
                     write_simulation_base=write_simulation_base,
                     write_simulation_stem=write_simulation_stem,
                     read_simulation_type=read_simulation_type,
@@ -324,8 +254,8 @@ class Converter:
         if output_directory is not None:
             if write_npy:
                 if save_x:
-                    self.save(return_dict_data_x, output_directory)
-                self.save(return_dict_data_y, output_directory)
+                    self.save(_dict_data_x, output_directory)
+                self.save(_dict_data_y, output_directory)
             if write_simulation:
                 if write_simulation_base is None:
                     raise ValueError('No write_simulation_base fed.')
@@ -338,8 +268,45 @@ class Converter:
                     output_directory, fem_data, overwrite=overwrite,
                     write_simulation_type=write_simulation_type)
 
-        return return_dict_data_x, return_dict_data_y, \
-            return_dict_data_y_answer, fem_data
+        return _dict_data_x, _dict_data_y, \
+            _dict_data_y_answer, fem_data
+
+    def _inverse_process(
+        self,
+        dict_data: Union[dict[str, SimlScaleDataType], None]
+    ) -> dict[str, SimlScaleDataType]:
+        if dict_data is None:
+            return {}
+
+        dict_data_answer = self.converters.inverse_transform_dict(dict_data)
+        return dict_data_answer
+
+    def _format_dict_shape(
+        self,
+        dict_data: Union[dict, None]
+    ) -> Union[dict[str, SimlScaleDataType], None]:
+        # This function should be deprecated
+        # It is not appropriate to overwrite value for variable name
+        if dict_data is None:
+            return None
+
+        if len(dict_data) == 0:
+            return None
+
+        if isinstance(list(dict_data.values())[0], dict):
+            return_dict_data = {
+                variable_name: data
+                for value in dict_data.values()
+                for variable_name, data in value.items()
+                if variable_name in self.converters.get_scaler_names()
+            }
+        else:
+            return_dict_data = {
+                variable_name: data
+                for variable_name, data in dict_data.items()
+                if variable_name in self.converters.get_scaler_names()
+            }
+        return return_dict_data
 
     def _create_fem_data(
             self, dict_data_x, dict_data_y, write_simulation_base, *,

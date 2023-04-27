@@ -1,3 +1,5 @@
+from typing import Callable
+
 import numpy as np
 
 from .interface_wrapper import IScalerInputVariables
@@ -13,6 +15,22 @@ class NdArrayWrapper(IScalerInputVariables):
     @property
     def shape(self) -> tuple[int]:
         return self.data.shape
+
+    def apply(
+        self,
+        function: Callable[[np.ndarray], np.ndarray],
+        componentwise: bool,
+        *,
+        skip_nan: bool = False,
+        **kwards
+    ) -> np.ndarray:
+
+        reshaped = self.reshape(
+            componentwise=componentwise,
+            skip_nan=skip_nan
+        )
+        result = function(reshaped)
+        return np.reshape(result, self.shape)
 
     def reshape(
         self,

@@ -1,8 +1,11 @@
 import pathlib
+import pickle
 
+import numpy as np
 import pytest
 
 from siml import setting
+from siml.path_like_objects import SimlFileBulider
 from siml.preprocessing import ScalersComposition
 
 
@@ -11,7 +14,7 @@ def scalers_composition():
     main_setting = setting.MainSetting.read_settings_yaml(
         pathlib.Path('tests/data/deform/data.yml')
     )
-    composite = ScalersComposition(
+    composite = ScalersComposition.create_from_dict(
         preprocess_dict=main_setting.preprocess
     )
     return composite
@@ -42,3 +45,46 @@ def test__is_not_same_scalers(scalers_composition, arg1, arg2):
     scaler_1 = resolver.get_scaler(arg1)
     scaler_2 = resolver.get_scaler(arg2)
     assert id(scaler_1) != id(scaler_2)
+
+
+def test__is_same_after_load_dumped_data(scalers_composition):
+    composition: ScalersComposition = scalers_composition
+
+    sample_data = {
+        "tensor_stress": [
+            SimlFileBulider.create(
+                pathlib.Path(
+                    "tests/data/deform/interim/train/"
+                    "tet2_3_modulusx0.9000/tensor_stress.npy"
+                )
+            )
+        ]
+    }
+    composition.lazy_partial_fit(sample_data)
+    items_1 = composition.get_scaler("tensor_stress").get_dumped_dict()
+
+    dumped_dict = composition.get_dumped_object()
+    assert dumped_dict[
+        "tensor_stress"
+    ]["preprocess_converter"]["n_samples_seen_"] > 0
+
+    dumped_dict.pop("variable_name_to_scalers")
+    scalers_dict = composition._load_scalers(dumped_dict)
+
+    items_2 = scalers_dict["tensor_stress"].get_dumped_dict()
+    assert items_1 == items_2
+
+
+def test__load_converters_pkl():
+    preprocessors_file = pathlib.Path('tests/data/prepost/preprocessors.pkl')
+    real_file_converter = ScalersComposition.create_from_file(
+        preprocessors_file
+    )
+
+    with open(preprocessors_file, "rb") as fr:
+        dict_data = pickle.load(fr)
+
+    np.testing.assert_almost_equal(
+        real_file_converter.get_scaler('standardize').converter.var_,
+        dict_data['standardize']['preprocess_converter']['var_']
+    )

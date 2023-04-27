@@ -6,8 +6,7 @@ import scipy.sparse as sp
 
 from .interface_wrapper import IScalerInputVariables
 from .ndarray_wrapper import NdArrayWrapper
-from .sparce_array_wrapper import SpaceArrayWrapper
-
+from .sparce_array_wrapper import SparseArrayWrapper, SparseArrayType
 
 SimlScaleDataType = Union[
     np.ndarray, sp.coo_matrix, sp.csr_matrix, sp.csc_matrix
@@ -21,6 +20,6 @@ def create_wrapper(
         return NdArrayWrapper(data)
     
     if isinstance(data, (sp.coo_matrix, sp.csr_matrix, sp.csc_matrix)):
-        return SpaceArrayWrapper(data)
+        return SparseArrayWrapper(data)
 
     raise ValueError(f"Unsupported data type: {data.__class__}")

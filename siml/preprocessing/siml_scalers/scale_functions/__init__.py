@@ -34,4 +34,4 @@ def create_scaler(scaler_name: str, **kwards) -> ISimlScaler:
 
     cls_object, args = _name_to_siml_scalers[scaler_name]
     args |= kwards
-    return cls_object(**kwards)
+    return cls_object(**args)
