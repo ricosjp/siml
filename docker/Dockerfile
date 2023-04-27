@@ -38,10 +38,10 @@ COPY ./siml /src/siml
 # COPY ./poetry.lock /src/poetry.lock
 WORKDIR /src
 
-ENV PATH $PATH:/root/.poetry/bin
+ENV PATH $PATH:/root/.local/bin
 
-RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python3.9 \
-  && sed -i.bak s/python3/python3.9/g ~/.poetry/bin/poetry \
+RUN curl -sSL https://install.python-poetry.org | python3.9 - \
+  && sed -i.bak s/python3/python3.9/g ~/.local/bin/poetry \
   && python3.9 -m pip install -U pip \
   && python3.9 -m pip install -U setuptools \
   && python3.9 -m pip install -U wheel \
@@ -54,4 +54,4 @@ RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-
   && python3.9 -m pip install torch-sparse==0.6.13 -f https://pytorch-geometric.com/whl/torch-1.10.1+cu111.html \
   && python3.9 -m pip install torch-cluster==1.6.0 -f https://pytorch-geometric.com/whl/torch-1.10.1+cu111.html \
   && python3.9 -m pip install torch-spline-conv==1.2.1 -f https://pytorch-geometric.com/whl/torch-1.10.1+cu111.html \
-  && python3.9 -m pip install torch-geometric
+  && python3.9 -m pip install torch-geometric==2.2.0
