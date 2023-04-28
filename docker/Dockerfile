@@ -54,4 +54,5 @@ RUN curl -sSL https://install.python-poetry.org | python3.9 - \
   && python3.9 -m pip install torch-sparse==0.6.13 -f https://pytorch-geometric.com/whl/torch-1.10.1+cu111.html \
   && python3.9 -m pip install torch-cluster==1.6.0 -f https://pytorch-geometric.com/whl/torch-1.10.1+cu111.html \
   && python3.9 -m pip install torch-spline-conv==1.2.1 -f https://pytorch-geometric.com/whl/torch-1.10.1+cu111.html \
-  && python3.9 -m pip install torch-geometric==2.2.0
+  && python3.9 -m pip install torch-geometric==2.2.0 \
+  && python3.9 -m pip install -U "numpy<1.24"
