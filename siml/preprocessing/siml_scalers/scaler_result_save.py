@@ -5,8 +5,7 @@ from typing import Optional
 import numpy as np
 
 from siml import util
-
-from .scale_variables import SimlScaleDataType
+from siml.siml_variables import ArrayDataType
 
 
 class IScalingSaveFunction(metaclass=abc.ABCMeta):
@@ -15,7 +14,7 @@ class IScalingSaveFunction(metaclass=abc.ABCMeta):
         self,
         output_directory: pathlib.Path,
         file_basename: str,
-        data: SimlScaleDataType,
+        data: ArrayDataType,
         *,
         dtype: type = np.float32,
         encrypt_key: Optional[bytes] = None
@@ -31,7 +30,7 @@ class DefaultSaveFunction(IScalingSaveFunction):
         self,
         output_directory: pathlib.Path,
         file_basename: str,
-        data: SimlScaleDataType,
+        data: ArrayDataType,
         *,
         dtype: type = np.float32,
         encrypt_key: Optional[bytes] = None

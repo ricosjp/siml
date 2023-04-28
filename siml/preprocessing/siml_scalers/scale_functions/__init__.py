@@ -12,26 +12,31 @@ from .standard_scaler import StandardScaler
 from .user_defined_scaler import UserDefinedScaler
 
 # name to scaler class and default arguments
-_name_to_siml_scalers: dict[str, tuple[ISimlScaler, dict]] = {
-    "identity": (IdentityScaler, {}),
-    "standardize": (StandardScaler, {}),
-    "std_scale": (StandardScaler, {"with_mean": False}),
-    "sparse_std": (SparseStandardScaler, {"power": 1.0}),
-    "isoam_scale": (IsoAMScaler, {}),
-    "min_max": (MinMaxScaler, {}),
-    "max_abs": (MaxAbsScaler, {"power": 1.0})
-}
+def _create_args(scaler_name: str) -> tuple[ISimlScaler, dict]:
+    if scaler_name == "identity":
+        return (IdentityScaler, {})
+    if scaler_name == "standardize":
+        return (StandardScaler, {})
+    if scaler_name == "std_scale":
+        return (StandardScaler, {"with_mean": False})
+    if scaler_name == "sparse_std":
+        return (SparseStandardScaler, {"power": 1.0})
+    if scaler_name == "isoam_scale":
+        return (IsoAMScaler, {})
+    if scaler_name == "min_max":
+        return (MinMaxScaler, {})
+    if scaler_name == "max_abs":
+        return (MaxAbsScaler, {"power": 1.0})
 
+    raise NotImplementedError(
+        f"{scaler_name} is not defined."
+    )
 
 def create_scaler(scaler_name: str, **kwards) -> ISimlScaler:
     if scaler_name.startswith('user_defined'):
         pkl_path = scaler_name.split("?Path=")[1]
         return UserDefinedScaler(pkl_path)
 
-    if scaler_name not in _name_to_siml_scalers.keys():
-        raise ValueError(
-            f"Unknown preprocessing method: {scaler_name}")
-
-    cls_object, args = _name_to_siml_scalers[scaler_name]
+    cls_object, args = _create_args(scaler_name)
     args |= kwards
     return cls_object(**args)

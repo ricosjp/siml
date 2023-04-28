@@ -3,6 +3,7 @@ import pytest
 import scipy.sparse as sp
 
 from siml.preprocessing.siml_scalers import SimlScalerWrapper
+from siml.preprocessing.siml_scalers import scale_functions
 
 
 @pytest.fixture
@@ -22,6 +23,23 @@ def sample_data() -> np.ndarray:
 @pytest.fixture
 def sample_sparse_data() -> sp.csc_matrix:
     return sp.csc_matrix(np.random.rand(100, 3))
+
+
+@pytest.mark.parametrize("scaler_name, cls", [
+    ("identity", scale_functions.IdentityScaler),
+    ("standardize", scale_functions.StandardScaler),
+    ("std_scale", scale_functions.StandardScaler),
+    ("sparse_std", scale_functions.SparseStandardScaler),
+    ("isoam_scale", scale_functions.IsoAMScaler),
+    ("min_max", scale_functions.MinMaxScaler),
+    ("max_abs", scale_functions.MaxAbsScaler)
+])
+def test__initialized_class(scaler_name, cls):
+    kwards = {}
+    if scaler_name == "isoam_scale":
+        kwards = {"other_components": ["a", "b"]}
+    wrapper = SimlScalerWrapper(scaler_name, **kwards)
+    assert isinstance(wrapper.converter, cls)
 
 
 def test__can_initialize(scalers_name):

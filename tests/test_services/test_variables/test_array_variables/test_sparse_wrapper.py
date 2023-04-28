@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 import scipy.sparse as sp
 
-from siml.preprocessing.siml_scalers.scale_variables import SparseArrayWrapper
+from siml.siml_variables.array_variables import SparseArrayWrapper
 
 
 @pytest.mark.parametrize("value", [

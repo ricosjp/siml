@@ -6,9 +6,9 @@ from typing import Optional, Union
 
 from siml import util
 from siml.path_like_objects import ISimlFile, SimlFileBulider
+from siml.siml_variables import ArrayDataType
 
 from .siml_scalers import SimlScalerWrapper
-from .siml_scalers.scale_variables import SimlScaleDataType
 
 
 class ScalersComposition():
@@ -147,8 +147,8 @@ class ScalersComposition():
     def transform(
         self,
         variable_name: str,
-        data: SimlScaleDataType
-    ) -> SimlScaleDataType:
+        data: ArrayDataType
+    ) -> ArrayDataType:
         scaler = self.get_scaler(variable_name)
         transformed_data = scaler.transform(data)
         return transformed_data
@@ -157,7 +157,7 @@ class ScalersComposition():
         self,
         variable_name: str,
         siml_file: ISimlFile
-    ) -> SimlScaleDataType:
+    ) -> ArrayDataType:
 
         loaded_data = siml_file.load(
             decrypt_key=self._decrypt_key
@@ -168,10 +168,10 @@ class ScalersComposition():
 
     def transform_dict(
         self,
-        dict_data: dict[str, SimlScaleDataType]
-    ) -> dict[str, SimlScaleDataType]:
+        dict_data: dict[str, ArrayDataType]
+    ) -> dict[str, ArrayDataType]:
 
-        converted_dict_data: dict[str, SimlScaleDataType] = {}
+        converted_dict_data: dict[str, ArrayDataType] = {}
         for variable_name, data in dict_data.items():
             scaler = self.get_scaler(variable_name, allow_missing=True)
             if scaler is None:
@@ -193,17 +193,17 @@ class ScalersComposition():
     def inverse_transform(
         self,
         variable_name: str,
-        data: SimlScaleDataType
+        data: ArrayDataType
     ):
         scaler = self.get_scaler(variable_name)
         return scaler.inverse_transform(data)
 
     def inverse_transform_dict(
         self,
-        dict_data: dict[str, SimlScaleDataType]
-    ) -> dict[str, SimlScaleDataType]:
+        dict_data: dict[str, ArrayDataType]
+    ) -> dict[str, ArrayDataType]:
 
-        converted_dict_data: dict[str, SimlScaleDataType] = {}
+        converted_dict_data: dict[str, ArrayDataType] = {}
         for variable_name, data in dict_data.items():
             scaler = self.get_scaler(variable_name, allow_missing=True)
             if scaler is None:

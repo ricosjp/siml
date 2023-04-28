@@ -6,8 +6,8 @@ import numpy as np
 import scipy.sparse as sp
 
 from siml.path_like_objects import ISimlFile
-from siml.preprocessing.siml_scalers \
-    import (ISimlScaler, scale_functions, scale_variables)
+from siml.preprocessing.siml_scalers import ISimlScaler, scale_functions
+from siml.siml_variables import ArrayDataType, create_siml_arrray
 
 
 class SimlScalerWrapper(ISimlScaler):
@@ -55,9 +55,9 @@ class SimlScalerWrapper(ISimlScaler):
 
     def partial_fit(
         self,
-        data: scale_variables.SimlScaleDataType
+        data: ArrayDataType
     ) -> None:
-        wrapped_data = scale_variables.create_wrapper(data)
+        wrapped_data = create_siml_arrray(data)
         reshaped_data = wrapped_data.reshape(
             componentwise=self.componentwise,
             skip_nan=True,
@@ -69,28 +69,28 @@ class SimlScalerWrapper(ISimlScaler):
 
     def transform(
         self,
-        data: scale_variables.SimlScaleDataType
+        data: ArrayDataType
     ) -> Union[np.ndarray, sp.coo_matrix]:
 
-        wrapped_data = scale_variables.create_wrapper(data)
+        wrapped_data = create_siml_arrray(data)
         result = wrapped_data.apply(
             self.converter.transform,
             componentwise=self.componentwise,
             skip_nan=False,
-            use_diagonal=self.converter.use_diagonal
+            use_diagonal=False
         )
         return result
 
     def inverse_transform(
         self,
-        data: scale_variables.SimlScaleDataType
+        data: ArrayDataType
     ) -> Union[np.ndarray, sp.coo_matrix]:
-        wrapped_data = scale_variables.create_wrapper(data)
+        wrapped_data = create_siml_arrray(data)
         result = wrapped_data.apply(
             self.converter.inverse_transform,
             componentwise=self.componentwise,
             skip_nan=False,
-            use_diagonal=self.converter.use_diagonal
+            use_diagonal=False
         )
         return result
 
@@ -126,7 +126,7 @@ class SimlScalerWrapper(ISimlScaler):
     def _load_file(
         self,
         siml_file: ISimlFile
-    ) -> scale_variables.SimlScaleDataType:
+    ) -> ArrayDataType:
 
         loaded_data = siml_file.load(decrypt_key=self.key)
 

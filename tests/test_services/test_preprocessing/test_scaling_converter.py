@@ -44,7 +44,6 @@ def test__collect_scaler_fitting_files(inner_setting):
 
 # region Test for ScalingConverter
 
-@pytest.fixture
 def setup_sample_data_setting():
     data_setting = setting.DataSetting(
         interim=pathlib.Path('tests/data/prepost/interim'),
@@ -54,14 +53,13 @@ def setup_sample_data_setting():
     return data_setting
 
 
-@pytest.fixture
 def setup_sample_data_name():
     return ['a', 'b']
 
 
 @pytest.fixture(scope="module")
-def prepare_sample_dataset(setup_sample_data_setting, setup_sample_data_name):
-    data_setting: setting.DataSetting = setup_sample_data_setting
+def prepare_sample_dataset():
+    data_setting: setting.DataSetting = setup_sample_data_setting()
     preprocess_setting = setting.PreprocessSetting(
         {
             'identity': 'identity',
@@ -85,7 +83,7 @@ def prepare_sample_dataset(setup_sample_data_setting, setup_sample_data_name):
     # Create data
     interim_paths = [
         data_setting.interim_root / name
-        for name in setup_sample_data_name
+        for name in setup_sample_data_name()
     ]
     for i, interim_path in enumerate(interim_paths):
         interim_path.mkdir(parents=True)
@@ -102,30 +100,25 @@ def prepare_sample_dataset(setup_sample_data_setting, setup_sample_data_name):
     # Preprocess data
     preprocessor = ScalingConverter(main_setting)
     preprocessor.fit_transform()
-    return preprocessor, interim_paths, data_setting
 
 
-def test_preprocessor_sample_dataset(
-    prepare_sample_dataset,
-    setup_sample_data_setting,
-    setup_sample_data_name
-):
+def test_preprocessor_sample_dataset(prepare_sample_dataset):
     # HACK: This test will be deprecated in the future
     # This should be divided into more small unit tests
     # For example,
     # test for each scaler should be written in "test_scale_functions"
     data_setting: setting.DataSetting = \
-        setup_sample_data_setting
+        setup_sample_data_setting()
     interim_paths = [
         data_setting.interim_root / name
-        for name in setup_sample_data_name
+        for name in setup_sample_data_name()
     ]
 
     # Test preprocessed data is as desired
     epsilon = 1e-5
     preprocessed_paths = [
         data_setting.preprocessed_root / name
-        for name in setup_sample_data_name
+        for name in setup_sample_data_name()
     ]
 
     int_identity = np.concatenate([
@@ -214,7 +207,7 @@ def test_preprocess_deform():
     np.testing.assert_almost_equal(np.var(ratio_y_grad), 0.)
 
 
-def test__time_series_initial_state_in_ode_data(self):
+def test__time_series_initial_state_in_ode_data():
     main_setting = setting.MainSetting.read_settings_yaml(
         pathlib.Path('tests/data/ode/data.yml'))
 
@@ -266,7 +259,7 @@ def test_preprocess_power():
     )
 
 
-def test_preprocess_interim_list(self):
+def test_preprocess_interim_list():
     main_setting = setting.MainSetting.read_settings_yaml(
         pathlib.Path('tests/data/list/data.yml')
     )

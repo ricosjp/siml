@@ -11,7 +11,8 @@ import scipy.sparse as sp
 
 from siml import util
 from siml.utils import fem_data_utils
-from siml.preprocessing import ScalersComposition, SimlScaleDataType
+from siml.preprocessing import ScalersComposition
+from siml.siml_variables import ArrayDataType
 
 
 def add_difference(
@@ -273,8 +274,8 @@ class Converter:
 
     def _inverse_process(
         self,
-        dict_data: Union[dict[str, SimlScaleDataType], None]
-    ) -> dict[str, SimlScaleDataType]:
+        dict_data: Union[dict[str, ArrayDataType], None]
+    ) -> dict[str, ArrayDataType]:
         if dict_data is None:
             return {}
 
@@ -284,7 +285,7 @@ class Converter:
     def _format_dict_shape(
         self,
         dict_data: Union[dict, None]
-    ) -> Union[dict[str, SimlScaleDataType], None]:
+    ) -> Union[dict[str, ArrayDataType], None]:
         # This function should be deprecated
         # It is not appropriate to overwrite value for variable name
         if dict_data is None:

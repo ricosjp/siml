@@ -3,8 +3,8 @@ import numpy as np
 import scipy.sparse as sp
 from typing import get_args
 
-from siml.preprocessing.siml_scalers.scale_variables \
-    import create_wrapper, SparseArrayWrapper, NdArrayWrapper, SparseArrayType
+from siml.siml_variables import create_siml_arrray
+from siml.siml_variables.array_variables import NdArrayWrapper, SparseArrayType
 
 
 @pytest.mark.parametrize("value", [
@@ -13,7 +13,7 @@ from siml.preprocessing.siml_scalers.scale_variables \
 ])
 def test__cannot_initialize(value):
     with pytest.raises(ValueError):
-        _ = create_wrapper(value)
+        _ = create_siml_arrray(value)
 
 
 @pytest.mark.parametrize("value", [
@@ -23,14 +23,14 @@ def test__cannot_initialize(value):
     (sp.csc_matrix(np.random.rand(10, 3)))
 ])
 def test__can_intialize(value):
-    result = create_wrapper(value)
+    result = create_siml_arrray(value)
 
     if isinstance(value, np.ndarray):
         assert isinstance(result, NdArrayWrapper)
         return
 
     elif isinstance(value, get_args(SparseArrayType)):
-        assert isinstance(result, SparseArrayWrapper)
+        assert isinstance(result, SparseArrayType)
         return
 
     pytest.fail(

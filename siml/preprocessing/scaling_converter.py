@@ -9,9 +9,9 @@ import pydantic.dataclasses as dc
 from siml import setting, util
 from siml.path_like_objects import ISimlFile, SimlDirectory
 from siml.utils import path_utils
+from siml.siml_variables import ArrayDataType
 
 from .siml_scalers import IScalingSaveFunction, DefaultSaveFunction
-from .siml_scalers.scale_variables import SimlScaleDataType
 from .scalers_composition import ScalersComposition
 
 
@@ -228,8 +228,8 @@ class ScalingConverter:
 
     def inverse_transform(
         self,
-        dict_data: dict[str, SimlScaleDataType]
-    ) -> dict[str, SimlScaleDataType]:
+        dict_data: dict[str, ArrayDataType]
+    ) -> dict[str, ArrayDataType]:
         return self._scalers.inverse_transform(dict_data)
 
     def load(

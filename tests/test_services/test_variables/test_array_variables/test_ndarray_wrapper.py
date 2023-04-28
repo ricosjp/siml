@@ -1,7 +1,7 @@
-import pytest
 import numpy as np
+import pytest
 
-from siml.preprocessing.siml_scalers.scale_variables import NdArrayWrapper
+from siml.siml_variables.array_variables import NdArrayWrapper
 
 
 @pytest.mark.parametrize("value", [

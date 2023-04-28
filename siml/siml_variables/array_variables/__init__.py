@@ -8,13 +8,13 @@ from .interface_wrapper import IScalerInputVariables
 from .ndarray_wrapper import NdArrayWrapper
 from .sparce_array_wrapper import SparseArrayWrapper, SparseArrayType
 
-SimlScaleDataType = Union[
+ArrayDataType = Union[
     np.ndarray, sp.coo_matrix, sp.csr_matrix, sp.csc_matrix
 ]
 
 
-def create_wrapper(
-    data: SimlScaleDataType
+def create_siml_arrray(
+    data: ArrayDataType
 ) -> IScalerInputVariables:
     if isinstance(data, np.ndarray):
         return NdArrayWrapper(data)

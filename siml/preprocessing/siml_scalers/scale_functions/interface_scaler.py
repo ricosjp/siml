@@ -3,7 +3,7 @@ import abc
 
 import numpy as np
 
-from siml.preprocessing.siml_scalers.scale_variables import SimlScaleDataType
+from siml.siml_variables import ArrayDataType
 
 
 class ISimlScaler(metaclass=abc.ABCMeta):
@@ -17,13 +17,13 @@ class ISimlScaler(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def transform(self, data: SimlScaleDataType) -> np.ndarray:
+    def transform(self, data: ArrayDataType) -> np.ndarray:
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def partial_fit(self, data: SimlScaleDataType) -> ISimlScaler:
+    def partial_fit(self, data: ArrayDataType) -> ISimlScaler:
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def inverse_transform(self, data: SimlScaleDataType) -> np.ndarray:
+    def inverse_transform(self, data: ArrayDataType) -> np.ndarray:
         raise NotImplementedError()

@@ -10,7 +10,7 @@ def test__std_scale_values():
     interim_std_scale = np.random.rand(n_element, 3)
 
     scaler = StandardScaler(with_mean=False)
-    preprocessed_data = scaler.transform(interim_std_scale)
+    preprocessed_data = scaler.fit_transform(interim_std_scale)
 
     np.testing.assert_almost_equal(
         interim_std_scale / (np.std(interim_std_scale, axis=0) + epsilon),
@@ -34,7 +34,7 @@ def test__standardize_values():
         + np.array([[.1, .2, .3, .4, .5]])
 
     scaler = StandardScaler()
-    preprocessed = scaler.transform(interim_value)
+    preprocessed = scaler.fit_transform(interim_value)
 
     np.testing.assert_almost_equal(
         (interim_value - np.mean(interim_value, axis=0))
