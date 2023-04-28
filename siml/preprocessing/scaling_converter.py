@@ -146,7 +146,7 @@ class ScalingConverter:
                 Callback function to customize save data. It should accept
                 output_directory, variable_name, and transformed_data.
             str_replace: str, optional
-                String to replace data directory in order to convert 
+                String to replace data directory in order to convert
                 from interim data to preprocessed data.
             max_process: int, optional
                 The maximum number of processes.
@@ -213,7 +213,7 @@ class ScalingConverter:
         *,
         group_id: int = None
     ) -> None:
-        """Determine preprocessing parameters 
+        """Determine preprocessing parameters
         by reading data files lazily.
 
         Parameters
@@ -240,7 +240,7 @@ class ScalingConverter:
         group_id: int = None
     ) -> None:
         """
-        Apply scaling process to data in interim directory and save results 
+        Apply scaling process to data in interim directory and save results
         in preprocessed directory.
 
         Parameters

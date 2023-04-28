@@ -4,7 +4,8 @@ import scipy.sparse as sp
 from typing import get_args
 
 from siml.siml_variables import create_siml_arrray
-from siml.siml_variables.array_variables import NdArrayWrapper, SparseArrayType
+from siml.siml_variables.array_variables \
+    import NdArrayWrapper, SparseArrayType, SparseArrayWrapper
 
 
 @pytest.mark.parametrize("value", [
@@ -30,7 +31,7 @@ def test__can_intialize(value):
         return
 
     elif isinstance(value, get_args(SparseArrayType)):
-        assert isinstance(result, SparseArrayType)
+        assert isinstance(result, SparseArrayWrapper)
         return
 
     pytest.fail(

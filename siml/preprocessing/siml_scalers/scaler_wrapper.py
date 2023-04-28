@@ -1,11 +1,12 @@
 import datetime as dt
 import gc
 from typing import Optional, Union
+import warnings
 
 import numpy as np
 import scipy.sparse as sp
 
-from siml.path_like_objects import ISimlFile
+from siml.path_like_objects import ISimlFile, SimlFileExtType
 from siml.preprocessing.siml_scalers import ISimlScaler, scale_functions
 from siml.siml_variables import ArrayDataType, create_siml_arrray
 
@@ -29,7 +30,7 @@ class SimlScalerWrapper(ISimlScaler):
 
     def __init__(
         self,
-        setting_data: str,
+        method_name: str,
         *,
         componentwise: bool = True,
         key: Optional[bytes] = None,
@@ -37,9 +38,9 @@ class SimlScalerWrapper(ISimlScaler):
         **kwards
     ):
 
-        self.setting_data = setting_data
+        self.method_name = method_name
         self.converter = scale_functions.create_scaler(
-            setting_data,
+            method_name,
             **kwards
         )
         self.key = key
@@ -63,6 +64,11 @@ class SimlScalerWrapper(ISimlScaler):
             skip_nan=True,
             use_diagonal=self.use_diagonal
         )
+        if reshaped_data.size == 0:
+            warnings.warn(
+                "Found array with 0 sample(s) after deleting nan items"
+            )
+            return
 
         self.converter.partial_fit(reshaped_data)
         return
@@ -117,7 +123,7 @@ class SimlScalerWrapper(ISimlScaler):
 
     def get_dumped_dict(self) -> dict:
         dumped_dict = {
-            'method': self.setting_data,
+            'method': self.method_name,
             'componentwise': self.componentwise,
             'preprocess_converter': vars(self.converter)
         }
@@ -130,7 +136,8 @@ class SimlScalerWrapper(ISimlScaler):
 
         loaded_data = siml_file.load(decrypt_key=self.key)
 
-        if siml_file.get_file_extension() in [".npz.enc", ".npz"]:
+        if siml_file.get_file_extension() in [
+                SimlFileExtType.NPZENC.value, SimlFileExtType.NPZ.value]:
             if not sp.issparse(loaded_data):
                 raise ValueError(
                     f"Data type not understood for: {siml_file.file_path}"

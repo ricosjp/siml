@@ -141,7 +141,7 @@ class Converter:
     def preprocess(self, dict_data_x: dict):
         input_dict = {
             name: v for name, v in dict_data_x.items()
-            if name in self.converters.get_scaler_names()
+            if name in self.converters.get_variable_names()
         }
 
         converted_dict_data_x = self.converters.transform_dict(input_dict)
@@ -299,13 +299,13 @@ class Converter:
                 variable_name: data
                 for value in dict_data.values()
                 for variable_name, data in value.items()
-                if variable_name in self.converters.get_scaler_names()
+                if variable_name in self.converters.get_variable_names()
             }
         else:
             return_dict_data = {
                 variable_name: data
                 for variable_name, data in dict_data.items()
-                if variable_name in self.converters.get_scaler_names()
+                if variable_name in self.converters.get_variable_names()
             }
         return return_dict_data
 

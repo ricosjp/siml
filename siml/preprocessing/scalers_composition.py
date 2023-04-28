@@ -5,7 +5,7 @@ import pathlib
 from typing import Optional, Union, Final
 
 from siml import util
-from siml.path_like_objects import ISimlFile, SimlFileBulider
+from siml.path_like_objects import ISimlFile, SimlFileBulider, SimlFileExtType
 from siml.siml_variables import ArrayDataType
 
 from .siml_scalers import SimlScalerWrapper
@@ -22,7 +22,11 @@ class ScalersComposition():
         key: Optional[bytes] = None
     ) -> ScalersComposition:
         siml_file = SimlFileBulider.create(converter_parameters_pkl)
-        assert siml_file.get_file_extension() in [".enc.pkl", ".pkl"]
+        if siml_file.get_file_extension() not in [
+                SimlFileExtType.PKLENC.value, SimlFileExtType.PKL.value]:
+            raise ValueError(
+                f"Input file: {converter_parameters_pkl} is not understandable"
+            )
 
         parameters: dict = siml_file.load(
             decrypt_key=key
