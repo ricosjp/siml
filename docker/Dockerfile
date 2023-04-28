@@ -32,16 +32,18 @@ RUN apt-get update -y \
 ENV LLVM_CONFIG /usr/bin/llvm-config-10
 
 
-COPY ./pyproject.toml /src/pyproject.toml
-COPY ./README.md /src/README.md
-COPY ./siml /src/siml
+COPY ./dist/pyproject.toml /src/pyproject.toml
+COPY ./dist/README.md /src/README.md
+COPY ./dist/siml /src/siml
 # COPY ./poetry.lock /src/poetry.lock
 WORKDIR /src
 
+# python path
+ENV PYTHONPATH "$PYTHONPATH:/usr/lib/python3.9/site-packages"
+
 # poerty
-ENV PATH $PATH:/root/.local/bin
+ENV PATH "$PATH:/root/.local/bin"
 RUN curl -sSL https://install.python-poetry.org | python3.9 -
-RUN sed -i.bak s/python3/python3.9/g ~/.local/bin/poetry
 
 # Default version of python3 is python3.8.
 # When virtual environment is not created by poetry,
@@ -55,13 +57,15 @@ RUN python3.9 -m pip install -U pip \
   && python3.9 -m pip install -U setuptools \
   && python3.9 -m pip install -U wheel \
   && python3.9 -m pip install --ignore-installed -U PyYAML \
-  && python3.9 -m pip install Cython \
-  && poetry config virtualenvs.create false \
-  && poetry install \
-  && python3.9 -m pip install torch==1.10.1+cu111 torchvision==0.11.2+cu111 -f https://download.pytorch.org/whl/torch_stable.html \
-  && python3.9 -m pip install torch-scatter==2.0.9 -f https://pytorch-geometric.com/whl/torch-1.10.1+cu111.html \
-  && python3.9 -m pip install torch-sparse==0.6.13 -f https://pytorch-geometric.com/whl/torch-1.10.1+cu111.html \
-  && python3.9 -m pip install torch-cluster==1.6.0 -f https://pytorch-geometric.com/whl/torch-1.10.1+cu111.html \
-  && python3.9 -m pip install torch-spline-conv==1.2.1 -f https://pytorch-geometric.com/whl/torch-1.10.1+cu111.html \
-  && python3.9 -m pip install torch-geometric==2.2.0 \
-  && python3.9 -m pip install -U "numpy<1.24"
+  && python3.9 -m pip install Cython
+
+RUN poetry config virtualenvs.create false \
+  && poetry install
+
+RUN poetry run python3 -m pip install torch==1.10.1+cu111 torchvision==0.11.2+cu111 -f https://download.pytorch.org/whl/torch_stable.html \
+  && poetry run python3 -m pip install torch-scatter==2.0.9 -f https://pytorch-geometric.com/whl/torch-1.10.1+cu111.html \
+  && poetry run python3 -m pip install torch-sparse==0.6.13 -f https://pytorch-geometric.com/whl/torch-1.10.1+cu111.html \
+  && poetry run python3 -m pip install torch-cluster==1.6.0 -f https://pytorch-geometric.com/whl/torch-1.10.1+cu111.html \
+  && poetry run python3 -m pip install torch-spline-conv==1.2.1 -f https://pytorch-geometric.com/whl/torch-1.10.1+cu111.html \
+  && poetry run python3 -m pip install torch-geometric==2.2.0 \
+  && poetry run python3 -m pip install -U "numpy<1.24"
