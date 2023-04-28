@@ -38,11 +38,20 @@ COPY ./siml /src/siml
 # COPY ./poetry.lock /src/poetry.lock
 WORKDIR /src
 
+# poerty
 ENV PATH $PATH:/root/.local/bin
+RUN curl -sSL https://install.python-poetry.org | python3.9 -
+RUN sed -i.bak s/python3/python3.9/g ~/.local/bin/poetry
 
-RUN curl -sSL https://install.python-poetry.org | python3.9 - \
-  && sed -i.bak s/python3/python3.9/g ~/.local/bin/poetry \
-  && python3.9 -m pip install -U pip \
+# Default version of python3 is python3.8.
+# When virtual environment is not created by poetry,
+# poetry use default version of python.
+# In order to change default python version to python3.9,
+# create symbolic link of python3.9
+RUN unlink /usr/bin/python3
+RUN ln -s /usr/bin/python3.9 /usr/bin/python3
+
+RUN python3.9 -m pip install -U pip \
   && python3.9 -m pip install -U setuptools \
   && python3.9 -m pip install -U wheel \
   && python3.9 -m pip install --ignore-installed -U PyYAML \
