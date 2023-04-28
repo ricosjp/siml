@@ -112,15 +112,15 @@ class PreprocessInnerSettings():
 
 
 class ScalingConverter:
+    """
+    This is Facade Class for scaling process
+    """
     @classmethod
-    def read_settings(cls, settings_yaml, **args):
+    def read_settings(cls, settings_yaml: pathlib.Path, **args):
         main_setting = setting.MainSetting.read_settings_yaml(
             settings_yaml, replace_preprocessed=False)
         return cls(main_setting, **args)
 
-    """
-    This is Facet Class
-    """
     def __init__(
         self,
         main_setting: setting.MainSetting,
@@ -132,6 +132,27 @@ class ScalingConverter:
         recursive: bool = True,
         str_replace: str = 'interim',
     ) -> None:
+        """
+        Initialize ScalingConverter
+
+        Parameters
+        ----------
+            main_setting (setting.MainSetting): setting class
+            force_renew: bool, optional
+                If True, renew npy files even if they are alerady exist.
+            recursive: bool, optional
+                If True, search data recursively.
+            save_func: callable, optional
+                Callback function to customize save data. It should accept
+                output_directory, variable_name, and transformed_data.
+            str_replace: str, optional
+                String to replace data directory in order to convert 
+                from interim data to preprocessed data.
+            max_process: int, optional
+                The maximum number of processes.
+            allow_missing: bool, optional
+                If True, continue even if some of variables are missing.
+        """
 
         self._setting = PreprocessInnerSettings(
             preprocess_dict=main_setting.preprocess,
@@ -167,26 +188,33 @@ class ScalingConverter:
         self,
         group_id: Optional[int] = None
     ) -> None:
+        """This function is consisted of these three process.
+        - Determine parameters of scalers by reading data files lazily
+        - Transform interim data and save result
+        - Save file of parameters
+
+        Parameters
+        ----------
+        group_id: int, optional
+            group_id to specify chunk of preprocessing group. Useful when
+            MemoryError occurs with all variables preprocessed in one node.
+            If not specified, process all variables.
+
+        Returns
+        -------
+        None
+        """
         self.lazy_fit_all(group_id=group_id)
         self.transform_interim(group_id=group_id)
         self.save()
-
-    def transform(
-        self,
-        preprocessors_pkl: Optional[pathlib.Path] = None,
-        group_id: Optional[int] = None
-    ):
-        self.load(preprocessors_pkl)
-        self.transform_interim(group_id=group_id)
 
     def lazy_fit_all(
         self,
         *,
         group_id: int = None
     ) -> None:
-        """Prepare preprocess converters by reading data files lazily to
-        determine preprocessing parameters (like std and mean for
-        StandardScaler, min and max for MinMaxScaler.
+        """Determine preprocessing parameters 
+        by reading data files lazily.
 
         Parameters
         ----------
@@ -211,6 +239,21 @@ class ScalingConverter:
         *,
         group_id: int = None
     ) -> None:
+        """
+        Apply scaling process to data in interim directory and save results 
+        in preprocessed directory.
+
+        Parameters
+        ----------
+            group_id: int, optional
+                group_id to specify chunk of preprocessing group. Useful when
+                MemoryError occurs with all variables preprocessed in one node.
+                If not specified, process all variables.
+
+        Returns
+        -------
+        None
+        """
 
         interim_dirs = self._setting.collect_interim_directories()
         variable_names = self._scalers.get_variable_names(group_id=group_id)
@@ -232,17 +275,11 @@ class ScalingConverter:
     ) -> dict[str, ArrayDataType]:
         return self._scalers.inverse_transform(dict_data)
 
-    def load(
-        self,
-        file_path: Optional[pathlib.Path] = None
-    ) -> None:
-        if file_path is None:
-            file_path = self._setting.get_default_preprocessors_pkl_path()
-        self._scalers.load(file_path)
-
     def save(self) -> None:
+        """
+        Save Parameters of scaling converters
+        """
         dump_dict = self._scalers.get_dumped_object()
-
         pkl_path = self._setting.get_default_preprocessors_pkl_path()
         with open(pkl_path, 'wb') as f:
             pickle.dump(dump_dict, f)

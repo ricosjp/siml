@@ -2,7 +2,7 @@ from __future__ import annotations
 import multiprocessing as multi
 import warnings
 import pathlib
-from typing import Optional, Union
+from typing import Optional, Union, Final
 
 from siml import util
 from siml.path_like_objects import ISimlFile, SimlFileBulider
@@ -12,6 +12,8 @@ from .siml_scalers import SimlScalerWrapper
 
 
 class ScalersComposition():
+    REGISTERED_KEY: Final[str] = "variable_name_to_scalers"
+
     @classmethod
     def create_from_file(
         cls,
@@ -26,7 +28,7 @@ class ScalersComposition():
             decrypt_key=key
         )
         variable_name_to_scalers = parameters.pop(
-            "variable_name_to_scalers", None
+            cls.REGISTERED_KEY, None
         )
         scalers_dict = ScalersComposition._load_scalers(parameters, key=key)
         if variable_name_to_scalers is None:
@@ -121,14 +123,14 @@ class ScalersComposition():
             for k in self.get_scaler_names()
         }
         # add relationship
-        dumped_dict["variable_name_to_scalers"] \
+        dumped_dict[self.REGISTERED_KEY] \
             = self._variable_name_to_scaler
         return dumped_dict
 
     def lazy_partial_fit(
         self,
         scaler_name_to_files: dict[str, list[ISimlFile]]
-    ):
+    ) -> None:
         preprocessor_inputs: list[tuple[str, list[ISimlFile]]] \
             = [
                 (name, files)
@@ -194,7 +196,7 @@ class ScalersComposition():
         self,
         variable_name: str,
         data: ArrayDataType
-    ):
+    ) -> ArrayDataType:
         scaler = self.get_scaler(variable_name)
         return scaler.inverse_transform(data)
 

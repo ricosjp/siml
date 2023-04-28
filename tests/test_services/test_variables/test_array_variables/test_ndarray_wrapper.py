@@ -81,7 +81,7 @@ def test__skip_nan_reshaped_not_component_wise(value, expect_shape):
     (np.random.rand(10, 4, 3), False),
 ])
 def test__apply(value, component_wise):
-    func = lambda x: x * 2  # noqa: E731
+    def func(x): return x * 2
 
     wrapper = NdArrayWrapper(value)
     result = wrapper.apply(
@@ -90,18 +90,3 @@ def test__apply(value, component_wise):
     )
     assert result.shape == value.shape
     np.testing.assert_array_almost_equal(result, func(value))
-
-# @pytest.mark.parametrize("value, expect_shape", [
-#     (np.random.rand(10, 3), (10, 3)),
-#     (np.random.rand(10, 4, 3), (40, 3))
-# ])
-# def test__apply_component_wise(value, expect_shape):
-#     func = lambda x: x * 2  # noqa: E731
-
-#     wrapper = NdArrayWrapper(value)
-#     result = wrapper.apply(
-#         func,
-#         componentwise=True
-#     )
-#     assert result.shape == value.shape
-#     assert result == func(value)

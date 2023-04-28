@@ -54,7 +54,7 @@ def test__diagonal_reshape(value, expect_shape):
     (sp.csc_matrix(np.random.rand(11, 4)), False)
 ])
 def test__apply_not_use_diagonal(value, component_wise):
-    func = lambda x: 2 * x  # noqa: E731
+    def func(x): return 2 * x
 
     wrapper = SparseArrayWrapper(value)
     result = wrapper.apply(
@@ -78,7 +78,7 @@ def test__apply_not_use_diagonal(value, component_wise):
     (sp.csc_matrix(np.random.rand(11, 4)), False),
 ])
 def test__apply_use_diagonal(value, component_wise):
-    func = lambda x: x * 2  # noqa: E731
+    def func(x): return x * 2  # noqa: E731
 
     wrapper = SparseArrayWrapper(value)
     with pytest.raises(ValueError):

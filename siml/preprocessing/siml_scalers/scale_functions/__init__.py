@@ -1,7 +1,4 @@
 # flake8: noqa
-from functools import singledispatch
-from typing import Union
-
 from .identity_scaler import IdentityScaler
 from .interface_scaler import ISimlScaler
 from .isoam_scaler import IsoAMScaler
@@ -12,6 +9,8 @@ from .standard_scaler import StandardScaler
 from .user_defined_scaler import UserDefinedScaler
 
 # name to scaler class and default arguments
+
+
 def _create_args(scaler_name: str) -> tuple[ISimlScaler, dict]:
     if scaler_name == "identity":
         return (IdentityScaler, {})
@@ -31,6 +30,7 @@ def _create_args(scaler_name: str) -> tuple[ISimlScaler, dict]:
     raise NotImplementedError(
         f"{scaler_name} is not defined."
     )
+
 
 def create_scaler(scaler_name: str, **kwards) -> ISimlScaler:
     if scaler_name.startswith('user_defined'):

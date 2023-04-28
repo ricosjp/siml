@@ -2,10 +2,10 @@ from typing import Callable
 
 import numpy as np
 
-from .interface_wrapper import IScalerInputVariables
+from .interface_wrapper import ISimlArray
 
 
-class NdArrayWrapper(IScalerInputVariables):
+class NdArrayWrapper(ISimlArray):
     def __init__(
         self,
         data: np.ndarray

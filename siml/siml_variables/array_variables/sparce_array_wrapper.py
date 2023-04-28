@@ -4,12 +4,12 @@ import warnings
 
 import scipy.sparse as sp
 
-from .interface_wrapper import IScalerInputVariables
+from .interface_wrapper import ISimlArray
 
 SparseArrayType = Union[sp.coo_matrix, sp.csr_matrix, sp.csc_matrix]
 
 
-class SparseArrayWrapper(IScalerInputVariables):
+class SparseArrayWrapper(ISimlArray):
     def __init__(
         self,
         data: SparseArrayType
