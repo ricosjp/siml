@@ -1,12 +1,10 @@
 import datetime as dt
-from typing import Union, Callable
+from typing import Callable
 import warnings
 
-import scipy.sparse as sp
+from siml.base.siml_typing import SparseArrayType
 
 from .interface_wrapper import ISimlArray
-
-SparseArrayType = Union[sp.coo_matrix, sp.csr_matrix, sp.csc_matrix]
 
 
 class SparseArrayWrapper(ISimlArray):

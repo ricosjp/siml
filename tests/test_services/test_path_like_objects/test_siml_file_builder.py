@@ -67,13 +67,25 @@ def create_test_tmp_data():
     ("data/sample.npy.enc"),
     ("data/sample.npz"),
     ("data/sample.npz.enc"),
-    ("data/sample.pkl"),
-    # ("data/sample.pkl.enc")
 ])
-def test__initialize_file(rel_file_path):
+def test__initialize_numpy_file(rel_file_path):
     directory = pathlib.Path(__file__).parent
     file_path = (directory / rel_file_path)
-    siml_file = SimlFileBulider.create(
+    siml_file = SimlFileBulider.numpy_file(
+        file_path
+    )
+    assert siml_file.file_path == file_path
+
+
+@pytest.mark.usefixtures('create_test_tmp_data')
+@pytest.mark.parametrize("rel_file_path", [
+    ("data/sample.pkl"),
+    ("data/sample.pkl.enc")
+])
+def test__initialize_pickle_file(rel_file_path):
+    directory = pathlib.Path(__file__).parent
+    file_path = (directory / rel_file_path)
+    siml_file = SimlFileBulider.pickle_file(
         file_path
     )
     assert siml_file.file_path == file_path
@@ -85,13 +97,26 @@ def test__initialize_file(rel_file_path):
     ("data/sample.npy.enc"),
     ("data/sample.npz"),
     ("data/sample.npz.enc"),
+])
+def test__load_numpy_content(rel_file_path):
+    directory = pathlib.Path(__file__).parent
+    file_path: pathlib.Path = (directory / rel_file_path)
+    siml_file = SimlFileBulider.numpy_file(
+        file_path
+    )
+
+    _ = siml_file.load(decrypt_key=TEST_ENCRYPT_KEY)
+
+
+@pytest.mark.usefixtures('create_test_tmp_data')
+@pytest.mark.parametrize("rel_file_path", [
     ("data/sample.pkl"),
     ("data/sample.pkl.enc")
 ])
-def test__load_file_content(rel_file_path):
+def test__load_file_pickle_content(rel_file_path):
     directory = pathlib.Path(__file__).parent
     file_path: pathlib.Path = (directory / rel_file_path)
-    siml_file = SimlFileBulider.create(
+    siml_file = SimlFileBulider.pickle_file(
         file_path
     )
 
@@ -102,15 +127,14 @@ def test__load_file_content(rel_file_path):
 @pytest.mark.parametrize("not_enc_path, enc_path", [
     ("data/sample.npy", "data/sample.npy.enc"),
     ("data/sample.npz", "data/sample.npz.enc"),
-    ("data/sample.pkl", "data/sample.pkl.enc")
 ])
 def test__load_same_contents(not_enc_path, enc_path):
     directory = pathlib.Path(__file__).parent
 
-    enc_siml_file = SimlFileBulider.create(
+    enc_siml_file = SimlFileBulider.numpy_file(
         (directory / enc_path)
     )
-    siml_file = SimlFileBulider.create(
+    siml_file = SimlFileBulider.numpy_file(
         (directory / not_enc_path)
     )
 
@@ -119,10 +143,31 @@ def test__load_same_contents(not_enc_path, enc_path):
 
     if isinstance(data, np.ndarray):
         np.testing.assert_almost_equal(data, enc_data)
+
     elif isinstance(data, sp.spmatrix):
         np.testing.assert_almost_equal(
             data.todense(),
             enc_data.todense()
         )
     else:
-        assert data == enc_data
+        pytest.fail()
+
+
+@pytest.mark.usefixtures('create_test_tmp_data')
+@pytest.mark.parametrize("not_enc_path, enc_path", [
+    ("data/sample.pkl", "data/sample.pkl.enc")
+])
+def test__load_same_pickle_contents(not_enc_path, enc_path):
+    directory = pathlib.Path(__file__).parent
+
+    enc_siml_file = SimlFileBulider.pickle_file(
+        (directory / enc_path)
+    )
+    siml_file = SimlFileBulider.pickle_file(
+        (directory / not_enc_path)
+    )
+
+    data = siml_file.load()
+    enc_data = enc_siml_file.load(decrypt_key=TEST_ENCRYPT_KEY)
+
+    assert data == enc_data

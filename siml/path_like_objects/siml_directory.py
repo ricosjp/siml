@@ -1,7 +1,9 @@
 import pathlib
 from typing import Union
 
-from .siml_file import ISimlFile, SimlFileBulider
+from siml.base.siml_enums import SimlFileExtType
+
+from .siml_file_builder import ISimlNumpyFile, SimlFileBulider
 
 
 class SimlDirectory:
@@ -20,13 +22,18 @@ class SimlDirectory:
         variable_name: str,
         *,
         allow_missing: bool = False
-    ) -> Union[ISimlFile, None]:
+    ) -> Union[ISimlNumpyFile, None]:
 
-        extenstions = [".npy", ".npy.enc", ".npz", ".npz.enc"]
+        extenstions = [
+            SimlFileExtType.NPY.value,
+            SimlFileExtType.NPYENC.value,
+            SimlFileExtType.NPZ.value,
+            SimlFileExtType.NPZENC.value
+        ]
         for ext in extenstions:
             path = (self._path / (variable_name + ext))
             if path.exists():
-                return SimlFileBulider.create(path)
+                return SimlFileBulider.numpy_file(path)
 
         if allow_missing:
             return None
