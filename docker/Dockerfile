@@ -32,26 +32,40 @@ RUN apt-get update -y \
 ENV LLVM_CONFIG /usr/bin/llvm-config-10
 
 
-COPY ./pyproject.toml /src/pyproject.toml
-COPY ./README.md /src/README.md
-COPY ./siml /src/siml
+COPY ./dist/pyproject.toml /src/pyproject.toml
+COPY ./dist/README.md /src/README.md
+COPY ./dist/siml /src/siml
 # COPY ./poetry.lock /src/poetry.lock
 WORKDIR /src
 
-ENV PATH $PATH:/root/.poetry/bin
+# python path
+ENV PYTHONPATH "$PYTHONPATH:/usr/lib/python3.9/site-packages"
 
-RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python3.9 \
-  && sed -i.bak s/python3/python3.9/g ~/.poetry/bin/poetry \
-  && python3.9 -m pip install -U pip \
+# poerty
+ENV PATH "$PATH:/root/.local/bin"
+RUN curl -sSL https://install.python-poetry.org | python3.9 -
+
+# Default version of python3 is python3.8.
+# When virtual environment is not created by poetry,
+# poetry use default version of python.
+# In order to change default python version to python3.9,
+# create symbolic link of python3.9
+RUN unlink /usr/bin/python3
+RUN ln -s /usr/bin/python3.9 /usr/bin/python3
+
+RUN python3.9 -m pip install -U pip \
   && python3.9 -m pip install -U setuptools \
   && python3.9 -m pip install -U wheel \
   && python3.9 -m pip install --ignore-installed -U PyYAML \
-  && python3.9 -m pip install Cython \
-  && poetry config virtualenvs.create false \
-  && poetry install \
-  && python3.9 -m pip install torch==1.10.1+cu111 torchvision==0.11.2+cu111 -f https://download.pytorch.org/whl/torch_stable.html \
-  && python3.9 -m pip install torch-scatter==2.0.9 -f https://pytorch-geometric.com/whl/torch-1.10.1+cu111.html \
-  && python3.9 -m pip install torch-sparse==0.6.13 -f https://pytorch-geometric.com/whl/torch-1.10.1+cu111.html \
-  && python3.9 -m pip install torch-cluster==1.6.0 -f https://pytorch-geometric.com/whl/torch-1.10.1+cu111.html \
-  && python3.9 -m pip install torch-spline-conv==1.2.1 -f https://pytorch-geometric.com/whl/torch-1.10.1+cu111.html \
-  && python3.9 -m pip install torch-geometric
+  && python3.9 -m pip install Cython
+
+RUN poetry config virtualenvs.create false \
+  && poetry install
+
+RUN poetry run python3 -m pip install torch==1.10.1+cu111 torchvision==0.11.2+cu111 -f https://download.pytorch.org/whl/torch_stable.html \
+  && poetry run python3 -m pip install torch-scatter==2.0.9 -f https://pytorch-geometric.com/whl/torch-1.10.1+cu111.html \
+  && poetry run python3 -m pip install torch-sparse==0.6.13 -f https://pytorch-geometric.com/whl/torch-1.10.1+cu111.html \
+  && poetry run python3 -m pip install torch-cluster==1.6.0 -f https://pytorch-geometric.com/whl/torch-1.10.1+cu111.html \
+  && poetry run python3 -m pip install torch-spline-conv==1.2.1 -f https://pytorch-geometric.com/whl/torch-1.10.1+cu111.html \
+  && poetry run python3 -m pip install torch-geometric==2.2.0 \
+  && poetry run python3 -m pip install -U "numpy<1.24"

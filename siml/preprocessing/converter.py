@@ -13,6 +13,7 @@ from siml.utils import fem_data_utils, path_utils
 
 
 class IConvertFunction(metaclass=abc.ABCMeta):
+    @abc.abstractmethod
     def __call__(
         self,
         fem_data: femio.FEMData,
@@ -22,6 +23,7 @@ class IConvertFunction(metaclass=abc.ABCMeta):
 
 
 class ILoadFunction(metaclass=abc.ABCMeta):
+    @abc.abstractmethod
     def __call__(
         self,
         data_files: list[pathlib.Path],
@@ -31,6 +33,7 @@ class ILoadFunction(metaclass=abc.ABCMeta):
 
 
 class ISaveFunction(metaclass=abc.ABCMeta):
+    @abc.abstractmethod
     def __call__(
         self,
         fem_data: femio.FEMData,
@@ -42,6 +45,7 @@ class ISaveFunction(metaclass=abc.ABCMeta):
 
 
 class IFilterFunction(metaclass=abc.ABCMeta):
+    @abc.abstractmethod
     def __call__(
         self,
         fem_data: femio.FEMData,

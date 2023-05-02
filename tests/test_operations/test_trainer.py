@@ -15,6 +15,7 @@ import siml.prepost as prepost
 import siml.setting as setting
 import siml.trainer as trainer
 from siml.preprocessing import converter
+from siml.preprocessing import ScalingConverter
 
 
 torch.autograd.set_detect_anomaly(True)
@@ -190,8 +191,8 @@ class TestTrainer(unittest.TestCase):
 
         if main_setting.data.preprocessed_root.exists():
             shutil.rmtree(main_setting.data.preprocessed_root)
-        preprocessor = prepost.Preprocessor.read_settings(setting_yaml)
-        preprocessor.preprocess_interim_data()
+        preprocessor = ScalingConverter.read_settings(setting_yaml)
+        preprocessor.fit_transform()
 
         tr = trainer.Trainer(main_setting)
         if tr.setting.trainer.output_directory.exists():
@@ -242,8 +243,8 @@ class TestTrainer(unittest.TestCase):
         raw_converter = converter.RawConverter(
             main_setting, conversion_function=conversion_function)
         raw_converter.convert()
-        p = prepost.Preprocessor(main_setting)
-        p.preprocess_interim_data()
+        p = ScalingConverter(main_setting)
+        p.fit_transform()
 
         shutil.rmtree(
             main_setting.trainer.output_directory, ignore_errors=True)
@@ -271,8 +272,8 @@ class TestTrainer(unittest.TestCase):
         raw_converter = converter.RawConverter(
             main_setting, conversion_function=conversion_function)
         raw_converter.convert()
-        p = prepost.Preprocessor(main_setting)
-        p.preprocess_interim_data()
+        p = ScalingConverter(main_setting)
+        p.fit_transform()
 
         shutil.rmtree(
             main_setting.trainer.output_directory, ignore_errors=True)
@@ -614,8 +615,8 @@ class TestTrainer(unittest.TestCase):
         raw_converter = converter.RawConverter(
             main_setting, conversion_function=conversion_function)
         raw_converter.convert()
-        p = prepost.Preprocessor(main_setting)
-        p.preprocess_interim_data()
+        p = ScalingConverter(main_setting)
+        p.fit_transform()
 
         with self.assertRaises(ValueError):
             np.load(

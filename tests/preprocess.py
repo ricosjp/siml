@@ -5,16 +5,17 @@ import random
 import shutil
 
 import femio
-import networkx as nx
-import numpy as np
 import matplotlib.pyplot as plt
 import metis
+import networkx as nx
+import numpy as np
 import scipy.sparse as sp
-import siml.preprocessing.converter as converter
-import siml.prepost as prepost
-import siml.setting as setting
 import torch
 
+import siml.prepost as prepost
+import siml.preprocessing.converter as converter
+import siml.setting as setting
+from siml.preprocessing import ScalingConverter
 
 PLOT = False
 
@@ -687,8 +688,11 @@ def preprocess_deform():
     )
     raw_converter.convert()
 
-    preprocessor = prepost.Preprocessor(main_setting, force_renew=True)
-    preprocessor.preprocess_interim_data()
+    preprocessor = ScalingConverter(
+        main_setting=main_setting,
+        force_renew=True
+    )
+    preprocessor.fit_transform()
 
     interim_path = pathlib.Path(
         'tests/data/deform/interim/train/tet2_3_modulusx0.9000')
@@ -722,8 +726,11 @@ def preprocess_grad():
     )
     raw_converter.convert()
 
-    preprocessor = prepost.Preprocessor(main_setting, force_renew=True)
-    preprocessor.preprocess_interim_data()
+    preprocessor = ScalingConverter(
+        main_setting=main_setting,
+        force_renew=True
+    )
+    preprocessor.fit_transform()
 
     return
 
@@ -794,8 +801,11 @@ def preprocess_rotation_thermal_stress():
         conversion_function=ConversionFunctionRotationThermalStress())
     raw_converter.convert()
 
-    preprocessor = prepost.Preprocessor(main_setting, force_renew=True)
-    preprocessor.preprocess_interim_data()
+    preprocessor = ScalingConverter(
+        main_setting=main_setting,
+        force_renew=True
+    )
+    preprocessor.fit_transform()
     return
 
 
@@ -809,8 +819,11 @@ def preprocess_heat_time_series():
         write_ucd=False)
     raw_converter.convert()
 
-    preprocessor = prepost.Preprocessor(main_setting, force_renew=True)
-    preprocessor.preprocess_interim_data()
+    preprocessor = ScalingConverter(
+        main_setting=main_setting,
+        force_renew=True
+    )
+    preprocessor.fit_transform()
     return
 
 
@@ -824,8 +837,11 @@ def preprocess_heat_boundary():
         write_ucd=False)
     raw_converter.convert()
 
-    preprocessor = prepost.Preprocessor(main_setting, force_renew=True)
-    preprocessor.preprocess_interim_data()
+    preprocessor = ScalingConverter(
+        main_setting=main_setting,
+        force_renew=True
+    )
+    preprocessor.fit_transform()
     return
 
 
@@ -839,8 +855,11 @@ def preprocess_heat_interaction():
         write_ucd=False)
     raw_converter.convert()
 
-    preprocessor = prepost.Preprocessor(main_setting, force_renew=True)
-    preprocessor.preprocess_interim_data()
+    preprocessor = ScalingConverter(
+        main_setting=main_setting,
+        force_renew=True
+    )
+    preprocessor.fit_transform()
     return
 
 
@@ -848,8 +867,11 @@ def preprocess_deform_timeseries():
     main_setting = setting.MainSetting.read_settings_yaml(
         pathlib.Path('tests/data/deform_timeseries/data.yml'))
 
-    preprocessor = prepost.Preprocessor(main_setting, force_renew=True)
-    preprocessor.preprocess_interim_data()
+    preprocessor = ScalingConverter(
+        main_setting=main_setting,
+        force_renew=True
+    )
+    preprocessor.fit_transform()
     return
 
 
@@ -890,8 +912,11 @@ def preprocess_rotation():
         conversion_function=rotation_conversion_function)
     raw_converter.convert()
 
-    preprocessor = prepost.Preprocessor(main_setting, force_renew=True)
-    preprocessor.preprocess_interim_data()
+    preprocessor = ScalingConverter(
+        main_setting=main_setting,
+        force_renew=True
+    )
+    preprocessor.fit_transform()
     return
 
 
@@ -927,9 +952,11 @@ def generate_linear():
     n_test_data = 2
     generate_data(test_root, n_test_data)
 
-    p = prepost.Preprocessor.read_settings(
-        pathlib.Path('tests/data/linear/linear.yml'), force_renew=True)
-    p.preprocess_interim_data()
+    preprocessor = ScalingConverter.read_settings(
+        pathlib.Path('tests/data/linear/linear.yml'),
+        force_renew=True
+    )
+    preprocessor.fit_transform()
 
     return
 
@@ -1042,8 +1069,13 @@ def generate_ode():
 
     main_setting = setting.MainSetting.read_settings_yaml(
         pathlib.Path('tests/data/ode/data.yml'))
-    preprocessor = prepost.Preprocessor(main_setting, force_renew=True)
-    preprocessor.preprocess_interim_data()
+
+    preprocessor = ScalingConverter(
+        main_setting=main_setting,
+        force_renew=True
+    )
+    preprocessor.fit_transform()
+
     return
 
 

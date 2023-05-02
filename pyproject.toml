@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pysiml"
-version = "0.2.8"
+version = "0.2.9"
 description = "SiML - a Simulation ML library"
 license = "Apache-2.0"
 authors = ["RICOS Co. Ltd."]
@@ -29,6 +29,7 @@ PyQt5 = {version = "^5.14.0", optional = true}
 toml = "^0.10.2"
 torch = "^1.9.0"
 metis = "^0.2a5"
+pydantic = "^1.10.7"
 
 [tool.poetry.scripts]
 convert_interim_data = "siml.__main__.convert_interim_data:main"

@@ -1,7 +1,7 @@
 import pytest
 import torch
 
-from siml.variables import siml_variables
+from siml.siml_variables import siml_tensor_variables
 
 
 @pytest.fixture
@@ -25,7 +25,7 @@ def make_default_tensors():
 
 def test__get_value(make_default_tensors):
     vals = make_default_tensors
-    siml_vals = siml_variables(vals)
+    siml_vals = siml_tensor_variables(vals)
     out = siml_vals.get_values()
 
     assert type(out["a"]) == torch.Tensor
@@ -39,7 +39,7 @@ def test__get_value(make_default_tensors):
 
 def test__send(make_default_tensors):
     vals = make_default_tensors
-    siml_vals = siml_variables(vals)
+    siml_vals = siml_tensor_variables(vals)
     device = torch.device('cuda:0')
     out = siml_vals.send(device).get_values()
 
@@ -67,7 +67,7 @@ def test__get_slice(slices, shapes):
             sample2
         ]
     }
-    out = siml_variables(val).slice(slices).get_values()
+    out = siml_tensor_variables(val).slice(slices).get_values()
 
     assert torch.equal(sample0[slices], out["a"])
     assert torch.equal(sample1[slices], out["b"][0])

@@ -8,6 +8,7 @@ import femio
 import numpy as np
 import siml
 from siml.preprocessing import converter
+from siml.preprocessing import ScalingConverter
 from siml.utils import fem_data_utils
 
 
@@ -103,9 +104,10 @@ class DataGenerator:
     def preprocess(self):
         main_setting = siml.setting.MainSetting.read_settings_yaml(
             self.output_directory.parent / 'data.yml')
-        preprocessor = siml.prepost.Preprocessor(
-            main_setting, force_renew=True)
-        preprocessor.preprocess_interim_data()
+        preprocessor = ScalingConverter(
+            main_setting, force_renew=True
+        )
+        preprocessor.fit_transform()
 
     def _generate_one_data(self, i_data):
         n_x_element = random.randint(

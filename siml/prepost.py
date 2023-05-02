@@ -1,20 +1,18 @@
 """Module for preprocessing."""
 
 import datetime as dt
-import glob
-import io
 import itertools as it
-import multiprocessing as multi
-import pickle
-from pathlib import Path
+from typing import Union
 
 import femio
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.sparse as sp
 
-from . import setting, util
-from siml.utils import fem_data_utils, path_utils
+from siml import util
+from siml.utils import fem_data_utils
+from siml.preprocessing import ScalersComposition
+from siml.siml_variables import ArrayDataType
 
 
 def add_difference(
@@ -70,7 +68,8 @@ def add_abs_difference(
 
 def concatenate_preprocessed_data(
         preprocessed_base_directories, output_directory_base, variable_names,
-        *, ratios=(.9, .05, .05), overwrite=False):
+        *, ratios=(.9, .05, .05), overwrite=False,
+        finished_file='preprocessed'):
     """Concatenate preprocessed data in the element direction.
 
     NOTE: It may lead data leakage so it is just for research use.
@@ -93,7 +92,7 @@ def concatenate_preprocessed_data(
         raise ValueError('The sum of ratios does not make 1.')
     preprocessed_directories = util.collect_data_directories(
         preprocessed_base_directories,
-        required_file_names=Preprocessor.FINISHED_FILE)
+        required_file_names=finished_file)
     dict_data = {
         variable_name:
         np.concatenate([
@@ -131,482 +130,21 @@ def concatenate_preprocessed_data(
     return
 
 
-class Preprocessor:
-
-    REQUIRED_FILE_NAMES = ['converted']
-    FINISHED_FILE = 'preprocessed'
-    PREPROCESSORS_PKL_NAME = 'preprocessors.pkl'
-
-    @classmethod
-    def read_settings(cls, settings_yaml, **args):
-        main_setting = setting.MainSetting.read_settings_yaml(
-            settings_yaml, replace_preprocessed=False)
-        return cls(main_setting, **args)
-
-    def __init__(
-            self, main_setting, force_renew=False, save_func=None,
-            recursive=True,
-            str_replace='interim', max_process=None, allow_missing=False):
-        """Initialize preprocessor of interim data with preprocessing
-        e.g. standardization and then save them.
-
-        Parameters
-        ----------
-        force_renew: bool, optional
-            If True, renew npy files even if they are alerady exist.
-        recursive: bool, optional
-            If True, search data recursively.
-        save_func: callable, optional
-            Callback function to customize save data. It should accept
-            output_directory, variable_name, and transformed_data.
-        str_replace: str, optional
-            String to replace data directory in order to convert from interim
-            data to preprocessed data.
-        max_process: int, optional
-            The maximum number of processes.
-        allow_missing: bool, optional
-            If True, continue even if some of variables are missing.
-        """
-        self.setting = main_setting
-        self.recursive = recursive
-        self.force_renew = force_renew
-        self.save_func = save_func
-        if self.recursive:
-            self.interim_directories = util.collect_data_directories(
-                self.setting.data.interim,
-                required_file_names=self.REQUIRED_FILE_NAMES)
-        else:
-            self.interim_directories = self.setting.data.interim
-        self.str_replace = str_replace
-        self.max_process = util.determine_max_process(max_process)
-        self.allow_missing = allow_missing
-        if len(self.interim_directories) == 0:
-            raise ValueError(
-                'No converted data found. Perform conversion first.')
-        return
-
-    def preprocess_interim_data(self):
-        """Preprocess interim data.
-
-        Parameters
-        ----------
-        None
-
-        Returns
-        -------
-        dict_preprocessor_setting: dict
-            dict describing settings and parameters for preprocessors.
-        """
-        self.prepare_preprocess_converters()
-        dict_preprocessor_settings = \
-            self.merge_dict_preprocessor_setting_pkls()
-        self.convert_interim_data()
-        return dict_preprocessor_settings
-
-    def prepare_preprocess_converters(self, *, group_id=None):
-        """Prepare preprocess converters by reading data files lazily to
-        determine preprocessing parameters (like std and mean for
-        StandardScaler, min and max for MinMaxScaler.
-
-        Parameters
-        ----------
-        group_id: int, optional
-            group_id to specify chunk of preprocessing group. Useful when
-            MemoryError occurs with all variables preprocessed in one node.
-            If not specified, process all variables.
-
-        Returns
-        -------
-        dict_preprocessor_setting: dict
-            dict describing settings and parameters for preprocessors.
-        """
-        preprocessor_inputs = [
-            (variable_name, preprocess_setting)
-            for variable_name, preprocess_setting
-            in self.setting.preprocess.items()
-            if group_id is None or preprocess_setting['group_id'] == group_id]
-
-        with multi.Pool(self.max_process) as pool:
-            list_dict_preprocessor_setting = pool.starmap(
-                self.prepare_preprocess_converter, preprocessor_inputs,
-                chunksize=1)
-
-        dict_preprocessor_settings = {}
-        for dict_preprocessor_setting in list_dict_preprocessor_setting:
-            if dict_preprocessor_setting is not None:
-                dict_preprocessor_settings.update(dict_preprocessor_setting)
-        return dict_preprocessor_settings
-
-    def merge_dict_preprocessor_setting_pkls(self, data_directory=None):
-        """Merge variable-wise preprocessor settings pkl files into one file.
-
-        Parameters
-        ----------
-        data_directory: pathlib.Path, optional
-            Directory path contains variable-wise preprocessor settings pkl
-            files. If not fed, looking at self.setting.data.preprocessed_root .
-
-        Returns
-        -------
-        dict_preprocessor_setting: dict
-            dict describing settings and parameters for preprocessors after
-            merger.
-        """
-        if data_directory is None:
-            data_directory = self.setting.data.preprocessed_root
-        preprocessors_pkl_path = data_directory / self.PREPROCESSORS_PKL_NAME
-
-        if self.force_renew or not preprocessors_pkl_path.is_file():
-            pkl_files = glob.glob(
-                str(data_directory / f"*_{self.PREPROCESSORS_PKL_NAME}"))
-
-            dict_before_replacement = {}
-            for pkl_file in pkl_files:
-                with open(pkl_file, 'rb') as f:
-                    dict_before_replacement.update(pickle.load(f))
-
-            dict_preprocessor_settings = {
-                variable_name: self._collect_reference_dict_setting(
-                    variable_name, dict_before_replacement)
-                for variable_name in dict_before_replacement.keys()}
-
-            self.dump_preprocessors(
-                dict_preprocessor_settings, preprocessors_pkl_path)
-
-        else:
-            print(f"{preprocessors_pkl_path} already exists. Skip merger.")
-            with open(preprocessors_pkl_path, 'rb') as f:
-                dict_preprocessor_settings = pickle.load(f)
-
-        return dict_preprocessor_settings
-
-    def convert_interim_data(
-            self, preprocessor_pkl=None, *, group_id=None):
-        """Convert interim data with the determined preprocessor_settings.
-
-        Parameters
-        ----------
-        preprocessor_pkl: dict or pathlib.Path, optional
-            dict or pickle file path describing settings and parameters for
-            preprocessors. If not fed, data will be loaded from
-            self.setting.data.preprocessed_root.
-        group_id: int, optional
-            group_id to specify chunk of preprocessing group. Useful when
-            MemoryError occurs with all variables preprocessed in one node.
-            If not specified, process all variables.
-
-        Returns
-        -------
-        None
-        """
-
-        if preprocessor_pkl is None:
-            preprocessor_pkl = self.setting.data.preprocessed_root \
-                / self.PREPROCESSORS_PKL_NAME
-            if not preprocessor_pkl.is_file():
-                raise ValueError(f"{preprocessor_pkl} not found.")
-
-        if isinstance(preprocessor_pkl, Path):
-            with open(preprocessor_pkl, 'rb') as f:
-                dict_preprocessor_settings = pickle.load(f)
-        else:
-            dict_preprocessor_settings = preprocessor_pkl
-
-        preprocess_converter_inputs = \
-            self._generate_preprocess_converter_inputs(
-                dict_preprocessor_settings, group_id)
-        with multi.Pool(self.max_process) as pool:
-            pool.starmap(
-                self.transform_single_variable, preprocess_converter_inputs,
-                chunksize=1)
-
-        # Touch finished files
-        for data_directory in self.interim_directories:
-            output_directory = path_utils.determine_output_directory(
-                data_directory, self.setting.data.preprocessed_root,
-                self.str_replace)
-            (output_directory / self.FINISHED_FILE).touch()
-
-        yaml_file = self.setting.data.preprocessed_root / 'settings.yml'
-        if not yaml_file.exists():
-            setting.write_yaml(self.setting, yaml_file)
-
-        return
-
-    def _generate_preprocess_converter_inputs(
-            self, dict_preprocessor_settings, group_id):
-
-        preprocess_converter_inputs = [
-            (
-                variable_name,
-                self._collect_preprocess_converter_input(
-                    variable_name, dict_preprocessor_settings))
-            for variable_name, setting in self.setting.preprocess.items()
-            if group_id is None or setting['group_id'] == group_id]
-        return preprocess_converter_inputs
-
-    def _collect_preprocess_converter_input(
-            self, variable_name, dict_preprocessor_settings):
-
-        reference_dict = self._collect_reference_dict_setting(
-            variable_name, dict_preprocessor_settings)
-
-        preprocess_converter = util.PreprocessConverter(
-            reference_dict['preprocess_converter'],
-            method=reference_dict['method'],
-            componentwise=reference_dict['componentwise'],
-            power=reference_dict.get('power', 1.),
-            other_components=reference_dict['other_components'])
-        if preprocess_converter is None:
-            raise ValueError(f"Reference of {variable_name} is None")
-
-        return preprocess_converter
-
-    def _collect_reference_dict_setting(
-            self, variable_name, dict_preprocessor_settings):
-        if dict_preprocessor_settings[variable_name]['preprocess_converter'] \
-                is None:
-            value = dict_preprocessor_settings[variable_name]
-            reference_name = self.setting.preprocess[variable_name]['same_as']
-            if reference_name is None:
-                raise ValueError(
-                    f"Invalid setting for {variable_name}: {value}")
-            reference_dict = dict_preprocessor_settings[reference_name]
-
-        else:
-            reference_dict = dict_preprocessor_settings[
-                variable_name]
-
-        return reference_dict
-
-    def prepare_preprocess_converter(self, variable_name, preprocess_setting):
-        """Prepare preprocess converter for single variable.
-
-        Parameters
-        ----------
-        variable_name: str
-            The name of the variable.
-        preprocess_setting: dict
-            Dictionary of preprocess setting contains 'method' and
-            'componentwise' keywords.
-
-        Returns
-        -------
-        dict_preprocessor_setting: dict
-            Dict of preprocessor setting for the variable.
-        """
-        print(variable_name, preprocess_setting)
-
-        # Check if data already exists
-        pkl_file = self.setting.data.preprocessed_root \
-            / self.PREPROCESSORS_PKL_NAME
-        variable_pkl_file = self.setting.data.preprocessed_root \
-            / f"{variable_name}_{self.PREPROCESSORS_PKL_NAME}"
-        if not self.force_renew and (
-                pkl_file.exists() or variable_pkl_file.exists()):
-            print(
-                'Data already exists in '
-                f"{self.setting.data.preprocessed_root} for {variable_name}. "
-                'Skipped.')
-            return
-
-        # Prepare preprocessor
-        if (self.interim_directories[0] / (variable_name + '.npy')).exists():
-            ext = '.npy'
-        elif (
-                self.interim_directories[0]
-                / (variable_name + '.npy.enc')).exists():
-            ext = '.npy.enc'
-        elif (self.interim_directories[0] / (variable_name + '.npz')).exists():
-            ext = '.npz'
-        elif (
-                self.interim_directories[0]
-                / (variable_name + '.npz.enc')).exists():
-            ext = '.npz.enc'
-        else:
-            raise ValueError(
-                f"Unknown extension or file not found for {variable_name}")
-
-        if preprocess_setting['same_as'] is None:
-            if preprocess_setting['method'] == 'identity':
-                preprocess_converter = util.PreprocessConverter(
-                    'identity',
-                    componentwise=preprocess_setting['componentwise'],
-                    other_components=[],
-                    power=1., key=self.setting.data.encrypt_key)
-            else:
-                data_files = [
-                    data_directory / (variable_name + ext)
-                    for data_directory in self.interim_directories]
-                for other_component in preprocess_setting['other_components']:
-                    data_files += [
-                        data_directory / (other_component + ext)
-                        for data_directory in self.interim_directories]
-                preprocess_converter = util.PreprocessConverter(
-                    preprocess_setting['method'], data_files=data_files,
-                    componentwise=preprocess_setting['componentwise'],
-                    power=preprocess_setting['power'],
-                    other_components=preprocess_setting['other_components'],
-                    key=self.setting.data.encrypt_key)
-        else:
-            # same_as is set so no need to prepare preprocessor
-            preprocess_converter = None
-
-        dict_preprocessor_setting = {
-            variable_name: {
-                'method': preprocess_setting['method'],
-                'componentwise': preprocess_setting['componentwise'],
-                'preprocess_converter': preprocess_converter,
-                'power': preprocess_setting['power'],
-                'other_components': preprocess_setting['other_components'],
-            }}
-        if not self.setting.data.preprocessed_root.exists():
-            self.setting.data.preprocessed_root.mkdir(
-                parents=True, exist_ok=True)
-        partial_pkl_name = self.setting.data.preprocessed_root \
-            / f"{variable_name}_{self.PREPROCESSORS_PKL_NAME}"
-        self.dump_preprocessors(dict_preprocessor_setting, partial_pkl_name)
-
-        return dict_preprocessor_setting
-
-    def dump_preprocessors(self, dict_preprocessor_setting, file_path):
-        dict_to_dump = {}
-        for key, value in dict_preprocessor_setting.items():
-            dict_to_dump[key] = {}
-            for k, v in value.items():
-                if k == 'preprocess_converter' and v is not None:
-                    if isinstance(v, dict):
-                        dict_to_dump[key].update({k: v})
-                    else:
-                        dict_to_dump[key].update({k: vars(v.converter)})
-                else:
-                    dict_to_dump[key].update({k: v})
-        with open(file_path, 'wb') as f:
-            pickle.dump(dict_to_dump, f)
-
-        return
-
-    def _file_exists(self, output_directory, variable_name):
-        npy_file = output_directory / (variable_name + '.npy')
-        npy_enc_file = output_directory / (
-            variable_name + '.npy.enc')
-        npz_file = output_directory / (variable_name + '.npz')
-        npz_enc_file = output_directory / (
-            variable_name + '.npz.enc')
-        if npy_file.is_file():
-            return True
-        if npy_enc_file.is_file():
-            return True
-        if npz_file.is_file():
-            return True
-        if npz_enc_file.is_file():
-            return True
-        return False
-
-    def transform_single_variable(self, variable_name, preprocess_converter):
-        """Transform single variable with the created preprocess_converter.
-
-        Parameters
-        ----------
-        variable_name: str
-            The name of the variable.
-        preprocess_converter: siml.util.PreprocessConverter
-            The PreprocessConverter object to transform.
-
-        Returns
-        -------
-        None
-        """
-        if isinstance(preprocess_converter.converter, util.Identity):
-            # Shortcut preprocessing
-
-            for data_directory in self.interim_directories:
-                output_directory = path_utils.determine_output_directory(
-                    data_directory, self.setting.data.preprocessed_root,
-                    self.str_replace)
-                if not self.force_renew \
-                        and self._file_exists(output_directory, variable_name):
-                    print(
-                        f"{output_directory} / {variable_name} "
-                        'already exists. Skipped.')
-                    continue
-
-                util.copy_variable_file(
-                    data_directory, variable_name, output_directory,
-                    allow_missing=self.allow_missing)
-            return
-
-        for data_directory in self.interim_directories:
-            output_directory = path_utils.determine_output_directory(
-                data_directory, self.setting.data.preprocessed_root,
-                self.str_replace)
-            if not self.force_renew \
-                    and self._file_exists(output_directory, variable_name):
-                print(
-                    f"{output_directory} / {variable_name} "
-                    'already exists. Skipped.')
-                continue
-
-            loaded_data = util.load_variable(
-                data_directory, variable_name,
-                allow_missing=self.allow_missing,
-                decrypt_key=self.setting.data.encrypt_key)
-            if loaded_data is None:
-                continue
-            else:
-                transformed_data = preprocess_converter.transform(loaded_data)
-
-            if self.save_func is None:
-                util.save_variable(
-                    output_directory, variable_name, transformed_data,
-                    encrypt_key=self.setting.data.encrypt_key)
-            else:
-                self.save_func(
-                    output_directory, variable_name, transformed_data)
-
-        return
-
-
 class Converter:
 
     def __init__(self, converter_parameters_pkl, key=None):
-        self.converters = self._generate_converters(
-            converter_parameters_pkl, key=key)
-        return
+        self.converters = ScalersComposition.create_from_file(
+            converter_parameters_pkl=converter_parameters_pkl,
+            key=key
+        )
 
-    def _generate_converters(self, converter_parameters_pkl, key=None):
-        if key is not None and converter_parameters_pkl.suffix == '.enc':
-            return self._generate_converters(
-                util.decrypt_file(key, converter_parameters_pkl))
+    def preprocess(self, dict_data_x: dict):
+        input_dict = {
+            name: v for name, v in dict_data_x.items()
+            if name in self.converters.get_variable_names()
+        }
 
-        if isinstance(converter_parameters_pkl, io.BufferedIOBase):
-            converter_parameters = pickle.load(converter_parameters_pkl)
-        elif isinstance(converter_parameters_pkl, Path):
-            with open(converter_parameters_pkl, 'rb') as f:
-                converter_parameters = pickle.load(f)
-        else:
-            raise ValueError(
-                f"Input type {converter_parameters_pkl.__class__} not "
-                'understood')
-        preprocess_setting = setting.PreprocessSetting(
-            preprocess=converter_parameters)
-
-        converters = {
-            variable_name:
-            util.PreprocessConverter(
-                value['preprocess_converter'],
-                method=value['method'],
-                componentwise=value['componentwise'],
-                other_components=value['other_components'])
-            for variable_name, value in preprocess_setting.preprocess.items()}
-        return converters
-
-    def preprocess(self, dict_data_x):
-        converted_dict_data_x = {
-            variable_name:
-            self.converters[variable_name].transform(data)
-            for variable_name, data in dict_data_x.items()
-            if variable_name in self.converters.keys()}
+        converted_dict_data_x = self.converters.transform_dict(input_dict)
         if len(converted_dict_data_x) == 0:
             raise ValueError(
                 'No converted data found. '
@@ -614,7 +152,8 @@ class Converter:
         return converted_dict_data_x
 
     def postprocess(
-            self, dict_data_x, dict_data_y, output_directory=None, *,
+            self, dict_data_x: dict, dict_data_y: dict, output_directory=None,
+            *,
             dict_data_y_answer=None,
             overwrite=False, save_x=False, write_simulation=False,
             write_npy=True, write_simulation_stem=None,
@@ -677,60 +216,14 @@ class Converter:
             fem_data: femio.FEMData
                 FEMData object with input and output data.
         """
+        _dict_data_x = self._format_dict_shape(dict_data_x)
+        _dict_data_y = self._format_dict_shape(dict_data_y)
+        _dict_data_y_answer = self._format_dict_shape(dict_data_y_answer)
+
         if perform_inverse:
-            dict_post_function = {
-                k: v.inverse for k, v in self.converters.items()}
-        else:
-            dict_post_function = {
-                k: lambda x: x for k, v in self.converters.items()}
-
-        if isinstance(list(dict_data_x.values())[0], dict):
-            return_dict_data_x = {
-                variable_name:
-                dict_post_function[variable_name](data)
-                for value in dict_data_x.values()
-                for variable_name, data in value.items()
-                if variable_name in dict_post_function.keys()}
-        else:
-            return_dict_data_x = {
-                variable_name:
-                dict_post_function[variable_name](data)
-                for variable_name, data in dict_data_x.items()
-                if variable_name in dict_post_function.keys()}
-
-        if dict_data_y_answer is not None and len(dict_data_y_answer) > 0:
-            if isinstance(list(dict_data_y_answer.values())[0], dict):
-                return_dict_data_y_answer = {
-                    variable_name:
-                    dict_post_function[variable_name](data)
-                    for value in dict_data_y_answer.values()
-                    for variable_name, data in value.items()
-                    if variable_name in dict_post_function.keys()}
-            else:
-                return_dict_data_y_answer = {
-                    variable_name:
-                    dict_post_function[variable_name](data)
-                    for variable_name, data in dict_data_y_answer.items()
-                    if variable_name in dict_post_function.keys()}
-        else:
-            return_dict_data_y_answer = None
-
-        if len(dict_data_y) > 0:
-            if isinstance(list(dict_data_y.values())[0], dict):
-                return_dict_data_y = {
-                    variable_name:
-                    dict_post_function[variable_name](data)
-                    for value in dict_data_y.values()
-                    for variable_name, data in value.items()
-                    if variable_name in dict_post_function.keys()}
-            else:
-                return_dict_data_y = {
-                    variable_name:
-                    dict_post_function[variable_name](data)
-                    for variable_name, data in dict_data_y.items()
-                    if variable_name in dict_post_function.keys()}
-        else:
-            return_dict_data_y = {}
+            _dict_data_x = self._inverse_process(_dict_data_x)
+            _dict_data_y = self._inverse_process(_dict_data_y)
+            _dict_data_y_answer = self._inverse_process(_dict_data_y_answer)
 
         # Save data
         if skip_fem_data_creation or write_simulation_base is None \
@@ -739,8 +232,8 @@ class Converter:
         else:
             try:
                 fem_data = self._create_fem_data(
-                    return_dict_data_x, return_dict_data_y,
-                    dict_data_answer=return_dict_data_y_answer,
+                    _dict_data_x, _dict_data_y,
+                    dict_data_answer=_dict_data_y_answer,
                     write_simulation_base=write_simulation_base,
                     write_simulation_stem=write_simulation_stem,
                     read_simulation_type=read_simulation_type,
@@ -762,8 +255,8 @@ class Converter:
         if output_directory is not None:
             if write_npy:
                 if save_x:
-                    self.save(return_dict_data_x, output_directory)
-                self.save(return_dict_data_y, output_directory)
+                    self.save(_dict_data_x, output_directory)
+                self.save(_dict_data_y, output_directory)
             if write_simulation:
                 if write_simulation_base is None:
                     raise ValueError('No write_simulation_base fed.')
@@ -776,8 +269,45 @@ class Converter:
                     output_directory, fem_data, overwrite=overwrite,
                     write_simulation_type=write_simulation_type)
 
-        return return_dict_data_x, return_dict_data_y, \
-            return_dict_data_y_answer, fem_data
+        return _dict_data_x, _dict_data_y, \
+            _dict_data_y_answer, fem_data
+
+    def _inverse_process(
+        self,
+        dict_data: Union[dict[str, ArrayDataType], None]
+    ) -> dict[str, ArrayDataType]:
+        if dict_data is None:
+            return {}
+
+        dict_data_answer = self.converters.inverse_transform_dict(dict_data)
+        return dict_data_answer
+
+    def _format_dict_shape(
+        self,
+        dict_data: Union[dict, None]
+    ) -> Union[dict[str, ArrayDataType], None]:
+        # This function should be deprecated
+        # It is not appropriate to overwrite value for variable name
+        if dict_data is None:
+            return None
+
+        if len(dict_data) == 0:
+            return None
+
+        if isinstance(list(dict_data.values())[0], dict):
+            return_dict_data = {
+                variable_name: data
+                for value in dict_data.values()
+                for variable_name, data in value.items()
+                if variable_name in self.converters.get_variable_names()
+            }
+        else:
+            return_dict_data = {
+                variable_name: data
+                for variable_name, data in dict_data.items()
+                if variable_name in self.converters.get_variable_names()
+            }
+        return return_dict_data
 
     def _create_fem_data(
             self, dict_data_x, dict_data_y, write_simulation_base, *,

@@ -22,7 +22,7 @@ from . import siml_manager
 from . import util
 
 from . import update_functions
-from .variables import siml_variables
+from .siml_variables import siml_tensor_variables
 
 
 class Trainer(siml_manager.SimlManager):
@@ -677,7 +677,7 @@ class Trainer(siml_manager.SimlManager):
 
                 y_pred = []
                 for split_x in split_xs:
-                    siml_x = siml_variables(split_x['x'])
+                    siml_x = siml_tensor_variables(split_x['x'])
                     split_x['x'] = siml_x.send(self.device).get_values()
                     y_pred.append(self.model(split_x))
 
@@ -696,7 +696,7 @@ class Trainer(siml_manager.SimlManager):
                     split_ys,
                     time_series_keys=self.output_time_series_keys
                 )
-                ans_siml_y = siml_variables(ans_y)
+                ans_siml_y = siml_tensor_variables(ans_y)
                 y = ans_siml_y.send(self.output_device).get_values()
                 return y_pred, y, {
                     'original_shapes': original_shapes,

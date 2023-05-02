@@ -760,6 +760,21 @@ optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 
 [[package]]
+name = "pydantic"
+version = "1.10.7"
+description = "Data validation and settings management using python type hints"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+
+[package.dependencies]
+typing-extensions = ">=4.2.0"
+
+[package.extras]
+dotenv = ["python-dotenv (>=0.10.4)"]
+email = ["email-validator (>=1.0.3)"]
+
+[[package]]
 name = "pydot"
 version = "1.4.2"
 description = "Python interface to Graphviz's Dot"
@@ -1349,7 +1364,7 @@ cupy = []
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.9, <3.10"
-content-hash = "422dc383a088265bbbd70acd1f6eb34fc747e8fe73221df3ed5b25cc36d42bc3"
+content-hash = "ada729586f6e2cec5e866ec07b9f84cb29f1d1032097cf5ddc8eb5fad17d4385"
 
 [metadata.files]
 aiohttp = []
@@ -1683,6 +1698,7 @@ protobuf = []
 py = []
 pycodestyle = []
 pycryptodomex = []
+pydantic = []
 pydot = []
 pyface = []
 pyflakes = []

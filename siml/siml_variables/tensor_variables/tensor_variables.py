@@ -1,7 +1,8 @@
 from __future__ import annotations
-from typing import TypeVar
-import torch
 
+from typing import TypeVar
+
+import torch
 
 BuiltInVars = TypeVar(
     'BuiltInVars',
@@ -23,7 +24,7 @@ class ISimlVariables():
         raise NotImplementedError()
 
 
-def siml_variables(values: BuiltInVars) -> ISimlVariables:
+def siml_tensor_variables(values: BuiltInVars) -> ISimlVariables:
     if isinstance(values, torch.Tensor):
         return TensorSimlVariables(values)
     if isinstance(values, dict):
@@ -69,7 +70,7 @@ class TensorSimlVariables(ISimlVariables):
 
 class DictSimlVariables(ISimlVariables):
     def __init__(self, value: dict):
-        self._x = {k: siml_variables(v) for k, v in value.items()}
+        self._x = {k: siml_tensor_variables(v) for k, v in value.items()}
 
     def __str__(self) -> str:
         txt = ""
@@ -92,7 +93,7 @@ class DictSimlVariables(ISimlVariables):
 
 class ListSimlVaraiables(ISimlVariables):
     def __init__(self, value: list[torch.Tensor]):
-        self._x = [siml_variables(v) for v in value]
+        self._x = [siml_tensor_variables(v) for v in value]
 
     def __str__(self) -> str:
         values = [str(v) for v in self._x]
