@@ -1,14 +1,14 @@
 import pathlib
-import pickle
 import io
+import yaml
 
 from siml.base.siml_enums import SimlFileExtType
 from siml import util
 
-from .interface import ISimlPickleFile
+from .interface import ISimlYamlFile
 
 
-class SimlPickleFile(ISimlPickleFile):
+class SimlYamlFile(ISimlYamlFile):
     def __init__(self, path: pathlib.Path) -> None:
         ext = self._check_extension_type(path)
         self._path = path
@@ -19,8 +19,8 @@ class SimlPickleFile(ISimlPickleFile):
 
     def _check_extension_type(self, path: pathlib.Path) -> SimlFileExtType:
         extensions = [
-            SimlFileExtType.PKL,
-            SimlFileExtType.PKLENC
+            SimlFileExtType.YAML,
+            SimlFileExtType.YAMLENC
         ]
         for ext in extensions:
             if path.name.endswith(ext.value):
@@ -32,7 +32,7 @@ class SimlPickleFile(ISimlPickleFile):
 
     @property
     def is_encrypted(self) -> bool:
-        return self._ext_type == SimlFileExtType.PKLENC
+        return self._ext_type == SimlFileExtType.YAMLENC
 
     @property
     def file_path(self) -> pathlib.Path:
@@ -49,8 +49,7 @@ class SimlPickleFile(ISimlPickleFile):
             return self._load_encrypted(decrypt_key=decrypt_key)
 
     def _load(self) -> dict:
-        with open(self._path, 'rb') as f:
-            parameters = pickle.load(f)
+        parameters = util.load_yaml(self._path)
         return parameters
 
     def _load_encrypted(self, decrypt_key: bytes) -> dict:
@@ -59,7 +58,7 @@ class SimlPickleFile(ISimlPickleFile):
                 "Key is None. Cannot decrypt encrypted file."
             )
 
-        parameters = pickle.load(
+        parameters = util.load_yaml(
             util.decrypt_file(decrypt_key, self._path)
         )
         return parameters
@@ -93,8 +92,8 @@ class SimlPickleFile(ISimlPickleFile):
             raise ValueError(
                 f"key is empty when encrpting file: {self.file_path}"
             )
-        data_string: bytes = pickle.dumps(dump_data)
-        bio = io.BytesIO(data_string)
+        data_string: str = yaml.dump(dump_data, None)
+        bio = io.BytesIO(data_string.encode('utf-8'))
         util.encrypt_file(key, self.file_path, bio)
 
     def _save(
@@ -102,4 +101,4 @@ class SimlPickleFile(ISimlPickleFile):
         dump_data: object
     ) -> None:
         with open(self.file_path, 'w') as fw:
-            pickle.dump(dump_data, fw)
+            yaml.dump(dump_data, fw)

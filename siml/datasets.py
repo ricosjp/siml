@@ -8,6 +8,7 @@ from tqdm import tqdm
 
 from .utils import fem_data_utils
 from . import util
+from siml.preprocessing import ScalersComposition
 
 
 class BaseDataset(torch.utils.data.Dataset):
@@ -286,14 +287,12 @@ class SimplifiedDataset(BaseDataset):
 
     def __init__(
             self, x_variable_names, y_variable_names, raw_dict_x,
-            prepost_converter,
             *, answer_raw_dict_y=None, num_workers=0, **kwargs):
         self.x_variable_names = x_variable_names
         self.y_variable_names = y_variable_names
         self.raw_dict_x = raw_dict_x
         self.answer_raw_dict_y = answer_raw_dict_y
         self.num_workers = num_workers
-        self.prepost_converter = prepost_converter
 
         self.x_dict_mode = isinstance(self.x_variable_names, dict)
         self.y_dict_mode = isinstance(self.y_variable_names, dict)
@@ -309,15 +308,14 @@ class SimplifiedDataset(BaseDataset):
         return 1
 
     def __getitem__(self, i):
-        converted_dict_data = self.prepost_converter.preprocess(
-            self.raw_dict_x)
+        dict_data = self.raw_dict_x
         x_data = self._merge_data(
-            converted_dict_data, self.x_variable_names)
+            dict_data,
+            self.x_variable_names
+        )
         if self.answer_raw_dict_y is not None:
-            converted_dict_data.update(self.prepost_converter.preprocess(
-                self.answer_raw_dict_y))
-            y_data = self._merge_data(
-                converted_dict_data, self.y_variable_names)
+            dict_data.update(self.answer_raw_dict_y)
+            y_data = self._merge_data(dict_data, self.y_variable_names)
         else:
             y_data = None
 

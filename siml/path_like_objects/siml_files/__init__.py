@@ -1,23 +1,12 @@
 # flake8: noqa
 from .interface import (
     ISimlCheckpointFile,
-    ISimlPklFile,
-    ISimlNumpyFile
+    ISimlPickleFile,
+    ISimlNumpyFile,
+    ISimlYamlFile
 )
 
-
-from .numpy_file import SimlNpyEncFile, SimlNpyFile, SimlNpzEncFile, SimlNpzFile
-from .pickle_file import SimlPklFile, SimlPklEncFile
-
-
-NUMPY_FILES: list[ISimlNumpyFile] = [
-    SimlNpyEncFile,
-    SimlNpyFile,
-    SimlNpzEncFile,
-    SimlNpzFile
-]
-
-PICKLE_FILES: list[ISimlPklFile] = [
-    SimlPklFile,
-    SimlPklEncFile
-]
+from .numpy_file import SimlNumpyFile
+from .pickle_file import SimlPickleFile
+from .checkpoint_file import SimlCheckpointFile
+from .yaml_file import SimlYamlFile

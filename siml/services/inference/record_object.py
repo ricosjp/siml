@@ -1,0 +1,25 @@
+import pathlib
+from typing import Optional, NamedTuple
+
+import numpy as np
+
+from siml.siml_variables import ISimlVariables
+
+
+class PredictionRecord(NamedTuple):
+    y_pred: ISimlVariables
+    y: ISimlVariables
+    x: ISimlVariables
+    original_shapes: tuple
+    data_directory: pathlib.Path
+    inference_time: float
+
+
+class PostPredictionRecord(NamedTuple):
+    dict_x: dict[str, np.ndarray]
+    dict_y: dict[str, np.ndarray]
+    original_shapes: tuple
+    data_directory: pathlib.Path
+    inference_time: float
+    inference_start_datetime: str
+    dict_answer: Optional[dict[str, np.ndarray]] = None

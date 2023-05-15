@@ -3,26 +3,49 @@ import pathlib
 import scipy.sparse as sp
 import numpy as np
 
+from siml.base.siml_typing import ArrayDataType
 from siml.base.siml_enums import SimlFileExtType
 from siml import util
 
 from .interface import ISimlNumpyFile
 
 
-class SimlNpyFile(ISimlNumpyFile):
+class SimlNumpyFile(ISimlNumpyFile):
     def __init__(self, path: pathlib.Path) -> None:
-        assert str(path).endswith(SimlFileExtType.NPY.value)
+        ext = self._check_extension_type(path)
         self._path = path
+        self._ext_type = ext
 
     def __str__(self) -> str:
-        return f"{SimlNpyFile.__name__}: {self._path}"
+        return f"{self.__class__.__name__}: {self._path}"
 
+    def _check_extension_type(self, path: pathlib.Path) -> SimlFileExtType:
+        extensions = [
+            SimlFileExtType.NPY,
+            SimlFileExtType.NPYENC,
+            SimlFileExtType.NPZ,
+            SimlFileExtType.NPZENC
+        ]
+        for ext in extensions:
+            if path.name.endswith(ext.value):
+                return ext
+
+        raise NotImplementedError(
+            f"Unknown file extension: {path}"
+        )
+
+    @property
     def is_encrypted(self) -> bool:
+        if self._ext_type == SimlFileExtType.NPYENC:
+            return True
+        if self._ext_type == SimlFileExtType.NPZENC:
+            return True
+
         return False
 
-    @classmethod
-    def get_file_extension(cls) -> str:
-        return SimlFileExtType.NPY.value
+    @property
+    def file_extension(self):
+        return self._ext_type.value
 
     @property
     def file_path(self) -> pathlib.Path:
@@ -34,117 +57,53 @@ class SimlNpyFile(ISimlNumpyFile):
         check_nan: bool = False,
         decrypt_key: bytes = None
     ) -> np.ndarray:
-        loaded_data = np.load(self._path)
-
+        loaded_data = self._load(decrypt_key=decrypt_key)
         if check_nan and np.any(np.isnan(loaded_data)):
             raise ValueError(
                 f"NaN found in {self._path}")
 
         return loaded_data
 
-
-class SimlNpyEncFile(ISimlNumpyFile):
-    def __init__(self, path: pathlib.Path) -> None:
-        assert str(path).endswith(SimlFileExtType.NPYENC.value)
-        self._path = path
-
-    def __str__(self) -> str:
-        return f"{SimlNpyEncFile.__name__}: {self._path}"
-
-    def is_encrypted(self) -> bool:
-        return True
-
-    @classmethod
-    def get_file_extension(cls) -> str:
-        return SimlFileExtType.NPYENC.value
-
-    @property
-    def file_path(self) -> pathlib.Path:
-        return self._path
-
-    def load(
+    def _load(
         self,
         *,
-        check_nan: bool = False,
         decrypt_key: bytes = None
-    ) -> np.ndarray:
-        loaded_data = np.load(
-            util.decrypt_file(decrypt_key, self._path)
+    ) -> ArrayDataType:
+        if self._ext_type == SimlFileExtType.NPY:
+            return self._load_npy()
+        if self._ext_type == SimlFileExtType.NPYENC:
+            return self._load_npy_enc(decrypt_key)
+        if self._ext_type == SimlFileExtType.NPZ:
+            return self._load_npz()
+        if self._ext_type == SimlFileExtType.NPZENC:
+            return self._load_npz_enc(decrypt_key)
+        raise NotImplementedError(
+            "Loading function for this file extenstion is not implemented: "
+            f"{self._path}"
         )
 
-        if check_nan and np.any(np.isnan(loaded_data)):
+    def _load_npy(self):
+        return np.load(self._path)
+
+    def _load_npz(self):
+        return sp.load_npz(self._path)
+
+    def _load_npy_enc(self, decrypt_key: bytes):
+        if decrypt_key is None:
             raise ValueError(
-                f"NaN found in {self._path}"
+                "Key is None. Cannot decrypt encrypted file."
             )
 
-        return loaded_data
-
-
-class SimlNpzFile(ISimlNumpyFile):
-    def __init__(self, path: pathlib.Path) -> None:
-        assert str(path).endswith(SimlFileExtType.NPZ.value)
-        self._path = path
-
-    def is_encrypted(self) -> bool:
-        return False
-
-    def __str__(self) -> str:
-        return f"{SimlNpzFile.__name__}: {self._path}"
-
-    @classmethod
-    def get_file_extension(cls) -> str:
-        return SimlFileExtType.NPZ.value
-
-    @property
-    def file_path(self) -> pathlib.Path:
-        return self._path
-
-    def load(
-        self,
-        *,
-        check_nan: bool = False,
-        decrypt_key: bytes = None
-    ) -> np.ndarray:
-        loaded_data = sp.load_npz(self._path)
-
-        if check_nan and np.any(np.isnan(loaded_data)):
-            raise ValueError(
-                f"NaN found in {self._path}")
-
-        return loaded_data
-
-
-class SimlNpzEncFile(ISimlNumpyFile):
-    def __init__(self, path: pathlib.Path) -> None:
-        assert str(path).endswith(SimlFileExtType.NPZENC.value)
-        self._path = path
-
-    def __str__(self) -> str:
-        return f"{SimlNpzEncFile.__name__}: {self._path}"
-
-    def is_encrypted(self) -> bool:
-        return True
-
-    @classmethod
-    def get_file_extension(cls) -> str:
-        return SimlFileExtType.NPZENC.value
-
-    @property
-    def file_path(self) -> pathlib.Path:
-        return self._path
-
-    def load(
-        self,
-        *,
-        check_nan: bool = False,
-        decrypt_key: bytes = None
-    ) -> np.ndarray:
-        loaded_data = sp.load_npz(
+        return np.load(
             util.decrypt_file(decrypt_key, self._path)
         )
 
-        if check_nan and np.any(np.isnan(loaded_data)):
+    def _load_npz_enc(self, decrypt_key: bytes):
+        if decrypt_key is None:
             raise ValueError(
-                f"NaN found in {self._path}")
+                "Key is None. Cannot decrypt encrypted file."
+            )
 
-        return loaded_data
+        return sp.load_npz(
+            util.decrypt_file(decrypt_key, self._path)
+        )

@@ -1,7 +1,7 @@
 from typing import Union
 
-import scipy.sparse as sp
 import numpy as np
+import scipy.sparse as sp
 
 
 ArrayDataType = Union[

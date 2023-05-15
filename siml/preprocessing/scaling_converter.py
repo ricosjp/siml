@@ -7,7 +7,7 @@ from typing import Optional
 import pydantic
 import pydantic.dataclasses as dc
 from siml import setting, util
-from siml.path_like_objects import ISimlFile, SimlDirectory
+from siml.path_like_objects import SimlDirectory, ISimlNumpyFile
 from siml.utils import path_utils
 from siml.siml_variables import ArrayDataType
 
@@ -83,7 +83,7 @@ class PreprocessInnerSettings():
     def get_scaler_fitting_files(
         self,
         variable_name: str
-    ) -> list[ISimlFile]:
+    ) -> list[ISimlNumpyFile]:
 
         preprocess_setting = self.preprocess_dict[variable_name]
         siml_directories = self.collect_interim_directories()

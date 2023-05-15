@@ -801,7 +801,7 @@ class TestTrainer(unittest.TestCase):
             main_setting.trainer.output_directory, ignore_errors=True)
         tr = trainer.Trainer(
             main_setting,
-            user_loss_fundtion_dic={
+            user_loss_function_dic={
                 "user_mspe": lambda x, y:
                 torch.mean(torch.square((x - y) / (torch.norm(y) + 0.0001)))
             })

@@ -1,21 +1,30 @@
 import pathlib
 
-from .siml_files import NUMPY_FILES, PICKLE_FILES, ISimlNumpyFile, ISimlPklFile
+from .siml_files import (
+    ISimlNumpyFile,
+    ISimlPickleFile,
+    ISimlCheckpointFile,
+    ISimlYamlFile,
+    SimlNumpyFile,
+    SimlPickleFile,
+    SimlCheckpointFile,
+    SimlYamlFile
+)
 
 
 class SimlFileBulider:
     @staticmethod
     def numpy_file(file_path: pathlib.Path) -> ISimlNumpyFile:
-        for file_cls in NUMPY_FILES:
-            if str(file_path).endswith(file_cls.get_file_extension()):
-                return file_cls(file_path)
-
-        raise ValueError(f"File type not understood: {file_path}")
+        return SimlNumpyFile(file_path)
 
     @staticmethod
-    def pickle_file(file_path: pathlib.Path) -> ISimlPklFile:
-        for file_cls in PICKLE_FILES:
-            if str(file_path).endswith(file_cls.get_file_extension()):
-                return file_cls(file_path)
+    def pickle_file(file_path: pathlib.Path) -> ISimlPickleFile:
+        return SimlPickleFile(file_path)
 
-        raise ValueError(f"File type not understood: {file_path}")
+    @staticmethod
+    def checkpoint_file(file_path: pathlib.Path) -> ISimlCheckpointFile:
+        return SimlCheckpointFile(file_path)
+
+    @staticmethod
+    def yaml_file(file_path: pathlib.Path) -> ISimlYamlFile:
+        return SimlYamlFile(file_path)
