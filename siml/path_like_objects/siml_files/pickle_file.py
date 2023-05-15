@@ -44,9 +44,9 @@ class SimlPickleFile(ISimlPickleFile):
         decrypt_key: bytes = None
     ) -> dict:
         if self.is_encrypted:
-            return self._load()
-        else:
             return self._load_encrypted(decrypt_key=decrypt_key)
+        else:
+            return self._load()
 
     def _load(self) -> dict:
         with open(self._path, 'rb') as f:
@@ -101,5 +101,5 @@ class SimlPickleFile(ISimlPickleFile):
         self,
         dump_data: object
     ) -> None:
-        with open(self.file_path, 'w') as fw:
+        with open(self.file_path, 'wb') as fw:
             pickle.dump(dump_data, fw)

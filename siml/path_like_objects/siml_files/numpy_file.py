@@ -107,3 +107,32 @@ class SimlNumpyFile(ISimlNumpyFile):
         return sp.load_npz(
             util.decrypt_file(decrypt_key, self._path)
         )
+
+    def save(
+        self,
+        data: ArrayDataType,
+        *,
+        encrypt_key: bytes = None,
+        overwrite: bool = True
+    ) -> None:
+        if not overwrite:
+            if self.file_path.exists():
+                raise FileExistsError(
+                    f"{self._path} already exists"
+                )
+
+        if self.is_encrypted:
+            if encrypt_key is None:
+                raise ValueError(
+                    f"key is empty when encrpting file: {self._path}"
+                )
+
+        file_basename = self._path.name.removesuffix(
+            self._ext_type.value
+        )
+        util.save_variable(
+            self._path.parent,
+            file_basename=file_basename,
+            data=data,
+            encrypt_key=encrypt_key
+        )

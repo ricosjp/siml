@@ -44,9 +44,9 @@ class SimlYamlFile(ISimlYamlFile):
         decrypt_key: bytes = None
     ) -> dict:
         if self.is_encrypted:
-            return self._load()
-        else:
             return self._load_encrypted(decrypt_key=decrypt_key)
+        else:
+            return self._load()
 
     def _load(self) -> dict:
         parameters = util.load_yaml(self._path)
@@ -59,7 +59,7 @@ class SimlYamlFile(ISimlYamlFile):
             )
 
         parameters = util.load_yaml(
-            util.decrypt_file(decrypt_key, self._path)
+            util.decrypt_file(decrypt_key, self._path, return_stringio=True)
         )
         return parameters
 

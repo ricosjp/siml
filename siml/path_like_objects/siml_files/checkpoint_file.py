@@ -1,4 +1,5 @@
 import pathlib
+from typing import Any
 import io
 import re
 
@@ -12,7 +13,7 @@ from .interface import ISimlCheckpointFile
 
 class SimlCheckpointFile(ISimlCheckpointFile):
     def __init__(self, path: pathlib.Path):
-        self._ext = self._check_extension_type(path)
+        self._ext_type = self._check_extension_type(path)
         self._path = path
 
     def _check_extension_type(self, path: pathlib.Path) -> SimlFileExtType:
@@ -25,7 +26,7 @@ class SimlCheckpointFile(ISimlCheckpointFile):
                 return ext
 
         raise NotImplementedError(
-            f"Unknown file extension. {self._path.name}."
+            f"Unknown file extension. {path}."
             ".pth or .pth.enc is allowed"
         )
 
@@ -38,14 +39,6 @@ class SimlCheckpointFile(ISimlCheckpointFile):
                 "File name does not start with 'snapshot_epoch_': "
                 f"{self._path.name}"
             )
-
-    def _get_epoch(self) -> int:
-        self._check_format()
-
-        num_epoch = re.search(
-            r'snapshot_epoch_(\d+)', self._path.name
-        ).groups()[0]
-        return int(num_epoch)
 
     @property
     def file_path(self) -> pathlib.Path:
@@ -62,10 +55,10 @@ class SimlCheckpointFile(ISimlCheckpointFile):
 
     @property
     def is_encrypted(self) -> bool:
-        return self._ext == SimlFileExtType.PTHENC
+        return self._ext_type == SimlFileExtType.PTHENC
 
-    def load(self, device: str, *, decrypt_key: bytes = None) -> dict:
-        if self.is_encrypted():
+    def load(self, device: str, *, decrypt_key: bytes = None) -> Any:
+        if self.is_encrypted:
             return self._load_encrypted(
                 device=device,
                 decrypt_key=decrypt_key
@@ -73,7 +66,7 @@ class SimlCheckpointFile(ISimlCheckpointFile):
         else:
             return self._load(device=device)
 
-    def _load(self, device: str) -> dict:
+    def _load(self, device: str) -> Any:
         return torch.load(self._path, map_location=device)
 
     def _load_encrypted(
@@ -120,8 +113,8 @@ class SimlCheckpointFile(ISimlCheckpointFile):
                 f"key is empty when encrpting file: {self.file_path}"
             )
         buffer = io.BytesIO()
-        data_byte = torch.save(dump_data, buffer)
-        util.encrypt_file(key, self.file_path, data_byte)
+        torch.save(dump_data, buffer)
+        util.encrypt_file(key, self.file_path, buffer)
 
     def _save(
         self,
