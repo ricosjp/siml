@@ -1,5 +1,7 @@
 import pathlib
 from typing import Union, Optional
+from types import MappingProxyType
+import dataclasses as dc
 
 import numpy as np
 
@@ -9,13 +11,15 @@ from siml.base.siml_enums import DirectoryType
 # https://drivendata.github.io/cookiecutter-data-science/
 
 
+@dc.dataclass(init=True, frozen=True)
 class SimlPathRules:
-    def __init__(self):
-        self._type_to_name = {
+    _type_to_name: MappingProxyType = MappingProxyType(
+        {
             DirectoryType.RAW: "raw",
             DirectoryType.INTERIM: "interim",
             DirectoryType.PREPROCESSED: "preprocessed"
         }
+    )
 
     def is_target_directory_type(
         self,
@@ -36,11 +40,6 @@ class SimlPathRules:
         self,
         data_directory: pathlib.Path
     ) -> Union[DirectoryType, None]:
-        if not data_directory.is_dir():
-            raise ValueError(
-                f"Path is not a directory: {data_directory}"
-            )
-
         for dir_type in self._type_to_name.keys():
             if self.is_target_directory_type(
                 data_directory,
@@ -53,16 +52,40 @@ class SimlPathRules:
     def determine_output_directory(
         self,
         data_directory: pathlib.Path,
-        output_base: pathlib.Path
+        output_base_directory: pathlib.Path
     ) -> pathlib.Path:
+        """Determine output directory by replacing a string 
+         in the input_directory according to directory type of
+         data directory.
+
+        Parameters
+        ----------
+        input_directory: pathlib.Path
+            Input directory path.
+        output_base_directory: pathlib.Path
+            Output base directory path. The output directry name is under that
+            directory.
+
+        Returns
+        -------
+        output_directory: pathlib.Path
+            Detemined output directory path.
+
+        Examples
+        --------
+        input_direcotry = "./aaa/bbb/interim/ddd"
+        output_base_directory = "./aaa/ccc"
+
+        output_directory = "./aaa/ccc/bbb/ddd"
+        """
 
         dir_type = self.detect_directory_type(data_directory)
         if dir_type is None:
-            return output_base
+            return output_base_directory
 
         output_directory = self._determine_output_directory(
             data_directory,
-            output_base,
+            output_base_directory,
             self._type_to_name[dir_type]
         )
         return output_directory
@@ -82,7 +105,7 @@ class SimlPathRules:
                     data_directory,
                     dir_type_to=dir_type
                 )
-                if case_dir is None:
+                if case_dir.is_dir():
                     return case_dir
             return None
 
@@ -91,7 +114,7 @@ class SimlPathRules:
 
         path = self.determine_output_directory(
             data_directory,
-            output_base=write_simulation_base
+            output_base_directory=write_simulation_base
         )
         return path
 
@@ -143,7 +166,7 @@ class SimlPathRules:
             to_item=str_replace_to
         )
 
-        output_directory = output_base_directory.joinpath(parts)
+        output_directory = output_base_directory.joinpath(*parts)
         return output_directory
 
     def switch_directory_type(
@@ -163,7 +186,7 @@ class SimlPathRules:
         )
 
         path = pathlib.Path()
-        return path.joinpath(parts)
+        return path.joinpath(*parts)
 
     def common_parent(
         self,
@@ -182,19 +205,17 @@ class SimlPathRules:
         common_parent: pathlib.Path
             Path to common parent directory
         """
-        parents_1 = directory_1.parents
-        parents_2 = directory_2.parents
-        min_idx_1 = len(parents_1) - 1
-        min_idx_2 = len(parents_2) - 1
-        min_idx = min(len(parents_1), len(parents_2))
+        parts_1 = directory_1.parts
+        parts_2 = directory_2.parts
+        min_len = min(len(parts_1), len(parts_2))
 
-        common_parent = pathlib.Path("")
-        for i in range(min_idx):
-            if parents_1[min_idx_1 - i] == parents_2[min_idx_2 - i]:
-                common_parent = parents_1[min_idx_1 - i]
+        common_parts = []
+        for i in range(min_len):
+            if parts_1[i] == parts_2[i]:
+                common_parts.append(parts_1[i])
             else:
                 break
-        return common_parent
+        return pathlib.Path("").joinpath(*common_parts)
 
     def _replace_parts(
         self,
@@ -203,7 +224,7 @@ class SimlPathRules:
         to_item: str
     ) -> list[str]:
 
-        parts = directory.parts
+        parts = list(directory.parts)
         replace_indices = np.where(
             np.array(parts) == from_item
         )[0]
@@ -213,7 +234,6 @@ class SimlPathRules:
                 f"Input directory {directory} contains several "
                 f"{from_item} parts, thus ambiguous.")
 
-        parts = directory.parts
         for idx in replace_indices:
             parts[idx] = to_item
 

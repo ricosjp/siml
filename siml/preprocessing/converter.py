@@ -9,7 +9,8 @@ import femio
 import numpy as np
 
 from siml import setting, util
-from siml.utils import fem_data_utils, path_utils
+from siml.utils import fem_data_utils
+from siml.services.path_rules import SimlPathRules
 
 
 class IConvertFunction(metaclass=abc.ABCMeta):
@@ -92,7 +93,7 @@ class SingleDataConverter:
         if self._output_directory is not None:
             return self._output_directory
         else:
-            return path_utils.determine_output_directory(
+            return SimlPathRules.determine_output_directory(
                 self.raw_path,
                 self.setting.output_base_directory,
                 'raw'

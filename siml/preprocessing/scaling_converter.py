@@ -8,8 +8,8 @@ import pydantic
 import pydantic.dataclasses as dc
 from siml import setting, util
 from siml.path_like_objects import SimlDirectory, ISimlNumpyFile
-from siml.utils import path_utils
 from siml.siml_variables import ArrayDataType
+from siml.services.path_rules import SimlPathRules
 
 from .siml_scalers import IScalingSaveFunction, DefaultSaveFunction
 from .scalers_composition import ScalersComposition
@@ -103,7 +103,7 @@ class PreprocessInnerSettings():
         self,
         data_directory: pathlib.Path
     ) -> pathlib.Path:
-        output_directory = path_utils.determine_output_directory(
+        output_directory = SimlPathRules.determine_output_directory(
             data_directory,
             self.preprocessed_root,
             self.str_replace

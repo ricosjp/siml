@@ -105,7 +105,7 @@ class InnerInfererSetting(pydantic.BaseModel):
         rules = SimlPathRules()
 
         path = rules.determine_output_directory(
-            data_directory, output_base=base
+            data_directory, output_base_directory=base
         )
         return path
 
