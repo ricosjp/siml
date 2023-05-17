@@ -25,6 +25,11 @@ class ISimlBaseFile(metaclass=abc.ABCMeta):
 
 
 class ISimlNumpyFile(ISimlBaseFile, metaclass=abc.ABCMeta):
+    @property
+    @abc.abstractmethod
+    def file_extension(self) -> str:
+        raise NotImplementedError()
+
     @abc.abstractmethod
     def load(
         self,

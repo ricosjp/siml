@@ -10,6 +10,7 @@ from siml import setting, util
 from siml.path_like_objects import SimlDirectory, ISimlNumpyFile
 from siml.siml_variables import ArrayDataType
 from siml.services.path_rules import SimlPathRules
+from siml.base.siml_enums import DirectoryType
 
 from .siml_scalers import IScalingSaveFunction, DefaultSaveFunction
 from .scalers_composition import ScalersComposition
@@ -27,7 +28,6 @@ class PreprocessInnerSettings():
     interim_directories: list[pathlib.Path]
     preprocessed_root: pathlib.Path
     recursive: bool = True
-    str_replace: str = 'interim'
     REQUIRED_FILE_NAMES: Optional[list[str]] = None
     FINISHED_FILE: str = 'preprocessed'
     PREPROCESSORS_PKL_NAME: str = 'preprocessors.pkl'
@@ -103,10 +103,11 @@ class PreprocessInnerSettings():
         self,
         data_directory: pathlib.Path
     ) -> pathlib.Path:
-        output_directory = SimlPathRules.determine_output_directory(
+        rules = SimlPathRules()
+        output_directory = rules.determine_output_directory(
             data_directory,
             self.preprocessed_root,
-            self.str_replace
+            allowed_type=DirectoryType.INTERIM
         )
         return output_directory
 
@@ -129,8 +130,7 @@ class ScalingConverter:
         save_func: Optional[IScalingSaveFunction] = None,
         max_process: int = None,
         allow_missing: bool = False,
-        recursive: bool = True,
-        str_replace: str = 'interim',
+        recursive: bool = True
     ) -> None:
         """
         Initialize ScalingConverter
@@ -145,9 +145,6 @@ class ScalingConverter:
             save_func: callable, optional
                 Callback function to customize save data. It should accept
                 output_directory, variable_name, and transformed_data.
-            str_replace: str, optional
-                String to replace data directory in order to convert
-                from interim data to preprocessed data.
             max_process: int, optional
                 The maximum number of processes.
             allow_missing: bool, optional
@@ -158,8 +155,7 @@ class ScalingConverter:
             preprocess_dict=main_setting.preprocess,
             interim_directories=main_setting.data.interim,
             preprocessed_root=main_setting.data.preprocessed_root,
-            recursive=recursive,
-            str_replace=str_replace
+            recursive=recursive
         )
 
         self._scalers: ScalersComposition \

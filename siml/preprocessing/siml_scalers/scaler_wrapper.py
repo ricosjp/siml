@@ -137,7 +137,7 @@ class SimlScalerWrapper(ISimlScaler):
 
         loaded_data = siml_file.load(decrypt_key=self.key)
 
-        if siml_file.get_file_extension() in [
+        if siml_file.file_extension in [
                 SimlFileExtType.NPZENC.value, SimlFileExtType.NPZ.value]:
             if not sp.issparse(loaded_data):
                 raise ValueError(

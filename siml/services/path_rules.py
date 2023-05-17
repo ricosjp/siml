@@ -52,7 +52,9 @@ class SimlPathRules:
     def determine_output_directory(
         self,
         data_directory: pathlib.Path,
-        output_base_directory: pathlib.Path
+        output_base_directory: pathlib.Path,
+        *,
+        allowed_type: Optional[DirectoryType] = None
     ) -> pathlib.Path:
         """Determine output directory by replacing a string 
          in the input_directory according to directory type of
@@ -82,6 +84,13 @@ class SimlPathRules:
         dir_type = self.detect_directory_type(data_directory)
         if dir_type is None:
             return output_base_directory
+
+        if allowed_type is not None:
+            if dir_type != allowed_type:
+                raise ValueError(
+                    f"allowed directory type is {allowed_type.value}."
+                    f"Input: {data_directory}, DirType: {dir_type.value}"
+                )
 
         output_directory = self._determine_output_directory(
             data_directory,

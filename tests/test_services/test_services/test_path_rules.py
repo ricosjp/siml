@@ -45,6 +45,43 @@ def test__determine_output_directory(data_path, output_base, expect):
     assert result == pathlib.Path(expect)
 
 
+@pytest.mark.parametrize("data_path, output_base, allowed_type, expect", [
+    ("./aaa/bbb/interim/ddd", "./aaa/ccc", DirectoryType.INTERIM, "./aaa/ccc/bbb/ddd"),
+    ("data/a/raw/b/c", "data/output", DirectoryType.RAW, "data/output/a/b/c"),
+    ("data/preprocessed/b/c", "data/output/", DirectoryType.PREPROCESSED, "data/output/b/c"),
+    ("data/a/b/c", "data/output/", DirectoryType.RAW, "data/output")
+])
+def test__determine_output_directory_allowed_option(
+    data_path, output_base, allowed_type, expect
+):
+    rule = SimlPathRules()
+    result = rule.determine_output_directory(
+        pathlib.Path(data_path),
+        pathlib.Path(output_base),
+        allowed_type=allowed_type
+    )
+
+    assert result == pathlib.Path(expect)
+
+
+@pytest.mark.parametrize("data_path, output_base, allowed_type", [
+    ("./aaa/bbb/interim/ddd", "./aaa/ccc", DirectoryType.RAW),
+    ("data/a/raw/b/c", "data/output", DirectoryType.INTERIM),
+    ("data/preprocessed/b/c", "data/output/", DirectoryType.RAW),
+    ("data/a/interim/c", "data/output/", DirectoryType.PREPROCESSED)
+])
+def test__determine_output_directory_allowed_option_raise(
+    data_path, output_base, allowed_type
+):
+    rule = SimlPathRules()
+    with pytest.raises(ValueError):
+        _ = rule.determine_output_directory(
+            pathlib.Path(data_path),
+            pathlib.Path(output_base),
+            allowed_type=allowed_type
+        )
+
+
 @pytest.mark.parametrize("input_dir, output_dir, str_replace, expect", [
     (
         pathlib.Path('data/raw/a/b'),
