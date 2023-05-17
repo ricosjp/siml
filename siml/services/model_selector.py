@@ -44,6 +44,10 @@ class BestModelSelector(IModelSelector):
             SimlFileBulider.checkpoint_file(p) for p in
             list(dir_path.glob('snapshot_epoch_*'))
         ]
+        if len(snapshots) == 0:
+            raise FileNotFoundError(
+                f"snapshot file does not exist in {dir_path}"
+            )
 
         df = pd.read_csv(dir_path / 'log.csv',
                          header=0,
@@ -68,6 +72,11 @@ class LatestModelSelector(IModelSelector):
             SimlFileBulider.checkpoint_file(p) for p in
             list(dir_path.glob('snapshot_epoch_*'))
         ]
+        if len(snapshots) == 0:
+            raise FileNotFoundError(
+                f"snapshot file does not exist in {dir_path}"
+            )
+
         max_epoch = max([p.epoch for p in snapshots])
         target_snapshot: ISimlCheckpointFile = \
             [p for p in snapshots if p.epoch == max_epoch][0]
@@ -84,6 +93,10 @@ class TrainBestModelSelector(IModelSelector):
             SimlFileBulider.checkpoint_file(p) for p in
             list(dir_path.glob('snapshot_epoch_*'))
         ]
+        if len(snapshots) == 0:
+            raise FileNotFoundError(
+                f"snapshot file does not exist in {dir_path}"
+            )
 
         df = pd.read_csv(
             dir_path / 'log.csv',
@@ -108,9 +121,16 @@ class SpecifiedModelSelector(IModelSelector):
             SimlFileBulider.checkpoint_file(p) for p in
             list(dir_path.glob('snapshot_epoch_*'))
         ]
-        target_snapshot: ISimlCheckpointFile = \
-            [p for p in snapshots if p.epoch == target_epoch][0]
-        return target_snapshot
+        target_snapshots: ISimlCheckpointFile = \
+            [p for p in snapshots if p.epoch == target_epoch]
+
+        if len(target_snapshots) == 0:
+            raise FileNotFoundError(
+                f"snapshot_epoch_{target_epoch} does not exist in "
+                f"{dir_path}"
+            )
+
+        return target_snapshots[0]
 
 
 class DeployedModelSelector(IModelSelector):
@@ -118,7 +138,7 @@ class DeployedModelSelector(IModelSelector):
     def select_model(
         dir_path: pathlib.Path,
         **kwards
-    ) -> pathlib.Path:
+    ) -> ISimlCheckpointFile:
         model_name = SimlConstItems.DEPLOYED_MODEL_NAME
         extensions = [
             SimlFileExtType.PTH, SimlFileExtType.PTHENC
