@@ -46,10 +46,30 @@ def test__determine_output_directory(data_path, output_base, expect):
 
 
 @pytest.mark.parametrize("data_path, output_base, allowed_type, expect", [
-    ("./aaa/bbb/interim/ddd", "./aaa/ccc", DirectoryType.INTERIM, "./aaa/ccc/bbb/ddd"),
-    ("data/a/raw/b/c", "data/output", DirectoryType.RAW, "data/output/a/b/c"),
-    ("data/preprocessed/b/c", "data/output/", DirectoryType.PREPROCESSED, "data/output/b/c"),
-    ("data/a/b/c", "data/output/", DirectoryType.RAW, "data/output")
+    (
+        "./aaa/bbb/interim/ddd",
+        "./aaa/ccc",
+        DirectoryType.INTERIM,
+        "./aaa/ccc/bbb/ddd"
+    ),
+    (
+        "data/a/raw/b/c",
+        "data/output",
+        DirectoryType.RAW,
+        "data/output/a/b/c"
+    ),
+    (
+        "data/preprocessed/b/c",
+        "data/output/",
+        DirectoryType.PREPROCESSED,
+        "data/output/b/c"
+    ),
+    (
+        "data/a/b/c",
+        "data/output/",
+        DirectoryType.RAW,
+        "data/output"
+    )
 ])
 def test__determine_output_directory_allowed_option(
     data_path, output_base, allowed_type, expect

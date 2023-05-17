@@ -56,7 +56,7 @@ class SimlPathRules:
         *,
         allowed_type: Optional[DirectoryType] = None
     ) -> pathlib.Path:
-        """Determine output directory by replacing a string 
+        """Determine output directory by replacing a string
          in the input_directory according to directory type of
          data directory.
 

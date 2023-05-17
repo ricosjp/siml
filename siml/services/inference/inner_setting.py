@@ -4,7 +4,7 @@ from typing import Optional, Union
 import pydantic
 
 from siml import setting
-from siml.services.model_selector import ModelSelectorBuilder 
+from siml.services.model_selector import ModelSelectorBuilder
 from siml.services.path_rules import SimlPathRules
 
 
