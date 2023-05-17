@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 
 from siml import setting
-from siml.path_like_objects import SimlFileBulider
+from siml.path_like_objects import SimlFileBuilder
 from siml.preprocessing import ScalersComposition
 
 
@@ -52,7 +52,7 @@ def test__is_same_after_load_dumped_data(scalers_composition):
 
     sample_data = {
         "tensor_stress": [
-            SimlFileBulider.create(
+            SimlFileBuilder.create(
                 pathlib.Path(
                     "tests/data/deform/interim/train/"
                     "tet2_3_modulusx0.9000/tensor_stress.npy"

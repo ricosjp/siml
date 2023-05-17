@@ -6,7 +6,7 @@ import pandas as pd
 
 from siml.base.siml_const import SimlConstItems
 from siml.base.siml_enums import ModelSelectionType, SimlFileExtType
-from siml.path_like_objects import ISimlCheckpointFile, SimlFileBulider
+from siml.path_like_objects import ISimlCheckpointFile, SimlFileBuilder
 
 
 class IModelSelector(metaclass=abc.ABCMeta):
@@ -41,7 +41,7 @@ class BestModelSelector(IModelSelector):
         **args
     ) -> ISimlCheckpointFile:
         snapshots = [
-            SimlFileBulider.checkpoint_file(p) for p in
+            SimlFileBuilder.checkpoint_file(p) for p in
             list(dir_path.glob('snapshot_epoch_*'))
         ]
         if len(snapshots) == 0:
@@ -69,7 +69,7 @@ class LatestModelSelector(IModelSelector):
         **args
     ) -> ISimlCheckpointFile:
         snapshots = [
-            SimlFileBulider.checkpoint_file(p) for p in
+            SimlFileBuilder.checkpoint_file(p) for p in
             list(dir_path.glob('snapshot_epoch_*'))
         ]
         if len(snapshots) == 0:
@@ -90,7 +90,7 @@ class TrainBestModelSelector(IModelSelector):
         **args
     ) -> ISimlCheckpointFile:
         snapshots = [
-            SimlFileBulider.checkpoint_file(p) for p in
+            SimlFileBuilder.checkpoint_file(p) for p in
             list(dir_path.glob('snapshot_epoch_*'))
         ]
         if len(snapshots) == 0:
@@ -118,7 +118,7 @@ class SpecifiedModelSelector(IModelSelector):
         **args
     ) -> ISimlCheckpointFile:
         snapshots = [
-            SimlFileBulider.checkpoint_file(p) for p in
+            SimlFileBuilder.checkpoint_file(p) for p in
             list(dir_path.glob('snapshot_epoch_*'))
         ]
         target_snapshots: ISimlCheckpointFile = \
@@ -146,7 +146,7 @@ class DeployedModelSelector(IModelSelector):
         for ext in extensions:
             p = dir_path / f"{model_name}{ext.value}"
             if p.exists():
-                return SimlFileBulider.checkpoint_file(p)
+                return SimlFileBuilder.checkpoint_file(p)
 
         raise FileNotFoundError(
             f"Deployed model file does not exist in {dir_path}"

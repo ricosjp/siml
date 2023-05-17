@@ -2,7 +2,7 @@ import pytest
 import pathlib
 
 from siml import setting
-from siml.path_like_objects import SimlFileBulider
+from siml.path_like_objects import SimlFileBuilder
 from siml.services import ModelBuilder, ModelEnvironmentSetting
 
 TEST_DIR = pathlib.Path("tests/data/simplified/pretrained")
@@ -60,7 +60,7 @@ def test__enable_create_loaded(prepare_settings):
         trainer_setting=main_settings.trainer,
         env_setting=env_setting
     )
-    checkpoint_file = SimlFileBulider.checkpoint_file(
+    checkpoint_file = SimlFileBuilder.checkpoint_file(
         TEST_DIR / "snapshot_epoch_1000.pth"
     )
     builder.create_loaded(checkpoint_file)

@@ -4,7 +4,7 @@ from typing import Union, Callable, Any
 from siml.base.siml_enums import SimlFileExtType
 
 from .siml_file_builder import (
-    ISimlNumpyFile, ISimlYamlFile, ISimlPickleFile, SimlFileBulider
+    ISimlNumpyFile, ISimlYamlFile, ISimlPickleFile, SimlFileBuilder
 )
 
 
@@ -33,7 +33,7 @@ class SimlDirectory:
         return self._find_file(
             file_base_name=file_base_name,
             extensions=extensions,
-            builder=SimlFileBulider.pickle_file,
+            builder=SimlFileBuilder.pickle_file,
             allow_missing=allow_missing
         )
 
@@ -53,7 +53,7 @@ class SimlDirectory:
         return self._find_file(
             file_base_name=file_base_name,
             extensions=extensions,
-            builder=SimlFileBulider.yaml_file,
+            builder=SimlFileBuilder.yaml_file,
             allow_missing=allow_missing
         )
 
@@ -73,7 +73,7 @@ class SimlDirectory:
         return self._find_file(
             variable_name,
             extensions,
-            SimlFileBulider.numpy_file,
+            SimlFileBuilder.numpy_file,
             allow_missing=allow_missing
         )
 

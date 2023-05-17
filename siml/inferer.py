@@ -9,7 +9,7 @@ from torch import Tensor
 from siml import datasets, setting
 from siml.base.siml_const import SimlConstItems
 from siml.loss_operations import LossCalculatorBuilder
-from siml.path_like_objects import SimlDirectory, SimlFileBulider
+from siml.path_like_objects import SimlDirectory, SimlFileBuilder
 from siml.preprocessing import ScalersComposition
 from siml.preprocessing.converter import ILoadFunction
 from siml.services import ModelEnvironmentSetting, ModelSelectorBuilder
@@ -455,13 +455,13 @@ class Inferer():
         # output name
         output_model_name = \
             SimlConstItems.DEPLOYED_MODEL_NAME + f".pth{enc_ext}"
-        output_model_path = SimlFileBulider.checkpoint_file(
+        output_model_path = SimlFileBuilder.checkpoint_file(
             output_directory / output_model_name
         )
-        output_pkl = SimlFileBulider.pickle_file(
+        output_pkl = SimlFileBuilder.pickle_file(
             output_directory / f'preprocessors.pkl{enc_ext}'
         )
-        output_setting_yaml = SimlFileBulider.yaml_file(
+        output_setting_yaml = SimlFileBuilder.yaml_file(
             output_directory / 'settings.yml'
         )
         # Overwrite Setting
@@ -469,13 +469,13 @@ class Inferer():
 
         # Model
         snapshot_file = self._inner_setting.get_snapshot_file_path()
-        siml_path = SimlFileBulider.checkpoint_file(snapshot_file)
+        siml_path = SimlFileBuilder.checkpoint_file(snapshot_file)
         model_data = siml_path.load(device="cpu", decrypt_key=key)
         output_model_path.save(model_data, encrypt_key=key)
 
         # pickle
         pkl_path = self._inner_setting.get_converter_parameters_pkl_path()
-        pkl_path = SimlFileBulider.pickle_file(pkl_path)
+        pkl_path = SimlFileBuilder.pickle_file(pkl_path)
         pkl_data = pkl_path.load(decrypt_key=key)
         output_pkl.save(
             pkl_data, encrypt_key=key

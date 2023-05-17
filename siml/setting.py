@@ -11,7 +11,7 @@ import optuna
 import yaml
 
 from siml import util
-from siml.path_like_objects import SimlFileBulider
+from siml.path_like_objects import SimlFileBuilder
 
 
 @dc.dataclass
@@ -1176,7 +1176,7 @@ class MainSetting:
         decrypt_key: Optional[bytes] = None
     ):
 
-        siml_file = SimlFileBulider.yaml_file(settings_yaml)
+        siml_file = SimlFileBuilder.yaml_file(settings_yaml)
         dict_settings = siml_file.load(decrypt_key=decrypt_key)
         if not siml_file.is_encrypted:
             name = siml_file.file_path.stem

@@ -1,3 +1,4 @@
+from __future__ import annotations
 import multiprocessing as multi
 import pathlib
 import pickle
@@ -122,6 +123,22 @@ class ScalingConverter:
             settings_yaml, replace_preprocessed=False)
         return cls(main_setting, **args)
 
+    @classmethod
+    def read_pkl(
+        cls,
+        main_setting: setting.MainSetting,
+        converter_parameters_pkl: pathlib.Path,
+        key: bytes = None,
+    ):
+        scalers = ScalersComposition.create_from_file(
+            converter_parameters_pkl=converter_parameters_pkl,
+            key=key
+        )
+        return cls(
+            main_setting=main_setting,
+            scalers=scalers
+        )
+
     def __init__(
         self,
         main_setting: setting.MainSetting,
@@ -130,7 +147,8 @@ class ScalingConverter:
         save_func: Optional[IScalingSaveFunction] = None,
         max_process: int = None,
         allow_missing: bool = False,
-        recursive: bool = True
+        recursive: bool = True,
+        scalers: Optional[ScalersComposition] = None
     ) -> None:
         """
         Initialize ScalingConverter
@@ -158,12 +176,15 @@ class ScalingConverter:
             recursive=recursive
         )
 
-        self._scalers: ScalersComposition \
-            = ScalersComposition.create_from_dict(
-                preprocess_dict=main_setting.preprocess,
-                max_process=max_process,
-                key=main_setting.data.encrypt_key
-            )
+        if scalers is None:
+            self._scalers: ScalersComposition \
+                = ScalersComposition.create_from_dict(
+                    preprocess_dict=main_setting.preprocess,
+                    max_process=max_process,
+                    key=main_setting.data.encrypt_key
+                )
+        else:
+            self._scalers = scalers
 
         self._decrypt_key = main_setting.data.encrypt_key
         self.max_process = max_process

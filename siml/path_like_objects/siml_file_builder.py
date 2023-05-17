@@ -12,7 +12,7 @@ from .siml_files import (
 )
 
 
-class SimlFileBulider:
+class SimlFileBuilder:
     @staticmethod
     def numpy_file(file_path: pathlib.Path) -> ISimlNumpyFile:
         return SimlNumpyFile(file_path)

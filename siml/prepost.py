@@ -2,8 +2,6 @@
 
 import datetime as dt
 import itertools as it
-from typing import Union, Optional
-import pathlib
 
 import femio
 import matplotlib.pyplot as plt
@@ -11,9 +9,6 @@ import numpy as np
 import scipy.sparse as sp
 
 from siml import util
-from siml.utils import fem_data_utils
-from siml.preprocessing import ScalersComposition
-from siml.siml_variables import ArrayDataType
 
 
 def concatenate_preprocessed_data(
@@ -78,29 +73,6 @@ def concatenate_preprocessed_data(
                 output_directory_base / f"validation/{variable_name}.npy",
                 data[indices[train_length+validation_length:]])
     return
-
-
-class Converter:
-
-    def __init__(self, converter_parameters_pkl, key=None):
-        self.converters = ScalersComposition.create_from_file(
-            converter_parameters_pkl=converter_parameters_pkl,
-            key=key
-        )
-
-    def preprocess(self, dict_data_x: dict):
-        input_dict = {
-            name: v for name, v in dict_data_x.items()
-            if name in self.converters.get_variable_names()
-        }
-
-        converted_dict_data_x = self.converters.transform_dict(input_dict)
-        if len(converted_dict_data_x) == 0:
-            raise ValueError(
-                'No converted data found. '
-                'Check the preprocessed directory set correctly.'
-            )
-        return converted_dict_data_x
 
 
 def normalize_adjacency_matrix(adj):

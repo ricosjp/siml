@@ -1,10 +1,14 @@
+from __future__ import annotations
 from typing import Optional, Union
+import pathlib
 
 import numpy as np
 
 from siml.preprocessing import ScalersComposition
 from siml.services.path_rules import SimlPathRules
-from siml.setting import CollectionVariableSetting, TrainerSetting
+from siml.setting import (
+    CollectionVariableSetting, TrainerSetting, MainSetting
+)
 from siml.services.inference.record_object import (
     PostPredictionRecord, PredictionRecord
 )
@@ -13,6 +17,25 @@ from .inverse_scaling_converter import InverseScalingConverter
 
 
 class PostProcessor:
+    @classmethod
+    def create(
+        cls,
+        main_setting: MainSetting,
+        pkl_path: pathlib.Path,
+        *,
+        key: bytes = None,
+        perform_inverse: bool = True
+    ):
+        scalers = ScalersComposition.create_from_file(
+            converter_parameters_pkl=pkl_path,
+            key=key
+        )
+        return cls(
+            trainer_setting=main_setting.trainer,
+            perform_inverse=True,
+            scalers=scalers
+        )
+
     def __init__(
         self,
         trainer_setting: TrainerSetting,

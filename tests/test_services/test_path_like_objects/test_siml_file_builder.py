@@ -3,7 +3,7 @@ import secrets
 
 import pytest
 
-from siml.path_like_objects import SimlFileBulider
+from siml.path_like_objects import SimlFileBuilder
 from siml.path_like_objects.siml_files import (
     ISimlCheckpointFile,
     ISimlNumpyFile, ISimlPickleFile,
@@ -18,7 +18,7 @@ TEST_ENCRYPT_KEY = secrets.token_bytes(32)
 ])
 def test__create_yaml_file(path):
     path = pathlib.Path(path)
-    siml_path = SimlFileBulider.yaml_file(path)
+    siml_path = SimlFileBuilder.yaml_file(path)
 
     assert isinstance(siml_path, ISimlYamlFile)
 
@@ -29,7 +29,7 @@ def test__create_yaml_file(path):
 ])
 def test__create_npy_file(path):
     path = pathlib.Path(path)
-    siml_path = SimlFileBulider.numpy_file(path)
+    siml_path = SimlFileBuilder.numpy_file(path)
 
     assert isinstance(siml_path, ISimlNumpyFile)
 
@@ -39,7 +39,7 @@ def test__create_npy_file(path):
 ])
 def test__create_pth_file(path):
     path = pathlib.Path(path)
-    siml_path = SimlFileBulider.checkpoint_file(path)
+    siml_path = SimlFileBuilder.checkpoint_file(path)
 
     assert isinstance(siml_path, ISimlCheckpointFile)
 
@@ -49,6 +49,6 @@ def test__create_pth_file(path):
 ])
 def test__create_pickle_file(path):
     path = pathlib.Path(path)
-    siml_path = SimlFileBulider.pickle_file(path)
+    siml_path = SimlFileBuilder.pickle_file(path)
 
     assert isinstance(siml_path, ISimlPickleFile)
