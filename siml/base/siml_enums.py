@@ -10,8 +10,10 @@ class SimlFileExtType(Enum):
     PKLENC = ".pkl.enc"
     PTH = ".pth"
     PTHENC = ".pth.enc"
-    YAML = ".yml"
-    YAMLENC = ".yml.enc"
+    YAML = ".yaml"
+    YML = ".yml"
+    YAMLENC = ".yaml.enc"
+    YMLENC = ".yml.enc"
 
 
 class ModelSelectionType(Enum):

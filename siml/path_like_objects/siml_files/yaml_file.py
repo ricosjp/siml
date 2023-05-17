@@ -20,7 +20,9 @@ class SimlYamlFile(ISimlYamlFile):
     def _check_extension_type(self, path: pathlib.Path) -> SimlFileExtType:
         extensions = [
             SimlFileExtType.YAML,
-            SimlFileExtType.YAMLENC
+            SimlFileExtType.YAMLENC,
+            SimlFileExtType.YML,
+            SimlFileExtType.YMLENC
         ]
         for ext in extensions:
             if path.name.endswith(ext.value):
@@ -32,7 +34,9 @@ class SimlYamlFile(ISimlYamlFile):
 
     @property
     def is_encrypted(self) -> bool:
-        return self._ext_type == SimlFileExtType.YAMLENC
+        return self._ext_type in [
+            SimlFileExtType.YAMLENC, SimlFileExtType.YMLENC
+        ]
 
     @property
     def file_path(self) -> pathlib.Path:

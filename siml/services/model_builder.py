@@ -1,9 +1,7 @@
 from collections import OrderedDict
 from typing import Optional
 
-from siml import setting
-from siml import networks
-from siml import data_parallel
+from siml import data_parallel, networks, setting
 from siml.path_like_objects import ISimlCheckpointFile
 from siml.services.environment import ModelEnvironmentSetting
 
@@ -49,7 +47,8 @@ class ModelBuilder():
         *,
         model: Optional[networks.Network] = None
     ) -> dict:
-        checkpoint = checkpoint_file.load()
+        device = self._env_setting.get_device()
+        checkpoint = checkpoint_file.load(device=device)
 
         if not self.state_dict_strict:
             model_state_dict = checkpoint['model_state_dict']

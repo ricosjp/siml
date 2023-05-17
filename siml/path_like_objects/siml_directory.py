@@ -45,7 +45,9 @@ class SimlDirectory:
     ) -> Union[ISimlYamlFile, None]:
         extensions = [
             SimlFileExtType.YAML,
-            SimlFileExtType.YAMLENC
+            SimlFileExtType.YAMLENC,
+            SimlFileExtType.YML,
+            SimlFileExtType.YMLENC
         ]
 
         return self._find_file(
