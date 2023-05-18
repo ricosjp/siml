@@ -40,10 +40,10 @@ class InnerInfererSetting(pydantic.BaseModel):
         return self.main_setting.inferer.perform_inverse
 
     def get_snapshot_file_path(self) -> pathlib.Path:
-        if self.force_model_path.is_file():
-            return self.force_model_path
-
         if self.force_model_path is not None:
+            if self.force_model_path.is_file():
+                return self.force_model_path
+
             model_path = self.force_model_path
         else:
             model_path = self.main_setting.inferer.model
@@ -59,11 +59,11 @@ class InnerInfererSetting(pydantic.BaseModel):
         selector = ModelSelectorBuilder.create(
             self.main_setting.trainer.snapshot_choise_method
         )
-        file_path = selector.select_model(
+        siml_file = selector.select_model(
             model_path,
             infer_epoch=self.infer_epoch
         )
-        return file_path
+        return siml_file.file_path
 
     def get_write_simulation_case_dir(
         self,

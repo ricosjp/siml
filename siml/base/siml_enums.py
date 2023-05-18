@@ -17,11 +17,11 @@ class SimlFileExtType(Enum):
 
 
 class ModelSelectionType(Enum):
-    BEST = 0
-    LATEST = 1
-    TRAIN_BEST = 2
-    SPECIFIED = 3
-    DEPLOYED = 4
+    BEST = "best"
+    LATEST = "latest"
+    TRAIN_BEST = "train_best"
+    SPECIFIED = "specified"
+    DEPLOYED = "deployed"
 
 
 class LossType(Enum):

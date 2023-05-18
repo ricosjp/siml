@@ -22,16 +22,16 @@ class IModelSelector(metaclass=abc.ABCMeta):
 class ModelSelectorBuilder:
     @staticmethod
     def create(
-        selection_type: ModelSelectionType
+        selection_name: str
     ) -> IModelSelector:
         class_dict = {
-            ModelSelectionType.BEST: BestModelSelector,
-            ModelSelectionType.LATEST: LatestModelSelector,
-            ModelSelectionType.SPECIFIED: SpecifiedModelSelector,
-            ModelSelectionType.TRAIN_BEST: TrainBestModelSelector,
-            ModelSelectionType.DEPLOYED: DeployedModelSelector
+            ModelSelectionType.BEST.value: BestModelSelector,
+            ModelSelectionType.LATEST.value: LatestModelSelector,
+            ModelSelectionType.SPECIFIED.value: SpecifiedModelSelector,
+            ModelSelectionType.TRAIN_BEST.value: TrainBestModelSelector,
+            ModelSelectionType.DEPLOYED.value: DeployedModelSelector
         }
-        return class_dict[selection_type]
+        return class_dict[selection_name]
 
 
 class BestModelSelector(IModelSelector):
@@ -114,7 +114,7 @@ class SpecifiedModelSelector(IModelSelector):
     def select_model(
         dir_path: pathlib.Path,
         *,
-        target_epoch: int,
+        infer_epoch: int,
         **args
     ) -> ISimlCheckpointFile:
         snapshots = [
@@ -122,11 +122,11 @@ class SpecifiedModelSelector(IModelSelector):
             list(dir_path.glob('snapshot_epoch_*'))
         ]
         target_snapshots: ISimlCheckpointFile = \
-            [p for p in snapshots if p.epoch == target_epoch]
+            [p for p in snapshots if p.epoch == infer_epoch]
 
         if len(target_snapshots) == 0:
             raise FileNotFoundError(
-                f"snapshot_epoch_{target_epoch} does not exist in "
+                f"snapshot_epoch_{infer_epoch} does not exist in "
                 f"{dir_path}"
             )
 

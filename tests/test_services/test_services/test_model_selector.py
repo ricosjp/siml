@@ -7,7 +7,6 @@ import pandas as pd
 import pytest
 
 from siml.services import ModelSelectorBuilder
-from siml.base.siml_enums import ModelSelectionType
 from siml.base.siml_const import SimlConstItems
 from siml.services.model_selector import (
     BestModelSelector, TrainBestModelSelector, SpecifiedModelSelector,
@@ -18,11 +17,11 @@ TEST_DATA_DIR = pathlib.Path(__file__).parent / "tmp_data"
 
 
 @pytest.mark.parametrize("select_type, expect_cls", [
-    (ModelSelectionType.BEST, BestModelSelector),
-    (ModelSelectionType.TRAIN_BEST, TrainBestModelSelector),
-    (ModelSelectionType.SPECIFIED, SpecifiedModelSelector),
-    (ModelSelectionType.LATEST, LatestModelSelector),
-    (ModelSelectionType.DEPLOYED, DeployedModelSelector)
+    ('best', BestModelSelector),
+    ('train_best', TrainBestModelSelector),
+    ('specified', SpecifiedModelSelector),
+    ('latest', LatestModelSelector),
+    ('deployed', DeployedModelSelector)
 ])
 def test__selctor_builder(select_type, expect_cls):
     actual_cls = ModelSelectorBuilder.create(select_type)
@@ -87,7 +86,7 @@ def test__train_best_select_model(prepare_snapshots):
 def test__spcified_model_selector(epoch, prepare_snapshots):
     actual_path = SpecifiedModelSelector.select_model(
         TEST_DATA_DIR,
-        target_epoch=epoch
+        infer_epoch=epoch
     )
 
     assert actual_path.epoch == epoch
@@ -100,7 +99,7 @@ def test__spcified_model_selector_not_existed(epoch, prepare_snapshots):
     with pytest.raises(FileNotFoundError):
         _ = SpecifiedModelSelector.select_model(
             TEST_DATA_DIR,
-            target_epoch=epoch
+            infer_epoch=epoch
         )
 
 
