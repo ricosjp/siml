@@ -94,12 +94,15 @@ class InnerInfererSetting(pydantic.BaseModel):
 
     def get_output_directory(
         self,
-        data_directory: pathlib.Path,
-        date_string: str
+        date_string: str,
+        *,
+        data_directory: Optional[pathlib.Path] = None,
     ) -> pathlib.Path:
         if self.inferer_setting.output_directory is not None:
             return self.inferer_setting.output_directory
 
+        if data_directory is None:
+            data_directory = pathlib.Path("")
         dir_name = self._determine_directory_name(date_string)
         base = self.inferer_setting.output_directory_base / dir_name
         rules = SimlPathRules()

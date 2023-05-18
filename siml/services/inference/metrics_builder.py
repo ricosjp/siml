@@ -23,15 +23,37 @@ class MetricsBuilder():
 
     def create(self) -> dict[str, Metric]:
         metrics = {
+            'post_results': PostResultsMetrics(),
             'loss': LossMetrics(
                 loss_function=self.loss_function
             ),
-            'raw_loss_metrics': RawLossMetrics(
+            'raw_loss': RawLossMetrics(
                 trainer_setting=self._trainer_setting,
                 loss_function=self.loss_function
             )
         }
         return metrics
+
+
+class PostResultsMetrics(Metric):
+    def __init__(
+        self
+    ) -> None:
+        super().__init__()
+
+    @reinit__is_reduced
+    def reset(self):
+        self._results = []
+        return
+
+    @reinit__is_reduced
+    def update(self, output):
+        record: PostPredictionRecord = output[2]["post_result"]
+        self._results.append(record)
+        return
+
+    def compute(self):
+        return self._results
 
 
 class LossMetrics(Metric):
@@ -48,8 +70,10 @@ class LossMetrics(Metric):
         return
 
     @reinit__is_reduced
-    def update(self, y_pred, y, dict_data: dict):
-        record: PredictionRecord = dict_data["result"]
+    def update(self, output):
+        y_pred = output[0]
+        y = output[0]
+        record: PredictionRecord = output[2]["result"]
         loss = self.loss_function(
             y_pred,
             y,
@@ -58,10 +82,8 @@ class LossMetrics(Metric):
         if loss is not None:
             print(f"              Loss: {loss}")
 
-        detached_loss = loss.cpu().detach().numpy()
-        self._results.append({
-            "loss": detached_loss
-        })
+            loss = loss.cpu().detach().numpy().item()
+        self._results.append(loss)
         return
 
     def compute(self):
@@ -85,18 +107,17 @@ class RawLossMetrics(Metric):
         return
 
     @reinit__is_reduced
-    def update(self, y_pred, y, dict_data: dict):
-
-        post_result: PostPredictionRecord = dict_data["post_result"]
+    def update(self, output):
+        post_result: PostPredictionRecord = output[2]["post_result"]
         raw_loss = self._compute_raw_loss(
             post_result.dict_answer,
             post_result.dict_y,
             post_result.original_shapes
         )
 
-        self._results.append({
-            "raw_loss": raw_loss
-        })
+        if raw_loss is not None:
+            raw_loss = raw_loss.item()
+        self._results.append(raw_loss)
         return
 
     def compute(self):

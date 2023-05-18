@@ -1,8 +1,9 @@
+import pathlib
 from collections import OrderedDict
 from typing import Optional
 
 from siml import data_parallel, networks, setting
-from siml.path_like_objects import ISimlCheckpointFile
+from siml.path_like_objects import ISimlCheckpointFile, SimlFileBuilder
 from siml.services.environment import ModelEnvironmentSetting
 
 
@@ -30,10 +31,12 @@ class ModelBuilder():
         model.to(device)
         return model
 
-    def create_loaded(self, checkpoint_file: ISimlCheckpointFile):
+    def create_loaded(self, checkpoint_file: pathlib.Path):
+        siml_file = SimlFileBuilder.checkpoint_file(checkpoint_file)
+
         model = self.create_initialized()
         model_state_dict = self._load_model_state_dict(
-            checkpoint_file, model=model
+            siml_file, model=model
         )
         model.load_state_dict(
             model_state_dict,

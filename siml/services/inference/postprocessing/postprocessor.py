@@ -1,52 +1,42 @@
 from __future__ import annotations
-from typing import Optional, Union
+
 import pathlib
+from typing import Optional, Union
 
 import numpy as np
 
 from siml.preprocessing import ScalersComposition
-from siml.services.path_rules import SimlPathRules
-from siml.setting import (
-    CollectionVariableSetting, TrainerSetting, MainSetting
-)
+from siml.services.inference import InnerInfererSetting
 from siml.services.inference.record_object import (
-    PostPredictionRecord, PredictionRecord
+    PostPredictionRecord,
+    PredictionRecord
 )
+from siml.services.path_rules import SimlPathRules
+from siml.setting import CollectionVariableSetting
 
 from .inverse_scaling_converter import InverseScalingConverter
+from .post_fem_data import PostFEMDataConverter
 
 
 class PostProcessor:
-    @classmethod
-    def create(
-        cls,
-        main_setting: MainSetting,
-        pkl_path: pathlib.Path,
-        *,
-        key: bytes = None,
-        perform_inverse: bool = True
-    ):
-        scalers = ScalersComposition.create_from_file(
-            converter_parameters_pkl=pkl_path,
-            key=key
-        )
-        return cls(
-            trainer_setting=main_setting.trainer,
-            perform_inverse=True,
-            scalers=scalers
-        )
-
     def __init__(
         self,
-        trainer_setting: TrainerSetting,
-        perform_inverse: bool,
+        inner_setting: InnerInfererSetting,
+        fem_data_converter: PostFEMDataConverter,
         *,
-        scalers: Optional[ScalersComposition],
+        scalers: Optional[ScalersComposition] = None,
     ) -> None:
-        self._trainer_setting = trainer_setting
-        self._perform_inverse = perform_inverse
+        self._inner_setting = inner_setting
+        self._trainer_setting = inner_setting.trainer_setting
+        self._perform_inverse = inner_setting.perform_inverse
+        self._fem_data_converter = fem_data_converter
         self._path_rules = SimlPathRules()
         if self._perform_inverse:
+            if scalers is None:
+                raise ValueError(
+                    "scalers is None. When perform inverse, "
+                    "scalers must be set."
+                )
             self._converter = InverseScalingConverter(scalers)
 
     def convert(
@@ -76,6 +66,16 @@ class PostProcessor:
                 dict_data_y_answer=dict_var_y
             )
 
+        write_simulation_case_dir = \
+            self._inner_setting.get_write_simulation_case_dir(
+                record.data_directory
+            )
+        fem_data = None
+        if not self._is_skip_fem_data(write_simulation_case_dir):
+            fem_data = self._fem_data_converter.create(
+                record, write_simulation_case_dir
+            )
+
         converted_record = PostPredictionRecord(
             dict_x=inversed_dict_x,
             dict_y=inversed_dict_y,
@@ -83,48 +83,28 @@ class PostProcessor:
             original_shapes=record.original_shapes,
             data_directory=record.data_directory,
             inference_time=record.inference_time,
-            inference_start_datetime=start_datetime
+            inference_start_datetime=start_datetime,
+            fem_data=fem_data
         )
         return converted_record
 
     def _separate_data(
         self,
-        data: Union[list, dict],
+        data: Union[list, dict, np.ndarray],
         descriptions: CollectionVariableSetting,
         *,
         axis=-1
     ) -> dict:
         # TODO
-        # this function is not implemented here.
-        # cohesion decreases.
+        # this function may not be implemented here.
 
         if isinstance(data, dict):
             return {
-                key: self._separate_list_data(
-                    data[key], descriptions.variables[key],
-                    axis=axis
-                )
+                key:
+                self._separate_data(
+                    data[key], descriptions.variables[key], axis=axis)
                 for key in data.keys()
             }
-        elif isinstance(data, list):
-            return self._separate_list_data(data, descriptions, axis=axis)
-
-        else:
-            raise NotImplementedError(
-                f"Unknown data type: {type(data)}"
-            )
-
-    def _separate_list_data(
-        self,
-        data: list,
-        descriptions: CollectionVariableSetting,
-        *,
-        axis=-1
-    ) -> dict[str, np.ndarray]:
-
-        # TODO
-        # this function is not implemented here.
-        # cohesion decreases.
         if len(data) == 0:
             return {}
 
@@ -133,11 +113,27 @@ class PostProcessor:
         data = np.swapaxes(data, 0, axis)
         for description in descriptions.variables:
             dim = description.dim
-            data_dict.update(
-                {
-                    description.name:
-                    np.swapaxes(data[index:index+dim], 0, axis)
-                }
-            )
+            data_dict.update({
+                description.name:
+                np.swapaxes(data[index:index+dim], 0, axis)})
             index += dim
         return data_dict
+
+    def _is_skip_fem_data(
+        self,
+        write_simulation_base: Optional[pathlib.Path] = None
+    ) -> bool:
+        if self._inner_setting.inferer_setting.skip_fem_data_creation:
+            return True
+
+        if write_simulation_base is None:
+            return True
+
+        if not write_simulation_base.exists():
+            print(
+                f"{write_simulation_base} does not exist."
+                "Thus, skip creating fem data."
+            )
+            return True
+
+        return False

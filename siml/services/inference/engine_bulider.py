@@ -5,6 +5,7 @@ import torch
 from ignite.engine import Engine
 
 from siml import networks, util
+from siml.siml_variables import siml_tensor_variables
 from siml.inferer import ModelEnvironmentSetting
 
 from .record_object import PredictionRecord
@@ -64,9 +65,9 @@ class InferenceEngineBuilder:
             print('--')
 
             result = PredictionRecord(
-                y_pred=y_pred,
-                y=y,
-                x=x,
+                y_pred=siml_tensor_variables(y_pred),
+                y=siml_tensor_variables(y),
+                x=siml_tensor_variables(x['x']),
                 original_shapes=x['original_shapes'],
                 data_directory=data_directory,
                 inference_time=elapsed_time

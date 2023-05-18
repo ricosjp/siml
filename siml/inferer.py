@@ -1,9 +1,7 @@
 import pathlib
-from typing import Callable, Optional, Union
+from typing import Callable, Optional
 
 import numpy as np
-import pydantic.dataclasses as dc
-from ignite.engine import State
 from torch import Tensor
 
 from siml import datasets, setting
@@ -14,8 +12,8 @@ from siml.preprocessing import ScalersComposition
 from siml.preprocessing.converter import ILoadFunction
 from siml.services import ModelEnvironmentSetting, ModelSelectorBuilder
 from siml.services.inference import (
-    CoreInferer, InferenceDataLoaderBuilder,
-    PostPredictionRecord, InnerInfererSetting
+    CoreInferer, InferenceDataLoaderBuilder, InnerInfererSetting,
+    PostPredictionRecord
 )
 from siml.services.inference.postprocessing import (
     ISaveFunction, SaveProcessor, PostProcessor,
@@ -145,17 +143,19 @@ class Inferer():
         self.postprocess_function = postprocess_function
         self.save_function = save_function
 
-        self._model_env = self._create_model_env_setting()
-        self._collate_fn = self._create_collate_fn()
-        self._dataloader_builder = self._create_data_loader_builder()
-        self._core_inferer = self._create_core_inferer(
-            user_loss_function_dic
-        )
-        self._fem_data_creator = PostFEMDataConverter(
+        fem_data_creator = PostFEMDataConverter(
             inferer_setting=self._inner_setting.inferer_setting,
             conversion_setting=self._inner_setting.conversion_setting,
             load_function=load_function,
             data_addition_function=data_addition_function
+        )
+
+        self._model_env = self._create_model_env_setting()
+        self._collate_fn = self._create_collate_fn()
+        self._dataloader_builder = self._create_data_loader_builder()
+        self._core_inferer = self._create_core_inferer(
+            fem_data_creator,
+            user_loss_function_dic
         )
         self._save_processor = SaveProcessor(
             inner_setting=self._inner_setting,
@@ -201,24 +201,28 @@ class Inferer():
         )
         return collate_fn
 
-    def _create_post_processor(self) -> PostProcessor:
+    def _create_post_processor(
+        self,
+        fem_data_creator: PostFEMDataConverter
+    ) -> PostProcessor:
         pkl_path = self._inner_setting.get_converter_parameters_pkl_path()
         scalers = ScalersComposition.create_from_file(
             pkl_path,
             key=self._inner_setting.main_setting.get_encrypt_key()
         )
         post_processor = PostProcessor(
-            trainer_setting=self._inner_setting.trainer_setting,
-            perform_inverse=self._inner_setting.perform_inverse,
+            inner_setting=self._inner_setting,
+            fem_data_converter=fem_data_creator,
             scalers=scalers
         )
         return post_processor
 
     def _create_core_inferer(
         self,
+        fem_data_creator: PostFEMDataConverter,
         user_loss_function_dic: dict = None
     ) -> CoreInferer:
-        post_processor = self._create_post_processor()
+        post_processor = self._create_post_processor(fem_data_creator)
         loss_function = LossCalculatorBuilder.create(
             trainer_setting=self._inner_setting.trainer_setting,
             allow_no_answer=True,
@@ -299,12 +303,12 @@ class Inferer():
         inference_state = self._core_inferer.run(inference_loader)
 
         if self._inner_setting.inferer_setting.save:
-            self.save(inference_state)
+            self._save_processor.run(inference_state)
 
         if output_all:
             return inference_state
         else:
-            return inference_state.metrics
+            return self._format_results(inference_state.metrics)
 
     def infer_dict_data(
         self,
@@ -344,32 +348,9 @@ class Inferer():
         inference_state = self._core_inferer.run(inference_loader)
 
         if self._inner_setting.inferer_setting.save:
-            self.save(inference_state)
+            self._save_processor.run(inference_state)
 
         return inference_state.metrics
-
-    def save(self, inference_state: State):
-        record: PostPredictionRecord = \
-            inference_state.output[2]["post_result"]
-        loss = inference_state.metrics["loss"]["loss"]
-        raw_loss = inference_state.metrics["raw_loss"]["raw_loss"]
-
-        write_simulation_case_dir = \
-            self._inner_setting.get_write_simulation_case_dir(
-                record.data_directory
-            )
-        fem_data = None
-        if not self._is_skip_fem_data(write_simulation_case_dir):
-            fem_data = self._fem_data_creator.create(
-                record, write_simulation_case_dir
-            )
-
-        self._save_processor.run(
-            record,
-            loss=loss,
-            raw_loss=raw_loss,
-            fem_data=fem_data
-        )
 
     def infer_parameter_study(
             self, model, data_directories, *, n_interpolation=100,
@@ -487,21 +468,16 @@ class Inferer():
         )
         return
 
-    def _is_skip_fem_data(
-        self,
-        write_simulation_base: Optional[pathlib.Path] = None
-    ) -> bool:
-        if self._inner_setting.inferer_setting.skip_fem_data_creation:
-            return True
+    def _format_results(self, metrics: dict) -> list[dict]:
+        results = []
+        records: list[PostPredictionRecord] = metrics.pop("post_results")
+        for i, val in enumerate(records):
+            _data = {
+                name: getattr(val, name)
+                for name in PostPredictionRecord._fields
+            }
+            for name, item in metrics.items():
+                _data.update({name: item[i]})
 
-        if write_simulation_base is None:
-            return True
-
-        if not write_simulation_base.exists():
-            print(
-                f"{write_simulation_base} does not exist."
-                "Thus, skip creating fem data."
-            )
-            return True
-
-        return False
+            results.append(_data)
+        return results

@@ -1,6 +1,7 @@
 import pathlib
 from typing import Optional, NamedTuple
 
+import femio
 import numpy as np
 
 from siml.siml_variables import ISimlVariables
@@ -23,3 +24,4 @@ class PostPredictionRecord(NamedTuple):
     inference_time: float
     inference_start_datetime: str
     dict_answer: Optional[dict[str, np.ndarray]] = None
+    fem_data: Optional[femio.FEMData] = None

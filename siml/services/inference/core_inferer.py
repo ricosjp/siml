@@ -50,7 +50,8 @@ class CoreInferer():
         bulider = InferenceEngineBuilder(
             env_setting=self._env_setting,
             prepare_batch_function=self._prepare_batch_function,
-            non_blocking=self._trainer_setting.non_blocking
+            non_blocking=self._trainer_setting.non_blocking,
+            post_processor=self._post_processor
         )
         evaluator_engine = bulider.create(self._model)
 

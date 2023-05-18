@@ -694,8 +694,7 @@ class TrainerSetting(TypedDataClass):
     def determine_element_wise(self) -> bool:
         if self.time_series:
             return False
-        if self.setting.trainer.element_wise \
-                or self.setting.trainer.simplified_model:
+        if self.element_wise or self.simplified_model:
             return True
 
         return False

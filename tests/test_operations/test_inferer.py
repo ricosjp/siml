@@ -21,11 +21,13 @@ class TestInferer(unittest.TestCase):
             'tests/data/linear/preprocessed/preprocessors.pkl')
         main_setting.inferer.output_directory_root = Path(
             'tests/data/linear/inferred')
-        ir = inferer.Inferer(main_setting)
-        if ir.setting.trainer.output_directory.exists():
-            shutil.rmtree(ir.setting.trainer.output_directory)
+        ir = inferer.Inferer(
+            main_setting,
+            model_path=Path('tests/data/linear/pretrained')
+        )
+        if main_setting.trainer.output_directory.exists():
+            shutil.rmtree(main_setting.trainer.output_directory)
         res = ir.infer(
-            model=Path('tests/data/linear/pretrained'),
             data_directories=Path('tests/data/linear/preprocessed/validation'))
         np.testing.assert_almost_equal(
             res[0]['dict_y']['y'],
@@ -41,10 +43,12 @@ class TestInferer(unittest.TestCase):
             nadj = prepost.normalize_adjacency_matrix(adj)
             return {'adj': adj, 'nadj': nadj}
 
+        if main_setting.trainer.output_directory.exists():
+            shutil.rmtree(main_setting.trainer.output_directory)
+
         ir = inferer.Inferer(
             main_setting, conversion_function=conversion_function)
-        if ir.setting.trainer.output_directory.exists():
-            shutil.rmtree(ir.setting.trainer.output_directory)
+
         ir.setting.inferer.converter_parameters_pkl = Path(
             'tests/data/deform/preprocessed/preprocessors.pkl')
         ir.setting.inferer.save = False
@@ -295,24 +299,28 @@ class TestInferer(unittest.TestCase):
             nadj = prepost.normalize_adjacency_matrix(adj)
             return {'adj': adj, 'nadj': nadj}
 
-        ir = inferer.Inferer(
-            main_setting, conversion_function=conversion_function,
-            converter_parameters_pkl=Path(
-                'tests/data/deform/preprocessed/preprocessors.pkl'))
-        ir.setting.inferer.save = True
-        ir.setting.inferer.perform_preprocess = False
-        ir.setting.inferer.write_simulation = True
-        ir.setting.inferer.write_simulation_base = Path(
+        main_setting.inferer.save = True
+        main_setting.inferer.perform_preprocess = False
+        main_setting.inferer.write_simulation = True
+        main_setting.inferer.write_simulation_base = Path(
             'tests/data/deform/raw')
-        ir.setting.inferer.write_simulation_type = 'ucd'
+        main_setting.inferer.write_simulation_type = 'ucd'
+        ir = inferer.Inferer(
+            main_setting,
+            conversion_function=conversion_function,
+            model_path=Path('tests/data/deform/pretrained'),
+            converter_parameters_pkl=Path(
+                'tests/data/deform/preprocessed/preprocessors.pkl'
+            )
+        )
 
         output_directory_base = Path('tests/data/deform/inferred/multiple')
         if output_directory_base.exists():
             shutil.rmtree(output_directory_base)
         res_from_raw = ir.infer(
-            model=Path('tests/data/deform/pretrained'),
             data_directories=Path('tests/data/deform/preprocessed/test'),
-            output_directory_base=output_directory_base)
+            output_directory_base=output_directory_base
+        )
 
         raw_directory_base = Path('tests/data/deform/raw/test')
         for i_data, data_basename in enumerate([

@@ -8,7 +8,6 @@ from tqdm import tqdm
 
 from .utils import fem_data_utils
 from . import util
-from siml.preprocessing import ScalersComposition
 
 
 class BaseDataset(torch.utils.data.Dataset):
