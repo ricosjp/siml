@@ -52,7 +52,7 @@ def test__is_same_after_load_dumped_data(scalers_composition):
 
     sample_data = {
         "tensor_stress": [
-            SimlFileBuilder.create(
+            SimlFileBuilder.numpy_file(
                 pathlib.Path(
                     "tests/data/deform/interim/train/"
                     "tet2_3_modulusx0.9000/tensor_stress.npy"

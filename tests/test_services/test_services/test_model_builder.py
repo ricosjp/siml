@@ -63,4 +63,4 @@ def test__enable_create_loaded(prepare_settings):
     checkpoint_file = SimlFileBuilder.checkpoint_file(
         TEST_DIR / "snapshot_epoch_1000.pth"
     )
-    builder.create_loaded(checkpoint_file)
+    builder.create_loaded(checkpoint_file.file_path)

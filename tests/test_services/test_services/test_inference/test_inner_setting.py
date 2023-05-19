@@ -39,12 +39,12 @@ def test__get_snapshot_file_path_set_by_explicit(force_path, expect_path):
 def test__get_snapshot_file_path_specified():
     main_setting = setting.MainSetting()
     main_setting.trainer.snapshot_choise_method = 'specified'
+    main_setting.inferer.infer_epoch = 1000
     force_model_path = pathlib.Path("tests/data/simplified/pretrained")
 
     inner_setting = InnerInfererSetting(
         main_setting=main_setting,
-        force_model_path=force_model_path,
-        infer_epoch=1000
+        force_model_path=force_model_path
     )
     expect_path = pathlib.Path(
         "tests/data/simplified/pretrained/snapshot_epoch_1000.pth"
@@ -95,7 +95,7 @@ def test__get_converter_parameters_pkl_path(pkl_path, root_dir, expect):
         main_setting.inferer.converter_parameters_pkl = pathlib.Path(pkl_path)
 
     with mock.patch(
-        'siml.setting.DataSetting',
+        'siml.setting.DataSetting.preprocessed_root',
         new_callable=mock.PropertyMock
     ) as mock_setting:
         mock_setting.return_value = pathlib.Path(root_dir)
