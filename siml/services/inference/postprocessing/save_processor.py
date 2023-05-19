@@ -12,7 +12,7 @@ from siml.services.inference.inner_setting import InnerInfererSetting
 from siml.services.inference.record_object import PostPredictionRecord
 
 
-class ISaveFunction(metaclass=abc.ABCMeta):
+class IInfererSaveFunction(metaclass=abc.ABCMeta):
     def __call__(
         self,
         output_directory: pathlib.Path,
@@ -76,7 +76,7 @@ class SaveProcessor():
     def __init__(
         self,
         inner_setting: InnerInfererSetting,
-        user_save_function: Optional[ISaveFunction] = None
+        user_save_function: Optional[IInfererSaveFunction] = None
     ) -> None:
         self._inner_setting = inner_setting
         self._inferer_setting = inner_setting.inferer_setting
@@ -135,8 +135,7 @@ class SaveProcessor():
         dict_data_y: dict,
         output_directory: pathlib.Path
     ) -> None:
-        if self._inferer_setting.save:
-            self._save_npy_data(dict_data_x, output_directory)
+        self._save_npy_data(dict_data_x, output_directory)
         self._save_npy_data(dict_data_y, output_directory)
         return
 
@@ -190,7 +189,7 @@ class SaveProcessor():
         setting.write_yaml(
             self._inner_setting.main_setting,
             output_directory / 'settings.yml',
-            key=self._inner_setting.main_setting.get_encrypt_key()
+            key=self._inner_setting.main_setting.get_crypt_key()
         )
         return
 
@@ -220,7 +219,7 @@ class SaveProcessor():
         return
 
 
-class FEMDataSaveFunction(ISaveFunction):
+class FEMDataSaveFunction(IInfererSaveFunction):
     def __init__(self) -> None:
         pass
 

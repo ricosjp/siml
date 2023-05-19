@@ -4,6 +4,7 @@ from typing import Optional, Union
 import pydantic
 
 from siml import setting
+from siml.preprocessing import ScalersComposition
 from siml.services.model_selector import ModelSelectorBuilder
 from siml.services.path_rules import SimlPathRules
 
@@ -14,18 +15,18 @@ class InnerInfererSetting(pydantic.BaseModel):
     main_setting: setting.MainSetting
     force_model_path: Optional[pathlib.Path] = None
     force_converter_parameters_pkl: Optional[pathlib.Path] = None
-    infer_epoch: Optional[int] = None
+    decrypt_key: Optional[bytes] = None
 
     class Config:
         arbitrary_types_allowed = True
 
     @property
-    def inferer_setting(self) -> setting.InfererSetting:
-        return self.main_setting.inferer
-
-    @property
     def conversion_setting(self) -> setting.ConversionSetting:
         return self.main_setting.conversion
+
+    @property
+    def inferer_setting(self) -> setting.InfererSetting:
+        return self.main_setting.inferer
 
     @property
     def trainer_setting(self) -> setting.TrainerSetting:
@@ -38,6 +39,22 @@ class InnerInfererSetting(pydantic.BaseModel):
     @property
     def perform_inverse(self) -> bool:
         return self.main_setting.inferer.perform_inverse
+
+    def load_scalers(self) -> Union[ScalersComposition, None]:
+        if not self.perform_inverse:
+            return None
+        pkl_file = self.get_converter_parameters_pkl_path()
+        scalers = ScalersComposition.create_from_file(
+            pkl_file,
+            key=self.get_crypt_key()
+        )
+        return scalers
+
+    def get_crypt_key(self) -> Union[bytes, None]:
+        if self.decrypt_key is not None:
+            return self.decrypt_key
+
+        return self.main_setting.get_crypt_key()
 
     def get_snapshot_file_path(self) -> pathlib.Path:
         if self.force_model_path is not None:
@@ -61,14 +78,16 @@ class InnerInfererSetting(pydantic.BaseModel):
         )
         siml_file = selector.select_model(
             model_path,
-            infer_epoch=self.infer_epoch
+            infer_epoch=self.inferer_setting.infer_epoch
         )
         return siml_file.file_path
 
     def get_write_simulation_case_dir(
         self,
-        data_directory: pathlib.Path
+        data_directory: Union[pathlib.Path, None]
     ) -> Union[pathlib.Path, None]:
+        if data_directory is None:
+            return None
 
         if self.main_setting.inferer.perform_preprocess:
             # Assume the given data is raw data

@@ -68,9 +68,10 @@ class TestNetworksGPU(unittest.TestCase):
         ir = inferer.Inferer(
             main_setting,
             converter_parameters_pkl=main_setting.data.preprocessed_root
-            / 'preprocessors.pkl')
+            / 'preprocessors.pkl',
+            model_path=main_setting.trainer.output_directory
+        )
         results = ir.infer(
-            model=main_setting.trainer.output_directory,
             data_directories=main_setting.data.preprocessed_root
             / 'test')
         self.assertLess(results[0]['loss'], 1e-1)
@@ -100,12 +101,13 @@ class TestNetworksGPU(unittest.TestCase):
         loss = tr.train()
         self.assertLess(loss, 5e-2)
 
-        ir = inferer.Inferer.read_settings(
+        ir = inferer.Inferer.read_settings_file(
             main_setting.trainer.output_directory / 'settings.yml',
             converter_parameters_pkl=main_setting.data.preprocessed_root
-            / 'preprocessors.pkl')
+            / 'preprocessors.pkl',
+            model_path=main_setting.trainer.output_directory
+        )
         results = ir.infer(
-            model=main_setting.trainer.output_directory,
             data_directories=main_setting.data.preprocessed_root
             / 'test')
         self.assertLess(results[0]['loss'], 1e-1)
@@ -138,9 +140,10 @@ class TestNetworksGPU(unittest.TestCase):
         ir = inferer.Inferer(
             main_setting,
             converter_parameters_pkl=main_setting.data.preprocessed_root
-            / 'preprocessors.pkl')
+            / 'preprocessors.pkl',
+            model_path=main_setting.trainer.output_directory
+        )
         results = ir.infer(
-            model=main_setting.trainer.output_directory,
             data_directories=main_setting.data.preprocessed_root
             / 'test')
         self.assertLess(results[0]['loss'], .5)
@@ -184,9 +187,10 @@ class TestNetworksGPU(unittest.TestCase):
         ir = inferer.Inferer(
             main_setting,
             converter_parameters_pkl=main_setting.data.preprocessed_root
-            / 'preprocessors.pkl')
+            / 'preprocessors.pkl',
+            model_path=main_setting.trainer.output_directory
+        )
         results = ir.infer(
-            model=main_setting.trainer.output_directory,
             data_directories=main_setting.data.preprocessed_root
             / 'test')
         self.assertLess(results[0]['loss'], 5e-1)

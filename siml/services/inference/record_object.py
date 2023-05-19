@@ -1,5 +1,5 @@
 import pathlib
-from typing import Optional, NamedTuple
+from typing import NamedTuple, Optional, Union
 
 import femio
 import numpy as np
@@ -12,8 +12,8 @@ class PredictionRecord(NamedTuple):
     y: ISimlVariables
     x: ISimlVariables
     original_shapes: tuple
-    data_directory: pathlib.Path
     inference_time: float
+    data_directory: Union[pathlib.Path, None]
 
 
 class PostPredictionRecord(NamedTuple):

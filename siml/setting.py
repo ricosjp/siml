@@ -797,6 +797,8 @@ class InfererSetting(TypedDataClass):
     gpu_id: int = -1
     less_output: bool = False
     skip_fem_data_creation: bool = False
+    infer_epoch: int = dc.field(
+        default=None, metadata={'allow_none': True})
 
 
 @dc.dataclass
@@ -1274,7 +1276,7 @@ class MainSetting:
                 self.data.preprocessed = [self.data.train[0].parent]
         return
 
-    def get_encrypt_key(self):
+    def get_crypt_key(self):
         if self.data.encrypt_key is not None:
             return self.data.encrypt_key
 

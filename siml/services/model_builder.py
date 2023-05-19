@@ -31,12 +31,16 @@ class ModelBuilder():
         model.to(device)
         return model
 
-    def create_loaded(self, checkpoint_file: pathlib.Path):
+    def create_loaded(
+        self,
+        checkpoint_file: pathlib.Path,
+        decrypt_key: Optional[bytes] = None
+    ):
         siml_file = SimlFileBuilder.checkpoint_file(checkpoint_file)
 
         model = self.create_initialized()
         model_state_dict = self._load_model_state_dict(
-            siml_file, model=model
+            siml_file, model=model, decrypt_key=decrypt_key
         )
         model.load_state_dict(
             model_state_dict,
@@ -48,10 +52,14 @@ class ModelBuilder():
         self,
         checkpoint_file: ISimlCheckpointFile,
         *,
-        model: Optional[networks.Network] = None
+        model: Optional[networks.Network] = None,
+        decrypt_key: Optional[bytes] = None
     ) -> dict:
         device = self._env_setting.get_device()
-        checkpoint = checkpoint_file.load(device=device)
+        checkpoint = checkpoint_file.load(
+            device=device,
+            decrypt_key=decrypt_key
+        )
 
         if not self.state_dict_strict:
             model_state_dict = checkpoint['model_state_dict']

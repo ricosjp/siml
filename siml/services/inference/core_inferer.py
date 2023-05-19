@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, Optional
 import pathlib
 
 from ignite.engine import Engine, State
@@ -23,7 +23,8 @@ class CoreInferer():
         snapshot_file: pathlib.Path,
         prepare_batch_function: Callable,
         loss_function: ILossCalculator,
-        post_processor: PostProcessor
+        post_processor: PostProcessor,
+        decrypt_key: Optional[bytes] = None
     ) -> None:
 
         self._trainer_setting = trainer_setting
@@ -33,6 +34,7 @@ class CoreInferer():
         self._snapshot_file = snapshot_file
         self._loss_function = loss_function
         self._post_processor = post_processor
+        self._decrypt_key = decrypt_key
 
         self._model = self._load_model()
         self.inferer_engine = self._create_engine()
@@ -43,7 +45,10 @@ class CoreInferer():
             trainer_setting=self._trainer_setting,
             env_setting=self._env_setting
         )
-        model = model_loader.create_loaded(self._snapshot_file)
+        model = model_loader.create_loaded(
+            self._snapshot_file,
+            decrypt_key=self._decrypt_key
+        )
         return model
 
     def _create_engine(self) -> Engine:

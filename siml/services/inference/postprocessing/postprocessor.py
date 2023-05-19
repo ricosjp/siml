@@ -11,6 +11,7 @@ from siml.services.inference.record_object import (
     PostPredictionRecord,
     PredictionRecord
 )
+from siml.base.siml_typing import ArrayDataType
 from siml.services.path_rules import SimlPathRules
 from siml.setting import CollectionVariableSetting
 
@@ -56,14 +57,10 @@ class PostProcessor:
             record.y_pred.to_numpy(),
             self._trainer_setting.outputs
         )
-        if not self._perform_inverse:
-            return dict_var_x, dict_var_y_pred, dict_var_y
 
-        inversed_dict_x, inversed_dict_y, inversed_dict_answer = \
-            self._converter.inverse_scaling(
-                dict_var_x,
-                dict_var_y_pred,
-                dict_data_y_answer=dict_var_y
+        converted_dict_x, converted_dict_y, converted_dict_answer = \
+            self._convert_dict(
+                dict_var_x, dict_var_y_pred, dict_var_y
             )
 
         write_simulation_case_dir = \
@@ -73,13 +70,16 @@ class PostProcessor:
         fem_data = None
         if not self._is_skip_fem_data(write_simulation_case_dir):
             fem_data = self._fem_data_converter.create(
-                record, write_simulation_case_dir
+                dict_data_x=converted_dict_x,
+                dict_data_y=converted_dict_y,
+                dict_data_answer=converted_dict_answer,
+                write_simulation_case_dir=write_simulation_case_dir
             )
 
         converted_record = PostPredictionRecord(
-            dict_x=inversed_dict_x,
-            dict_y=inversed_dict_y,
-            dict_answer=inversed_dict_answer,
+            dict_x=converted_dict_x,
+            dict_y=converted_dict_y,
+            dict_answer=converted_dict_answer,
             original_shapes=record.original_shapes,
             data_directory=record.data_directory,
             inference_time=record.inference_time,
@@ -87,6 +87,27 @@ class PostProcessor:
             fem_data=fem_data
         )
         return converted_record
+
+    def _convert_dict(
+        self,
+        dict_var_x: dict,
+        dict_var_y_pred: dict,
+        dict_var_y: dict
+    ) -> tuple[
+            dict[str, ArrayDataType],
+            dict[str, ArrayDataType],
+            dict[str, ArrayDataType]
+    ]:
+        if not self._perform_inverse:
+            return dict_var_x, dict_var_y_pred, dict_var_y
+
+        inversed_dict_x, inversed_dict_y, inversed_dict_answer = \
+            self._converter.inverse_scaling(
+                dict_var_x,
+                dict_var_y_pred,
+                dict_data_y_answer=dict_var_y
+            )
+        return inversed_dict_x, inversed_dict_y, inversed_dict_answer
 
     def _separate_data(
         self,

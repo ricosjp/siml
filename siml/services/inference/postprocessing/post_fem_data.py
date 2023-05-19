@@ -8,7 +8,6 @@ import numpy as np
 from siml import util, setting
 from siml.preprocessing.converter import ILoadFunction
 from siml.utils import fem_data_utils
-from siml.services.inference.record_object import PostPredictionRecord
 
 
 class IFEMDataAdditionFunction(metaclass=abc.ABCMeta):
@@ -46,8 +45,10 @@ class PostFEMDataConverter:
 
     def create(
         self,
-        record: PostPredictionRecord,
-        write_simulation_case_dir: Union[pathlib.Path, None],
+        dict_data_x: dict[str, np.ndarray],
+        dict_data_y: dict[str, np.ndarray],
+        dict_data_answer: Optional[dict[str, np.ndarray]] = None,
+        write_simulation_case_dir: Union[pathlib.Path, None] = None,
     ) -> Union[femio.FEMData, None]:
 
         try:
@@ -71,9 +72,9 @@ class PostFEMDataConverter:
 
         self._add_fem_data(
             fem_data,
-            dict_data_x=record.dict_x,
-            dict_data_y=record.dict_y,
-            dict_data_answer=record.dict_answer,
+            dict_data_x=dict_data_x,
+            dict_data_y=dict_data_y,
+            dict_data_answer=dict_data_answer,
             write_simulation_case_dir=write_simulation_case_dir
         )
 

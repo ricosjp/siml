@@ -370,7 +370,6 @@ class RawConverter:
             If save_results is False, values is a dictionary
              of converted values.
         """
-
         load_function = self._create_load_function()
         save_function = self._create_save_function()
         filter_function = self._create_filter_function()

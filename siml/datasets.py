@@ -1,13 +1,13 @@
 import multiprocessing as multi
+import pathlib
 
-import femio
-from ignite.utils import convert_tensor
 import numpy as np
 import torch
+from ignite.utils import convert_tensor
 from tqdm import tqdm
 
-from .utils import fem_data_utils
-from . import util
+from siml import util
+from siml.preprocessing import RawConverter, ScalersComposition
 
 
 class BaseDataset(torch.utils.data.Dataset):
@@ -41,6 +41,7 @@ class BaseDataset(torch.utils.data.Dataset):
                 data_directories += util.collect_data_directories(
                     directory, required_file_names=required_file_names,
                     allow_no_data=allow_no_data)
+
             self.data_directories = np.unique(data_directories)
         else:
             self.data_directories = directories
@@ -177,44 +178,24 @@ class PreprocessDataset(BaseDataset):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.prepost_converter = kwargs.get('prepost_converter')
-        self.raw_data_stem = kwargs.get('raw_data_stem', None)
-        self.conversion_function = kwargs.get('conversion_function', None)
-        self.load_function = kwargs.get('load_function', None)
-        self.conversion_setting = kwargs.get('conversion_setting', None)
-        return
+        self.raw_converter: RawConverter \
+            = kwargs.get("raw_converter")
+        self.scalers: ScalersComposition \
+            = kwargs.get("scalers")
 
     def __getitem__(self, i):
         data_directory = self.data_directories[i]
         return self._preprocess_data(data_directory)
 
-    def _preprocess_data(self, raw_data_directory):
-        if self.conversion_setting.skip_femio:
-            dict_data = {}
-            fem_data = None
-        else:
-            fem_data = femio.FEMData.read_directory(
-                self.conversion_setting.file_type, raw_data_directory,
-                save=False)
-            wrapped_data = fem_data_utils.FemDataWrapper(fem_data)
-            dict_data = wrapped_data.extract_variables(
-                self.conversion_setting.mandatory,
-                optional_variables=self.conversion_setting.optional
-            )
-
-        if self.conversion_function is not None:
-            dict_data.update(self.conversion_function(
-                fem_data, raw_data_directory))
-
-        if self.load_function is not None:
-            data_files = util.collect_files(
-                raw_data_directory,
-                self.conversion_setting.required_file_names)
-            loaded_dict_data, _ = self.load_function(
-                data_files, raw_data_directory)
-            dict_data.update(loaded_dict_data)
-
-        converted_dict_data = self.prepost_converter.preprocess(dict_data)
+    def _preprocess_data(self, raw_data_directory: pathlib.Path):
+        dict_data = self.raw_converter.convert_single_data(
+            raw_path=raw_data_directory,
+            save_results=False
+        )
+        dict_data = dict_data[str(raw_data_directory)]
+        converted_dict_data = self.scalers.transform_dict(
+            dict_data
+        )
         x_data = self._merge_data(
             converted_dict_data, self.x_variable_names)
 
