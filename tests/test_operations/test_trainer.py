@@ -254,13 +254,15 @@ class TestTrainer(unittest.TestCase):
 
         ir = inferer.WholeInferProcessor(
             main_setting,
-            model=main_setting.trainer.output_directory,
+            model_path=main_setting.trainer.output_directory,
             converter_parameters_pkl=main_setting.data.preprocessed_root
             / 'preprocessors.pkl',
-            conversion_function=conversion_function, save=False)
+            conversion_function=conversion_function)
         results = ir.run(
             data_directories=main_setting.data.raw_root
-            / 'train/tet2_3_modulusx0.9000', perform_preprocess=True)
+            / 'train/tet2_3_modulusx0.9000', 
+            perform_preprocess=True,
+            save=False)
         self.assertLess(results[0]['loss'], 1e-1)
 
     def test_whole_wildcard_processs(self):
@@ -283,13 +285,16 @@ class TestTrainer(unittest.TestCase):
 
         ir = inferer.WholeInferProcessor(
             main_setting,
-            model=main_setting.trainer.output_directory,
+            model_path=main_setting.trainer.output_directory,
             converter_parameters_pkl=main_setting.data.preprocessed_root
             / 'preprocessors.pkl',
-            conversion_function=conversion_function, save=False)
+            conversion_function=conversion_function)
         results = ir.run(
             data_directories=main_setting.data.raw_root
-            / 'train/tet2_3_modulusx0.9000', perform_preprocess=True)
+            / 'train/tet2_3_modulusx0.9000',
+            perform_preprocess=True,
+            save=False
+        )
         self.assertLess(results[0]['loss'], 1e-1)
 
     def test_output_stats(self):
@@ -373,7 +378,7 @@ class TestTrainer(unittest.TestCase):
         main_setting.inferer.save = False
         ir = inferer.Inferer(
             main_setting,
-            model=main_setting.trainer.output_directory,
+            model_path=main_setting.trainer.output_directory,
             converter_parameters_pkl=data_directory.parent
             / 'preprocessors.pkl')
         results = ir.infer(data_directories=data_directory)
@@ -650,7 +655,7 @@ class TestTrainer(unittest.TestCase):
                 main_setting.trainer.output_directory
                 / 'snapshot_epoch_100.pth.enc')
 
-        with self.assertRaises(UnicodeDecodeError):
+        with self.assertRaises(ValueError):
             setting.MainSetting.read_settings_yaml(
                 main_setting.trainer.output_directory / 'settings.yml.enc')
 
@@ -679,7 +684,7 @@ class TestTrainer(unittest.TestCase):
         main_setting.inferer.save = False
         ir = inferer.Inferer(
             main_setting,
-            model=main_setting.trainer.output_directory,
+            model_path=main_setting.trainer.output_directory,
             converter_parameters_pkl=main_setting.data.preprocessed[0]
             / 'preprocessors.pkl'
         )
@@ -705,7 +710,7 @@ class TestTrainer(unittest.TestCase):
         main_setting.inferer.perform_inverse = False
         ir = inferer.Inferer(
             main_setting,
-            model=main_setting.trainer.output_directory,
+            model_path=main_setting.trainer.output_directory,
             converter_parameters_pkl=main_setting.data.preprocessed[0]
             / 'preprocessors.pkl'
         )
@@ -734,7 +739,7 @@ class TestTrainer(unittest.TestCase):
         main_setting.inferer.perform_inverse = False
         ir = inferer.Inferer(
             main_setting,
-            model=main_setting.trainer.output_directory,
+            model_path=main_setting.trainer.output_directory,
             converter_parameters_pkl=main_setting.data.preprocessed[0]
             / 'preprocessors.pkl'
         )
@@ -763,7 +768,7 @@ class TestTrainer(unittest.TestCase):
         main_setting.inferer.save = False
         ir = inferer.Inferer(
             main_setting,
-            model=main_setting.trainer.output_directory,
+            model_path=main_setting.trainer.output_directory,
             converter_parameters_pkl=main_setting.data.preprocessed[0]
             / 'preprocessors.pkl'
         )

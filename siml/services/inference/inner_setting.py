@@ -1,5 +1,5 @@
 import pathlib
-from typing import Optional, Union
+from typing import Optional, Union, Any
 
 import pydantic
 
@@ -12,7 +12,8 @@ from siml.services.path_rules import SimlPathRules
 # HACK
 # In the future, this setting is merged to setting.InfererSetting
 class InnerInfererSetting(pydantic.BaseModel):
-    main_setting: setting.MainSetting
+    # HACK: To Avoid recursive validation by pydantic, Any type is used.
+    main_setting: Union[setting.MainSetting, Any]
     force_model_path: Optional[pathlib.Path] = None
     force_converter_parameters_pkl: Optional[pathlib.Path] = None
     decrypt_key: Optional[bytes] = None

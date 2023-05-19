@@ -190,7 +190,7 @@ class PreprocessDataset(BaseDataset):
     def _preprocess_data(self, raw_data_directory: pathlib.Path):
         dict_data = self.raw_converter.convert_single_data(
             raw_path=raw_data_directory,
-            save_results=False
+            return_results=True
         )
         dict_data = dict_data[str(raw_data_directory)]
         converted_dict_data = self.scalers.transform_dict(

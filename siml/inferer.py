@@ -117,21 +117,27 @@ class WholeInferProcessor:
         self,
         raw_dict_x: dict,
         *,
-        answer_raw_dict_y: Optional[dict] = None
+        answer_raw_dict_y: Optional[dict] = None,
+        perform_preprocess: bool = True
     ) -> dict:
 
-        scaled_dict_x = self.scalers.transform_dict(raw_dict_x)
-        if answer_raw_dict_y is not None:
-            scaled_dict_answer = self.scalers.transform_dict(
-                answer_raw_dict_y
-            )
-        else:
-            scaled_dict_answer = None
+        if perform_preprocess:
+            scaled_dict_x = self.scalers.transform_dict(raw_dict_x)
+            if answer_raw_dict_y is not None:
+                scaled_dict_answer = self.scalers.transform_dict(
+                    answer_raw_dict_y
+                )
+            else:
+                scaled_dict_answer = None
 
-        results = self.inferer.infer_dict_data(
-            scaled_dict_x, scaled_dict_answer=scaled_dict_answer
-        )
-        return results
+            results = self.inferer.infer_dict_data(
+                scaled_dict_x, scaled_dict_answer=scaled_dict_answer
+            )
+            return results
+        else:
+            return self.inferer.infer_dict_data(
+                raw_dict_x, scaled_dict_answer=answer_raw_dict_y
+            )
 
 
 class Inferer():
@@ -167,8 +173,9 @@ class Inferer():
     def from_model_directory(
         cls,
         model_directory: pathlib.Path,
-        decrypt_key: bytes = None,
+        converter_parameters_pkl: Optional[pathlib.Path] = None,
         model_select_method: str = "best",
+        decrypt_key: bytes = None,
         infer_epoch: int = None,
         **kwargs
     ):
@@ -188,12 +195,21 @@ class Inferer():
         --------
         siml.Inferer
         """
+
         siml_directory = SimlDirectory(model_directory)
-        pickle_file = siml_directory.find_pickle_file(
-            "preprocessors", allow_missing=True
-        )
-        if pickle_file is None:
-            print(f"Not found pickle file in a directory: {model_directory}")
+        if converter_parameters_pkl is None:
+            pickle_file = siml_directory.find_pickle_file(
+                "preprocessors", allow_missing=True
+            )
+
+            if pickle_file is None:
+                raise ValueError(
+                    f"Not found pickle file in a directory: {model_directory}."
+                    "Set converter_parameters_pkl argument explicitly."
+                )
+            pickle_file_path = pickle_file.file_path
+        else:
+            pickle_file_path = converter_parameters_pkl
 
         setting_file = siml_directory.find_yaml_file('settings')
         selector = ModelSelectorBuilder.create(model_select_method)
@@ -210,7 +226,7 @@ class Inferer():
         obj = cls(
             main_setting=main_setting,
             model_path=model_path.file_path,
-            converter_parameters_pkl=pickle_file.file_path,
+            converter_parameters_pkl=pickle_file_path,
             decrypt_key=decrypt_key,
             **kwargs
         )
@@ -631,5 +647,11 @@ class Inferer():
             for name, item in metrics.items():
                 _data.update({name: item[i]})
 
+            each_output_directory = \
+                self._inner_setting.get_output_directory(
+                    val.inference_start_datetime,
+                    data_directory=val.data_directory,
+                )
+            _data.update({"output_directory": each_output_directory})
             results.append(_data)
         return results

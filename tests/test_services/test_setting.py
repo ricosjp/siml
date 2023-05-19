@@ -38,7 +38,9 @@ class TestSetting(unittest.TestCase):
         real_file_setting = setting.MainSetting.read_settings_yaml(yaml_file)
 
         siml_file = SimlFileBuilder.yaml_file(yaml_file)
-        setting_by_file = setting.MainSetting.read_dict_settings(siml_file.load())
+        setting_by_file = setting.MainSetting.read_dict_settings(
+            siml_file.load()
+        )
         self.assertEqual(
             real_file_setting.model.blocks[1].destinations,
             setting_by_file.model.blocks[1].destinations
