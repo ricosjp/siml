@@ -66,13 +66,13 @@ class InnerInfererSetting(pydantic.BaseModel):
         else:
             model_path = self.main_setting.inferer.model
 
-        if model_path.is_file():
-            return model_path
-
-        if not model_path.is_dir():
+        if not model_path.exists():
             raise FileNotFoundError(
                 f"{model_path} does not exist."
             )
+
+        if model_path.is_file():
+            return model_path
 
         selector = ModelSelectorBuilder.create(
             self.main_setting.trainer.snapshot_choise_method
