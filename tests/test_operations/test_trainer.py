@@ -260,7 +260,7 @@ class TestTrainer(unittest.TestCase):
             conversion_function=conversion_function)
         results = ir.run(
             data_directories=main_setting.data.raw_root
-            / 'train/tet2_3_modulusx0.9000', 
+            / 'train/tet2_3_modulusx0.9000',
             perform_preprocess=True,
             save=False)
         self.assertLess(results[0]['loss'], 1e-1)

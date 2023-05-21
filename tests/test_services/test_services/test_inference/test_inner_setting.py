@@ -65,7 +65,7 @@ def test__get_write_simulation_case_dir_when_perform_preprocess(
     inner_setting = InnerInfererSetting(
         main_setting=main_setting
     )
-    actual = inner_setting.get_write_simulation_case_dir(data_directory) 
+    actual = inner_setting.get_write_simulation_case_dir(data_directory)
     assert actual == data_directory
 
 
