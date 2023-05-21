@@ -72,7 +72,7 @@ class LossMetrics(Metric):
     @reinit__is_reduced
     def update(self, output):
         y_pred = output[0]
-        y = output[0]
+        y = output[1]
         record: PredictionRecord = output[2]["result"]
         loss = self.loss_function(
             y_pred,

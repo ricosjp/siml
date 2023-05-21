@@ -14,7 +14,7 @@ class IModelSelector(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def select_model(
         dir_path: pathlib.Path,
-        **args
+        **kwards
     ) -> ISimlCheckpointFile:
         raise NotImplementedError()
 
@@ -38,7 +38,7 @@ class BestModelSelector(IModelSelector):
     @staticmethod
     def select_model(
         dir_path: pathlib.Path,
-        **args
+        **kwards
     ) -> ISimlCheckpointFile:
         snapshots = [
             SimlFileBuilder.checkpoint_file(p) for p in
@@ -49,12 +49,20 @@ class BestModelSelector(IModelSelector):
                 f"snapshot file does not exist in {dir_path}"
             )
 
-        df = pd.read_csv(dir_path / 'log.csv',
-                         header=0,
-                         index_col=None,
-                         skipinitialspace=True)
+        df = pd.read_csv(
+            dir_path / 'log.csv',
+            header=0,
+            index_col=None,
+            skipinitialspace=True)
         if np.any(np.isnan(df['validation_loss'])):
-            raise ValueError("NaN value is found in validation result.")
+            # HACK: BETTER TO RAISE ERROR
+            # raise ValueError("NaN value is found in validation result.")
+            print(
+                "'best' model not found: NaN value is found in "
+                "validation result."
+                "'train_best' options is used instead."
+            )
+            return TrainBestModelSelector.select_model(dir_path, **kwards)
 
         best_epoch = df['epoch'].iloc[df['validation_loss'].idxmin()]
         target_snapshot: ISimlCheckpointFile = \
@@ -66,7 +74,7 @@ class LatestModelSelector(IModelSelector):
     @staticmethod
     def select_model(
         dir_path: pathlib.Path,
-        **args
+        **kwards
     ) -> ISimlCheckpointFile:
         snapshots = [
             SimlFileBuilder.checkpoint_file(p) for p in
@@ -87,7 +95,7 @@ class TrainBestModelSelector(IModelSelector):
     @staticmethod
     def select_model(
         dir_path: pathlib.Path,
-        **args
+        **kwards
     ) -> ISimlCheckpointFile:
         snapshots = [
             SimlFileBuilder.checkpoint_file(p) for p in
@@ -115,7 +123,7 @@ class SpecifiedModelSelector(IModelSelector):
         dir_path: pathlib.Path,
         *,
         infer_epoch: int,
-        **args
+        **kwards
     ) -> ISimlCheckpointFile:
         snapshots = [
             SimlFileBuilder.checkpoint_file(p) for p in
