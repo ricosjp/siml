@@ -15,7 +15,6 @@ from siml.base.siml_typing import ArrayDataType
 from siml.services.path_rules import SimlPathRules
 from siml.setting import CollectionVariableSetting
 
-from .inverse_scaling_converter import InverseScalingConverter
 from .post_fem_data import PostFEMDataConverter
 
 
@@ -23,8 +22,8 @@ class PostProcessor:
     def __init__(
         self,
         inner_setting: InnerInfererSetting,
-        fem_data_converter: PostFEMDataConverter,
         *,
+        fem_data_converter: Optional[PostFEMDataConverter] = None,
         scalers: Optional[ScalersComposition] = None,
     ) -> None:
         self._inner_setting = inner_setting
@@ -38,7 +37,7 @@ class PostProcessor:
                     "scalers is None. When perform inverse, "
                     "scalers must be set."
                 )
-            self._converter = InverseScalingConverter(scalers)
+            self.scalers = scalers
 
     def convert(
         self,
@@ -105,12 +104,11 @@ class PostProcessor:
         if not self._perform_inverse:
             return _dict_data_x, _dict_data_y, _dict_data_y_answer
 
-        inversed_dict_x, inversed_dict_y, inversed_dict_answer = \
-            self._converter.inverse_scaling(
-                _dict_data_x,
-                _dict_data_y,
-                dict_data_y_answer=_dict_data_y_answer
-            )
+        inversed_dict_x = self._inverse_process(_dict_data_x)
+        inversed_dict_y = self._inverse_process(_dict_data_y)
+        inversed_dict_answer = self._inverse_process(
+            _dict_data_y_answer
+        )
         return inversed_dict_x, inversed_dict_y, inversed_dict_answer
 
     def _separate_data(
@@ -187,3 +185,13 @@ class PostProcessor:
                 for variable_name, data in dict_data.items()
             }
         return return_dict_data
+
+    def _inverse_process(
+        self,
+        dict_data: Union[dict[str, ArrayDataType], None]
+    ) -> dict[str, ArrayDataType]:
+        if dict_data is None:
+            return {}
+
+        dict_data_answer = self.scalers.inverse_transform_dict(dict_data)
+        return dict_data_answer
