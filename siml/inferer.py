@@ -71,7 +71,25 @@ class WholeInferProcessor:
         output_directory_base: Optional[pathlib.Path] = None,
         perform_preprocess: bool = True,
         save: Optional[bool] = None
-    ):
+    ) -> dict:
+        """run whole inference processes.
+
+        Parameters
+        ----------
+        data_directories : Union[list[pathlib.Path], pathlib.Path]
+            pathes to data
+        output_directory_base : Optional[pathlib.Path], optional
+            path to parent directory of cases, by default None
+        perform_preprocess : bool, optional
+            If True, perform preprocessing and scaling, by default True
+        save : Optional[bool], optional
+            If True, save items, by default None
+
+        Returns
+        -------
+        dict
+            dictionary of results
+        """
         if perform_preprocess:
             return self._run_with_preprocess(
                 data_directories=data_directories,
@@ -120,6 +138,22 @@ class WholeInferProcessor:
         answer_raw_dict_y: Optional[dict] = None,
         perform_preprocess: bool = True
     ) -> dict:
+        """_summary_
+
+        Parameters
+        ----------
+        raw_dict_x : dict
+            Dict of raw x data.
+        answer_raw_dict_y : Optional[dict], optional
+            Dict of raw answer y data, by default None
+        perform_preprocess : bool, optional
+            If True, perform scaling. by default True
+
+        Returns
+        -------
+        dict
+            dictionary of result
+        """
 
         if perform_preprocess:
             scaled_dict_x = self.scalers.transform_dict(raw_dict_x)
@@ -149,17 +183,23 @@ class Inferer():
         model_path: Optional[pathlib.Path] = None,
         converter_parameters_pkl: Optional[pathlib.Path] = None,
         **kwargs
-    ):
+    ) -> Inferer:
         """Read settings.yaml to generate Inferer object.
 
         Parameters
         ----------
-        settings_yaml: str or pathlib.Path
-            setting.yaml file name.
+        settings_yaml : pathlib.Path
+            Path to yaml file of setting
+        model_path : Optional[pathlib.Path], optional
+            If fed, overwrite path to model file, by default None
+        converter_parameters_pkl : Optional[pathlib.Path], optional
+            If fed, overwrite path to pkl file of scaling parameters,
+             by default None
 
         Returns
-        --------
-        siml.Inferer
+        -------
+        Inferer
+            Inferer object
         """
         main_setting = setting.MainSetting.read_settings_yaml(settings_yaml)
         return cls(
@@ -185,15 +225,23 @@ class Inferer():
         ----------
         model_directory: str or pathlib.Path
             Model directory created with Inferer.deploy().
+        model_path : Optional[pathlib.Path], optional
+            If fed, overwrite path to model file, by default None
+        converter_parameters_pkl : Optional[pathlib.Path], optional
+            If fed, overwrite path to pkl file of scaling parameters,
+             by default None
         decrypt_key: bytes, optional
             Key to decrypt model data. If not fed, and the data is encrypted,
             ValueError is raised.
+        model_select_method: str, optional
+            method name to select model. By default, best
         infer_epoch: int, optional
             If fed, model which corresponds to infer_epoch is used.
 
         Returns
         --------
         siml.Inferer
+            Inferer object
         """
 
         siml_directory = SimlDirectory(model_directory)
@@ -250,17 +298,14 @@ class Inferer():
 
         Parameters
         ----------
-        settings: siml.MainSetting
-        model: pathlib.Path, optional
-            If fed, overwrite self.setting.inferer.model.
-        converter_parameters_pkl: pathlib.Path, optional
-            If fed, overwrite self.setting.inferer.converter_parameters_pkl
+        main_setting: siml.MainSetting
+        model_path : Optional[pathlib.Path], optional
+            If fed, overwrite path to model file, by default None
+        converter_parameters_pkl : Optional[pathlib.Path], optional
+            If fed, overwrite path to pkl file of scaling parameters,
+             by default None
         save: bool, optional
             If fed, overwrite self.setting.inferer.save
-        conversion_function: function, optional
-            Conversion function to preprocess raw data. It should receive
-            two parameters, fem_data and raw_directory. If not fed,
-            no additional conversion occurs.
         load_function: function, optional
             Function to load data, which take list of pathlib.Path objects
             (as required files) and pathlib.Path object (as data directory)
@@ -398,16 +443,13 @@ class Inferer():
         data_directories: list[pathlib.Path], optional
             List of data directories. Data is searched recursively.
             The default is an empty list.
-        model: pathlib.Path, optional
-            If fed, overwrite self.setting.inferer.model.
-        perform_preprocess: bool, optional
-            If fed, overwrite self.setting.inferer.perform_preprocess
         output_directory_base: pathlib.Path, optional
             If fed, overwrite self.setting.inferer.output_directory_base
         output_all: bool, optional. Dafault False
             If True, return all of results \
                 including not preprocessed predicted data
-
+        save: bool, optional. Default None
+            If fed, overwrite save option in main setting
 
         Returns
         -------
@@ -454,7 +496,33 @@ class Inferer():
         preprocess_dataset: datasets.PreprocessDataset,
         output_directory_base: Optional[pathlib.Path] = None,
         save: Optional[bool] = None
-    ):
+    ) -> list[dict]:
+        """_summary_
+
+        Parameters
+        ----------
+        preprocess_dataset : datasets.PreprocessDataset
+            dataset of preprocessed data
+        output_directory_base : Optional[pathlib.Path], optional
+            base output directory, by default None
+        save : Optional[bool], optional
+            If fed, overwrite save option. by default None
+
+        Returns
+        -------
+        inference_results: list[Dict]
+            Inference results contains:
+                - dict_x: input and variables
+                - dict_y: inferred variables
+                - dict_answer: answer variables (None if not found)
+                - loss: Loss value (scaled)
+                - raw_loss: Loss in a raw scale
+                - fem_data: FEMData object
+                - output_directory: Output directory path
+                - data_directory: Input directory path
+                - inference_time: Inference time
+
+        """
 
         if output_directory_base is not None:
             # HACK: Improve it to make setting class immutable
@@ -488,12 +556,10 @@ class Inferer():
 
         Parameters
         ----------
-        model_path: pathlib.Path
-            Model file or directory name.
-        raw_dict_x: dict
-            Dict of raw x data.
-        answer_raw_dict_y: dict, optional
-            Dict of answer raw y data.
+        scaled_dict_x: dict
+            Dict of scaled x data.
+        scaled_dict_answer: dict, optional
+            Dict of answer scaled y data.
 
         Returns
         -------
