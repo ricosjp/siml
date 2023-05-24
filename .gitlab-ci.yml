@@ -80,6 +80,9 @@ test_gpu_parallel:
 test_networks:
   extends: .test
   script: python3.9 -m pytest tests/test_networks --capture=no
+  tags:
+    - avx
+    - 16-core-cpu
 
 test_operation:
   extends: .test
