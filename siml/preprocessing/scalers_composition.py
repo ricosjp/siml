@@ -5,7 +5,7 @@ import pathlib
 from typing import Optional, Union, Final
 
 from siml import util
-from siml.path_like_objects import ISimlFile, SimlFileBulider, SimlFileExtType
+from siml.path_like_objects import SimlFileBuilder, ISimlNumpyFile
 from siml.siml_variables import ArrayDataType
 
 from .siml_scalers import SimlScalerWrapper
@@ -21,13 +21,7 @@ class ScalersComposition():
         max_process: Optional[int] = None,
         key: Optional[bytes] = None
     ) -> ScalersComposition:
-        siml_file = SimlFileBulider.create(converter_parameters_pkl)
-        if siml_file.get_file_extension() not in [
-                SimlFileExtType.PKLENC.value, SimlFileExtType.PKL.value]:
-            raise ValueError(
-                f"Input file: {converter_parameters_pkl} is not understandable"
-            )
-
+        siml_file = SimlFileBuilder.pickle_file(converter_parameters_pkl)
         parameters: dict = siml_file.load(
             decrypt_key=key
         )
@@ -133,9 +127,9 @@ class ScalersComposition():
 
     def lazy_partial_fit(
         self,
-        scaler_name_to_files: dict[str, list[ISimlFile]]
+        scaler_name_to_files: dict[str, list[ISimlNumpyFile]]
     ) -> None:
-        preprocessor_inputs: list[tuple[str, list[ISimlFile]]] \
+        preprocessor_inputs: list[tuple[str, list[ISimlNumpyFile]]] \
             = [
                 (name, files)
                 for name, files in scaler_name_to_files.items()
@@ -162,7 +156,7 @@ class ScalersComposition():
     def transform_file(
         self,
         variable_name: str,
-        siml_file: ISimlFile
+        siml_file: ISimlNumpyFile
     ) -> ArrayDataType:
 
         loaded_data = siml_file.load(
@@ -225,7 +219,7 @@ class ScalersComposition():
     def _lazy_partial_fit(
         self,
         variable_name: str,
-        data_files: list[ISimlFile]
+        data_files: list[ISimlNumpyFile]
     ) -> tuple[str, SimlScalerWrapper]:
         scaler = self.get_scaler(variable_name)
 

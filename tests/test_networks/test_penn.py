@@ -226,17 +226,16 @@ class TestPENN(equivariance_base.EquivarianceBase):
             'tests/data/rotation_thermal_stress/preprocessed/cube'
             '/*_transformed_*')
         ir = inferer.Inferer(
-            main_setting, save=False,
+            main_setting,
             converter_parameters_pkl=Path(
                 'tests/data/rotation_thermal_stress/preprocessed'
-                '/preprocessors.pkl'))
-        model_directory = str(main_setting.trainer.output_directory)
+                '/preprocessors.pkl'),
+            model_path=main_setting.trainer.output_directory
+        )
         original_results = ir.infer(
-            model=model_directory,
-            data_directories=[original_path])
+            data_directories=[original_path], save=False)
         transformed_results = ir.infer(
-            model=model_directory,
-            data_directories=transformed_paths)
+            data_directories=transformed_paths, save=False)
 
         self.validate_results(
             original_results, transformed_results, rank2='nodal_strain_mat',
@@ -258,21 +257,20 @@ class TestPENN(equivariance_base.EquivarianceBase):
             'tests/data/rotation_thermal_stress/preprocessed/cube'
             '/*_transformed_*')
         ir = inferer.Inferer(
-            main_setting, save=False,
+            main_setting,
             converter_parameters_pkl=Path(
                 'tests/data/rotation_thermal_stress/preprocessed/'
-                'preprocessors.pkl'))
-        model_directory = str(main_setting.trainer.output_directory)
+                'preprocessors.pkl'),
+            model_path=main_setting.trainer.output_directory
+        )
         inference_outpout_directory = \
             main_setting.trainer.output_directory / 'inferred'
         if inference_outpout_directory.exists():
             shutil.rmtree(inference_outpout_directory)
         original_results = ir.infer(
-            model=model_directory,
-            data_directories=[original_path])
+            data_directories=[original_path], save=False)
         transformed_results = ir.infer(
-            model=model_directory,
-            data_directories=transformed_paths)
+            data_directories=transformed_paths, save=False)
 
         self.validate_results(
             original_results, transformed_results, rank0='initial_temperature',
@@ -294,21 +292,20 @@ class TestPENN(equivariance_base.EquivarianceBase):
             'tests/data/rotation_thermal_stress/preprocessed/cube'
             '/*_transformed_*')
         ir = inferer.Inferer(
-            main_setting, save=False,
+            main_setting,
             converter_parameters_pkl=Path(
                 'tests/data/rotation_thermal_stress/preprocessed/'
-                'preprocessors.pkl'))
-        model_directory = str(main_setting.trainer.output_directory)
+                'preprocessors.pkl'),
+            model_path=main_setting.trainer.output_directory
+        )
         inference_outpout_directory = \
             main_setting.trainer.output_directory / 'inferred'
         if inference_outpout_directory.exists():
             shutil.rmtree(inference_outpout_directory)
         original_results = ir.infer(
-            model=model_directory,
-            data_directories=[original_path])
+            data_directories=[original_path], save=False)
         transformed_results = ir.infer(
-            model=model_directory,
-            data_directories=transformed_paths)
+            data_directories=transformed_paths, save=False)
 
         self.validate_results(
             original_results, transformed_results, rank2='nodal_strain_mat',
@@ -324,21 +321,21 @@ class TestPENN(equivariance_base.EquivarianceBase):
         np.testing.assert_array_less(loss, .5)
 
         # Test equivariance
-        ir = inferer.Inferer(
+        ir = inferer.WholeInferProcessor(
             main_setting,
             conversion_function=preprocess.ConversionFunctionGrad(),
             converter_parameters_pkl=main_setting.data.preprocessed_root
-            / 'preprocessors.pkl')
-        results = ir.infer(
-            model=main_setting.trainer.output_directory,
+            / 'preprocessors.pkl',
+            model_path=main_setting.trainer.output_directory
+        )
+        results = ir.run(
             output_directory_base=tr.setting.trainer.output_directory,
             data_directories=Path('tests/data/grad/raw/test/0'),
             perform_preprocess=True)
         y = results[0]['dict_y']['grad']
 
         rotated_test_directory = Path('tests/data/grad/raw/rotated_test/0')
-        rotated_results = ir.infer(
-            model=main_setting.trainer.output_directory,
+        rotated_results = ir.run(
             output_directory_base=tr.setting.trainer.output_directory,
             data_directories=rotated_test_directory,
             perform_preprocess=True)

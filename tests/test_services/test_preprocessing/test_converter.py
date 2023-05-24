@@ -109,7 +109,7 @@ def test__is_same_results_when_not_save_results():
     rc_2 = converter.RawConverter(
         main_setting, recursive=True,
         load_function=LoadFunction(), force_renew=True)
-    results = rc_2.convert(save_results=False)
+    results = rc_2.convert(return_results=True)
 
     case_names = ["0", "1", "2"]
     value_names = ["a", "b", "c"]

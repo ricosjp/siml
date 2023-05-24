@@ -1,15 +1,17 @@
 import dataclasses as dc
-from enum import Enum
 import io
 import os
-from pathlib import Path
 import typing
+from enum import Enum
+from pathlib import Path
+from typing import Optional
 
 import numpy as np
 import optuna
 import yaml
 
-from . import util
+from siml import util
+from siml.path_like_objects import SimlFileBuilder
 
 
 @dc.dataclass
@@ -344,6 +346,10 @@ class CollectionVariableSetting(TypedDataClass):
             raise ValueError(f"Unexpected data: {data}")
 
     @property
+    def is_dict(self):
+        return isinstance(self.variables, dict)
+
+    @property
     def names(self):
         return self.collect_values('name')
 
@@ -372,6 +378,13 @@ class CollectionVariableSetting(TypedDataClass):
             return {k: v[0] for k, v in s.items()}
         else:
             raise ValueError(f"Invalid format: {s}")
+
+    def get_time_series_keys(self):
+        if not isinstance(self.time_series, dict):
+            return []
+        return [
+            k for k, v in self.time_series.items() if np.any(v)
+        ]
 
     def to_dict(self):
         if isinstance(self.variables, dict):
@@ -678,6 +691,14 @@ class TrainerSetting(TypedDataClass):
         out_dict.update(self.outputs.to_dict())
         return out_dict
 
+    def determine_element_wise(self) -> bool:
+        if self.time_series:
+            return False
+        if self.element_wise or self.simplified_model:
+            return True
+
+        return False
+
     def update_output_directory(self, *, id_=None, base=None):
         if base is None:
             base = Path(self.output_directory_base)
@@ -776,6 +797,8 @@ class InfererSetting(TypedDataClass):
     gpu_id: int = -1
     less_output: bool = False
     skip_fem_data_creation: bool = False
+    infer_epoch: int = dc.field(
+        default=None, metadata={'allow_none': True})
 
 
 @dc.dataclass
@@ -1146,15 +1169,26 @@ class MainSetting:
     misc: dict = dc.field(default_factory=dict)
 
     @classmethod
-    def read_settings_yaml(cls, settings_yaml, replace_preprocessed=False):
-        dict_settings = util.load_yaml(settings_yaml)
-        if isinstance(settings_yaml, Path):
-            name = settings_yaml.stem
+    def read_settings_yaml(
+        cls,
+        settings_yaml: Path,
+        replace_preprocessed=False,
+        *,
+        decrypt_key: Optional[bytes] = None
+    ):
+
+        siml_file = SimlFileBuilder.yaml_file(settings_yaml)
+        dict_settings = siml_file.load(decrypt_key=decrypt_key)
+        if not siml_file.is_encrypted:
+            name = siml_file.file_path.stem
         else:
             name = None
+
         return cls.read_dict_settings(
-            dict_settings, name=name,
-            replace_preprocessed=replace_preprocessed)
+            dict_settings,
+            name=name,
+            replace_preprocessed=replace_preprocessed
+        )
 
     @classmethod
     def read_dict_settings(
@@ -1241,6 +1275,18 @@ class MainSetting:
                     'Replaced.')
                 self.data.preprocessed = [self.data.train[0].parent]
         return
+
+    def get_crypt_key(self):
+        if self.data.encrypt_key is not None:
+            return self.data.encrypt_key
+
+        if self.inferer.model_key is not None:
+            return self.inferer.model_key
+
+        if self.trainer.model_key is not None:
+            return self.trainer.model_key
+
+        return None
 
     def update_with_dict(self, new_dict):
         original_dict = dc.asdict(self)

@@ -148,6 +148,66 @@ class FemDataWrapper:
 
         return variable_name
 
+    def add_difference(
+        self,
+        dict_data: dict,
+        reference_dict_data: dict,
+        prefix: str = 'difference'
+    ) -> None:
+        if reference_dict_data is None:
+            return
+
+        intersections = \
+            set(dict_data.keys()).intersection(reference_dict_data.keys())
+        if len(intersections) == 0:
+            return
+
+        difference_dict_data = {
+            intersection:
+            np.reshape(
+                dict_data[intersection],
+                reference_dict_data[intersection].shape
+            )
+            - reference_dict_data[intersection]
+            for intersection in intersections
+        }
+
+        self.update_fem_data(
+            difference_dict_data,
+            prefix=prefix
+        )
+
+    def add_abs_difference(
+        self,
+        dict_data: dict,
+        reference_dict_data: dict,
+        prefix: str = 'difference_abs'
+    ) -> None:
+        if reference_dict_data is None:
+            return
+
+        intersections = \
+            set(dict_data.keys()).intersection(reference_dict_data.keys())
+        if len(intersections) == 0:
+            return
+
+        difference_dict_data = {
+            intersection:
+            np.abs(
+                np.reshape(
+                    dict_data[intersection],
+                    reference_dict_data[intersection].shape
+                )
+                - reference_dict_data[intersection]
+            )
+            for intersection in intersections
+        }
+
+        self.update_fem_data(
+            difference_dict_data,
+            prefix=prefix
+        )
+
 
 def reshape_data_if_needed(value: np.ndarray):
     """Reshape numpy.ndarray-like to be writable to visualization files.

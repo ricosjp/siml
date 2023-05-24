@@ -85,9 +85,10 @@ class TestNetworks(unittest.TestCase):
         ir = inferer.Inferer(
             main_setting,
             converter_parameters_pkl=main_setting.data.preprocessed_root
-            / 'preprocessors.pkl')
+            / 'preprocessors.pkl',
+            model_path=main_setting.trainer.output_directory
+        )
         ir.infer(
-            model=main_setting.trainer.output_directory,
             output_directory_base=tr.setting.trainer.output_directory,
             data_directories=main_setting.data.preprocessed_root)
 
@@ -278,9 +279,10 @@ class TestNetworks(unittest.TestCase):
         ir = inferer.Inferer(
             main_setting,
             converter_parameters_pkl=main_setting.data.preprocessed_root
-            / 'preprocessors.pkl')
+            / 'preprocessors.pkl',
+            model_path=main_setting.trainer.output_directory
+        )
         results = ir.infer(
-            model=main_setting.trainer.output_directory,
             data_directories=main_setting.data.preprocessed_root
             / 'test')
         self.assertLess(results[0]['loss'], 1.)

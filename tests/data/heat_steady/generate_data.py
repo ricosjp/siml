@@ -189,7 +189,8 @@ class DataGenerator:
         wrapped_data.update_fem_data(dict_data, allow_overwrite=True)
         fem_data_to_save = wrapped_data.fem_data
         fem_data_to_save.save(output_directory)
-        fem_data_to_save.write('polyvtk', output_directory / 'mesh.vtu')
+        fem_data_to_save.write(
+            'polyvtk', output_directory / 'mesh.vtu', overwrite=True)
         (output_directory / 'converted').touch()
         return
 

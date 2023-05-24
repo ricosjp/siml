@@ -31,7 +31,7 @@ class Trainer(siml_manager.SimlManager):
                  settings,
                  *,
                  optuna_trial=None,
-                 user_loss_fundtion_dic:
+                 user_loss_function_dic:
                  dict[str, Callable[[Tensor, Tensor], Tensor]] = None):
         """Initialize SimlManager object.
 
@@ -58,7 +58,7 @@ class Trainer(siml_manager.SimlManager):
             raise ValueError(
                 f"Unknown type for settings: {settings.__class__}")
         self.inference_mode = False
-        self.user_loss_function_dic = user_loss_fundtion_dic
+        self.user_loss_function_dic = user_loss_function_dic
 
         self._update_setting_if_needed()
         self.optuna_trial = optuna_trial

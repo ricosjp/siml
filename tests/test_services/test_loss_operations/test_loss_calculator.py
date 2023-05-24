@@ -13,7 +13,7 @@ def initialize_trainer() -> trainer.Trainer:
         Path('tests/data/deform/dict_input_user_loss.yml'))
     tr = trainer.Trainer(
         main_setting,
-        user_loss_fundtion_dic={
+        user_loss_function_dic={
             "user_mspe": lambda x, y:
             torch.mean(torch.square((x - y) / (torch.norm(y) + 0.0001)))
         })

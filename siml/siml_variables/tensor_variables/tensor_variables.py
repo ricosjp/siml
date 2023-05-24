@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from typing import TypeVar
+from typing import TypeVar, Any
 
 import torch
+import numpy as np
 
 BuiltInVars = TypeVar(
     'BuiltInVars',
@@ -21,6 +22,12 @@ class ISimlVariables():
         raise NotImplementedError()
 
     def send(self, device: str) -> ISimlVariables:
+        raise NotImplementedError()
+
+    def min_len(self) -> int:
+        raise NotImplementedError()
+
+    def to_numpy(self) -> Any:
         raise NotImplementedError()
 
 
@@ -67,6 +74,12 @@ class TensorSimlVariables(ISimlVariables):
         tmp = self._x.to(device)
         return TensorSimlVariables(tmp)
 
+    def min_len(self) -> int:
+        return len(self._x)
+
+    def to_numpy(self) -> Any:
+        return self._x.cpu().detach().numpy()
+
 
 class DictSimlVariables(ISimlVariables):
     def __init__(self, value: dict):
@@ -90,6 +103,12 @@ class DictSimlVariables(ISimlVariables):
         tmp = {k: v.send(device) for k, v in self._x.items()}
         return DictSimlVariables(tmp)
 
+    def min_len(self) -> int:
+        return np.min([x.min_len() for x in self._x.values()])
+
+    def to_numpy(self) -> Any:
+        return {k: v.to_numpy() for k, v in self._x.items()}
+
 
 class ListSimlVaraiables(ISimlVariables):
     def __init__(self, value: list[torch.Tensor]):
@@ -111,3 +130,9 @@ class ListSimlVaraiables(ISimlVariables):
     def send(self, device: str) -> ListSimlVaraiables:
         tmp = [v.send(device) for v in self._x]
         return ListSimlVaraiables(tmp)
+
+    def min_len(self) -> int:
+        return np.min([x.min_len() for x in self._x])
+
+    def to_numpy(self) -> Any:
+        return [v.to_numpy() for v in self._x]

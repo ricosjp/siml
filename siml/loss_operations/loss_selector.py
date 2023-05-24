@@ -2,7 +2,8 @@ from torch import Tensor
 from typing import Callable
 import torch.nn.functional as functional
 
-from .loss_type import LossType
+from siml.base.siml_enums import LossType
+
 from .loss_assignment import ILossAssignment
 
 
@@ -24,9 +25,10 @@ class LossFunctionSelector():
         )
         self._check_loss_functions()
 
-    def get_loss_function(self,
-                          variable_name: str
-                          ) -> Callable[[Tensor, Tensor], Tensor]:
+    def get_loss_function(
+        self,
+        variable_name: str
+    ) -> Callable[[Tensor, Tensor], Tensor]:
         loss_name = self.loss_assignment[variable_name]
         return self.func_name_to_func_obj[loss_name]
 
@@ -54,7 +56,7 @@ class LossFunctionSelector():
         """
 
         name_to_function = {
-            LossType.mse.name: functional.mse_loss
+            LossType.MSE.value: functional.mse_loss
         }
 
         if user_loss_function_dic is not None:

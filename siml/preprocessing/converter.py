@@ -9,7 +9,9 @@ import femio
 import numpy as np
 
 from siml import setting, util
-from siml.utils import fem_data_utils, path_utils
+from siml.utils import fem_data_utils
+from siml.services.path_rules import SimlPathRules
+from siml.base.siml_enums import DirectoryType
 
 
 class IConvertFunction(metaclass=abc.ABCMeta):
@@ -67,7 +69,7 @@ class SingleDataConverter:
         output_directory: pathlib.Path = None,
         raise_when_overwrite: bool = False,
         force_renew: bool = False,
-        save_results: bool = True
+        return_results: bool = False
     ) -> None:
 
         self.setting = setting
@@ -79,9 +81,10 @@ class SingleDataConverter:
         self._output_directory = output_directory
         self.force_renew = force_renew
         self.raise_when_overwrite = raise_when_overwrite
-        self.save_results = save_results
+        self.return_results = return_results
 
-        if self.save_results and (self.save_function is None):
+        save_results = (not return_results)
+        if save_results and (self.save_function is None):
             raise ValueError(
                 "save_function is None when save_results option is True."
             )
@@ -92,10 +95,11 @@ class SingleDataConverter:
         if self._output_directory is not None:
             return self._output_directory
         else:
-            return path_utils.determine_output_directory(
+            rules = SimlPathRules()
+            return rules.determine_output_directory(
                 self.raw_path,
                 self.setting.output_base_directory,
-                'raw'
+                allowed_type=DirectoryType.RAW
             )
 
     def run(self) -> Union[None, dict]:
@@ -108,7 +112,7 @@ class SingleDataConverter:
             return None
 
         dict_data, fem_data = values
-        if not self.save_results:
+        if self.return_results:
             return dict_data
 
         self.save_function(
@@ -167,6 +171,9 @@ class SingleDataConverter:
         valid_raw_path = self._check_raw_path()
         if not valid_raw_path:
             return False
+
+        if self.return_results:
+            return True
 
         # check output directory
         valid_output_directory = self._check_output_direcotry()
@@ -301,7 +308,7 @@ class RawConverter:
         self,
         raw_directory: pathlib.Path = None,
         *,
-        save_results: bool = True
+        return_results: bool = False
     ) -> dict[str, Union[dict, None]]:
         """Perform conversion.
 
@@ -311,15 +318,15 @@ class RawConverter:
             Raw data directory name. If not fed, self.setting.data.raw is used
             instead.
 
-        save_results: bool, optional
+        return_results: bool, optional
             If True, save results and dump files
 
         Returns
         -------
         dict[str, Union[dict, None]]:
             key is a path to raw directory.
-            If save_results is True, values is a list of None.
-            If save_results is False, values is a dictionary
+            If return_results is False, values is a list of None.
+            If return_results is True, values is a dictionary
              of converted values.
         """
         print(f"# process: {self.max_process}")
@@ -330,7 +337,7 @@ class RawConverter:
             results = pool.map(
                 partial(
                     self.convert_single_data,
-                    save_results=save_results
+                    return_results=return_results
                 ),
                 raw_directories,
                 chunksize=chunksize
@@ -345,7 +352,7 @@ class RawConverter:
         *,
         output_directory: pathlib.Path = None,
         raise_when_overwrite: bool = False,
-        save_results: bool = True
+        return_results: bool = False
     ) -> dict[str, Union[dict, None]]:
         """Convert single directory.
 
@@ -363,11 +370,10 @@ class RawConverter:
         -------
         dict[str, Union[dict, None]]:
             key is a path to raw directory.
-            If save_results is True, values is a list of None.
-            If save_results is False, values is a dictionary
+            If return_results is False, values is a list of None.
+            If return_results is True, values is a dictionary
              of converted values.
         """
-
         load_function = self._create_load_function()
         save_function = self._create_save_function()
         filter_function = self._create_filter_function()
@@ -381,7 +387,7 @@ class RawConverter:
             output_directory=output_directory,
             raise_when_overwrite=raise_when_overwrite,
             force_renew=self.force_renew,
-            save_results=save_results
+            return_results=return_results
         )
 
         result = single_converter.run()

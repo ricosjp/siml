@@ -84,6 +84,9 @@ test_networks:
 test_operation:
   extends: .test
   script: python3.9 -m pytest tests/test_operations --capture=no
+  tags:
+    - GenuineIntel
+    - avx
 
 test_trainer_wo_pyg:
   extends: .test

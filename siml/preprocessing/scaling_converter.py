@@ -1,3 +1,4 @@
+from __future__ import annotations
 import multiprocessing as multi
 import pathlib
 import pickle
@@ -7,9 +8,10 @@ from typing import Optional
 import pydantic
 import pydantic.dataclasses as dc
 from siml import setting, util
-from siml.path_like_objects import ISimlFile, SimlDirectory
-from siml.utils import path_utils
+from siml.path_like_objects import SimlDirectory, ISimlNumpyFile
 from siml.siml_variables import ArrayDataType
+from siml.services.path_rules import SimlPathRules
+from siml.base.siml_enums import DirectoryType
 
 from .siml_scalers import IScalingSaveFunction, DefaultSaveFunction
 from .scalers_composition import ScalersComposition
@@ -27,7 +29,6 @@ class PreprocessInnerSettings():
     interim_directories: list[pathlib.Path]
     preprocessed_root: pathlib.Path
     recursive: bool = True
-    str_replace: str = 'interim'
     REQUIRED_FILE_NAMES: Optional[list[str]] = None
     FINISHED_FILE: str = 'preprocessed'
     PREPROCESSORS_PKL_NAME: str = 'preprocessors.pkl'
@@ -83,7 +84,7 @@ class PreprocessInnerSettings():
     def get_scaler_fitting_files(
         self,
         variable_name: str
-    ) -> list[ISimlFile]:
+    ) -> list[ISimlNumpyFile]:
 
         preprocess_setting = self.preprocess_dict[variable_name]
         siml_directories = self.collect_interim_directories()
@@ -103,10 +104,11 @@ class PreprocessInnerSettings():
         self,
         data_directory: pathlib.Path
     ) -> pathlib.Path:
-        output_directory = path_utils.determine_output_directory(
+        rules = SimlPathRules()
+        output_directory = rules.determine_output_directory(
             data_directory,
             self.preprocessed_root,
-            self.str_replace
+            allowed_type=DirectoryType.INTERIM
         )
         return output_directory
 
@@ -121,6 +123,22 @@ class ScalingConverter:
             settings_yaml, replace_preprocessed=False)
         return cls(main_setting, **args)
 
+    @classmethod
+    def read_pkl(
+        cls,
+        main_setting: setting.MainSetting,
+        converter_parameters_pkl: pathlib.Path,
+        key: bytes = None,
+    ):
+        scalers = ScalersComposition.create_from_file(
+            converter_parameters_pkl=converter_parameters_pkl,
+            key=key
+        )
+        return cls(
+            main_setting=main_setting,
+            scalers=scalers
+        )
+
     def __init__(
         self,
         main_setting: setting.MainSetting,
@@ -130,7 +148,7 @@ class ScalingConverter:
         max_process: int = None,
         allow_missing: bool = False,
         recursive: bool = True,
-        str_replace: str = 'interim',
+        scalers: Optional[ScalersComposition] = None
     ) -> None:
         """
         Initialize ScalingConverter
@@ -145,9 +163,6 @@ class ScalingConverter:
             save_func: callable, optional
                 Callback function to customize save data. It should accept
                 output_directory, variable_name, and transformed_data.
-            str_replace: str, optional
-                String to replace data directory in order to convert
-                from interim data to preprocessed data.
             max_process: int, optional
                 The maximum number of processes.
             allow_missing: bool, optional
@@ -158,16 +173,18 @@ class ScalingConverter:
             preprocess_dict=main_setting.preprocess,
             interim_directories=main_setting.data.interim,
             preprocessed_root=main_setting.data.preprocessed_root,
-            recursive=recursive,
-            str_replace=str_replace
+            recursive=recursive
         )
 
-        self._scalers: ScalersComposition \
-            = ScalersComposition.create_from_dict(
-                preprocess_dict=main_setting.preprocess,
-                max_process=max_process,
-                key=main_setting.data.encrypt_key
-            )
+        if scalers is None:
+            self._scalers: ScalersComposition \
+                = ScalersComposition.create_from_dict(
+                    preprocess_dict=main_setting.preprocess,
+                    max_process=max_process,
+                    key=main_setting.data.encrypt_key
+                )
+        else:
+            self._scalers = scalers
 
         self._decrypt_key = main_setting.data.encrypt_key
         self.max_process = max_process

@@ -6,7 +6,8 @@ import warnings
 import numpy as np
 import scipy.sparse as sp
 
-from siml.path_like_objects import ISimlFile, SimlFileExtType
+from siml.base.siml_enums import SimlFileExtType
+from siml.path_like_objects import ISimlNumpyFile
 from siml.preprocessing.siml_scalers import ISimlScaler, scale_functions
 from siml.siml_variables import ArrayDataType, create_siml_arrray
 
@@ -102,7 +103,7 @@ class SimlScalerWrapper(ISimlScaler):
 
     def lazy_partial_fit(
         self,
-        data_files: list[ISimlFile]
+        data_files: list[ISimlNumpyFile]
     ) -> None:
         for data_file in data_files:
             print(f"Start load data: {data_file}")
@@ -131,12 +132,12 @@ class SimlScalerWrapper(ISimlScaler):
 
     def _load_file(
         self,
-        siml_file: ISimlFile
+        siml_file: ISimlNumpyFile
     ) -> ArrayDataType:
 
         loaded_data = siml_file.load(decrypt_key=self.key)
 
-        if siml_file.get_file_extension() in [
+        if siml_file.file_extension in [
                 SimlFileExtType.NPZENC.value, SimlFileExtType.NPZ.value]:
             if not sp.issparse(loaded_data):
                 raise ValueError(

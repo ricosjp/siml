@@ -1,129 +1,311 @@
-import io
+from __future__ import annotations
 import pathlib
-import shutil
-import time
-from typing import Callable
+from typing import Callable, Optional, Union
 
-import ignite
 import numpy as np
-import pandas as pd
-import torch
 from torch import Tensor
+from torch.utils.data import DataLoader
 
-from . import datasets
-from . import networks
-from . import postprocessor
-from . import prepost
-from . import setting
-from . import siml_manager
-from . import util
-from .utils import path_utils
+from siml import datasets, setting
+from siml.base.siml_const import SimlConstItems
+from siml.loss_operations import LossCalculatorBuilder
+from siml.path_like_objects import SimlDirectory, SimlFileBuilder
+from siml.preprocessing import ScalersComposition
+from siml.preprocessing.converter import (
+    ILoadFunction, IConvertFunction, RawConverter)
+from siml.services import ModelEnvironmentSetting, ModelSelectorBuilder
+from siml.services.inference import (
+    CoreInferer, InferenceDataLoaderBuilder, InnerInfererSetting,
+    PostPredictionRecord
+)
+from siml.services.inference.postprocessing import (
+    IInfererSaveFunction, SaveProcessor, PostProcessor,
+    PostFEMDataConverter, IFEMDataAdditionFunction
+)
 
 
-class Inferer(siml_manager.SimlManager):
+class WholeInferProcessor:
+    def __init__(
+        self,
+        main_setting: setting.MainSetting,
+        model_path: Optional[pathlib.Path] = None,
+        converter_parameters_pkl: Optional[pathlib.Path] = None,
+        conversion_function: Optional[IConvertFunction] = None,
+        load_function: Optional[ILoadFunction] = None,
+        data_addition_function: Optional[IFEMDataAdditionFunction] = None,
+        save_function: Optional[IInfererSaveFunction] = None,
+        user_loss_function_dic:
+        dict[str, Callable[[Tensor, Tensor], Tensor]] = None
+    ) -> dict:
+
+        self.raw_converter = RawConverter(
+            main_setting=main_setting,
+            conversion_function=conversion_function,
+            load_function=load_function
+        )
+
+        _inner_setting = InnerInfererSetting(
+            main_setting=main_setting,
+            force_model_path=model_path,
+            force_converter_parameters_pkl=converter_parameters_pkl
+        )
+        pkl_path = _inner_setting.get_converter_parameters_pkl_path()
+        self.scalers = ScalersComposition.create_from_file(
+            converter_parameters_pkl=pkl_path,
+            key=main_setting.get_crypt_key()
+        )
+
+        self.inferer = Inferer(
+            main_setting=main_setting,
+            model_path=model_path,
+            scalers=self.scalers,
+            load_function=load_function,
+            data_addition_function=data_addition_function,
+            save_function=save_function,
+            user_loss_function_dic=user_loss_function_dic
+        )
+
+    def run(
+        self,
+        data_directories: Union[list[pathlib.Path], pathlib.Path],
+        output_directory_base: Optional[pathlib.Path] = None,
+        perform_preprocess: bool = True,
+        save: Optional[bool] = None
+    ) -> dict:
+        """run whole inference processes.
+
+        Parameters
+        ----------
+        data_directories : Union[list[pathlib.Path], pathlib.Path]
+            pathes to data
+        output_directory_base : Optional[pathlib.Path], optional
+            path to parent directory of cases, by default None
+        perform_preprocess : bool, optional
+            If True, perform preprocessing and scaling, by default True
+        save : Optional[bool], optional
+            If True, save items, by default None
+
+        Returns
+        -------
+        dict
+            dictionary of results
+        """
+        if perform_preprocess:
+            return self._run_with_preprocess(
+                data_directories=data_directories,
+                output_directory_base=output_directory_base,
+                save=save
+            )
+        else:
+            return self.inferer.infer(
+                data_directories=data_directories,
+                output_directory_base=output_directory_base,
+                save=save
+            )
+
+    def _run_with_preprocess(
+        self,
+        data_directories: Union[list[pathlib.Path], pathlib.Path],
+        output_directory_base: Optional[pathlib.Path] = None,
+        save: Optional[bool] = None
+    ) -> dict:
+        if isinstance(data_directories, pathlib.Path):
+            data_directories = [data_directories]
+
+        inner_setting = self.inferer._inner_setting
+        conversion_setting = inner_setting.conversion_setting
+        dataset = datasets.PreprocessDataset(
+            inner_setting.trainer_setting.input_names,
+            inner_setting.trainer_setting.output_names,
+            data_directories,
+            supports=inner_setting.trainer_setting.support_inputs,
+            num_workers=0,
+            allow_no_data=True,
+            decrypt_key=inner_setting.get_crypt_key(),
+            raw_converter=self.raw_converter,
+            scalers=self.scalers,
+            required_file_names=conversion_setting.required_file_names,
+            conversion_setting=conversion_setting
+        )
+        return self.inferer.infer_dataset(
+            dataset, output_directory_base=output_directory_base, save=save
+        )
+
+    def run_dict_data(
+        self,
+        raw_dict_x: dict,
+        *,
+        answer_raw_dict_y: Optional[dict] = None,
+        perform_preprocess: bool = True
+    ) -> dict:
+        """_summary_
+
+        Parameters
+        ----------
+        raw_dict_x : dict
+            Dict of raw x data.
+        answer_raw_dict_y : Optional[dict], optional
+            Dict of raw answer y data, by default None
+        perform_preprocess : bool, optional
+            If True, perform scaling. by default True
+
+        Returns
+        -------
+        dict
+            dictionary of result
+        """
+
+        if perform_preprocess:
+            scaled_dict_x = self.scalers.transform_dict(raw_dict_x)
+            if answer_raw_dict_y is not None:
+                scaled_dict_answer = self.scalers.transform_dict(
+                    answer_raw_dict_y
+                )
+            else:
+                scaled_dict_answer = None
+
+            results = self.inferer.infer_dict_data(
+                scaled_dict_x, scaled_dict_answer=scaled_dict_answer
+            )
+            return results
+        else:
+            return self.inferer.infer_dict_data(
+                raw_dict_x, scaled_dict_answer=answer_raw_dict_y
+            )
+
+
+class Inferer():
 
     @classmethod
-    def read_settings(cls, settings_yaml, **kwargs):
+    def read_settings_file(
+        cls,
+        settings_yaml: pathlib.Path,
+        model_path: Optional[pathlib.Path] = None,
+        converter_parameters_pkl: Optional[pathlib.Path] = None,
+        **kwargs
+    ) -> Inferer:
         """Read settings.yaml to generate Inferer object.
 
         Parameters
         ----------
-        settings_yaml: str or pathlib.Path
-            setting.yaml file name.
+        settings_yaml : pathlib.Path
+            Path to yaml file of setting
+        model_path : Optional[pathlib.Path], optional
+            If fed, overwrite path to model file, by default None
+        converter_parameters_pkl : Optional[pathlib.Path], optional
+            If fed, overwrite path to pkl file of scaling parameters,
+             by default None
 
         Returns
-        --------
-        siml.Inferer
+        -------
+        Inferer
+            Inferer object
         """
         main_setting = setting.MainSetting.read_settings_yaml(settings_yaml)
-        return cls(main_setting, **kwargs)
+        return cls(
+            main_setting=main_setting,
+            model_path=model_path,
+            converter_parameters_pkl=converter_parameters_pkl,
+            **kwargs
+        )
 
     @classmethod
-    def from_model_directory(cls,
-                             model_directory,
-                             decrypt_key=None,
-                             infer_epoch: int = None,
-                             **kwargs):
+    def from_model_directory(
+        cls,
+        model_directory: pathlib.Path,
+        converter_parameters_pkl: Optional[pathlib.Path] = None,
+        model_select_method: str = "best",
+        decrypt_key: bytes = None,
+        infer_epoch: int = None,
+        **kwargs
+    ):
         """Load model data from a deployed directory.
 
         Parameters
         ----------
         model_directory: str or pathlib.Path
             Model directory created with Inferer.deploy().
+        model_path : Optional[pathlib.Path], optional
+            If fed, overwrite path to model file, by default None
+        converter_parameters_pkl : Optional[pathlib.Path], optional
+            If fed, overwrite path to pkl file of scaling parameters,
+             by default None
         decrypt_key: bytes, optional
             Key to decrypt model data. If not fed, and the data is encrypted,
             ValueError is raised.
+        model_select_method: str, optional
+            method name to select model. By default, best
         infer_epoch: int, optional
             If fed, model which corresponds to infer_epoch is used.
 
         Returns
         --------
         siml.Inferer
+            Inferer object
         """
-        model_directory = pathlib.Path(model_directory)
-        if (model_directory / 'settings.yml').is_file():
-            main_setting = setting.MainSetting.read_settings_yaml(
-                model_directory / 'settings.yml')
-        elif (model_directory / 'settings.yml.enc').is_file():
-            main_setting = setting.MainSetting.read_settings_yaml(
-                util.decrypt_file(
-                    decrypt_key, model_directory / 'settings.yml.enc',
-                    return_stringio=True))
+
+        siml_directory = SimlDirectory(model_directory)
+        if converter_parameters_pkl is None:
+            pickle_file = siml_directory.find_pickle_file(
+                "preprocessors", allow_missing=True
+            )
+
+            if pickle_file is None:
+                raise ValueError(
+                    f"Not found pickle file in a directory: {model_directory}."
+                    "Set converter_parameters_pkl argument explicitly."
+                )
+            pickle_file_path = pickle_file.file_path
         else:
-            raise ValueError('No setting yaml file found')
+            pickle_file_path = converter_parameters_pkl
 
-        obj = cls(main_setting, **kwargs)
-        obj.setting.inferer.model_key = decrypt_key
+        setting_file = siml_directory.find_yaml_file('settings')
+        selector = ModelSelectorBuilder.create(model_select_method)
+        model_path = selector.select_model(
+            model_directory,
+            infer_epoch=infer_epoch
+        )
 
-        if (model_directory / 'model').is_file():
-            obj.setting.inferer.model = model_directory / 'model'
-        elif (model_directory / 'model.enc').is_file():
-            obj.setting.inferer.model = model_directory / 'model.enc'
-        else:
-            method = 'best' if infer_epoch is None else 'specified'
-            obj.setting.inferer.model = \
-                obj._select_snapshot(model_directory,
-                                     method=method,
-                                     infer_epoch=infer_epoch)
+        main_setting = setting.MainSetting.read_settings_yaml(
+            setting_file.file_path,
+            decrypt_key=decrypt_key,
+        )
 
-        # Prefer pkl file under model_directory over setting one
-        if (model_directory / 'preprocessors.pkl').is_file():
-            obj.setting.inferer.converter_parameters_pkl \
-                = model_directory / 'preprocessors.pkl'
-        elif (model_directory / 'preprocessors.pkl.enc').is_file():
-            obj.setting.inferer.converter_parameters_pkl \
-                = model_directory / 'preprocessors.pkl.enc'
-        elif obj.setting.inferer.converter_parameters_pkl is not None:
-            pass
-        else:
-            raise ValueError('No preprocessor pickle file found')
-
+        obj = cls(
+            main_setting=main_setting,
+            model_path=model_path.file_path,
+            converter_parameters_pkl=pickle_file_path,
+            decrypt_key=decrypt_key,
+            **kwargs
+        )
         return obj
 
     def __init__(
-            self, settings, *,
-            model=None, converter_parameters_pkl=None, save=None,
-            conversion_function=None, load_function=None,
-            data_addition_function=None, postprocess_function=None,
-            save_function=None,
-            optuna_trial=None,
-            user_loss_fundtion_dic:
-            dict[str, Callable[[Tensor, Tensor], Tensor]] = None):
+        self,
+        main_setting: setting.MainSetting,
+        *,
+        scalers: ScalersComposition = None,
+        model_path: Optional[pathlib.Path] = None,
+        converter_parameters_pkl: Optional[pathlib.Path] = None,
+        load_function: ILoadFunction = None,
+        data_addition_function: IFEMDataAdditionFunction = None,
+        save_function: IInfererSaveFunction = None,
+        user_loss_function_dic:
+        dict[str, Callable[[Tensor, Tensor], Tensor]] = None,
+        decrypt_key: Optional[bytes] = None
+    ) -> None:
         """Initialize Inferer object.
 
         Parameters
         ----------
-        settings: siml.MainSetting
-        model: pathlib.Path, optional
-            If fed, overwrite self.setting.inferer.model.
-        converter_parameters_pkl: pathlib.Path, optional
-            If fed, overwrite self.setting.inferer.converter_parameters_pkl
+        main_setting: siml.MainSetting
+        model_path : Optional[pathlib.Path], optional
+            If fed, overwrite path to model file, by default None
+        converter_parameters_pkl : Optional[pathlib.Path], optional
+            If fed, overwrite path to pkl file of scaling parameters,
+             by default None
         save: bool, optional
             If fed, overwrite self.setting.inferer.save
-        conversion_function: function, optional
-            Conversion function to preprocess raw data. It should receive
-            two parameters, fem_data and raw_directory. If not fed,
-            no additional conversion occurs.
         load_function: function, optional
             Function to load data, which take list of pathlib.Path objects
             (as required files) and pathlib.Path object (as data directory)
@@ -138,39 +320,122 @@ class Inferer(siml_manager.SimlManager):
             Function to save results. If not fed the default save function
             will be used.
         """
-        if isinstance(settings, pathlib.Path) or isinstance(
-                settings, io.TextIOBase):
-            self.setting = setting.MainSetting.read_settings_yaml(
-                settings)
-        elif isinstance(settings, setting.MainSetting):
-            self.setting = settings
-        else:
-            raise ValueError(
-                f"Unknown type for settings: {settings.__class__}")
-        self.user_loss_function_dic = user_loss_fundtion_dic
-        self.optuna_trial = optuna_trial
+        self._inner_setting = InnerInfererSetting(
+            main_setting=main_setting,
+            force_model_path=model_path,
+            force_converter_parameters_pkl=converter_parameters_pkl,
+            decrypt_key=decrypt_key
+        )
 
-        self.conversion_function = conversion_function
         self.load_function = load_function
         self.data_addition_function = data_addition_function
-        self.postprocess_function = postprocess_function
         self.save_function = save_function
+        if scalers is None:
+            self._scalers = self._inner_setting.load_scalers()
+        else:
+            self._scalers = scalers
 
-        self.inference_mode = True
-        if model is not None:
-            self.setting.inferer.model = model
-        if converter_parameters_pkl is not None:
-            self.setting.inferer.converter_parameters_pkl \
-                = converter_parameters_pkl
-        if save is not None:
-            self.setting.inferer.save = save
+        fem_data_creator = PostFEMDataConverter(
+            inferer_setting=self._inner_setting.inferer_setting,
+            conversion_setting=self._inner_setting.conversion_setting,
+            load_function=load_function,
+            data_addition_function=data_addition_function
+        )
 
-        return
+        self._model_env = self._create_model_env_setting()
+        self._collate_fn = self._create_collate_fn()
+        self._dataloader_builder = self._create_data_loader_builder()
+        self._core_inferer = self._create_core_inferer(
+            fem_data_creator,
+            user_loss_function_dic
+        )
+        self._save_processor = SaveProcessor(
+            inner_setting=self._inner_setting,
+            user_save_function=save_function
+        )
+
+    def _create_model_env_setting(self) -> ModelEnvironmentSetting:
+        trainer_setting = self._inner_setting.trainer_setting
+        _model_env = ModelEnvironmentSetting(
+            gpu_id=trainer_setting.gpu_id,
+            seed=trainer_setting.seed,
+            data_parallel=trainer_setting.data_parallel,
+            model_parallel=trainer_setting.model_parallel,
+            time_series=trainer_setting.time_series
+        )
+        return _model_env
+
+    def _create_collate_fn(self):
+        trainer_setting = self._inner_setting.trainer_setting
+        input_is_dict = trainer_setting.inputs.is_dict
+        output_is_dict = trainer_setting.outputs.is_dict
+
+        input_time_series_keys = \
+            trainer_setting.inputs.get_time_series_keys()
+        output_time_series_keys = \
+            trainer_setting.outputs.get_time_series_keys()
+
+        input_time_slices = trainer_setting.inputs.time_slice
+        output_time_slices = trainer_setting.outputs.time_slice
+        element_wise = trainer_setting.determine_element_wise()
+
+        collate_fn = datasets.CollateFunctionGenerator(
+            time_series=trainer_setting.time_series,
+            dict_input=input_is_dict,
+            dict_output=output_is_dict,
+            use_support=trainer_setting.support_inputs,
+            element_wise=element_wise,
+            data_parallel=trainer_setting.data_parallel,
+            input_time_series_keys=input_time_series_keys,
+            output_time_series_keys=output_time_series_keys,
+            input_time_slices=input_time_slices,
+            output_time_slices=output_time_slices
+        )
+        return collate_fn
+
+    def _create_core_inferer(
+        self,
+        fem_data_creator: PostFEMDataConverter,
+        user_loss_function_dic: dict = None
+    ) -> CoreInferer:
+        post_processor = PostProcessor(
+            inner_setting=self._inner_setting,
+            fem_data_converter=fem_data_creator,
+            scalers=self._scalers
+        )
+        loss_function = LossCalculatorBuilder.create(
+            trainer_setting=self._inner_setting.trainer_setting,
+            allow_no_answer=True,
+            user_loss_function_dic=user_loss_function_dic
+        )
+        _core_inferer = CoreInferer(
+            trainer_setting=self._inner_setting.trainer_setting,
+            model_setting=self._inner_setting.model_setting,
+            env_setting=self._model_env,
+            snapshot_file=self._inner_setting.get_snapshot_file_path(),
+            prepare_batch_function=self._collate_fn.prepare_batch,
+            loss_function=loss_function,
+            post_processor=post_processor,
+            decrypt_key=self._inner_setting.get_crypt_key()
+        )
+        return _core_inferer
+
+    def _create_data_loader_builder(self) -> InferenceDataLoaderBuilder:
+        dataloader_builder = InferenceDataLoaderBuilder(
+            trainer_setting=self._inner_setting.trainer_setting,
+            collate_fn=self._collate_fn,
+            decrypt_key=self._inner_setting.get_crypt_key()
+        )
+        return dataloader_builder
 
     def infer(
-            self, *, data_directories=None, model=None,
-            perform_preprocess=None, output_directory_base=None,
-            output_all=False):
+        self,
+        *,
+        data_directories: list[pathlib.Path] = None,
+        output_directory_base: Optional[pathlib.Path] = None,
+        output_all: bool = False,
+        save: Optional[bool] = None
+    ):
         """Perform infererence.
 
         Parameters
@@ -178,16 +443,13 @@ class Inferer(siml_manager.SimlManager):
         data_directories: list[pathlib.Path], optional
             List of data directories. Data is searched recursively.
             The default is an empty list.
-        model: pathlib.Path, optional
-            If fed, overwrite self.setting.inferer.model.
-        perform_preprocess: bool, optional
-            If fed, overwrite self.setting.inferer.perform_preprocess
         output_directory_base: pathlib.Path, optional
             If fed, overwrite self.setting.inferer.output_directory_base
         output_all: bool, optional. Dafault False
             If True, return all of results \
                 including not preprocessed predicted data
-
+        save: bool, optional. Default None
+            If fed, overwrite save option in main setting
 
         Returns
         -------
@@ -206,39 +468,98 @@ class Inferer(siml_manager.SimlManager):
         if data_directories is not None:
             if isinstance(data_directories, pathlib.Path):
                 data_directories = [data_directories]
-            self.setting.inferer.data_directories = data_directories
-        if model is not None:
-            self.setting.inferer.model = model
-        if perform_preprocess is not None:
-            self.setting.inferer.perform_preprocess = perform_preprocess
+        else:
+            data_directories = \
+                self._inner_setting.inferer_setting.data_directories
         if output_directory_base is not None:
-            self.setting.inferer.output_directory_base = output_directory_base
+            # HACK: Improve it to make setting class immutable
+            self._inner_setting.main_setting.inferer.output_directory_base \
+                = output_directory_base
 
-        self._prepare_inference()
-        self.date_string = util.date_string()
-        inference_state = self.inferer.run(self.inference_loader)
+        inference_loader = self._dataloader_builder.create(
+            data_directories=data_directories
+        )
+        inference_state = self._core_inferer.run(inference_loader)
 
-        if self.setting.inferer.save:
-            self.save(inference_state.metrics['results'])
+        do_save = save if save is not None \
+            else self._inner_setting.inferer_setting.save
+        if do_save:
+            self._save_processor.run(inference_state)
 
         if output_all:
             return inference_state
         else:
-            return inference_state.metrics['results']
+            return self._format_results(inference_state.metrics)
 
-    def infer_simplified_model(
-            self, model_path, raw_dict_x, *, answer_raw_dict_y=None):
+    def infer_dataset(
+        self,
+        preprocess_dataset: datasets.PreprocessDataset,
+        output_directory_base: Optional[pathlib.Path] = None,
+        save: Optional[bool] = None
+    ) -> list[dict]:
+        """_summary_
+
+        Parameters
+        ----------
+        preprocess_dataset : datasets.PreprocessDataset
+            dataset of preprocessed data
+        output_directory_base : Optional[pathlib.Path], optional
+            base output directory, by default None
+        save : Optional[bool], optional
+            If fed, overwrite save option. by default None
+
+        Returns
+        -------
+        inference_results: list[Dict]
+            Inference results contains:
+                - dict_x: input and variables
+                - dict_y: inferred variables
+                - dict_answer: answer variables (None if not found)
+                - loss: Loss value (scaled)
+                - raw_loss: Loss in a raw scale
+                - fem_data: FEMData object
+                - output_directory: Output directory path
+                - data_directory: Input directory path
+                - inference_time: Inference time
+
+        """
+
+        if output_directory_base is not None:
+            # HACK: Improve it to make setting class immutable
+            self._inner_setting.main_setting.inferer.output_directory_base \
+                = output_directory_base
+
+        inference_loader = DataLoader(
+            preprocess_dataset,
+            collate_fn=self._collate_fn,
+            batch_size=1,
+            shuffle=False,
+            num_workers=0
+        )
+        inference_state = self._core_inferer.run(inference_loader)
+
+        do_save = save if save is not None \
+            else self._inner_setting.inferer_setting.save
+        if do_save:
+            self._save_processor.run(inference_state)
+
+        return self._format_results(inference_state.metrics)
+
+    def infer_dict_data(
+        self,
+        scaled_dict_x: dict,
+        *,
+        scaled_dict_answer: Optional[dict] = None
+    ):
         """
         Infer with simplified model.
 
         Parameters
         ----------
-        model_path: pathlib.Path
-            Model file or directory name.
-        raw_dict_x: dict
-            Dict of raw x data.
-        answer_raw_dict_y: dict, optional
-            Dict of answer raw y data.
+        scaled_dict_x: dict
+            Dict of scaled x data.
+        scaled_dict_answer: dict, optional
+            Dict of answer scaled y data.
 
         Returns
         -------
@@ -253,17 +574,16 @@ class Inferer(siml_manager.SimlManager):
                 - data_directory: Input directory path
                 - inference_time: Inference time
         """
-        if model_path is not None:
-            self.setting.inferer.model = model_path
+        inference_loader = self._dataloader_builder.create(
+            raw_dict_x=scaled_dict_x,
+            answer_raw_dict_y=scaled_dict_answer
+        )
+        inference_state = self._core_inferer.run(inference_loader)
 
-        self._prepare_inference(
-            raw_dict_x=raw_dict_x, answer_raw_dict_y=answer_raw_dict_y)
-        self.date_string = util.date_string()
-        inference_state = self.inferer.run(self.inference_loader)
+        if self._inner_setting.inferer_setting.save:
+            self._save_processor.run(inference_state)
 
-        if self.setting.inferer.save:
-            self.save(inference_state.metrics['results'])
-        return inference_state.metrics['results'][0]
+        return self._format_results(inference_state.metrics)
 
     def infer_parameter_study(
             self, model, data_directories, *, n_interpolation=100,
@@ -324,359 +644,80 @@ class Inferer(siml_manager.SimlManager):
             converter_parameters_pkl=converter_parameters_pkl)[0]
         return interpolated_input_dict, output_dict
 
-    def save(self, results):
-        """Save inference results information.
-
-        Parameters
-        ----------
-        results: Dict
-            Inference results.
-        """
-        output_directory = self._determine_output_directory()
-        output_directory.mkdir(parents=True, exist_ok=True)
-        setting.write_yaml(
-            self.setting, output_directory / 'settings.yml',
-            key=self.setting.inferer.model_key)
-        self._write_log(output_directory, results)
-        return
-
-    def _write_log(self, output_directory, results):
-        column_names = [
-            'loss', 'raw_loss', 'output_directory', 'data_directory',
-            'inference_time']
-
-        log_dict = {}
-        for column_name in column_names:
-            log_dict.update({column_name: [r[column_name] for r in results]})
-
-        pd.DataFrame(log_dict).to_csv(
-            output_directory / 'infer.csv', index=None)
-        return
-
-    def deploy(self, output_directory, *, model=None, encrypt_key=None):
+    def deploy(
+        self,
+        output_directory: pathlib.Path,
+        encrypt_key: bytes = None
+    ):
         """Deploy model information.
 
         Parameters
         ----------
         output_directory: pathlib.Path
             Output directory path.
-        model: pathlib.Path, optional
-            If fed, overwrite self.setting.inferer.model.
         encrypt_key: bytes, optional
             Key to encrypt model data. If not fed, the model data will not be
             encrypted.
         """
-        if model is not None:
-            self.setting.inferer.model = model
-        if model.is_dir():
-            snapshot = self._select_snapshot(
-                self.setting.inferer.model,
-                method=self.setting.trainer.snapshot_choise_method)
-        else:
-            snapshot = model
-
         output_directory.mkdir(parents=True, exist_ok=True)
+        enc_ext = ".enc" if encrypt_key is not None else ""
 
-        if encrypt_key is None:
-            output_model = output_directory / 'model'
-            if output_model.exists():
-                raise ValueError(f"{output_model} already exists")
-            shutil.copyfile(snapshot, output_model)
+        # TODO: should deep copy to avoid side-effect
+        main_setting = self._inner_setting.main_setting
 
-            output_pkl = output_directory / 'preprocessors.pkl'
-            if output_pkl.exists():
-                raise ValueError(f"{output_pkl} already exists")
-            shutil.copyfile(
-                self.setting.inferer.converter_parameters_pkl,
-                output_pkl)
+        # output name
+        output_model_name = \
+            SimlConstItems.DEPLOYED_MODEL_NAME + f".pth{enc_ext}"
+        output_model_path = SimlFileBuilder.checkpoint_file(
+            output_directory / output_model_name
+        )
+        output_pkl = SimlFileBuilder.pickle_file(
+            output_directory / f'preprocessors.pkl{enc_ext}'
+        )
+        output_setting_yaml = SimlFileBuilder.yaml_file(
+            output_directory / 'settings.yml'
+        )
+        # Overwrite Setting
+        main_setting.inferer.model = output_model_path.file_path
 
-            output_setting = output_directory / 'settings.yml'
-            if output_setting.exists():
-                raise ValueError(f"{output_setting} already exists")
-            setting.write_yaml(self.setting, output_setting)
+        # Model
+        snapshot_file = self._inner_setting.get_snapshot_file_path()
+        siml_path = SimlFileBuilder.checkpoint_file(snapshot_file)
+        model_data = siml_path.load(device="cpu", decrypt_key=encrypt_key)
+        output_model_path.save(model_data, encrypt_key=encrypt_key)
 
-        else:
+        # pickle
+        pkl_path = self._inner_setting.get_converter_parameters_pkl_path()
+        pkl_path = SimlFileBuilder.pickle_file(pkl_path)
+        pkl_data = pkl_path.load(decrypt_key=encrypt_key)
+        output_pkl.save(
+            pkl_data, encrypt_key=encrypt_key
+        )
 
-            output_model = output_directory / 'model.enc'
-            if output_model.exists():
-                raise ValueError(f"{output_model} already exists")
-            self._encrypt_file(
-                encrypt_key, snapshot, output_directory / 'model.enc')
-
-            output_pkl = output_directory / 'preprocessors.pkl.enc'
-            if output_pkl.exists():
-                raise ValueError(f"{output_pkl} already exists")
-            self._encrypt_file(
-                encrypt_key, self.setting.inferer.converter_parameters_pkl,
-                output_pkl)
-
-            output_setting = output_directory / 'settings.yml.enc'
-            if output_setting.exists():
-                raise ValueError(f"{output_setting} already exists")
-            setting.write_yaml(self.setting, output_setting, key=encrypt_key)
-
+        # yaml
+        setting.write_yaml(
+            main_setting,
+            output_setting_yaml.file_path,
+            key=encrypt_key
+        )
         return
 
-    def _encrypt_file(self, key, input_file_name, output_file_name):
-        with open(input_file_name, "rb") as f:
-            data = f.read()
-            binary = io.BytesIO(data)
-            util.encrypt_file(key, output_file_name, binary)
-        return
+    def _format_results(self, metrics: dict) -> list[dict]:
+        results = []
+        records: list[PostPredictionRecord] = metrics.pop("post_results")
+        for i, val in enumerate(records):
+            _data = {
+                name: getattr(val, name)
+                for name in PostPredictionRecord._fields
+            }
+            for name, item in metrics.items():
+                _data.update({name: item[i]})
 
-    def _prepare_inference(
-            self, *,
-            raw_dict_x=None, answer_raw_dict_y=None, allow_no_data=True):
-
-        # Define model
-        if self.setting.inferer.model is None:
-            if self.setting.trainer.pretrain_directory is None:
-                raise ValueError(
-                    'No pretrain directory is specified for inference.')
-            else:
-                model = pathlib.Path(self.setting.trainer.pretrain_directory)
-        else:
-            model = pathlib.Path(self.setting.inferer.model)
-        self.setting.trainer.restart_directory = None
-
-        model = pathlib.Path(model)
-        if model.is_dir():
-            self.setting.trainer.pretrain_directory = model
-            self._update_setting_if_needed()
-            model_file = None
-        elif model.is_file():
-            model_file = model
-        else:
-            raise ValueError(f"Model does not exist: {model}")
-
-        self.model = networks.Network(
-            self.setting.model, self.setting.trainer)
-        self._select_device(gpu_id=self.setting.inferer.gpu_id)
-        self._load_pretrained_model_if_needed(model_file=model_file)
-
-        self.element_wise = self._determine_element_wise()
-        self.loss = self._create_loss_function(allow_no_answer=True)
-        if self.setting.inferer.converter_parameters_pkl is None:
-            self.setting.inferer.converter_parameters_pkl \
-                = self.setting.data.preprocessed_root / 'preprocessors.pkl'
-        self.prepost_converter = prepost.Converter(
-            self.setting.inferer.converter_parameters_pkl,
-            key=self.setting.inferer.model_key)
-
-        self.inference_loader = self._get_inferernce_loader(
-            raw_dict_x, answer_raw_dict_y, allow_no_data=allow_no_data)
-        self.inferer = self._create_inferer()
-        return
-
-    def _get_inferernce_loader(
-            self, raw_dict_x=None, answer_raw_dict_y=None,
-            allow_no_data=True):
-        input_is_dict = isinstance(
-            self.setting.trainer.inputs.variables, dict)
-        output_is_dict = isinstance(
-            self.setting.trainer.outputs.variables, dict)
-        if isinstance(self.setting.trainer.inputs.time_series, dict):
-            input_time_series_keys = [
-                k for k, v in self.setting.trainer.inputs.time_series.items()
-                if np.any(v)]
-        else:
-            input_time_series_keys = []
-        if isinstance(self.setting.trainer.outputs.time_series, dict):
-            output_time_series_keys = [
-                k for k, v in self.setting.trainer.outputs.time_series.items()
-                if np.any(v)]
-        else:
-            output_time_series_keys = []
-        input_time_slices = self.setting.trainer.inputs.time_slice
-        output_time_slices = self.setting.trainer.outputs.time_slice
-        self.collate_fn = datasets.CollateFunctionGenerator(
-            time_series=self.setting.trainer.time_series,
-            dict_input=input_is_dict, dict_output=output_is_dict,
-            use_support=self.setting.trainer.support_inputs,
-            element_wise=self.element_wise,
-            data_parallel=self.setting.trainer.data_parallel,
-            input_time_series_keys=input_time_series_keys,
-            output_time_series_keys=output_time_series_keys,
-            input_time_slices=input_time_slices,
-            output_time_slices=output_time_slices)
-        self.prepare_batch = self.collate_fn.prepare_batch
-
-        setting = self.setting
-        if setting.data.encrypt_key is not None:
-            key = setting.data.encrypt_key
-        elif setting.inferer.model_key is not None:
-            key = setting.inferer.model_key
-        elif setting.trainer.model_key is not None:
-            key = setting.trainer.model_key
-        else:
-            key = None
-
-        if raw_dict_x is not None:
-            inference_dataset = datasets.SimplifiedDataset(
-                setting.trainer.input_names,
-                setting.trainer.output_names,
-                raw_dict_x=raw_dict_x, answer_raw_dict_y=answer_raw_dict_y,
-                prepost_converter=self.prepost_converter,
-                allow_no_data=allow_no_data,
-                num_workers=0)
-        elif setting.inferer.perform_preprocess:
-            inference_dataset = datasets.PreprocessDataset(
-                setting.trainer.input_names,
-                setting.trainer.output_names,
-                setting.inferer.data_directories,
-                supports=setting.trainer.support_inputs,
-                num_workers=0,
-                required_file_names=setting.conversion.required_file_names,
-                decrypt_key=key,
-                prepost_converter=self.prepost_converter,
-                conversion_setting=setting.conversion,
-                conversion_function=self.conversion_function,
-                allow_no_data=allow_no_data,
-                load_function=self.load_function)
-        else:
-            inference_dataset = datasets.LazyDataset(
-                setting.trainer.input_names,
-                setting.trainer.output_names,
-                setting.inferer.data_directories,
-                supports=setting.trainer.support_inputs,
-                num_workers=0,
-                allow_no_data=allow_no_data,
-                decrypt_key=key)
-
-        inference_loader = torch.utils.data.DataLoader(
-            inference_dataset, collate_fn=self.collate_fn,
-            batch_size=1, shuffle=False, num_workers=0)
-        return inference_loader
-
-    def _create_inferer(self):
-
-        def _inference(engine, batch):
-            self.model.eval()
-            x, y = self.prepare_batch(
-                batch, device=self.device,
-                output_device=self.output_device,
-                support_device=self.device,
-                non_blocking=self.setting.trainer.non_blocking)
-            with torch.no_grad():
-                start_time = time.time()
-                y_pred = self.model(x)
-                end_time = time.time()
-                elapsed_time = end_time - start_time
-
-            assert len(batch['data_directories']) == 1
-            data_directory = batch['data_directories'][0]
-            loss = self.loss(y_pred, y, original_shapes=x['original_shapes'])
-            print('--')
-            print(f"              Data: {data_directory}")
-            print(f"Inference time [s]: {elapsed_time:.5e}")
-            if loss is not None:
-                print(f"              Loss: {loss}")
-            print('--')
-
-            return y_pred, y, {
-                'x': x, 'original_shapes': x['original_shapes'],
-                'data_directory': data_directory,
-                'inference_time': elapsed_time}
-
-        evaluator_engine = ignite.engine.Engine(_inference)
-
-        metrics = {'results': postprocessor.Postprocessor(inferer=self)}
-
-        for name, metric in metrics.items():
-            metric.attach(evaluator_engine, name)
-        return evaluator_engine
-
-    def _separate_data(self, data, descriptions, *, axis=-1):
-        if isinstance(data, dict):
-            return {
-                key:
-                self._separate_data(
-                    data[key], descriptions.variables[key], axis=axis)
-                for key in data.keys()}
-        if len(data) == 0:
-            return {}
-
-        data_dict = {}
-        index = 0
-        data = np.swapaxes(data, 0, axis)
-        for description in descriptions.variables:
-            dim = description.dim
-            data_dict.update({
-                description.name:
-                np.swapaxes(data[index:index+dim], 0, axis)})
-            index += dim
-        return data_dict
-
-    def _determine_output_directory(self, data_directory=None):
-        if data_directory is None:
-            data_directory = ''
-        if self.setting.inferer.output_directory is not None:
-            return self.setting.inferer.output_directory
-
-        subdirectory = self._determine_subdirectory()
-        base = self.setting.inferer.output_directory_base / subdirectory
-        if 'preprocessed' in str(data_directory):
-            output_directory = path_utils.determine_output_directory(
-                data_directory, base, 'preprocessed')
-        elif 'interim' in str(data_directory):
-            output_directory = path_utils.determine_output_directory(
-                data_directory, base, 'interim')
-        elif 'raw' in str(data_directory):
-            output_directory = path_utils.determine_output_directory(
-                data_directory, base, 'raw')
-        else:
-            output_directory = base
-        return output_directory
-
-    def _determine_subdirectory(self):
-        if self.setting.inferer.model is not None:
-            model = pathlib.Path(self.setting.inferer.model)
-            if model.is_dir():
-                model_name = model.name
-            else:
-                model_name = model.parent.name
-        elif self.setting.trainer.name is not None:
-            model_name = self.setting.trainer.name
-        else:
-            model_name = 'unknown'
-        return f"{model_name}_{self.date_string}"
-
-    def _determine_write_simulation_base(self, data_directory):
-        if self.setting.inferer.write_simulation_base is None:
-            if self.setting.inferer.perform_preprocess:
-                # Assume the given data is raw data
-                return data_directory
-            else:
-                if 'preprocessed' in str(data_directory):
-                    raw_candidate = pathlib.Path(
-                        str(data_directory).replace('preprocessed', 'raw'))
-                    if raw_candidate.is_dir():
-                        return raw_candidate
-                    else:
-                        interim_candidate = pathlib.Path(
-                            str(data_directory).replace(
-                                'preprocessed', 'interim'))
-                        if interim_candidate.is_dir():
-                            return interim_candidate
-                        else:
-                            return None
-                else:
-                    return None
-
-        if 'preprocessed' in str(data_directory):
-            write_simulation_base = path_utils.determine_output_directory(
-                data_directory,
-                self.setting.inferer.write_simulation_base,
-                'preprocessed')
-
-        elif 'interim' in str(data_directory):
-            write_simulation_base = path_utils.determine_output_directory(
-                data_directory,
-                self.setting.inferer.write_simulation_base,
-                'interim')
-        elif 'raw' in str(data_directory):
-            write_simulation_base = data_directory
-        else:
-            write_simulation_base \
-                = self.setting.inferer.write_simulation_base
-        return write_simulation_base
+            each_output_directory = \
+                self._inner_setting.get_output_directory(
+                    val.inference_start_datetime,
+                    data_directory=val.data_directory,
+                )
+            _data.update({"output_directory": each_output_directory})
+            results.append(_data)
+        return results

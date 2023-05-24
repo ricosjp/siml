@@ -3,7 +3,7 @@ import shutil
 
 import numpy as np
 
-from siml.path_like_objects import SimlFileBulider
+from siml.path_like_objects import SimlFileBuilder
 from siml.preprocessing.siml_scalers import SimlScalerWrapper
 from siml.preprocessing.siml_scalers.scale_functions import StandardScaler
 
@@ -80,7 +80,7 @@ def test__standardizer():
     once_std.partial_fit(all_data)
 
     data_files = [
-        SimlFileBulider.create(f) for f in data_files
+        SimlFileBuilder.numpy_file(f) for f in data_files
     ]
     lazy_std = SimlScalerWrapper('standardize')
     lazy_std.lazy_partial_fit(data_files)
@@ -119,7 +119,7 @@ def test__standardizer_with_nan():
         data_file.parent.mkdir(parents=True)
         np.save(data_file, d)
     data_files = [
-        SimlFileBulider.create(f) for f in data_files
+        SimlFileBuilder.numpy_file(f) for f in data_files
     ]
 
     lazy_std = SimlScalerWrapper('standardize', componentwise=False)
@@ -144,7 +144,7 @@ def test__standardizer_with_nan_componentwise():
         np.save(data_file, d)
 
     data_files = [
-        SimlFileBulider.create(f) for f in data_files
+        SimlFileBuilder.numpy_file(f) for f in data_files
     ]
     lazy_std = SimlScalerWrapper(
         'standardize', componentwise=True
@@ -173,7 +173,7 @@ def test__std_scale():
     once_std.partial_fit(all_data)
 
     data_files = [
-        SimlFileBulider.create(f) for f in data_files
+        SimlFileBuilder.numpy_file(f) for f in data_files
     ]
     lazy_std = SimlScalerWrapper('std_scale')
     lazy_std.lazy_partial_fit(data_files)

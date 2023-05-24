@@ -1,25 +1,40 @@
-from typing import Callable, Union
+import abc
+from typing import Callable, Union, Optional
 import torch
 from torch import Tensor
 
 from siml import util
+from siml.base.siml_enums import LossType
 from .loss_assignment import ILossAssignment
 from .loss_assignment import LossAssignmentCreator
 from .loss_selector import LossFunctionSelector
 
 
-class LossCalculator:
+class ILossCalculator(metaclass=abc.ABCMeta):
+    @abc.abstractmethod
+    def __call__(
+        self,
+        y_pred: torch.Tensor,
+        y: torch.Tensor,
+        original_shapes: Optional[tuple] = None,
+        **kwargs
+    ) -> torch.Tensor:
+        raise NotImplementedError()
+
+
+class LossCalculator(ILossCalculator):
 
     def __init__(
-            self,
-            *,
-            loss_setting: Union[dict, str] = 'mse',
-            time_series: bool = False,
-            output_is_dict: bool = False,
-            output_skips=None,
-            output_dims=None,
-            user_loss_function_dic:
-            dict[str, Callable[[Tensor, Tensor], Tensor]] = None):
+        self,
+        *,
+        loss_setting: Union[dict, str] = LossType.MSE.value,
+        time_series: bool = False,
+        output_is_dict: bool = False,
+        output_skips=None,
+        output_dims=None,
+        user_loss_function_dic:
+        dict[str, Callable[[Tensor, Tensor], Tensor]] = None
+    ) -> None:
 
         self.loss_assignment = LossAssignmentCreator.create(loss_setting)
         self.loss_core = CoreLossCalculator(
@@ -92,11 +107,12 @@ class CoreLossCalculator():
         )
         return
 
-    def __call__(self,
-                 input_tensor: Tensor,
-                 target_tensor: Tensor,
-                 variable_name: str = None
-                 ) -> Tensor:
+    def __call__(
+        self,
+        input_tensor: Tensor,
+        target_tensor: Tensor,
+        variable_name: str = None
+    ) -> Tensor:
         """Calculate loss value
 
         Args:

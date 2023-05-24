@@ -8,7 +8,7 @@ import numpy as np
 import siml.prepost as pre
 import siml.setting as setting
 import siml.trainer as trainer
-from siml.preprocessing import ScalingConverter
+from siml.preprocessing import ScalingConverter, ScalersComposition
 
 
 class TestPrepost(unittest.TestCase):
@@ -135,8 +135,10 @@ class TestPrepost(unittest.TestCase):
         preprocessor = ScalingConverter(main_setting)
         preprocessor.fit_transform()
 
-        postprocessor = pre.Converter(
-            data_setting.preprocessed_root / 'preprocessors.pkl'
+        postprocessor = ScalersComposition.create_from_file(
+            converter_parameters_pkl=(
+                data_setting.preprocessed_root / 'preprocessors.pkl'
+            )
         )
         preprocessed_paths = [
             data_setting.preprocessed_root / 'a',
@@ -148,8 +150,8 @@ class TestPrepost(unittest.TestCase):
                 'std_scale': np.load(preprocessed_path / 'std_scale.npy')}
             dict_data_y = {
                 'standardize': np.load(preprocessed_path / 'standardize.npy')}
-            inv_dict_data_x, inv_dict_data_y, _, _ = postprocessor.postprocess(
-                dict_data_x, dict_data_y)
+            inv_dict_data_x = postprocessor.inverse_transform_dict(dict_data_x)
+            inv_dict_data_y = postprocessor.inverse_transform_dict(dict_data_y)
             for k, v in inv_dict_data_x.items():
                 interim_data = np.load(interim_path / (k + '.npy'))
                 np.testing.assert_almost_equal(interim_data, v, decimal=5)
@@ -212,14 +214,18 @@ class TestPrepost(unittest.TestCase):
         p = ScalingConverter(main_setting)
         p.fit_transform()
 
-        c = pre.Converter(
-            main_setting.data.preprocessed_root / 'preprocessors.pkl'
+        converter = ScalersComposition.create_from_file(
+            converter_parameters_pkl=(
+                main_setting.data.preprocessed_root / 'preprocessors.pkl'
+            )
         )
         original_dict_x = {
             'a': np.load(
                 main_setting.data.interim_root / 'train/0/a.npy')}
-        preprocessed_dict_x = c.preprocess(original_dict_x)
-        postprocessed_dict_x, _, _, _ = c.postprocess(preprocessed_dict_x, {})
+        preprocessed_dict_x = converter.transform_dict(original_dict_x)
+        postprocessed_dict_x = converter.inverse_transform_dict(
+            preprocessed_dict_x
+        )
         np.testing.assert_almost_equal(
             preprocessed_dict_x['a'],
             np.load(

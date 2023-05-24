@@ -252,15 +252,17 @@ class TestTrainer(unittest.TestCase):
         loss = tr.train()
         self.assertLess(loss, 1e-1)
 
-        ir = inferer.Inferer(
+        ir = inferer.WholeInferProcessor(
             main_setting,
-            model=main_setting.trainer.output_directory,
+            model_path=main_setting.trainer.output_directory,
             converter_parameters_pkl=main_setting.data.preprocessed_root
             / 'preprocessors.pkl',
-            conversion_function=conversion_function, save=False)
-        results = ir.infer(
+            conversion_function=conversion_function)
+        results = ir.run(
             data_directories=main_setting.data.raw_root
-            / 'train/tet2_3_modulusx0.9000', perform_preprocess=True)
+            / 'train/tet2_3_modulusx0.9000',
+            perform_preprocess=True,
+            save=False)
         self.assertLess(results[0]['loss'], 1e-1)
 
     def test_whole_wildcard_processs(self):
@@ -281,15 +283,18 @@ class TestTrainer(unittest.TestCase):
         loss = tr.train()
         self.assertLess(loss, 1e-1)
 
-        ir = inferer.Inferer(
+        ir = inferer.WholeInferProcessor(
             main_setting,
-            model=main_setting.trainer.output_directory,
+            model_path=main_setting.trainer.output_directory,
             converter_parameters_pkl=main_setting.data.preprocessed_root
             / 'preprocessors.pkl',
-            conversion_function=conversion_function, save=False)
-        results = ir.infer(
+            conversion_function=conversion_function)
+        results = ir.run(
             data_directories=main_setting.data.raw_root
-            / 'train/tet2_3_modulusx0.9000', perform_preprocess=True)
+            / 'train/tet2_3_modulusx0.9000',
+            perform_preprocess=True,
+            save=False
+        )
         self.assertLess(results[0]['loss'], 1e-1)
 
     def test_output_stats(self):
@@ -370,11 +375,12 @@ class TestTrainer(unittest.TestCase):
             len(trained_setting.data.test), 0)
 
         data_directory = main_setting.data.develop[0]  # pylint: disable=E1136
+        main_setting.inferer.save = False
         ir = inferer.Inferer(
             main_setting,
-            model=main_setting.trainer.output_directory,
+            model_path=main_setting.trainer.output_directory,
             converter_parameters_pkl=data_directory.parent
-            / 'preprocessors.pkl', save=False)
+            / 'preprocessors.pkl')
         results = ir.infer(data_directories=data_directory)
         np.testing.assert_almost_equal(results[0]['loss'], train_loss)
 
@@ -542,7 +548,7 @@ class TestTrainer(unittest.TestCase):
             assert content['trainer']['pretrain_directory'] is None
 
             # can load in inferer
-            _ = inferer.Inferer.read_settings(file_path)
+            _ = inferer.Inferer.read_settings_file(file_path)
 
     def test_restart_deny(self):
         main_setting = setting.MainSetting.read_settings_yaml(
@@ -649,15 +655,17 @@ class TestTrainer(unittest.TestCase):
                 main_setting.trainer.output_directory
                 / 'snapshot_epoch_100.pth.enc')
 
-        with self.assertRaises(UnicodeDecodeError):
+        with self.assertRaises(ValueError):
             setting.MainSetting.read_settings_yaml(
                 main_setting.trainer.output_directory / 'settings.yml.enc')
 
+        main_setting.inferer.save = False
         ir = inferer.Inferer.from_model_directory(
             main_setting.trainer.output_directory,
             decrypt_key=main_setting.trainer.model_key,
             converter_parameters_pkl=main_setting.data.preprocessed[0]
-            / 'preprocessors.pkl', save=False)
+            / 'preprocessors.pkl'
+        )
         results = ir.infer(
             data_directories=main_setting.data.preprocessed[0]
             / 'train/tet2_3_modulusx0.9000')
@@ -672,12 +680,14 @@ class TestTrainer(unittest.TestCase):
         loss = tr.train()
         np.testing.assert_array_less(loss, 1.)
 
+        main_setting.inferer.perform_inverse = False
+        main_setting.inferer.save = False
         ir = inferer.Inferer(
             main_setting,
-            model=main_setting.trainer.output_directory,
+            model_path=main_setting.trainer.output_directory,
             converter_parameters_pkl=main_setting.data.preprocessed[0]
-            / 'preprocessors.pkl', save=False)
-        ir.setting.inferer.perform_inverse = False
+            / 'preprocessors.pkl'
+        )
         results = ir.infer(
             data_directories=Path(
                 'tests/data/rotation_thermal_stress/preprocessed/'
@@ -697,16 +707,20 @@ class TestTrainer(unittest.TestCase):
         loss = tr.train()
         np.testing.assert_array_less(loss, 1.)
 
+        main_setting.inferer.perform_inverse = False
         ir = inferer.Inferer(
             main_setting,
-            model=main_setting.trainer.output_directory,
+            model_path=main_setting.trainer.output_directory,
             converter_parameters_pkl=main_setting.data.preprocessed[0]
-            / 'preprocessors.pkl', save=False)
-        ir.setting.inferer.perform_inverse = False
+            / 'preprocessors.pkl'
+        )
+
         results = ir.infer(
             data_directories=Path(
                 'tests/data/rotation_thermal_stress/preprocessed/'
-                'cube/original'))
+                'cube/original'),
+            save=False
+        )
         t_mse_wo_skip = np.mean((
             results[0]['dict_y']['cnt_temperature']
             - results[0]['dict_answer']['cnt_temperature'])**2)
@@ -722,16 +736,20 @@ class TestTrainer(unittest.TestCase):
         tr = trainer.Trainer(main_setting)
         tr.train()
 
+        main_setting.inferer.perform_inverse = False
         ir = inferer.Inferer(
             main_setting,
-            model=main_setting.trainer.output_directory,
+            model_path=main_setting.trainer.output_directory,
             converter_parameters_pkl=main_setting.data.preprocessed[0]
-            / 'preprocessors.pkl', save=False)
-        ir.setting.inferer.perform_inverse = False
+            / 'preprocessors.pkl'
+        )
+
         results = ir.infer(
             data_directories=Path(
                 'tests/data/rotation_thermal_stress/preprocessed/'
-                'cube/original'))
+                'cube/original'),
+            save=False
+        )
 
         t_mse_w_skip = np.mean((
             results[0]['dict_y']['cnt_temperature']
@@ -746,12 +764,14 @@ class TestTrainer(unittest.TestCase):
         tr = trainer.Trainer(main_setting)
         tr.train()
 
+        main_setting.inferer.perform_inverse = False
+        main_setting.inferer.save = False
         ir = inferer.Inferer(
             main_setting,
-            model=main_setting.trainer.output_directory,
+            model_path=main_setting.trainer.output_directory,
             converter_parameters_pkl=main_setting.data.preprocessed[0]
-            / 'preprocessors.pkl', save=False)
-        ir.setting.inferer.perform_inverse = False
+            / 'preprocessors.pkl'
+        )
         results = ir.infer(
             data_directories=Path(
                 'tests/data/rotation_thermal_stress/preprocessed/'
@@ -801,7 +821,7 @@ class TestTrainer(unittest.TestCase):
             main_setting.trainer.output_directory, ignore_errors=True)
         tr = trainer.Trainer(
             main_setting,
-            user_loss_fundtion_dic={
+            user_loss_function_dic={
                 "user_mspe": lambda x, y:
                 torch.mean(torch.square((x - y) / (torch.norm(y) + 0.0001)))
             })

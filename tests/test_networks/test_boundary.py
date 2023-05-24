@@ -323,14 +323,16 @@ class TestBoundary(unittest.TestCase):
         loss = tr.train()
         np.testing.assert_array_less(loss, .5)
 
+        main_setting.inferer.write_simulation = True
+        main_setting.inferer.write_simulation_base \
+            = Path('tests/data/grad/raw')
         ir = inferer.Inferer(
             main_setting,
             converter_parameters_pkl=main_setting.data.preprocessed_root
-            / 'preprocessors.pkl')
-        ir.setting.inferer.write_simulation = True
-        ir.setting.inferer.write_simulation_base = Path('tests/data/grad/raw')
+            / 'preprocessors.pkl',
+            model_path=main_setting.trainer.output_directory
+        )
         results = ir.infer(
-            model=main_setting.trainer.output_directory,
             output_directory_base=tr.setting.trainer.output_directory,
             data_directories=main_setting.data.test[0])
         results[0]['fem_data'].write('ucd', 'tmp.inp', overwrite=True)
@@ -359,15 +361,17 @@ class TestBoundary(unittest.TestCase):
         loss = tr_wo_boundary.train()
         np.testing.assert_array_less(loss, 1.)
 
+        main_setting.inferer.write_simulation = True
+        main_setting.inferer.write_simulation_base \
+            = Path('tests/data/grad/raw')
         ir_wo_boundary = inferer.Inferer(
             main_setting_wo_boundary,
             converter_parameters_pkl=main_setting.data.preprocessed_root
-            / 'preprocessors.pkl')
-        ir_wo_boundary.setting.inferer.write_simulation = True
-        ir_wo_boundary.setting.inferer.write_simulation_base = Path(
-            'tests/data/grad/raw')
+            / 'preprocessors.pkl',
+            model_path=main_setting_wo_boundary.trainer.output_directory
+        )
+
         results_wo_boundary = ir_wo_boundary.infer(
-            model=main_setting_wo_boundary.trainer.output_directory,
             output_directory_base=tr_wo_boundary.setting
             .trainer.output_directory,
             data_directories=main_setting_wo_boundary.data.test[0])
@@ -399,14 +403,16 @@ class TestBoundary(unittest.TestCase):
         loss = tr.train()
         np.testing.assert_array_less(loss, .5)
 
+        main_setting.inferer.write_simulation = True
+        main_setting.inferer.write_simulation_base \
+            = Path('tests/data/grad/raw')
         ir = inferer.Inferer(
             main_setting,
             converter_parameters_pkl=main_setting.data.preprocessed_root
-            / 'preprocessors.pkl')
-        ir.setting.inferer.write_simulation = True
-        ir.setting.inferer.write_simulation_base = Path('tests/data/grad/raw')
+            / 'preprocessors.pkl',
+            model_path=main_setting.trainer.output_directory
+        )
         results = ir.infer(
-            model=main_setting.trainer.output_directory,
             output_directory_base=tr.setting.trainer.output_directory,
             data_directories=main_setting.data.test[0])
         x = results[0]['dict_x']
@@ -434,15 +440,17 @@ class TestBoundary(unittest.TestCase):
         loss = tr_wo_boundary.train()
         np.testing.assert_array_less(loss, 1.)
 
+        main_setting.inferer.write_simulation = True
+        main_setting.inferer.write_simulation_base \
+            = Path('tests/data/grad/raw')
         ir_wo_boundary = inferer.Inferer(
             main_setting_wo_boundary,
             converter_parameters_pkl=main_setting.data.preprocessed_root
-            / 'preprocessors.pkl')
-        ir_wo_boundary.setting.inferer.write_simulation = True
-        ir_wo_boundary.setting.inferer.write_simulation_base = Path(
-            'tests/data/grad/raw')
+            / 'preprocessors.pkl',
+            model_path=main_setting_wo_boundary.trainer.output_directory
+        )
+
         results_wo_boundary = ir_wo_boundary.infer(
-            model=main_setting_wo_boundary.trainer.output_directory,
             output_directory_base=tr_wo_boundary.setting
             .trainer.output_directory,
             data_directories=main_setting_wo_boundary.data.test[0])
@@ -466,24 +474,24 @@ class TestBoundary(unittest.TestCase):
         np.testing.assert_array_less(loss, .5)
 
         # Test equivariance
-        ir = inferer.Inferer(
-            main_setting,
+        ir = inferer.WholeInferProcessor(
+            main_setting=main_setting,
             conversion_function=preprocess.ConversionFunctionGrad(),
             converter_parameters_pkl=main_setting.data.preprocessed_root
-            / 'preprocessors.pkl')
-        results = ir.infer(
-            model=main_setting.trainer.output_directory,
+            / 'preprocessors.pkl',
+            model_path=main_setting.trainer.output_directory
+        )
+        results = ir.run(
             output_directory_base=tr.setting.trainer.output_directory,
-            data_directories=Path('tests/data/grad/raw/test/0'),
-            perform_preprocess=True)
+            data_directories=Path('tests/data/grad/raw/test/0')
+        )
         y = results[0]['dict_y']['grad']
 
         rotated_test_directory = Path('tests/data/grad/raw/rotated_test/0')
-        rotated_results = ir.infer(
-            model=main_setting.trainer.output_directory,
+        rotated_results = ir.run(
             output_directory_base=tr.setting.trainer.output_directory,
             data_directories=rotated_test_directory,
-            perform_preprocess=True)
+        )
         rotated_y = rotated_results[0]['dict_y']['grad']
 
         rotation = np.load(rotated_test_directory / 'rotation.npy')
@@ -499,14 +507,16 @@ class TestBoundary(unittest.TestCase):
         loss = tr.train()
         np.testing.assert_array_less(loss, .05)
 
+        main_setting.inferer.write_simulation = True
+        main_setting.inferer.write_simulation_base \
+            = Path('tests/data/grad/raw')
         ir = inferer.Inferer(
             main_setting,
             converter_parameters_pkl=main_setting.data.preprocessed_root
-            / 'preprocessors.pkl')
-        ir.setting.inferer.write_simulation = True
-        ir.setting.inferer.write_simulation_base = Path('tests/data/grad/raw')
+            / 'preprocessors.pkl',
+            model_path=main_setting.trainer.output_directory
+        )
         results = ir.infer(
-            model=main_setting.trainer.output_directory,
             output_directory_base=tr.setting.trainer.output_directory,
             data_directories=main_setting.data.test[0])
         x = results[0]['dict_x']
@@ -532,15 +542,17 @@ class TestBoundary(unittest.TestCase):
         loss = tr_wo_boundary.train()
         np.testing.assert_array_less(loss, 1.)
 
+        main_setting.inferer.write_simulation = True
+        main_setting.inferer.write_simulation_base \
+            = Path('tests/data/grad/raw')
         ir_wo_boundary = inferer.Inferer(
             main_setting_wo_boundary,
             converter_parameters_pkl=main_setting.data.preprocessed_root
-            / 'preprocessors.pkl')
-        ir_wo_boundary.setting.inferer.write_simulation = True
-        ir_wo_boundary.setting.inferer.write_simulation_base = Path(
-            'tests/data/grad/raw')
+            / 'preprocessors.pkl',
+            model_path=main_setting_wo_boundary.trainer.output_directory
+        )
+
         results_wo_boundary = ir_wo_boundary.infer(
-            model=main_setting_wo_boundary.trainer.output_directory,
             output_directory_base=tr_wo_boundary.setting
             .trainer.output_directory,
             data_directories=main_setting_wo_boundary.data.test[0])
@@ -566,9 +578,10 @@ class TestBoundary(unittest.TestCase):
         ir = inferer.Inferer(
             main_setting,
             converter_parameters_pkl=main_setting.data.preprocessed_root
-            / 'preprocessors.pkl')
+            / 'preprocessors.pkl',
+            model_path=main_setting.trainer.output_directory
+        )
         results = ir.infer(
-            model=main_setting.trainer.output_directory,
             output_directory_base=tr.setting.trainer.output_directory,
             data_directories=main_setting.data.test[0])
         y = results[0]['dict_y']
@@ -585,9 +598,10 @@ class TestBoundary(unittest.TestCase):
         ref_ir = inferer.Inferer(
             ref_main_setting,
             converter_parameters_pkl=ref_main_setting.data.preprocessed_root
-            / 'preprocessors.pkl')
+            / 'preprocessors.pkl',
+            model_path=ref_main_setting.trainer.output_directory
+        )
         ref_results = ref_ir.infer(
-            model=ref_main_setting.trainer.output_directory,
             output_directory_base=ref_tr.setting.trainer.output_directory,
             data_directories=ref_main_setting.data.test[0])
         ref_y = ref_results[0]['dict_y']
@@ -604,24 +618,24 @@ class TestBoundary(unittest.TestCase):
         np.testing.assert_array_less(loss, .05)
 
         # Test equivariance
-        ir = inferer.Inferer(
+        ir = inferer.WholeInferProcessor(
             main_setting,
             conversion_function=preprocess.ConversionFunctionGrad(),
             converter_parameters_pkl=main_setting.data.preprocessed_root
-            / 'preprocessors.pkl')
-        results = ir.infer(
-            model=main_setting.trainer.output_directory,
+            / 'preprocessors.pkl',
+            model_path=main_setting.trainer.output_directory
+        )
+        results = ir.run(
             output_directory_base=tr.setting.trainer.output_directory,
             data_directories=Path('tests/data/grad/raw/test/0'),
-            perform_preprocess=True)
+        )
         y = results[0]['dict_y']['grad']
 
         rotated_test_directory = Path('tests/data/grad/raw/rotated_test/0')
-        rotated_results = ir.infer(
-            model=main_setting.trainer.output_directory,
+        rotated_results = ir.run(
             output_directory_base=tr.setting.trainer.output_directory,
-            data_directories=rotated_test_directory,
-            perform_preprocess=True)
+            data_directories=rotated_test_directory
+        )
         rotated_y = rotated_results[0]['dict_y']['grad']
 
         rotation = np.load(rotated_test_directory / 'rotation.npy')
@@ -701,17 +715,19 @@ class TestBoundary(unittest.TestCase):
         loss = tr.train()
         np.testing.assert_array_less(loss, .05)
 
-        ir = inferer.Inferer(
+        ir = inferer.WholeInferProcessor(
             main_setting,
             conversion_function=preprocess.ConversionFunctionHeatInteraction(),
             converter_parameters_pkl=main_setting.data.preprocessed_root
-            / 'preprocessors.pkl')
-        results = ir.infer(
-            model=main_setting.trainer.output_directory,
+            / 'preprocessors.pkl',
+            model_path=main_setting.trainer.output_directory
+        )
+        results = ir.run(
             output_directory_base=tr.setting.trainer.output_directory,
             data_directories=Path(
                 'tests/data/heat_interaction/preprocessed/9'),
-            perform_preprocess=False)
+            perform_preprocess=False
+        )
 
         validation_path = Path('tests/data/heat_interaction/raw/9')
         fem_data_1 = femio.read_files('ucd', validation_path / 'mesh_1.inp')

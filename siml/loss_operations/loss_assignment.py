@@ -17,8 +17,9 @@ class ILossAssignment(metaclass=abc.ABCMeta):
 class LossAssignmentCreator():
     @classmethod
     def create(
-            self,
-            loss_setting: Union[dict, str]) -> ILossAssignment:
+        self,
+        loss_setting: Union[dict, str]
+    ) -> ILossAssignment:
         if type(loss_setting) is dict:
             return DictLossAssignment(loss_setting)
 
