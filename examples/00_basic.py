@@ -272,11 +272,11 @@ trainer.train()
 # Using the trained model, we can make a prediction.
 # In the isogcn YAML file, the setting for inference is also written.
 
-inferer = siml.inferer.Inferer(
-    isogcn_yaml, model=trainer.setting.trainer.output_directory)
+inferer = siml.inferer.Inferer.read_settings_file(
+    isogcn_yaml, model_path=trainer.setting.trainer.output_directory)
 inferer.infer(
     data_directories=[pathlib.Path('00_basic_data/preprocessed/test')],
-    perform_preprocess=False)
+)
 
 
 ###############################################################################
