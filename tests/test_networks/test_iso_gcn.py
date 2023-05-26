@@ -402,9 +402,9 @@ class TestIsoGCN(equivariance_base.EquivarianceBase):
             model_path=main_setting.trainer.output_directory
         )
         original_results = ir.infer(
-            data_directories=[original_path], save=False)
+            data_directories=[original_path], save_summary=False)
         transformed_results = ir.infer(
-            data_directories=transformed_paths, save=False)
+            data_directories=transformed_paths, save_summary=False)
 
         self.validate_results(
             original_results, transformed_results, rank0='t_100')
@@ -430,9 +430,9 @@ class TestIsoGCN(equivariance_base.EquivarianceBase):
             model_path=main_setting.trainer.output_directory
         )
         original_results = ir.infer(
-            data_directories=[original_path], save=False)
+            data_directories=[original_path], save_summary=False)
         transformed_results = ir.infer(
-            data_directories=transformed_paths, save=False)
+            data_directories=transformed_paths, save_summary=False)
 
         self.validate_results(
             original_results, transformed_results, rank0='t_100')
@@ -473,9 +473,9 @@ class TestIsoGCN(equivariance_base.EquivarianceBase):
         if inference_outpout_directory.exists():
             shutil.rmtree(inference_outpout_directory)
         original_results = ir.infer(
-            data_directories=[original_path], save=False)
+            data_directories=[original_path], save_summary=False)
         transformed_results = ir.infer(
-            data_directories=transformed_paths, save=False)
+            data_directories=transformed_paths, save_summary=False)
 
         self.validate_results(
             original_results, transformed_results, rank0='initial_temperature',
@@ -509,9 +509,9 @@ class TestIsoGCN(equivariance_base.EquivarianceBase):
         if inference_outpout_directory.exists():
             shutil.rmtree(inference_outpout_directory)
         original_results = ir.infer(
-            data_directories=[original_path], save=False)
+            data_directories=[original_path], save_summary=False)
         transformed_results = ir.infer(
-            data_directories=transformed_paths, save=False)
+            data_directories=transformed_paths, save_summary=False)
 
         # NOTE: LTE is not invariant, but just to validate IsoGCN invariance,
         #       we use it.
@@ -550,9 +550,9 @@ class TestIsoGCN(equivariance_base.EquivarianceBase):
         if inference_outpout_directory.exists():
             shutil.rmtree(inference_outpout_directory)
         original_results = ir.infer(
-            data_directories=[original_path], save=False)
+            data_directories=[original_path], save_summary=False)
         transformed_results = ir.infer(
-            data_directories=transformed_paths, save=False)
+            data_directories=transformed_paths, save_summary=False)
 
         self.validate_results(
             original_results, transformed_results, rank2='nodal_strain_mat',
@@ -581,9 +581,9 @@ class TestIsoGCN(equivariance_base.EquivarianceBase):
             model_path=main_setting.trainer.output_directory
         )
         original_results = ir.infer(
-            data_directories=[original_path], save=False)
+            data_directories=[original_path], save_summary=False)
         transformed_results = ir.infer(
-            data_directories=transformed_paths, save=False)
+            data_directories=transformed_paths, save_summary=False)
 
         self.validate_results(
             original_results, transformed_results, rank2='nodal_strain_mat',
@@ -611,9 +611,9 @@ class TestIsoGCN(equivariance_base.EquivarianceBase):
             model_path=main_setting.trainer.output_directory
         )
         original_results = ir.infer(
-            data_directories=[original_path], save=False)
+            data_directories=[original_path], save_summary=False)
         transformed_results = ir.infer(
-            data_directories=transformed_paths, save=False)
+            data_directories=transformed_paths, save_summary=False)
 
         self.validate_results(
             original_results, transformed_results, rank2='nodal_lte_mat',
@@ -642,9 +642,9 @@ class TestIsoGCN(equivariance_base.EquivarianceBase):
             model_path=main_setting.trainer.output_directory
         )
         original_results = ir.infer(
-            data_directories=[original_path], save=False)
+            data_directories=[original_path], save_summary=False)
         transformed_results = ir.infer(
-            data_directories=transformed_paths, save=False)
+            data_directories=transformed_paths, save_summary=False)
 
         self.validate_results(
             original_results, transformed_results, rank2='nodal_lte_mat',
@@ -672,9 +672,9 @@ class TestIsoGCN(equivariance_base.EquivarianceBase):
             model_path=main_setting.trainer.output_directory
         )
         original_results = ir.infer(
-            data_directories=[original_path], save=False)
+            data_directories=[original_path], save_summary=False)
         transformed_results = ir.infer(
-            data_directories=transformed_paths, save=False)
+            data_directories=transformed_paths, save_summary=False)
 
         self.validate_results(
             original_results, transformed_results, rank2='nodal_lte_mat',
@@ -703,9 +703,9 @@ class TestIsoGCN(equivariance_base.EquivarianceBase):
             model_path=main_setting.trainer.output_directory
         )
         original_results = ir.infer(
-            data_directories=[original_path], save=False)
+            data_directories=[original_path], save_summary=False)
         transformed_results = ir.infer(
-            data_directories=transformed_paths, save=False)
+            data_directories=transformed_paths, save_summary=False)
 
         self.validate_results(
             original_results, transformed_results, rank2='nodal_strain_mat',
@@ -734,9 +734,9 @@ class TestIsoGCN(equivariance_base.EquivarianceBase):
             model_path=main_setting.trainer.output_directory
         )
         original_results = ir.infer(
-            data_directories=[original_path], save=False)
+            data_directories=[original_path], save_summary=False)
         transformed_results = ir.infer(
-            data_directories=transformed_paths, save=False)
+            data_directories=transformed_paths, save_summary=False)
 
         self.validate_results(
             original_results, transformed_results,
@@ -764,9 +764,9 @@ class TestIsoGCN(equivariance_base.EquivarianceBase):
             model_path=main_setting.trainer.output_directory
         )
         original_results = ir.infer(
-            data_directories=[original_path], save=False)
+            data_directories=[original_path], save_summary=False)
         transformed_results = ir.infer(
-            data_directories=transformed_paths, save=False)
+            data_directories=transformed_paths, save_summary=False)
 
         self.validate_results(
             original_results, transformed_results, rank2='global_lte_mat',
@@ -794,9 +794,9 @@ class TestIsoGCN(equivariance_base.EquivarianceBase):
             model_path=main_setting.trainer.output_directory
         )
         original_results = ir.infer(
-            data_directories=[original_path], save=False)
+            data_directories=[original_path], save_summary=False)
         transformed_results = ir.infer(
-            data_directories=transformed_paths, save=False)
+            data_directories=transformed_paths, save_summary=False)
 
         self.validate_results(
             original_results, transformed_results, rank2='nodal_strain_mat',

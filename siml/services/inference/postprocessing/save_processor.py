@@ -86,6 +86,8 @@ class SaveProcessor():
     def run(
         self,
         result_state: State,
+        *,
+        save_summary: bool = True
     ) -> None:
 
         results = WrapperResultItems(
@@ -94,6 +96,9 @@ class SaveProcessor():
         )
         # Save each results
         self.save_each_results(results)
+
+        if not save_summary:
+            return
 
         # Save overall settings
         output_directory = self._inner_setting.get_output_directory(

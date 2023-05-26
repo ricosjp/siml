@@ -262,7 +262,7 @@ class TestTrainer(unittest.TestCase):
             data_directories=main_setting.data.raw_root
             / 'train/tet2_3_modulusx0.9000',
             perform_preprocess=True,
-            save=False)
+            save_summary=False)
         self.assertLess(results[0]['loss'], 1e-1)
 
     def test_whole_wildcard_processs(self):
@@ -293,7 +293,7 @@ class TestTrainer(unittest.TestCase):
             data_directories=main_setting.data.raw_root
             / 'train/tet2_3_modulusx0.9000',
             perform_preprocess=True,
-            save=False
+            save_summary=False
         )
         self.assertLess(results[0]['loss'], 1e-1)
 
@@ -719,7 +719,7 @@ class TestTrainer(unittest.TestCase):
             data_directories=Path(
                 'tests/data/rotation_thermal_stress/preprocessed/'
                 'cube/original'),
-            save=False
+            save_summary=False
         )
         t_mse_wo_skip = np.mean((
             results[0]['dict_y']['cnt_temperature']
@@ -748,7 +748,7 @@ class TestTrainer(unittest.TestCase):
             data_directories=Path(
                 'tests/data/rotation_thermal_stress/preprocessed/'
                 'cube/original'),
-            save=False
+            save_summary=False
         )
 
         t_mse_w_skip = np.mean((
