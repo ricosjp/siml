@@ -1,17 +1,19 @@
+from __future__ import annotations
+
 import abc
 import multiprocessing as multi
 import pathlib
-from functools import cache, reduce, partial
+from functools import cache, partial, reduce
 from operator import or_
-from typing import Dict, Tuple, Union
+from typing import Dict, Optional, Tuple, Union
 
 import femio
 import numpy as np
 
 from siml import setting, util
-from siml.utils import fem_data_utils
-from siml.services.path_rules import SimlPathRules
 from siml.base.siml_enums import DirectoryType
+from siml.services.path_rules import SimlPathRules
+from siml.utils import fem_data_utils
 
 
 class IConvertFunction(metaclass=abc.ABCMeta):
@@ -261,9 +263,10 @@ class RawConverter:
             (as required files) and pathlib.Path object (as data directory)
             and returns data_dictionary and fem_data (can be None) to be saved.
         save_function: callable, optional
-            Function to save data, which take femio.FEMData object,
+            Additional function to save data, which take femio.FEMData object,
             data_dict, pathliub.Path object as output directory,
             and bool represents force renew.
+            If fed, this function is run prior to default save function
         force_renew: bool, optional
             If True, renew npy files even if they are alerady exist.
         read_npy: bool, optional
@@ -443,15 +446,12 @@ class RawConverter:
 
         return load_function
 
-    def _create_save_function(self) -> ISaveFunction:
-
-        if self.save_function is not None:
-            return self.save_function
-
+    def _create_save_function(self) -> DefaultSaveFunction:
         default_save_function = DefaultSaveFunction(
             main_setting=self.main_setting,
             write_ucd=self.write_ucd,
-            to_first_order=self.to_first_order
+            to_first_order=self.to_first_order,
+            user_save_function=self.save_function
         )
         return default_save_function
 
@@ -543,12 +543,15 @@ class DefaultSaveFunction(ISaveFunction):
         self,
         main_setting: setting.MainSetting,
         write_ucd: bool,
-        to_first_order: bool
+        to_first_order: bool,
+        *,
+        user_save_function: Optional[ISaveFunction] = None
     ) -> None:
         self.main_setting = main_setting
         self.setting = main_setting.conversion
         self.write_ucd = write_ucd
         self.to_first_order = to_first_order
+        self.user_save_function = user_save_function
 
     def __call__(
         self,
@@ -559,6 +562,14 @@ class DefaultSaveFunction(ISaveFunction):
     ) -> None:
         if fem_data is not None:
             self._save_fem_data(
+                fem_data,
+                dict_data,
+                output_directory=output_directory,
+                force_renew=force_renew
+            )
+
+        if self.user_save_function is not None:
+            self.user_save_function(
                 fem_data,
                 dict_data,
                 output_directory=output_directory,
