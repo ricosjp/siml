@@ -128,14 +128,16 @@ class SimlManager():
 
         output_directory = self.setting.trainer.output_directory
 
-        if 'enc' in str(yaml_file):
-            yaml_file = util.decrypt_file(key, yaml_file, return_stringio=True)
-
         if only_model:
             self.setting.model = setting.MainSetting.read_settings_yaml(
-                yaml_file).model
+                yaml_file,
+                decrypt_key=key
+            ).model
         else:
-            self.setting = setting.MainSetting.read_settings_yaml(yaml_file)
+            self.setting = setting.MainSetting.read_settings_yaml(
+                yaml_file,
+                decrypt_key=key
+            )
 
         if trainer_has_key:
             self.setting.trainer.model_key = key
