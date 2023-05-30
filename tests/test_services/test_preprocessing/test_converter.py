@@ -212,3 +212,25 @@ def test_convert_raw_data_with_load_function_and_additional_variables():
     actual_p = np.load(actual_directory / 'p.npy')
     np.testing.assert_almost_equal(
         actual_p, answer_fem_data.nodal_data.get_attribute_data('p'))
+
+
+def test__create_save_function():
+    main_setting = setting.MainSetting.read_settings_yaml(
+        Path('tests/data/test_prepost_to_filter/data.yml'))
+
+    def user_save_function(
+        fem_data: femio.FEMData,
+        dict_data: dict,
+        output_directory: Path,
+        force_renew: bool
+    ):
+        pass
+
+    raw_converter = converter.RawConverter(
+        main_setting,
+        filter_function=FilterFunction(),
+        save_function=user_save_function
+    )
+
+    save_function = raw_converter._create_save_function()
+    assert save_function.user_save_function == user_save_function

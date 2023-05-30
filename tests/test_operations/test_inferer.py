@@ -58,7 +58,7 @@ class TestInferer(unittest.TestCase):
         res_from_raw = ir.run(
             data_directories=Path(
                 'tests/data/deform/raw/test/tet2_4_modulusx0.9500'),
-            save=False
+            save_summary=False
         )
 
         ir = inferer.Inferer(
@@ -98,7 +98,7 @@ class TestInferer(unittest.TestCase):
         res_from_raw = ir.run(
             data_directories=Path(
                 'tests/data/deform/external/tet2_4_modulusx0.9500'),
-            save=False
+            save_summary=False
         )
 
         ir = inferer.Inferer(
@@ -108,7 +108,7 @@ class TestInferer(unittest.TestCase):
         res_from_preprocessed = ir.infer(
             data_directories=Path(
                 'tests/data/deform/preprocessed/test/tet2_4_modulusx0.9500'),
-            save=False
+            save_summary=False
         )
         np.testing.assert_almost_equal(
             res_from_raw[0]['dict_y']['elemental_stress'],
@@ -140,7 +140,7 @@ class TestInferer(unittest.TestCase):
             data_directories=Path(
                 'tests/data/deform/external/tet2_4_modulusx0.9500'),
             perform_preprocess=True,
-            save=False
+            save_summary=False
         )
 
         ir = inferer.Inferer(
@@ -343,7 +343,7 @@ class TestInferer(unittest.TestCase):
         res_from_raw = ir.infer(
             data_directories=Path('tests/data/deform/preprocessed/test'),
             output_directory_base=output_directory_base,
-            save=True
+            save_summary=True
         )
 
         raw_directory_base = Path('tests/data/deform/raw/test')

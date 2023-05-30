@@ -70,7 +70,7 @@ class WholeInferProcessor:
         data_directories: Union[list[pathlib.Path], pathlib.Path],
         output_directory_base: Optional[pathlib.Path] = None,
         perform_preprocess: bool = True,
-        save: Optional[bool] = None
+        save_summary: Optional[bool] = True
     ) -> dict:
         """run whole inference processes.
 
@@ -94,20 +94,20 @@ class WholeInferProcessor:
             return self._run_with_preprocess(
                 data_directories=data_directories,
                 output_directory_base=output_directory_base,
-                save=save
+                save_summary=save_summary
             )
         else:
             return self.inferer.infer(
                 data_directories=data_directories,
                 output_directory_base=output_directory_base,
-                save=save
+                save_summary=save_summary
             )
 
     def _run_with_preprocess(
         self,
         data_directories: Union[list[pathlib.Path], pathlib.Path],
         output_directory_base: Optional[pathlib.Path] = None,
-        save: Optional[bool] = None
+        save_summary: Optional[bool] = True
     ) -> dict:
         if isinstance(data_directories, pathlib.Path):
             data_directories = [data_directories]
@@ -128,7 +128,9 @@ class WholeInferProcessor:
             conversion_setting=conversion_setting
         )
         return self.inferer.infer_dataset(
-            dataset, output_directory_base=output_directory_base, save=save
+            dataset,
+            output_directory_base=output_directory_base,
+            save_summary=save_summary
         )
 
     def run_dict_data(
@@ -434,7 +436,7 @@ class Inferer():
         data_directories: list[pathlib.Path] = None,
         output_directory_base: Optional[pathlib.Path] = None,
         output_all: bool = False,
-        save: Optional[bool] = None
+        save_summary: Optional[bool] = True
     ):
         """Perform infererence.
 
@@ -450,6 +452,8 @@ class Inferer():
                 including not preprocessed predicted data
         save: bool, optional. Default None
             If fed, overwrite save option in main setting
+        save_summary: bool, optional. Default True
+            If True, save summary information
 
         Returns
         -------
@@ -481,10 +485,10 @@ class Inferer():
         )
         inference_state = self._core_inferer.run(inference_loader)
 
-        do_save = save if save is not None \
-            else self._inner_setting.inferer_setting.save
-        if do_save:
-            self._save_processor.run(inference_state)
+        if self._inner_setting.inferer_setting.save:
+            self._save_processor.run(
+                inference_state, save_summary=save_summary
+            )
 
         if output_all:
             return inference_state
@@ -495,7 +499,7 @@ class Inferer():
         self,
         preprocess_dataset: datasets.PreprocessDataset,
         output_directory_base: Optional[pathlib.Path] = None,
-        save: Optional[bool] = None
+        save_summary: Optional[bool] = True
     ) -> list[dict]:
         """_summary_
 
@@ -538,10 +542,10 @@ class Inferer():
         )
         inference_state = self._core_inferer.run(inference_loader)
 
-        do_save = save if save is not None \
-            else self._inner_setting.inferer_setting.save
-        if do_save:
-            self._save_processor.run(inference_state)
+        if self._inner_setting.inferer_setting.save:
+            self._save_processor.run(
+                inference_state, save_summary=save_summary
+            )
 
         return self._format_results(inference_state.metrics)
 
@@ -549,7 +553,8 @@ class Inferer():
         self,
         scaled_dict_x: dict,
         *,
-        scaled_dict_answer: Optional[dict] = None
+        scaled_dict_answer: Optional[dict] = None,
+        save_summary: Optional[bool] = False
     ):
         """
         Infer with simplified model.
@@ -581,7 +586,9 @@ class Inferer():
         inference_state = self._core_inferer.run(inference_loader)
 
         if self._inner_setting.inferer_setting.save:
-            self._save_processor.run(inference_state)
+            self._save_processor.run(
+                inference_state, save_summary=save_summary
+            )
 
         return self._format_results(inference_state.metrics)
 

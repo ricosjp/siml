@@ -233,9 +233,9 @@ class TestPENN(equivariance_base.EquivarianceBase):
             model_path=main_setting.trainer.output_directory
         )
         original_results = ir.infer(
-            data_directories=[original_path], save=False)
+            data_directories=[original_path], save_summary=False)
         transformed_results = ir.infer(
-            data_directories=transformed_paths, save=False)
+            data_directories=transformed_paths, save_summary=False)
 
         self.validate_results(
             original_results, transformed_results, rank2='nodal_strain_mat',
@@ -268,9 +268,9 @@ class TestPENN(equivariance_base.EquivarianceBase):
         if inference_outpout_directory.exists():
             shutil.rmtree(inference_outpout_directory)
         original_results = ir.infer(
-            data_directories=[original_path], save=False)
+            data_directories=[original_path], save_summary=False)
         transformed_results = ir.infer(
-            data_directories=transformed_paths, save=False)
+            data_directories=transformed_paths, save_summary=False)
 
         self.validate_results(
             original_results, transformed_results, rank0='initial_temperature',
@@ -303,9 +303,9 @@ class TestPENN(equivariance_base.EquivarianceBase):
         if inference_outpout_directory.exists():
             shutil.rmtree(inference_outpout_directory)
         original_results = ir.infer(
-            data_directories=[original_path], save=False)
+            data_directories=[original_path], save_summary=False)
         transformed_results = ir.infer(
-            data_directories=transformed_paths, save=False)
+            data_directories=transformed_paths, save_summary=False)
 
         self.validate_results(
             original_results, transformed_results, rank2='nodal_strain_mat',
