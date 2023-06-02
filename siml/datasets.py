@@ -264,15 +264,16 @@ class OnMemoryDataset(BaseDataset):
 
 
 class SimplifiedDataset(BaseDataset):
-
     def __init__(
             self, x_variable_names, y_variable_names, raw_dict_x,
+            supports: list[str],
             *, answer_raw_dict_y=None, num_workers=0, **kwargs):
         self.x_variable_names = x_variable_names
         self.y_variable_names = y_variable_names
         self.raw_dict_x = raw_dict_x
         self.answer_raw_dict_y = answer_raw_dict_y
         self.num_workers = num_workers
+        self.supports = supports
 
         self.x_dict_mode = isinstance(self.x_variable_names, dict)
         self.y_dict_mode = isinstance(self.y_variable_names, dict)
@@ -299,8 +300,16 @@ class SimplifiedDataset(BaseDataset):
         else:
             y_data = None
 
-        return {
-            'x': x_data, 't': y_data, 'data_directory': None}
+        if self.supports is None:
+            return {
+                'x': x_data, 't': y_data, 'data_directory': None}
+        else:
+            support_data = [
+                dict_data[support_input_name].astype(np.float32)
+                for support_input_name in self.supports]
+            return {
+                'x': x_data, 't': y_data, 'supports': support_data,
+                'data_directory': None}
 
 
 class DataDict(dict):
