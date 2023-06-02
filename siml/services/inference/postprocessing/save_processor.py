@@ -95,7 +95,10 @@ class SaveProcessor():
             result_state
         )
         # Save each results
-        self.save_each_results(results)
+        self.save_each_results(
+            results,
+            save_x=save_summary
+        )
 
         if not save_summary:
             return
@@ -113,17 +116,16 @@ class SaveProcessor():
 
     def save_each_results(
         self,
-        results: WrapperResultItems
+        results: WrapperResultItems,
+        save_x: bool = False
     ):
         for idx in range(len(results)):
             record = results.get_post_record(idx)
             output_directory = results.get_output_directory(idx)
 
-            self.save_npy_variables(
-                dict_data_x=record.dict_x,
-                dict_data_y=record.dict_y,
-                output_directory=output_directory
-            )
+            if save_x:
+                self._save_npy_data(record.dict_x, output_directory)
+            self._save_npy_data(record.dict_y, output_directory)
 
             fem_data = record.fem_data
             if fem_data is None:
@@ -133,16 +135,6 @@ class SaveProcessor():
                 output_directory=output_directory,
                 fem_data=fem_data
             )
-
-    def save_npy_variables(
-        self,
-        dict_data_x: dict,
-        dict_data_y: dict,
-        output_directory: pathlib.Path
-    ) -> None:
-        self._save_npy_data(dict_data_x, output_directory)
-        self._save_npy_data(dict_data_y, output_directory)
-        return
 
     def save_fem_data(
         self,
