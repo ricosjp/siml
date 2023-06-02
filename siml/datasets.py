@@ -266,7 +266,7 @@ class OnMemoryDataset(BaseDataset):
 class SimplifiedDataset(BaseDataset):
     def __init__(
             self, x_variable_names, y_variable_names, raw_dict_x,
-            supports: list[str],
+            supports: list[str] = None,
             *, answer_raw_dict_y=None, num_workers=0, **kwargs):
         self.x_variable_names = x_variable_names
         self.y_variable_names = y_variable_names
