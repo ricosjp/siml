@@ -34,6 +34,7 @@ class InferenceDataLoaderBuilder():
                 allow_no_data=allow_no_data,
                 num_workers=0,
                 supports=self._trainer_setting.support_inputs,
+                directories=data_directories
             )
         else:
             inference_dataset = datasets.LazyDataset(

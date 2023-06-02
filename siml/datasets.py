@@ -1,5 +1,6 @@
 import multiprocessing as multi
 import pathlib
+from typing import Union
 
 import numpy as np
 import torch
@@ -265,15 +266,25 @@ class OnMemoryDataset(BaseDataset):
 
 class SimplifiedDataset(BaseDataset):
     def __init__(
-            self, x_variable_names, y_variable_names, raw_dict_x,
-            supports: list[str] = None,
-            *, answer_raw_dict_y=None, num_workers=0, **kwargs):
+        self, x_variable_names, y_variable_names, raw_dict_x,
+        supports: list[str] = None,
+        *,
+        answer_raw_dict_y=None,
+        num_workers: int = 0,
+        directories: list[pathlib.Path] = None,
+        **kwargs
+    ) -> None:
         self.x_variable_names = x_variable_names
         self.y_variable_names = y_variable_names
         self.raw_dict_x = raw_dict_x
         self.answer_raw_dict_y = answer_raw_dict_y
         self.num_workers = num_workers
         self.supports = supports
+        self.data_directories = directories if directories is not None else []
+        if len(self.data_directories) > 1:
+            raise ValueError(
+                "Simplified Dataset allows one data only."
+            )
 
         self.x_dict_mode = isinstance(self.x_variable_names, dict)
         self.y_dict_mode = isinstance(self.y_variable_names, dict)
@@ -287,6 +298,11 @@ class SimplifiedDataset(BaseDataset):
 
     def __len__(self):
         return 1
+
+    def _get_data_directory(self) -> Union[pathlib.Path, None]:
+        if len(self.data_directories) == 0:
+            return None
+        return self.data_directories[0]
 
     def __getitem__(self, i):
         dict_data = self.raw_dict_x
@@ -302,14 +318,16 @@ class SimplifiedDataset(BaseDataset):
 
         if self.supports is None:
             return {
-                'x': x_data, 't': y_data, 'data_directory': None}
+                'x': x_data, 't': y_data,
+                'data_directory': self._get_data_directory()
+            }
         else:
             support_data = [
                 dict_data[support_input_name].astype(np.float32)
                 for support_input_name in self.supports]
             return {
                 'x': x_data, 't': y_data, 'supports': support_data,
-                'data_directory': None}
+                'data_directory': self._get_data_directory()}
 
 
 class DataDict(dict):

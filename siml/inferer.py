@@ -553,6 +553,7 @@ class Inferer():
         self,
         scaled_dict_x: dict,
         *,
+        data_directory: pathlib.Path = None,
         scaled_dict_answer: Optional[dict] = None,
         save_summary: Optional[bool] = False
     ):
@@ -579,9 +580,15 @@ class Inferer():
                 - data_directory: Input directory path
                 - inference_time: Inference time
         """
+        if data_directory is not None:
+            data_directories = [data_directory]
+        else:
+            data_directories = None
+
         inference_loader = self._dataloader_builder.create(
             raw_dict_x=scaled_dict_x,
-            answer_raw_dict_y=scaled_dict_answer
+            answer_raw_dict_y=scaled_dict_answer,
+            data_directories=data_directories
         )
         inference_state = self._core_inferer.run(inference_loader)
 
