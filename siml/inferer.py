@@ -484,7 +484,7 @@ class Inferer():
         )
         inference_state = self._core_inferer.run(inference_loader)
 
-        records = self._add_fem_data_results(inference_state)
+        records = self._create_post_records(inference_state)
         if self._inner_setting.inferer_setting.save:
             self._save_processor.run(
                 records, save_summary=save_summary
@@ -493,7 +493,7 @@ class Inferer():
         if output_all:
             return inference_state
         else:
-            return self._format_results(records, inference_state.metrics)
+            return self._format_results(records)
 
     def infer_dataset(
         self,
@@ -542,13 +542,13 @@ class Inferer():
         )
         inference_state = self._core_inferer.run(inference_loader)
 
-        records = self._add_fem_data_results(inference_state)
+        records = self._create_post_records(inference_state)
         if self._inner_setting.inferer_setting.save:
             self._save_processor.run(
                 records, save_summary=save_summary
             )
 
-        return self._format_results(records, inference_state.metrics)
+        return self._format_results(records)
 
     def infer_dict_data(
         self,
@@ -594,7 +594,7 @@ class Inferer():
         )
         inference_state = self._core_inferer.run(inference_loader)
 
-        records = self._add_fem_data_results(
+        records = self._create_post_records(
             inference_state,
             base_fem_data=base_fem_data
         )
@@ -603,7 +603,7 @@ class Inferer():
                 records, save_summary=save_summary
             )
 
-        return self._format_results(records, inference_state.metrics)
+        return self._format_results(records)
 
     def infer_parameter_study(
             self, model, data_directories, *, n_interpolation=100,
@@ -724,28 +724,18 @@ class Inferer():
 
     def _format_results(
         self,
-        records: list[PostPredictionRecord],
-        metrics: dict
+        records: list[PostPredictionRecord]
     ) -> list[dict]:
-        results = []
-        for i, val in enumerate(records):
-            _data = {
-                name: getattr(val, name)
+        results = [
+            {
+                name: getattr(record, name)
                 for name in PostPredictionRecord._fields
             }
-            for name, item in metrics.items():
-                _data.update({name: item[i]})
-
-            each_output_directory = \
-                self._inner_setting.get_output_directory(
-                    val.inference_start_datetime,
-                    data_directory=val.data_directory,
-                )
-            _data.update({"output_directory": each_output_directory})
-            results.append(_data)
+            for record in records
+        ]
         return results
 
-    def _add_fem_data_results(
+    def _create_post_records(
         self,
         state: State,
         base_fem_data: femio.FEMData = None
@@ -753,12 +743,20 @@ class Inferer():
         records: list[PredictionRecord] = state.metrics["post_results"]
 
         new_records: list[PostPredictionRecord] = []
-        for _record in records:
+        for i, _record in enumerate(records):
             fem_data = self._create_fem_data(
                 _record, base_fem_data=base_fem_data
             )
+            output_directory = \
+                self._inner_setting.get_output_directory(
+                    _record.inference_start_datetime,
+                    data_directory=_record.data_directory,
+                )
             _new_record = PostPredictionRecord(
                 *_record,
+                loss=state.metrics["loss"][i],
+                raw_loss=state.metrics["raw_loss"][i],
+                output_directory=output_directory,
                 fem_data=fem_data
             )
             new_records.append(_new_record)
