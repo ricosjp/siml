@@ -339,7 +339,7 @@ class Inferer():
         else:
             self._scalers = scalers
 
-        fem_data_converter = PostFEMDataConverter(
+        self._fem_data_converter = PostFEMDataConverter(
             inferer_setting=self._inner_setting.inferer_setting,
             conversion_setting=self._inner_setting.conversion_setting,
             load_function=load_function,
@@ -354,8 +354,7 @@ class Inferer():
         )
         self._save_processor = SaveProcessor(
             inner_setting=self._inner_setting,
-            user_save_function=save_function,
-            fem_data_converter=fem_data_converter
+            user_save_function=save_function
         )
 
     def _create_model_env_setting(self) -> ModelEnvironmentSetting:

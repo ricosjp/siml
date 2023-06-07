@@ -10,8 +10,6 @@ from siml import setting
 from siml.services.inference.inner_setting import InnerInfererSetting
 from siml.services.inference.record_object import PostPredictionRecord
 
-from .post_fem_data import PostFEMDataConverter
-
 
 class IInfererSaveFunction(metaclass=abc.ABCMeta):
     def __call__(
@@ -30,13 +28,11 @@ class SaveProcessor():
         self,
         inner_setting: InnerInfererSetting,
         user_save_function: Optional[IInfererSaveFunction] = None,
-        fem_data_converter: Optional[PostFEMDataConverter] = None
     ) -> None:
         self._inner_setting = inner_setting
         self._inferer_setting = inner_setting.inferer_setting
         self._conversion_setting = inner_setting.conversion_setting
         self._user_save_function = user_save_function
-        self._fem_data_converter = fem_data_converter
 
     def run(
         self,
@@ -46,14 +42,15 @@ class SaveProcessor():
     ) -> None:
 
         # Save each results
-        self.save_each_results(
+        self._save_each_results(
             records,
             save_x=save_summary
         )
 
-        if not save_summary:
-            return
+        if save_summary:
+            self._save_summary(records)
 
+    def _save_summary(self, records: list[PostPredictionRecord]):
         # Save overall settings
         output_directory = self._inner_setting.get_output_directory(
             date_string=records[0].inference_start_datetime
@@ -65,7 +62,7 @@ class SaveProcessor():
             output_directory=output_directory,
         )
 
-    def save_each_results(
+    def _save_each_results(
         self,
         records: list[PostPredictionRecord],
         save_x: bool = False
