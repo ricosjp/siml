@@ -8,7 +8,7 @@ import numpy as np
 
 from siml.setting import TrainerSetting
 from siml.services.inference import metrics_builder
-from siml.services.inference import PostPredictionRecord, PredictionRecord
+from siml.services.inference import PredictionRecord, RawPredictionRecord
 from siml.siml_variables import siml_tensor_variables
 
 
@@ -20,7 +20,7 @@ def create_mocked_inputs(
 ):
     if post_func is None:
         def post_func(x): return x
-    record = PredictionRecord(
+    record = RawPredictionRecord(
         x=siml_tensor_variables({"x": x_tensor}),
         y_pred=siml_tensor_variables({"y": y_pred_tensor}),
         y=siml_tensor_variables({"y": y_tensor})
@@ -38,15 +38,14 @@ def create_mocked_inputs(
     else:
         y_numpy = post_func(y_tensor.detach().cpu().numpy())
         dict_answer = {"y": y_numpy}
-    post_record = PostPredictionRecord(
+    post_record = PredictionRecord(
         dict_x={"x": x_numpy},
         dict_y={"y": y_pred_numpy},
         dict_answer=dict_answer,
         original_shapes=(1, 2),
         data_directory=pathlib.Path("./sample/path"),
         inference_time=10,
-        inference_start_datetime="2023.01.01 12:00:00",
-        fem_data=None
+        inference_start_datetime="2023.01.01 12:00:00"
     )
     return (y_pred_tensor, y_tensor, {
         "result": record, "post_result": post_record

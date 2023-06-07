@@ -104,7 +104,7 @@ class SingleDataConverter:
                 allowed_type=DirectoryType.RAW
             )
 
-    def run(self) -> Union[None, dict]:
+    def run(self) -> Union[tuple[dict, femio.FEMData], None]:
 
         values = self._convert()
         if values is None:
@@ -115,7 +115,7 @@ class SingleDataConverter:
 
         dict_data, fem_data = values
         if self.return_results:
-            return dict_data
+            return (dict_data, fem_data)
 
         self.save_function(
             fem_data,
@@ -312,7 +312,7 @@ class RawConverter:
         raw_directory: pathlib.Path = None,
         *,
         return_results: bool = False
-    ) -> dict[str, Union[dict, None]]:
+    ) -> dict[str, Union[tuple[dict, femio.FEMData], None]]:
         """Perform conversion.
 
         Parameters
@@ -356,7 +356,7 @@ class RawConverter:
         output_directory: pathlib.Path = None,
         raise_when_overwrite: bool = False,
         return_results: bool = False
-    ) -> dict[str, Union[dict, None]]:
+    ) -> dict[str, Union[tuple[dict, femio.FEMData], None]]:
         """Convert single directory.
 
         Parameters

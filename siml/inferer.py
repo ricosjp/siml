@@ -5,6 +5,8 @@ from typing import Callable, Optional, Union
 import numpy as np
 from torch import Tensor
 from torch.utils.data import DataLoader
+import femio
+from ignite.engine import State
 
 from siml import datasets, setting
 from siml.base.siml_const import SimlConstItems
@@ -16,7 +18,7 @@ from siml.preprocessing.converter import (
 from siml.services import ModelEnvironmentSetting, ModelSelectorBuilder
 from siml.services.inference import (
     CoreInferer, InferenceDataLoaderBuilder, InnerInfererSetting,
-    PostPredictionRecord
+    PredictionRecord, PostPredictionRecord
 )
 from siml.services.inference.postprocessing import (
     IInfererSaveFunction, SaveProcessor, PostProcessor,
@@ -337,7 +339,7 @@ class Inferer():
         else:
             self._scalers = scalers
 
-        fem_data_creator = PostFEMDataConverter(
+        fem_data_converter = PostFEMDataConverter(
             inferer_setting=self._inner_setting.inferer_setting,
             conversion_setting=self._inner_setting.conversion_setting,
             load_function=load_function,
@@ -348,12 +350,12 @@ class Inferer():
         self._collate_fn = self._create_collate_fn()
         self._dataloader_builder = self._create_data_loader_builder()
         self._core_inferer = self._create_core_inferer(
-            fem_data_creator,
             user_loss_function_dic
         )
         self._save_processor = SaveProcessor(
             inner_setting=self._inner_setting,
-            user_save_function=save_function
+            user_save_function=save_function,
+            fem_data_converter=fem_data_converter
         )
 
     def _create_model_env_setting(self) -> ModelEnvironmentSetting:
@@ -397,12 +399,10 @@ class Inferer():
 
     def _create_core_inferer(
         self,
-        fem_data_creator: PostFEMDataConverter,
         user_loss_function_dic: dict = None
     ) -> CoreInferer:
         post_processor = PostProcessor(
             inner_setting=self._inner_setting,
-            fem_data_converter=fem_data_creator,
             scalers=self._scalers
         )
         loss_function = LossCalculatorBuilder.create(
@@ -485,15 +485,16 @@ class Inferer():
         )
         inference_state = self._core_inferer.run(inference_loader)
 
+        records = self._add_fem_data_results(inference_state)
         if self._inner_setting.inferer_setting.save:
             self._save_processor.run(
-                inference_state, save_summary=save_summary
+                records, save_summary=save_summary
             )
 
         if output_all:
             return inference_state
         else:
-            return self._format_results(inference_state.metrics)
+            return self._format_results(records, inference_state.metrics)
 
     def infer_dataset(
         self,
@@ -542,12 +543,13 @@ class Inferer():
         )
         inference_state = self._core_inferer.run(inference_loader)
 
+        records = self._add_fem_data_results(inference_state)
         if self._inner_setting.inferer_setting.save:
             self._save_processor.run(
-                inference_state, save_summary=save_summary
+                records, save_summary=save_summary
             )
 
-        return self._format_results(inference_state.metrics)
+        return self._format_results(records, inference_state.metrics)
 
     def infer_dict_data(
         self,
@@ -555,7 +557,8 @@ class Inferer():
         *,
         data_directory: pathlib.Path = None,
         scaled_dict_answer: Optional[dict] = None,
-        save_summary: Optional[bool] = False
+        save_summary: Optional[bool] = False,
+        base_fem_data: Optional[femio.FEMData] = None
     ):
         """
         Infer with simplified model.
@@ -592,12 +595,16 @@ class Inferer():
         )
         inference_state = self._core_inferer.run(inference_loader)
 
+        records = self._add_fem_data_results(
+            inference_state,
+            base_fem_data=base_fem_data
+        )
         if self._inner_setting.inferer_setting.save:
             self._save_processor.run(
-                inference_state, save_summary=save_summary
+                records, save_summary=save_summary
             )
 
-        return self._format_results(inference_state.metrics)
+        return self._format_results(records, inference_state.metrics)
 
     def infer_parameter_study(
             self, model, data_directories, *, n_interpolation=100,
@@ -716,9 +723,12 @@ class Inferer():
         )
         return
 
-    def _format_results(self, metrics: dict) -> list[dict]:
+    def _format_results(
+        self,
+        records: list[PostPredictionRecord],
+        metrics: dict
+    ) -> list[dict]:
         results = []
-        records: list[PostPredictionRecord] = metrics.pop("post_results")
         for i, val in enumerate(records):
             _data = {
                 name: getattr(val, name)
@@ -735,3 +745,47 @@ class Inferer():
             _data.update({"output_directory": each_output_directory})
             results.append(_data)
         return results
+
+    def _add_fem_data_results(
+        self,
+        state: State,
+        base_fem_data: femio.FEMData = None
+    ) -> list[PostPredictionRecord]:
+        records: list[PredictionRecord] = state.metrics["post_results"]
+
+        new_records: list[PostPredictionRecord] = []
+        for _record in records:
+            fem_data = self._create_fem_data(
+                _record, base_fem_data=base_fem_data
+            )
+            _new_record = PostPredictionRecord(
+                *_record,
+                fem_data=fem_data
+            )
+            new_records.append(_new_record)
+        return new_records
+
+    def _create_fem_data(
+        self,
+        record: PredictionRecord,
+        base_fem_data: femio.FEMData = None
+    ) -> Union[femio.FEMData, None]:
+
+        if self._inner_setting.skip_fem_data_creation(
+            record.data_directory
+        ):
+            return None
+
+        write_simulation_case_dir = \
+            self._inner_setting.get_write_simulation_case_dir(
+                record.data_directory
+            )
+
+        fem_data = self._fem_data_converter.create(
+            dict_data_x=record.dict_x,
+            dict_data_y=record.dict_y,
+            dict_data_answer=record.dict_answer,
+            write_simulation_case_dir=write_simulation_case_dir,
+            base_fem_data=base_fem_data
+        )
+        return fem_data

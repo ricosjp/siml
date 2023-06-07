@@ -121,7 +121,7 @@ def test__is_same_results_when_not_save_results():
         for value_name in value_names:
             value_array = np.load(interim_directory / f'{value_name}.npy')
             np.testing.assert_array_almost_equal(
-                value_array, result[value_name]
+                value_array, result[0][value_name]
             )
 
 

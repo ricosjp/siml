@@ -1,4 +1,3 @@
-import pathlib
 import pytest
 
 from siml.setting import MainSetting
@@ -37,31 +36,3 @@ def test__formaat_dict_shape(dict_data, expect, create_postprocessor):
         assert actual == expect
     else:
         assert actual is None
-
-
-@pytest.mark.parametrize("write_simulation_base, expect", [
-    (None, True),
-    (pathlib.Path("./path_to_not_existed"), True),
-    # example of existed path. maybe not approproate
-    #  path for write_simulation_base
-    (pathlib.Path("tests/data/linear/interim"), False)
-])
-def test__is_skip_fem_data(
-        write_simulation_base, expect, create_postprocessor):
-    postprocessor: PostProcessor = create_postprocessor
-
-    assert postprocessor._is_skip_fem_data(write_simulation_base) == expect
-
-
-@pytest.mark.parametrize("write_simulation_base", [
-    (None),
-    (pathlib.Path("./tests/sample"))
-])
-def test__is_skip_fem_data_when_skip_True(write_simulation_base):
-    main_setting = MainSetting()
-    main_setting.inferer.perform_inverse = False
-    main_setting.inferer.skip_fem_data_creation = True
-    inner_setting = InnerInfererSetting(main_setting=main_setting)
-    postprocessor = PostProcessor(inner_setting)
-
-    assert postprocessor._is_skip_fem_data(write_simulation_base)

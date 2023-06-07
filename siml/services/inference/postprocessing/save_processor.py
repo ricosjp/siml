@@ -5,11 +5,12 @@ from typing import Optional
 import femio
 import numpy as np
 import pandas as pd
-from ignite.engine import State
 
 from siml import setting
 from siml.services.inference.inner_setting import InnerInfererSetting
 from siml.services.inference.record_object import PostPredictionRecord
+
+from .post_fem_data import PostFEMDataConverter
 
 
 class IInfererSaveFunction(metaclass=abc.ABCMeta):
@@ -24,79 +25,29 @@ class IInfererSaveFunction(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
 
-class WrapperResultItems:
-    def __init__(
-        self,
-        inner_setting: InnerInfererSetting,
-        result_state:  State
-    ) -> None:
-        self._state = result_state
-        self._inner_setting = inner_setting
-
-        self._output_dirs = []
-        self._collect()
-
-    def __len__(self):
-        return len(self._state.metrics["post_results"])
-
-    def _collect(self):
-        for idx in range(len(self)):
-            record = self.get_post_record(idx)
-            each_output_directory = \
-                self._inner_setting.get_output_directory(
-                    record.inference_start_datetime,
-                    data_directory=record.data_directory,
-                )
-            self._output_dirs.append(each_output_directory)
-
-    def get_output_directory(self, idx: int) -> pathlib.Path:
-        return self._output_dirs[idx]
-
-    def get_post_record(self, idx: int) -> PostPredictionRecord:
-        return self._state.metrics["post_results"][idx]
-
-    def get_metrics(self, name: str) -> list[float]:
-        return self._state.metrics[name]
-
-    def get_item(self, idx: int, name: str):
-        if name in PostPredictionRecord._fields:
-            record = self.get_post_record(idx)
-            return getattr(record, name)
-
-        if name == "output_directory":
-            return self._output_dirs[idx]
-
-        if name in self._state.metrics:
-            return self._state.metrics[name][idx]
-
-        raise KeyError(f"{name}")
-
-
 class SaveProcessor():
     def __init__(
         self,
         inner_setting: InnerInfererSetting,
-        user_save_function: Optional[IInfererSaveFunction] = None
+        user_save_function: Optional[IInfererSaveFunction] = None,
+        fem_data_converter: Optional[PostFEMDataConverter] = None
     ) -> None:
         self._inner_setting = inner_setting
         self._inferer_setting = inner_setting.inferer_setting
         self._conversion_setting = inner_setting.conversion_setting
         self._user_save_function = user_save_function
+        self._fem_data_converter = fem_data_converter
 
     def run(
         self,
-        result_state: State,
+        records: list[PostPredictionRecord],
         *,
         save_summary: bool = True
     ) -> None:
 
-        results = WrapperResultItems(
-            self._inner_setting,
-            result_state
-        )
         # Save each results
         self.save_each_results(
-            results,
+            records,
             save_x=save_summary
         )
 
@@ -105,38 +56,39 @@ class SaveProcessor():
 
         # Save overall settings
         output_directory = self._inner_setting.get_output_directory(
-            date_string=results.get_item(0, "inference_start_datetime")
+            date_string=records[0].inference_start_datetime
         )
         self._save_settings(output_directory)
 
         self._save_logs(
+            records=records,
             output_directory=output_directory,
-            results=results
         )
 
     def save_each_results(
         self,
-        results: WrapperResultItems,
+        records: list[PostPredictionRecord],
         save_x: bool = False
-    ):
-        for idx in range(len(results)):
-            record = results.get_post_record(idx)
-            output_directory = results.get_output_directory(idx)
+    ) -> None:
+        for record in records:
+            output_directory = self._inner_setting.get_output_directory(
+                record.inference_start_datetime,
+                data_directory=record.data_directory,
+            )
 
             if save_x:
                 self._save_npy_data(record.dict_x, output_directory)
             self._save_npy_data(record.dict_y, output_directory)
 
-            fem_data = record.fem_data
-            if fem_data is None:
+            if record.fem_data is None:
                 continue
 
-            self.save_fem_data(
+            self._save_fem_data(
                 output_directory=output_directory,
-                fem_data=fem_data
+                fem_data=record.fem_data
             )
 
-    def save_fem_data(
+    def _save_fem_data(
         self,
         output_directory: pathlib.Path,
         fem_data: femio.FEMData
@@ -192,7 +144,7 @@ class SaveProcessor():
 
     def _save_logs(
         self,
-        results: WrapperResultItems,
+        records: list[PostPredictionRecord],
         output_directory: pathlib.Path
     ) -> None:
         column_names = [
@@ -200,16 +152,11 @@ class SaveProcessor():
             'inference_time'
         ]
 
-        log_dict = {}
-        for column_name in column_names:
-            log_dict.update(
-                {
-                    column_name: [
-                        results.get_item(idx, column_name)
-                        for idx in range(len(results))
-                    ]
-                }
-            )
+        log_dict = {
+            column_name: [
+                getattr(rec, column_name) for rec in records
+            ] for column_name in column_names
+        }
 
         pd.DataFrame(log_dict).to_csv(
             output_directory / 'infer.csv', index=None)

@@ -8,7 +8,7 @@ from ignite.metrics.metric import Metric, reinit__is_reduced
 from siml import setting
 from siml.loss_operations import ILossCalculator
 
-from .record_object import PredictionRecord, PostPredictionRecord
+from .record_object import RawPredictionRecord, PredictionRecord
 
 
 class MetricsBuilder():
@@ -48,7 +48,7 @@ class PostResultsMetrics(Metric):
 
     @reinit__is_reduced
     def update(self, output):
-        record: PostPredictionRecord = output[2]["post_result"]
+        record: PredictionRecord = output[2]["post_result"]
         self._results.append(record)
         return
 
@@ -73,7 +73,7 @@ class LossMetrics(Metric):
     def update(self, output):
         y_pred = output[0]
         y = output[1]
-        record: PredictionRecord = output[2]["result"]
+        record: RawPredictionRecord = output[2]["result"]
         loss = self.loss_function(
             y_pred,
             y,
@@ -108,7 +108,7 @@ class RawLossMetrics(Metric):
 
     @reinit__is_reduced
     def update(self, output):
-        post_result: PostPredictionRecord = output[2]["post_result"]
+        post_result: PredictionRecord = output[2]["post_result"]
         raw_loss = self._compute_raw_loss(
             post_result.dict_answer,
             post_result.dict_y,

@@ -193,7 +193,7 @@ class PreprocessDataset(BaseDataset):
             raw_path=raw_data_directory,
             return_results=True
         )
-        dict_data = dict_data[str(raw_data_directory)]
+        dict_data = dict_data[str(raw_data_directory)][0]
         converted_dict_data = self.scalers.transform_dict(
             dict_data
         )
