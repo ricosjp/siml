@@ -8,7 +8,7 @@ from siml import networks, util
 from siml.siml_variables import siml_tensor_variables
 from siml.inferer import ModelEnvironmentSetting
 
-from .record_object import PredictionRecord
+from .record_object import RawPredictionRecord
 from .postprocessing import PostProcessor
 
 
@@ -64,7 +64,7 @@ class InferenceEngineBuilder:
             print(f"Inference time [s]: {elapsed_time:.5e}")
             print('--')
 
-            result = PredictionRecord(
+            result = RawPredictionRecord(
                 y_pred=siml_tensor_variables(y_pred),
                 y=siml_tensor_variables(y),
                 x=siml_tensor_variables(x['x']),

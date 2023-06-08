@@ -49,22 +49,15 @@ class PostFEMDataConverter:
         dict_data_y: dict[str, np.ndarray],
         dict_data_answer: Optional[dict[str, np.ndarray]] = None,
         write_simulation_case_dir: Union[pathlib.Path, None] = None,
+        base_fem_data: Optional[femio.FEMData] = None
     ) -> Union[femio.FEMData, None]:
 
-        try:
-            fem_data = self._create_simulation_fem_data(
-                write_simulation_case_dir
-            )
-        except ValueError as e:
-            write_simulation_stem = self._inferer_setting.write_simulation_stem
-            read_simulation_type = self._inferer_setting.read_simulation_type
-            print(
-                f"{e}\n"
-                'Could not read FEMData object, set None\n'
-                f"write_simulation_case_dir: {write_simulation_case_dir}\n"
-                f"write_simulation_stem: {write_simulation_stem}\n"
-                f"read_simulation_type: {read_simulation_type}\n"
-            )
+        if base_fem_data is not None:
+            fem_data = base_fem_data
+        else:
+            fem_data = self._create_fem_data(write_simulation_case_dir)
+
+        if fem_data is None:
             return None
 
         if self._inferer_setting.convert_to_order1:
@@ -79,6 +72,28 @@ class PostFEMDataConverter:
         )
 
         return fem_data
+
+    def _create_fem_data(
+        self,
+        write_simulation_case_dir: Union[pathlib.Path, None] = None
+    ) -> Union[femio.FEMData, None]:
+
+        try:
+            fem_data = self._create_simulation_fem_data(
+                write_simulation_case_dir
+            )
+            return fem_data
+        except ValueError as e:
+            write_simulation_stem = self._inferer_setting.write_simulation_stem
+            read_simulation_type = self._inferer_setting.read_simulation_type
+            print(
+                f"{e}\n"
+                'Could not read FEMData object, set None\n'
+                f"write_simulation_case_dir: {write_simulation_case_dir}\n"
+                f"write_simulation_stem: {write_simulation_stem}\n"
+                f"read_simulation_type: {read_simulation_type}\n"
+            )
+            return None
 
     def _create_simulation_fem_data(
         self,

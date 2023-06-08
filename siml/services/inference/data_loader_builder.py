@@ -32,7 +32,9 @@ class InferenceDataLoaderBuilder():
                 raw_dict_x=raw_dict_x,
                 answer_raw_dict_y=answer_raw_dict_y,
                 allow_no_data=allow_no_data,
-                num_workers=0
+                num_workers=0,
+                supports=self._trainer_setting.support_inputs,
+                directories=data_directories
             )
         else:
             inference_dataset = datasets.LazyDataset(

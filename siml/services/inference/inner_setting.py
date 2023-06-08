@@ -140,3 +140,26 @@ class InnerInfererSetting(pydantic.BaseModel):
         snapshot_file = self.get_snapshot_file_path()
         model_name = snapshot_file.parent.name
         return model_name
+
+    def skip_fem_data_creation(
+        self,
+        data_directory: Optional[pathlib.Path] = None
+    ) -> bool:
+        write_simulation_base = self.get_write_simulation_case_dir(
+            data_directory
+        )
+
+        if self.inferer_setting.skip_fem_data_creation:
+            return True
+
+        if write_simulation_base is None:
+            return True
+
+        if not write_simulation_base.exists():
+            print(
+                f"{write_simulation_base} does not exist."
+                "Thus, skip creating fem data."
+            )
+            return True
+
+        return False

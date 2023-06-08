@@ -5,6 +5,8 @@ from typing import Callable, Optional, Union
 import numpy as np
 from torch import Tensor
 from torch.utils.data import DataLoader
+import femio
+from ignite.engine import State
 
 from siml import datasets, setting
 from siml.base.siml_const import SimlConstItems
@@ -16,7 +18,7 @@ from siml.preprocessing.converter import (
 from siml.services import ModelEnvironmentSetting, ModelSelectorBuilder
 from siml.services.inference import (
     CoreInferer, InferenceDataLoaderBuilder, InnerInfererSetting,
-    PostPredictionRecord
+    PredictionRecord, PostPredictionRecord
 )
 from siml.services.inference.postprocessing import (
     IInfererSaveFunction, SaveProcessor, PostProcessor,
@@ -337,7 +339,7 @@ class Inferer():
         else:
             self._scalers = scalers
 
-        fem_data_creator = PostFEMDataConverter(
+        self._fem_data_converter = PostFEMDataConverter(
             inferer_setting=self._inner_setting.inferer_setting,
             conversion_setting=self._inner_setting.conversion_setting,
             load_function=load_function,
@@ -348,7 +350,6 @@ class Inferer():
         self._collate_fn = self._create_collate_fn()
         self._dataloader_builder = self._create_data_loader_builder()
         self._core_inferer = self._create_core_inferer(
-            fem_data_creator,
             user_loss_function_dic
         )
         self._save_processor = SaveProcessor(
@@ -397,12 +398,10 @@ class Inferer():
 
     def _create_core_inferer(
         self,
-        fem_data_creator: PostFEMDataConverter,
         user_loss_function_dic: dict = None
     ) -> CoreInferer:
         post_processor = PostProcessor(
             inner_setting=self._inner_setting,
-            fem_data_converter=fem_data_creator,
             scalers=self._scalers
         )
         loss_function = LossCalculatorBuilder.create(
@@ -485,15 +484,16 @@ class Inferer():
         )
         inference_state = self._core_inferer.run(inference_loader)
 
+        records = self._create_post_records(inference_state)
         if self._inner_setting.inferer_setting.save:
             self._save_processor.run(
-                inference_state, save_summary=save_summary
+                records, save_summary=save_summary
             )
 
         if output_all:
             return inference_state
         else:
-            return self._format_results(inference_state.metrics)
+            return self._format_results(records)
 
     def infer_dataset(
         self,
@@ -501,7 +501,7 @@ class Inferer():
         output_directory_base: Optional[pathlib.Path] = None,
         save_summary: Optional[bool] = True
     ) -> list[dict]:
-        """_summary_
+        """Perform inference for datasets
 
         Parameters
         ----------
@@ -509,7 +509,7 @@ class Inferer():
             dataset of preprocessed data
         output_directory_base : Optional[pathlib.Path], optional
             base output directory, by default None
-        save : Optional[bool], optional
+        save_summary : Optional[bool], optional
             If fed, overwrite save option. by default None
 
         Returns
@@ -542,29 +542,40 @@ class Inferer():
         )
         inference_state = self._core_inferer.run(inference_loader)
 
+        records = self._create_post_records(inference_state)
         if self._inner_setting.inferer_setting.save:
             self._save_processor.run(
-                inference_state, save_summary=save_summary
+                records, save_summary=save_summary
             )
 
-        return self._format_results(inference_state.metrics)
+        return self._format_results(records)
 
     def infer_dict_data(
         self,
         scaled_dict_x: dict,
         *,
+        data_directory: pathlib.Path = None,
         scaled_dict_answer: Optional[dict] = None,
-        save_summary: Optional[bool] = False
+        save_summary: Optional[bool] = True,
+        base_fem_data: Optional[femio.FEMData] = None
     ):
         """
-        Infer with simplified model.
+        Infer with dictionary data.
 
         Parameters
         ----------
         scaled_dict_x: dict
             Dict of scaled x data.
+        data_directory: pathlib.Path, optional
+            path to directory of simulation files
         scaled_dict_answer: dict, optional
             Dict of answer scaled y data.
+        save_summary: bool, default True
+            If True, save summary information of inference
+        base_fem_data: femio.FEMData, optional
+            If fed, inference results are registered to base_fem_data and
+             saved as a file.
+
 
         Returns
         -------
@@ -579,18 +590,28 @@ class Inferer():
                 - data_directory: Input directory path
                 - inference_time: Inference time
         """
+        if data_directory is not None:
+            data_directories = [data_directory]
+        else:
+            data_directories = None
+
         inference_loader = self._dataloader_builder.create(
             raw_dict_x=scaled_dict_x,
-            answer_raw_dict_y=scaled_dict_answer
+            answer_raw_dict_y=scaled_dict_answer,
+            data_directories=data_directories
         )
         inference_state = self._core_inferer.run(inference_loader)
 
+        records = self._create_post_records(
+            inference_state,
+            base_fem_data=base_fem_data
+        )
         if self._inner_setting.inferer_setting.save:
             self._save_processor.run(
-                inference_state, save_summary=save_summary
+                records, save_summary=save_summary
             )
 
-        return self._format_results(inference_state.metrics)
+        return self._format_results(records)
 
     def infer_parameter_study(
             self, model, data_directories, *, n_interpolation=100,
@@ -709,22 +730,67 @@ class Inferer():
         )
         return
 
-    def _format_results(self, metrics: dict) -> list[dict]:
-        results = []
-        records: list[PostPredictionRecord] = metrics.pop("post_results")
-        for i, val in enumerate(records):
-            _data = {
-                name: getattr(val, name)
+    def _format_results(
+        self,
+        records: list[PostPredictionRecord]
+    ) -> list[dict]:
+        results = [
+            {
+                name: getattr(record, name)
                 for name in PostPredictionRecord._fields
             }
-            for name, item in metrics.items():
-                _data.update({name: item[i]})
-
-            each_output_directory = \
-                self._inner_setting.get_output_directory(
-                    val.inference_start_datetime,
-                    data_directory=val.data_directory,
-                )
-            _data.update({"output_directory": each_output_directory})
-            results.append(_data)
+            for record in records
+        ]
         return results
+
+    def _create_post_records(
+        self,
+        state: State,
+        base_fem_data: femio.FEMData = None
+    ) -> list[PostPredictionRecord]:
+        records: list[PredictionRecord] = state.metrics["post_results"]
+
+        new_records: list[PostPredictionRecord] = []
+        for i, _record in enumerate(records):
+            fem_data = self._create_fem_data(
+                _record, base_fem_data=base_fem_data
+            )
+            output_directory = \
+                self._inner_setting.get_output_directory(
+                    _record.inference_start_datetime,
+                    data_directory=_record.data_directory,
+                )
+            _new_record = PostPredictionRecord(
+                *_record,
+                loss=state.metrics["loss"][i],
+                raw_loss=state.metrics["raw_loss"][i],
+                output_directory=output_directory,
+                fem_data=fem_data
+            )
+            new_records.append(_new_record)
+        return new_records
+
+    def _create_fem_data(
+        self,
+        record: PredictionRecord,
+        base_fem_data: femio.FEMData = None
+    ) -> Union[femio.FEMData, None]:
+
+        if self._inner_setting.skip_fem_data_creation(
+            record.data_directory
+        ):
+            return None
+
+        write_simulation_case_dir = \
+            self._inner_setting.get_write_simulation_case_dir(
+                record.data_directory
+            )
+
+        fem_data = self._fem_data_converter.create(
+            dict_data_x=record.dict_x,
+            dict_data_y=record.dict_y,
+            dict_data_answer=record.dict_answer,
+            write_simulation_case_dir=write_simulation_case_dir,
+            base_fem_data=base_fem_data
+        )
+        return fem_data
