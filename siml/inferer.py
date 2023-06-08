@@ -501,7 +501,7 @@ class Inferer():
         output_directory_base: Optional[pathlib.Path] = None,
         save_summary: Optional[bool] = True
     ) -> list[dict]:
-        """_summary_
+        """Perform inference for datasets
 
         Parameters
         ----------
@@ -509,7 +509,7 @@ class Inferer():
             dataset of preprocessed data
         output_directory_base : Optional[pathlib.Path], optional
             base output directory, by default None
-        save : Optional[bool], optional
+        save_summary : Optional[bool], optional
             If fed, overwrite save option. by default None
 
         Returns
@@ -556,18 +556,26 @@ class Inferer():
         *,
         data_directory: pathlib.Path = None,
         scaled_dict_answer: Optional[dict] = None,
-        save_summary: Optional[bool] = False,
+        save_summary: Optional[bool] = True,
         base_fem_data: Optional[femio.FEMData] = None
     ):
         """
-        Infer with simplified model.
+        Infer with dictionary data.
 
         Parameters
         ----------
         scaled_dict_x: dict
             Dict of scaled x data.
+        data_directory: pathlib.Path, optional
+            path to directory of simulation files
         scaled_dict_answer: dict, optional
             Dict of answer scaled y data.
+        save_summary: bool, default True
+            If True, save summary information of inference
+        base_fem_data: femio.FEMData, optional
+            If fed, inference results are registered to base_fem_data and
+             saved as a file.
+
 
         Returns
         -------
