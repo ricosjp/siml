@@ -1,7 +1,6 @@
 import enum
 import io
 import time
-import pathlib
 from typing import Callable
 import random
 
@@ -18,17 +17,22 @@ import yaml
 from . import datasets
 from . import networks
 from . import setting
-from . import siml_manager
 from . import util
 
 from . import update_functions
-from .siml_variables import siml_tensor_variables
+
+from siml.siml_variables import siml_tensor_variables
+from siml.loss_operations import LossCalculatorBuilder
+from siml.services.model_selector import ModelSelectorBuilder
+from siml.services.model_builder import ModelBuilder
+from siml.services.environment import ModelEnvironmentSetting
+from siml.services.training import InnerTrainingSetting
 
 
-class Trainer(siml_manager.SimlManager):
+class Trainer:
 
     def __init__(self,
-                 settings,
+                 main_settings: setting.MainSetting,
                  *,
                  optuna_trial=None,
                  user_loss_function_dic:
@@ -48,21 +52,31 @@ class Trainer(siml_manager.SimlManager):
         --------
         None
         """
-        if isinstance(settings, pathlib.Path) or isinstance(
-                settings, io.TextIOBase):
-            self.setting = setting.MainSetting.read_settings_yaml(
-                settings)
-        elif isinstance(settings, setting.MainSetting):
-            self.setting = settings
-        else:
+
+        if not isinstance(main_settings, setting.MainSetting):
             raise ValueError(
-                f"Unknown type for settings: {settings.__class__}")
+                f"Unknown type for settings: {main_settings.__class__}")
         self.inference_mode = False
         self.user_loss_function_dic = user_loss_function_dic
 
-        self._update_setting_if_needed()
+        inner_setting = InnerTrainingSetting(main_settings)
+        # HACK: temporarly hack. Better to handle as a inner setting.
+        self.setting = inner_setting.main_setting
+
         self.optuna_trial = optuna_trial
+        self._env_setting = self._create_model_env_setting()
         return
+
+    def _create_model_env_setting(self) -> ModelEnvironmentSetting:
+        trainer_setting = self.setting.trainer
+        _model_env = ModelEnvironmentSetting(
+            gpu_id=trainer_setting.gpu_id,
+            seed=trainer_setting.seed,
+            data_parallel=trainer_setting.data_parallel,
+            model_parallel=trainer_setting.model_parallel,
+            time_series=trainer_setting.time_series
+        )
+        return _model_env
 
     def train(self):
         """Perform training.
@@ -173,7 +187,7 @@ class Trainer(siml_manager.SimlManager):
             len(reference_string) + self.setting.trainer.display_mergin, ' ')
 
     def prepare_training(self, draw=True):
-        self.set_seed()
+        self._env_setting.set_seed()
 
         if len(self.setting.trainer.input_names) == 0:
             raise ValueError('No input_names fed')
@@ -185,8 +199,11 @@ class Trainer(siml_manager.SimlManager):
         if self.setting.trainer.draw_network and draw:
             self.model.draw(self.setting.trainer.output_directory)
 
-        self.element_wise = self._determine_element_wise()
-        self.loss = self._create_loss_function()
+        self.element_wise = self.setting.trainer.determine_element_wise()
+        self.loss = LossCalculatorBuilder.create(
+            trainer_setting=self.setting.trainer,
+            user_loss_function_dic=self.user_loss_function_dic
+        )
 
         # Manage settings
         if self.optuna_trial is None \
@@ -194,7 +211,6 @@ class Trainer(siml_manager.SimlManager):
             self.setting.trainer.prune = False
             print('No optuna.trial fed. Set prune = False.')
 
-        self._select_device()
         self._generate_trainer()
 
         # Manage restart and pretrain
@@ -529,8 +545,8 @@ class Trainer(siml_manager.SimlManager):
                 loss_func=self.loss,
                 other_loss_func=self._calculate_other_loss,
                 split_data_func=self._split_data_if_needed,
-                device=self.device,
-                output_device=self.output_device,
+                device=self._env_setting.get_device(),
+                output_device=self._env_setting.get_device(),
                 loss_slice=self.setting.trainer.loss_slice,
                 time_series_split=self.setting.trainer.time_series_split,
                 clip_grad_norm=self.setting.trainer.clip_grad_norm,
@@ -551,8 +567,8 @@ class Trainer(siml_manager.SimlManager):
                 loss_func=self.loss,
                 other_loss_func=self._calculate_other_loss,
                 split_data_func=self._split_data_if_needed,
-                device=self.device,
-                output_device=self.output_device,
+                device=self._env_setting.get_device(),
+                output_device=self._env_setting.get_device(),
                 loss_slice=self.setting.trainer.loss_slice,
                 time_series_split=self.setting.trainer.time_series_split,
                 clip_grad_norm=self.setting.trainer.clip_grad_norm,
@@ -566,12 +582,12 @@ class Trainer(siml_manager.SimlManager):
         def update_model(engine, batch):
             self.model.train()
             if self.setting.trainer.time_series_split is None:
-                input_device = self.device
-                support_device = self.device
-                output_device = self.output_device
+                input_device = self._env_setting.get_device()
+                support_device = self._env_setting.get_device()
+                output_device = self._env_setting.get_output_device()
             else:
                 input_device = 'cpu'
-                support_device = self.device
+                support_device = self._env_setting.get_device()
                 output_device = 'cpu'
             x, y = self.prepare_batch(
                 batch, device=input_device, output_device=output_device,
@@ -659,11 +675,11 @@ class Trainer(siml_manager.SimlManager):
         def _inference(engine, batch):
             self.model.eval()
             if self.setting.trainer.time_series_split_evaluation is None:
-                input_device = self.device
-                support_device = self.device
+                input_device = self._env_setting.get_device()
+                support_device = self._env_setting.get_output_device()
             else:
                 input_device = 'cpu'
-                support_device = self.device
+                support_device = self._env_setting.get_device()
 
             with torch.no_grad():
                 x, y = self.prepare_batch(
@@ -676,9 +692,10 @@ class Trainer(siml_manager.SimlManager):
                     self.setting.trainer.time_series_split_evaluation)
 
                 y_pred = []
+                device = self._env_setting.get_device()
                 for split_x in split_xs:
                     siml_x = siml_tensor_variables(split_x['x'])
-                    split_x['x'] = siml_x.send(self.device).get_values()
+                    split_x['x'] = siml_x.send(device).get_values()
                     y_pred.append(self.model(split_x))
 
                 if self.setting.trainer.time_series_split_evaluation is None:
@@ -697,7 +714,8 @@ class Trainer(siml_manager.SimlManager):
                     time_series_keys=self.output_time_series_keys
                 )
                 ans_siml_y = siml_tensor_variables(ans_y)
-                y = ans_siml_y.send(self.output_device).get_values()
+                output_device = self._env_setting.get_output_device()
+                y = ans_siml_y.send(output_device).get_values()
                 return y_pred, y, {
                     'original_shapes': original_shapes,
                     'model': self.model}
@@ -835,24 +853,39 @@ class Trainer(siml_manager.SimlManager):
             pass
         return
 
+    def _load_pretrained_model_if_needed(self):
+        if self.setting.trainer.pretrain_directory is None:
+            return
+
+        selector = ModelSelectorBuilder.create(
+            self.setting.trainer.snapshot_choise_method
+        )
+        snapshot_file = selector.select_model(
+            self.setting.trainer.pretrain_directory)
+
+        model_loader = ModelBuilder(
+            model_setting=self.setting.model,
+            trainer_setting=self.setting.trainer,
+            env_setting=self._env_setting
+        )
+        self.model = model_loader.create_loaded(
+            snapshot_file,
+            decrypt_key=self.setting.get_crypt_key()
+        )
+        return
+
     def _load_restart_model_if_needed(self):
         if self.setting.trainer.restart_directory is None:
             return
-        snapshot = self._select_snapshot(
-            self.setting.trainer.restart_directory, method='latest')
 
-        key = None
-        if self.setting.trainer.model_key is not None:
-            key = self.setting.trainer.model_key
-        if self.setting.inferer.model_key is not None:
-            key = self.setting.inferer.model_key
-        if snapshot.suffix == '.enc':
-            if key is None:
-                raise ValueError('Feed key to load encrypted model')
-            checkpoint = torch.load(
-                util.decrypt_file(key, snapshot), map_location=self.device)
-        else:
-            checkpoint = torch.load(snapshot, map_location=self.device)
+        selector = ModelSelectorBuilder.create('latest')
+        snapshot_file = selector.select_model(
+            self.setting.trainer.restart_directory
+        )
+        checkpoint = snapshot_file.load(
+            device=self._env_setting.get_device(),
+            decrypt_key=self.setting.get_crypt_key()
+        )
 
         self.model.load_state_dict(checkpoint['model_state_dict'])
         self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
@@ -871,5 +904,5 @@ class Trainer(siml_manager.SimlManager):
             )
 
         # self.loss = checkpoint['loss']
-        print(f"{snapshot} loaded for restart.")
+        print(f"{snapshot_file.file_path} loaded for restart.")
         return
