@@ -1,6 +1,6 @@
 from typing import Any, Union
 
-import pydantic
+import pydantic.dataclasses as dc
 
 from siml.path_like_objects import SimlDirectory
 from siml.setting import MainSetting, TrainerSetting
@@ -8,7 +8,8 @@ from siml.setting import MainSetting, TrainerSetting
 
 # HACK
 # In the future, this setting is merged to setting.TrainerSetting
-class InnerTrainingSetting(pydantic.BaseModel):
+@dc.dataclass(init=True)
+class InnerTrainingSetting:
     # HACK: To Avoid recursive validation by pydantic, Any type is used.
     main_settings: Union[MainSetting, Any]
 
@@ -19,9 +20,10 @@ class InnerTrainingSetting(pydantic.BaseModel):
     def trainer_setting(self) -> TrainerSetting:
         return self.main_settings.trainer
 
-    def __post_init__(self):
+    def __post_init_post_parse__(self):
         self._check_restart_and_pretrain()
-        self._load_restart_settings()
+        if self.trainer_setting.restart_directory is not None:
+            self._load_restart_settings()
 
     def _check_restart_and_pretrain(self):
         if self.trainer_setting.restart_directory is not None \
@@ -29,12 +31,12 @@ class InnerTrainingSetting(pydantic.BaseModel):
             raise ValueError(
                 'Restart directory and pretrain directory cannot be specified '
                 'at the same time.'
+                'pretrain_directory: '
+                f'{self.trainer_setting.pretrain_directory},'
+                f'restart directory: {self.trainer_setting.restart_directory}'
             )
 
     def _load_restart_settings(self, only_model: bool = False) -> None:
-        if self.trainer_setting.restart_directory is None:
-            return
-
         key = self.main_settings.get_crypt_key()
         restart_directory = self.trainer_setting.restart_directory
         output_directory = self.trainer_setting.output_directory

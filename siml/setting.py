@@ -1157,14 +1157,14 @@ class PreprocessSetting:
 
 @dc.dataclass
 class MainSetting:
-    data: DataSetting = DataSetting()
-    conversion: ConversionSetting = ConversionSetting()
+    data: DataSetting = dc.field(default_factory=DataSetting)
+    conversion: ConversionSetting = dc.field(default_factory=ConversionSetting)
     preprocess: dict = dc.field(default_factory=dict)
-    trainer: TrainerSetting = TrainerSetting()
-    inferer: InfererSetting = InfererSetting()
-    model: ModelSetting = ModelSetting()
-    optuna: OptunaSetting = OptunaSetting()
-    study: StudySetting = StudySetting()
+    trainer: TrainerSetting = dc.field(default_factory=TrainerSetting)
+    inferer: InfererSetting = dc.field(default_factory=InfererSetting)
+    model: ModelSetting = dc.field(default_factory=ModelSetting)
+    optuna: OptunaSetting = dc.field(default_factory=OptunaSetting)
+    study: StudySetting = dc.field(default_factory=StudySetting)
     replace_preprocessed: bool = False
     misc: dict = dc.field(default_factory=dict)
 
