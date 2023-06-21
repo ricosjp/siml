@@ -10,14 +10,14 @@ from siml.path_like_objects import SimlDirectory
 # In the future, this setting is merged to setting.TrainerSetting
 class InnerTrainingSetting(pydantic.BaseModel):
     # HACK: To Avoid recursive validation by pydantic, Any type is used.
-    main_setting: Union[MainSetting, Any]
+    main_settings: Union[MainSetting, Any]
 
     class Config:
         arbitrary_types_allowed = True
 
     @property
     def trainer_setting(self) -> TrainerSetting:
-        return self.main_setting.trainer
+        return self.main_settings.trainer
 
     def __post_init__(self):
         self._check_restart_and_pretrain()
@@ -35,27 +35,27 @@ class InnerTrainingSetting(pydantic.BaseModel):
         if self.trainer_setting.restart_directory is None:
             return
 
-        key = self.main_setting.get_crypt_key()
+        key = self.main_settings.get_crypt_key()
         restart_directory = self.trainer_setting.restart_directory
         output_directory = self.trainer_setting.output_directory
 
-        siml_dir = SimlDirectory(self.main_setting.trainer.restart_directory)
+        siml_dir = SimlDirectory(self.main_settings.trainer.restart_directory)
         restart_setting = MainSetting.read_settings_yaml(
             settings_yaml=siml_dir.find_yaml_file("settings"),
             decrypt_key=key
         )
         if only_model:
-            self.main_setting.model = restart_setting.model
+            self.main_settings.model = restart_setting.model
         else:
-            self.main_setting = restart_setting
+            self.main_settings = restart_setting
 
         # Overwrite
         # Copy only output_direcoty and crypt key
-        self.main_setting.trainer.output_directory = output_directory
-        self.main_setting.trainer.model_key = key
-        self.main_setting.data.encrypt_key = key
-        self.main_setting.inferer.model_key = key
+        self.main_settings.trainer.output_directory = output_directory
+        self.main_settings.trainer.model_key = key
+        self.main_settings.data.encrypt_key = key
+        self.main_settings.inferer.model_key = key
 
         # restart
-        self.main_setting.trainer.restart_directory = restart_directory
-        self.main_setting.trainer.pretrain_directory = None
+        self.main_settings.trainer.restart_directory = restart_directory
+        self.main_settings.trainer.pretrain_directory = None

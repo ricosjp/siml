@@ -59,9 +59,9 @@ class Trainer:
         self.inference_mode = False
         self.user_loss_function_dic = user_loss_function_dic
 
-        inner_setting = InnerTrainingSetting(main_settings)
+        inner_setting = InnerTrainingSetting(main_settings=main_settings)
         # HACK: temporarly hack. Better to handle as a inner setting.
-        self.setting = inner_setting.main_setting
+        self.setting = inner_setting.main_settings
 
         self.optuna_trial = optuna_trial
         self._env_setting = self._create_model_env_setting()
