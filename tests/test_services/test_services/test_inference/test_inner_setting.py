@@ -108,21 +108,20 @@ def test__get_converter_parameters_pkl_path(pkl_path, root_dir, expect):
         assert actual == pathlib.Path(expect)
 
 
-@pytest.mark.parametrize("write_simulation_base, expect", [
+@pytest.mark.parametrize("data_directory, expect", [
     (None, True),
     (pathlib.Path("./path_to_not_existed"), True),
     # example of existed path. maybe not approproate
     #  path for write_simulation_base
-    (pathlib.Path("tests/data/linear/interim"), False)
+    (pathlib.Path("tests/data/linear/preprocessed"), False)
 ])
-def test__is_skip_fem_data(write_simulation_base, expect):
+def test__is_skip_fem_data(data_directory, expect):
 
     main_setting = setting.MainSetting()
     inner_setting = InnerInfererSetting(
         main_setting=main_setting,
     )
-    assert inner_setting.skip_fem_data_creation(
-        write_simulation_base) == expect
+    assert inner_setting.skip_fem_data_creation(data_directory) == expect
 
 
 @pytest.mark.parametrize("write_simulation_base", [

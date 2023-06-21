@@ -157,7 +157,7 @@ class Trainer:
         if load_best_model:
             self.setting.trainer.pretrain_directory \
                 = self.setting.trainer.output_directory
-            self._load_pretrained_model_if_needed()
+            self.model = self._setup_model()
         train_state = self.evaluator.run(self.train_loader)
         if len(self.validation_loader) > 0:
             validation_state = self.evaluator.run(self.validation_loader)
@@ -195,7 +195,7 @@ class Trainer:
             raise ValueError('No output_names fed')
 
         # Define model
-        self.model = networks.Network(self.setting.model, self.setting.trainer)
+        self.model = self._setup_model()
         if self.setting.trainer.draw_network and draw:
             self.model.draw(self.setting.trainer.output_directory)
 
@@ -212,10 +212,8 @@ class Trainer:
             print('No optuna.trial fed. Set prune = False.')
 
         # Manage restart and pretrain
-        self._load_pretrained_model_if_needed()
-        self._load_restart_model_if_needed()
-
         self._generate_trainer()
+        self._load_restart_model_if_needed()
 
         # Expand data directories
         self.setting.data.train = self.train_loader.dataset.data_directories
@@ -546,7 +544,7 @@ class Trainer:
                 other_loss_func=self._calculate_other_loss,
                 split_data_func=self._split_data_if_needed,
                 device=self._env_setting.get_device(),
-                output_device=self._env_setting.get_device(),
+                output_device=self._env_setting.get_output_device(),
                 loss_slice=self.setting.trainer.loss_slice,
                 time_series_split=self.setting.trainer.time_series_split,
                 clip_grad_norm=self.setting.trainer.clip_grad_norm,
@@ -568,7 +566,7 @@ class Trainer:
                 other_loss_func=self._calculate_other_loss,
                 split_data_func=self._split_data_if_needed,
                 device=self._env_setting.get_device(),
-                output_device=self._env_setting.get_device(),
+                output_device=self._env_setting.get_output_device(),
                 loss_slice=self.setting.trainer.loss_slice,
                 time_series_split=self.setting.trainer.time_series_split,
                 clip_grad_norm=self.setting.trainer.clip_grad_norm,
@@ -676,7 +674,7 @@ class Trainer:
             self.model.eval()
             if self.setting.trainer.time_series_split_evaluation is None:
                 input_device = self._env_setting.get_device()
-                support_device = self._env_setting.get_output_device()
+                support_device = self._env_setting.get_device()
             else:
                 input_device = 'cpu'
                 support_device = self._env_setting.get_device()
@@ -853,9 +851,14 @@ class Trainer:
             pass
         return
 
-    def _load_pretrained_model_if_needed(self):
+    def _setup_model(self):
+        model_loader = ModelBuilder(
+            model_setting=self.setting.model,
+            trainer_setting=self.setting.trainer,
+            env_setting=self._env_setting
+        )
         if self.setting.trainer.pretrain_directory is None:
-            return
+            return model_loader.create_initialized()
 
         selector = ModelSelectorBuilder.create(
             self.setting.trainer.snapshot_choise_method
@@ -863,16 +866,10 @@ class Trainer:
         snapshot_file = selector.select_model(
             self.setting.trainer.pretrain_directory)
 
-        model_loader = ModelBuilder(
-            model_setting=self.setting.model,
-            trainer_setting=self.setting.trainer,
-            env_setting=self._env_setting
-        )
-        self.model = model_loader.create_loaded(
+        return model_loader.create_loaded(
             snapshot_file.file_path,
             decrypt_key=self.setting.get_crypt_key()
         )
-        return
 
     def _load_restart_model_if_needed(self):
         if self.setting.trainer.restart_directory is None:

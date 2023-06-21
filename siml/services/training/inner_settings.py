@@ -43,7 +43,7 @@ class InnerTrainingSetting:
 
         siml_dir = SimlDirectory(self.main_settings.trainer.restart_directory)
         restart_setting = MainSetting.read_settings_yaml(
-            settings_yaml=siml_dir.find_yaml_file("settings"),
+            settings_yaml=siml_dir.find_yaml_file("settings").file_path,
             decrypt_key=key
         )
         if only_model:
