@@ -590,9 +590,9 @@ class TestTrainer(unittest.TestCase):
             Path('tests/data/linear/linear_short.yml'))
         main_setting.trainer.pretrain_directory \
             = tr_wo_pretrain.setting.trainer.output_directory
-        tr_w_pretrain = trainer.Trainer(main_setting)
-        tr_w_pretrain.setting.trainer.output_directory = Path(
+        main_setting.trainer.output_directory = Path(
             'tests/data/linear/pretrained_tmp')
+        tr_w_pretrain = trainer.Trainer(main_setting)
         if tr_w_pretrain.setting.trainer.output_directory.exists():
             shutil.rmtree(tr_w_pretrain.setting.trainer.output_directory)
         loss_w_pretrain = tr_w_pretrain.train()

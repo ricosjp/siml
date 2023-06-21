@@ -2,8 +2,8 @@ from typing import Any, Union
 
 import pydantic
 
-from siml.setting import MainSetting, TrainerSetting
 from siml.path_like_objects import SimlDirectory
+from siml.setting import MainSetting, TrainerSetting
 
 
 # HACK

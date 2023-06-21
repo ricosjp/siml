@@ -211,11 +211,11 @@ class Trainer:
             self.setting.trainer.prune = False
             print('No optuna.trial fed. Set prune = False.')
 
-        self._generate_trainer()
-
         # Manage restart and pretrain
         self._load_pretrained_model_if_needed()
         self._load_restart_model_if_needed()
+
+        self._generate_trainer()
 
         # Expand data directories
         self.setting.data.train = self.train_loader.dataset.data_directories
@@ -869,7 +869,7 @@ class Trainer:
             env_setting=self._env_setting
         )
         self.model = model_loader.create_loaded(
-            snapshot_file,
+            snapshot_file.file_path,
             decrypt_key=self.setting.get_crypt_key()
         )
         return
