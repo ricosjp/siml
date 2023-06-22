@@ -234,7 +234,10 @@ preprocessor.fit_transform()
 
 
 isogcn_yaml = pathlib.Path('00_basic_data/isogcn.yml')
-trainer = siml.trainer.Trainer(isogcn_yaml)
+train_main_setting = siml.setting.MainSetting.read_settings_yaml(
+    isogcn_yaml
+)
+trainer = siml.trainer.Trainer(train_main_setting)
 trainer.train()
 
 
