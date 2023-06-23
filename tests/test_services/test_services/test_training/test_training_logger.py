@@ -1,6 +1,7 @@
+import pathlib
 import pytest
 
-from siml.services.training import LogRecordItems
+from siml.services.training import LogRecordItems, SimlTrainingFileLogger
 
 
 @pytest.mark.parametrize(
@@ -25,3 +26,25 @@ def test__can_create_log_record_items(
         validation_other_losses=validation_other_losses,
         elapsed_time=elapsed_time
     )
+
+
+@pytest.mark.parametrize("loss_keys, expected", [
+    (
+        ["val", "val2"],
+        'epoch, train_loss, train/val, train/val2, '
+        'validation_loss, validation/val, validation/val2, elapsed_time'
+    ),
+    (
+        [],
+        'epoch, train_loss, validation_loss, elapsed_time'
+    )
+])
+def test__file_logger_headers(loss_keys, expected):
+    logger = SimlTrainingFileLogger(
+        file_path=pathlib.Path("some_pathes"),
+        loss_figure_path=pathlib.Path("some_pathes"),
+        loss_keys=loss_keys
+    )
+    actual = logger._header_strings()
+    assert actual == expected
+

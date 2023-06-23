@@ -68,7 +68,8 @@ class Trainer:
             loss_keys=self.model.get_loss_keys()
         )
         self._file_logger = SimlTrainingFileLogger(
-            file_path=self.log_file,
+            file_path=inner_setting.log_file_path,
+            loss_figure_path=inner_setting.loss_figure_path,
             loss_keys=self.model.get_loss_keys(),
             continue_mode=overwrite_restart_mode
         )
@@ -86,7 +87,7 @@ class Trainer:
         )
         return _model_env
 
-    def train(self):
+    def train(self, draw_model: bool = True):
         """Perform training.
 
         Parameters
@@ -101,10 +102,12 @@ class Trainer:
 
         print(f"Output directory: {self.setting.trainer.output_directory}")
         overwrite_restart_mode = self._overwrite_restart_mode()
+
         self.setting.trainer.output_directory.mkdir(
             parents=True, exist_ok=True
         )
-        # HACK: temporaly hack. Loggers should be initialized in __init__
+        if self.setting.trainer.draw_network and draw_model:
+            self.model.draw(self.setting.trainer.output_directory)
 
         yaml_file_name = f"restart_settings_{util.date_string()}.yml" \
             if overwrite_restart_mode else "settings.yml"
@@ -114,6 +117,7 @@ class Trainer:
             key=self.setting.trainer.model_key)
 
         print(self._console_logger.output_header())
+        self._file_logger.write_header_if_needed()
         self._stop_watch.start()
 
         self.pbar = self.create_pbar(
@@ -155,13 +159,7 @@ class Trainer:
 
         return False
 
-    def _display_mergin(self, input_string, reference_string=None):
-        if not reference_string:
-            reference_string = input_string
-        return input_string.ljust(
-            len(reference_string) + self.setting.trainer.display_mergin, ' ')
-
-    def prepare_training(self, draw=True):
+    def prepare_training(self):
         self._env_setting.set_seed()
 
         if len(self.setting.trainer.input_names) == 0:
@@ -171,8 +169,6 @@ class Trainer:
 
         # Define model
         self.model = self._setup_model()
-        if self.setting.trainer.draw_network and draw:
-            self.model.draw(self.setting.trainer.output_directory)
 
         self.element_wise = self.setting.trainer.determine_element_wise()
         self.loss = LossCalculatorBuilder.create(
@@ -352,10 +348,6 @@ class Trainer:
             self.evaluation_pbar.desc = self.evaluator_desc
             self.evaluation_pbar.update(evaluator_tick)
             return
-
-        self.log_file = self.setting.trainer.output_directory / 'log.csv'
-        self.plot_file = self.setting.trainer.output_directory \
-            / f"plot.{self.setting.trainer.figure_format}"
 
         @self.trainer.on(
             ignite.engine.Events.EPOCH_COMPLETED(
