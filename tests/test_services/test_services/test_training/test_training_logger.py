@@ -47,4 +47,3 @@ def test__file_logger_headers(loss_keys, expected):
     )
     actual = logger._header_strings()
     assert actual == expected
-
