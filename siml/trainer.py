@@ -1,32 +1,27 @@
 import enum
 import io
-import time
-from typing import Callable
 import random
+from typing import Callable
 
 import ignite
-import matplotlib.pyplot as plt
 import numpy as np
 import optuna
-import pandas as pd
 import torch
+import yaml
 from torch import Tensor
 from tqdm import tqdm
-import yaml
 
-from . import datasets
-from . import networks
-from . import setting
-from . import util
-
-from . import update_functions
-
-from siml.siml_variables import siml_tensor_variables
 from siml.loss_operations import LossCalculatorBuilder
-from siml.services.model_selector import ModelSelectorBuilder
-from siml.services.model_builder import ModelBuilder
 from siml.services.environment import ModelEnvironmentSetting
-from siml.services.training import InnerTrainingSetting
+from siml.services.model_builder import ModelBuilder
+from siml.services.model_selector import ModelSelectorBuilder
+from siml.services.training import (InnerTrainingSetting, LogRecordItems,
+                                    SimlTrainingConsoleLogger,
+                                    SimlTrainingFileLogger)
+from siml.siml_variables import siml_tensor_variables
+from siml.utils.timer import SimlStopWatch
+
+from . import datasets, setting, update_functions, util
 
 
 class Trainer:
@@ -62,10 +57,23 @@ class Trainer:
         inner_setting = InnerTrainingSetting(main_settings=main_settings)
         # HACK: temporarly hack. Better to handle as a inner setting.
         self.setting = inner_setting.main_settings
+        overwrite_restart_mode = self._overwrite_restart_mode()
 
         self.optuna_trial = optuna_trial
         self._env_setting = self._create_model_env_setting()
-        return
+
+        self.prepare_training()
+        self._console_logger = SimlTrainingConsoleLogger(
+            display_margin=self.setting.trainer.display_mergin,
+            loss_keys=self.model.get_loss_keys()
+        )
+        self._file_logger = SimlTrainingFileLogger(
+            file_path=self.log_file,
+            loss_keys=self.model.get_loss_keys(),
+            continue_mode=overwrite_restart_mode
+        )
+        time_offset = self._file_logger.read_offset_start_time()
+        self._stop_watch = SimlStopWatch(offset=time_offset)
 
     def _create_model_env_setting(self) -> ModelEnvironmentSetting:
         trainer_setting = self.setting.trainer
@@ -93,11 +101,10 @@ class Trainer:
 
         print(f"Output directory: {self.setting.trainer.output_directory}")
         overwrite_restart_mode = self._overwrite_restart_mode()
-        if not overwrite_restart_mode:
-            # When restart training, output directory already exists
-            self.setting.trainer.output_directory.mkdir(parents=True)
-
-        self.prepare_training()
+        self.setting.trainer.output_directory.mkdir(
+            parents=True, exist_ok=True
+        )
+        # HACK: temporaly hack. Loggers should be initialized in __init__
 
         yaml_file_name = f"restart_settings_{util.date_string()}.yml" \
             if overwrite_restart_mode else "settings.yml"
@@ -106,39 +113,8 @@ class Trainer:
             self.setting.trainer.output_directory / yaml_file_name,
             key=self.setting.trainer.model_key)
 
-        print(
-            self._display_mergin('epoch')
-            + self._display_mergin('train_loss')
-            + ''.join([
-                'train/' + self._display_mergin(k)
-                for k in self.model.get_loss_keys()])
-            + self._display_mergin('validation_loss')
-            + ''.join([
-                'validation/' + self._display_mergin(k)
-                for k in self.model.get_loss_keys()])
-            + self._display_mergin('elapsed_time'))
-        if not overwrite_restart_mode:
-            with open(self.log_file, 'w') as f:
-                f.write(
-                    'epoch, train_loss, '
-                    + ''.join([
-                        f"train/{k}, " for k in self.model.get_loss_keys()])
-                    + 'validation_loss, '
-                    + ''.join([
-                        f"validation/{k}, " for k in self.model.get_loss_keys()
-                    ])
-                    + 'elapsed_time\n')
-        self.start_time = time.time()
-        if not overwrite_restart_mode:
-            self.offset_start_time = 0
-        else:
-            df = pd.read_csv(
-                self.log_file,
-                header=0,
-                index_col=None,
-                skipinitialspace=True
-            )
-            self.offset_start_time = df.tail(1).loc[:, "elapsed_time"].item()
+        print(self._console_logger.output_header())
+        self._stop_watch.start()
 
         self.pbar = self.create_pbar(
             len(self.train_loader) * self.setting.trainer.log_trigger_epoch)
@@ -147,8 +123,7 @@ class Trainer:
             self.train_loader, max_epochs=self.setting.trainer.n_epoch)
         self.pbar.close()
 
-        df = pd.read_csv(
-            self.log_file, header=0, index_col=None, skipinitialspace=True)
+        df = self._file_logger.read_history()
         validation_loss = np.min(df['validation_loss'])
 
         return validation_loss
@@ -409,22 +384,17 @@ class Trainer:
                 validation_other_losses = {}
             self.evaluation_pbar.close()
 
-            elapsed_time = (time.time() - self.start_time) \
-                + self.offset_start_time
+            log_record = LogRecordItems(
+                epoch=engine.state.epoch,
+                train_loss=train_loss,
+                train_other_losses=train_other_losses,
+                validation_loss=validation_loss,
+                validation_other_losses=validation_other_losses,
+                elapsed_time=self._stop_watch.watch()
+            )
 
             # Print log
-            tqdm.write(
-                self._display_mergin(f"{engine.state.epoch}", 'epoch')
-                + self._display_mergin(f"{train_loss:.5e}", 'train_loss')
-                + ''.join([
-                    self._display_mergin(f"{v:.5e}", 'train/' + k)
-                    for k, v in train_other_losses.items()])
-                + self._display_mergin(
-                    f"{validation_loss:.5e}", 'validation_loss')
-                + ''.join([
-                    self._display_mergin(f"{v:.5e}", 'validation/' + k)
-                    for k, v in validation_other_losses.items()])
-                + self._display_mergin(f"{elapsed_time:.2f}", 'elapsed_time'))
+            tqdm.write(self._console_logger.output(log_record))
 
             self.pbar = self.create_pbar(
                 len(self.train_loader)
@@ -435,37 +405,10 @@ class Trainer:
             self.save_model(engine, validation_loss)
 
             # Write log
-            with open(self.log_file, 'a') as f:
-                f.write(
-                    f"{engine.state.epoch}, {train_loss:.5e}, "
-                    + ''.join([
-                        f"{v:.5e}, " for v in train_other_losses.values()])
-                    + f"{validation_loss:.5e}, "
-                    + ''.join([
-                        f"{v:.5e}, " for v
-                        in validation_other_losses.values()])
-                    + f"{elapsed_time:.2f}\n")
+            self._file_logger.write(log_record)
 
             # Plot
-            fig = plt.figure(figsize=(16 / 2, 9 / 2))
-            df = pd.read_csv(
-                self.log_file, header=0, index_col=None, skipinitialspace=True)
-            plt.plot(df['epoch'], df['train_loss'], label='train loss')
-            plt.plot(
-                df['epoch'], df['validation_loss'], label='validation loss')
-            for k in self.model.get_loss_keys():
-                plt.plot(df['epoch'], df[f"train/{k}"], label=f"train/{k}")
-            for k in self.model.get_loss_keys():
-                plt.plot(
-                    df['epoch'], df[f"validation/{k}"],
-                    label=f"validation/{k}")
-            plt.xlabel('epoch')
-            plt.ylabel('loss')
-            plt.yscale('log')
-            plt.legend()
-            plt.savefig(self.plot_file)
-            plt.close(fig)
-
+            self._file_logger.save_figure()
             return
 
         # Add early stopping
