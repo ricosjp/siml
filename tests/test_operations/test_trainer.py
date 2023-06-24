@@ -1,3 +1,4 @@
+from unittest import mock
 from pathlib import Path
 import pickle
 import shutil
@@ -407,18 +408,18 @@ class TestTrainer(unittest.TestCase):
             Path('tests/data/linear/linear_short.yml'))
 
         # Complete training for reference
-        complete_tr = trainer.Trainer(main_setting)
-        complete_tr.setting.trainer.output_directory = Path(
+        main_setting.trainer.output_directory = Path(
             'tests/data/linear/linear_short_completed')
-        if complete_tr.setting.trainer.output_directory.exists():
-            shutil.rmtree(complete_tr.setting.trainer.output_directory)
+        if main_setting.trainer.output_directory.exists():
+            shutil.rmtree(main_setting.trainer.output_directory)
+        complete_tr = trainer.Trainer(main_setting)
         complete_tr.train()
 
-        # Incomplete training
-        incomplete_tr = trainer.Trainer(main_setting)
-        incomplete_tr.setting.trainer.n_epoch = 20
-        incomplete_tr.setting.trainer.output_directory = Path(
+        # Mock Incomplete training
+        main_setting.trainer.n_epoch = 20
+        main_setting.trainer.output_directory = Path(
             'tests/data/linear/linear_short_incomplete')
+        incomplete_tr = trainer.Trainer(main_setting)
         if incomplete_tr.setting.trainer.output_directory.exists():
             shutil.rmtree(incomplete_tr.setting.trainer.output_directory)
         incomplete_tr.train()
@@ -426,13 +427,18 @@ class TestTrainer(unittest.TestCase):
         # Restart training
         main_setting.trainer.restart_directory \
             = incomplete_tr.setting.trainer.output_directory
-        restart_tr = trainer.Trainer(main_setting)
-        restart_tr.setting.trainer.n_epoch = 100
-        restart_tr.setting.trainer.output_directory = Path(
+        main_setting.trainer.output_directory = Path(
             'tests/data/linear/linear_short_restart')
-        if restart_tr.setting.trainer.output_directory.exists():
-            shutil.rmtree(restart_tr.setting.trainer.output_directory)
-        loss = restart_tr.train()
+        with mock.patch.object(
+            setting.TrainerSetting,
+            "n_epoch",
+            new_callable=mock.PropertyMock,
+            return_value=100
+        ):
+            restart_tr = trainer.Trainer(main_setting)
+            if restart_tr.setting.trainer.output_directory.exists():
+                shutil.rmtree(restart_tr.setting.trainer.output_directory)
+            loss = restart_tr.train()
 
         df = pd.read_csv(
             'tests/data/linear/linear_short_completed/log.csv',
@@ -450,20 +456,21 @@ class TestTrainer(unittest.TestCase):
             Path('tests/data/linear/linear_short.yml'))
 
         # Complete training for reference
-        complete_tr = trainer.Trainer(main_setting)
-        complete_tr.setting.trainer.output_directory = Path(
+        main_setting.trainer.output_directory = Path(
             'tests/data/linear/linear_short_completed')
-        if complete_tr.setting.trainer.output_directory.exists():
-            shutil.rmtree(complete_tr.setting.trainer.output_directory)
+        if main_setting.trainer.output_directory.exists():
+            shutil.rmtree(main_setting.trainer.output_directory)
+
+        complete_tr = trainer.Trainer(main_setting)
         complete_tr.train()
 
         # Incomplete training
-        incomplete_tr = trainer.Trainer(main_setting)
-        incomplete_tr.setting.trainer.n_epoch = 20
-        incomplete_tr.setting.trainer.output_directory = Path(
+        main_setting.trainer.n_epoch = 20
+        main_setting.trainer.output_directory = Path(
             'tests/data/linear/linear_short_incomplete')
-        if incomplete_tr.setting.trainer.output_directory.exists():
-            shutil.rmtree(incomplete_tr.setting.trainer.output_directory)
+        if main_setting.trainer.output_directory.exists():
+            shutil.rmtree(main_setting.trainer.output_directory)
+        incomplete_tr = trainer.Trainer(main_setting)
         incomplete_tr.train()
 
         # Restart training
@@ -471,9 +478,15 @@ class TestTrainer(unittest.TestCase):
             = incomplete_tr.setting.trainer.output_directory
         main_setting.trainer.output_directory \
             = incomplete_tr.setting.trainer.output_directory
-        restart_tr = trainer.Trainer(main_setting)
-        restart_tr.setting.trainer.n_epoch = 100
-        loss = restart_tr.train()
+
+        with mock.patch.object(
+            setting.TrainerSetting,
+            "n_epoch",
+            new_callable=mock.PropertyMock,
+            return_value=100
+        ):
+            restart_tr = trainer.Trainer(main_setting)
+            loss = restart_tr.train()
 
         df = pd.read_csv(
             'tests/data/linear/linear_short_completed/log.csv',
@@ -491,12 +504,13 @@ class TestTrainer(unittest.TestCase):
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/linear/linear_short.yml'))
         # Incomplete training
-        incomplete_tr = trainer.Trainer(main_setting)
-        incomplete_tr.setting.trainer.n_epoch = 20
-        incomplete_tr.setting.trainer.output_directory = Path(
+        main_setting.trainer.n_epoch = 20
+        main_setting.trainer.output_directory = Path(
             'tests/data/linear/linear_short_incomplete')
-        if incomplete_tr.setting.trainer.output_directory.exists():
-            shutil.rmtree(incomplete_tr.setting.trainer.output_directory)
+        if main_setting.trainer.output_directory.exists():
+            shutil.rmtree(main_setting.trainer.output_directory)
+
+        incomplete_tr = trainer.Trainer(main_setting)
         incomplete_tr.train()
 
         # Restart training several times
@@ -505,9 +519,15 @@ class TestTrainer(unittest.TestCase):
                 = incomplete_tr.setting.trainer.output_directory
             main_setting.trainer.output_directory \
                 = incomplete_tr.setting.trainer.output_directory
-            restart_tr = trainer.Trainer(main_setting)
-            restart_tr.setting.trainer.n_epoch = n_epoch
-            _ = restart_tr.train()
+            with mock.patch.object(
+                setting.TrainerSetting,
+                "n_epoch",
+                new_callable=mock.PropertyMock,
+                return_value=n_epoch
+            ):
+                restart_tr = trainer.Trainer(main_setting)
+                restart_tr.setting.trainer.n_epoch = n_epoch
+                _ = restart_tr.train()
 
         print(restart_tr.setting.trainer.output_directory)
         restart_df = pd.read_csv(
@@ -518,13 +538,13 @@ class TestTrainer(unittest.TestCase):
     def test_restart_yaml_files(self):
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/linear/linear_short.yml'))
-        # Incomplete training
-        incomplete_tr = trainer.Trainer(main_setting)
-        incomplete_tr.setting.trainer.n_epoch = 20
-        incomplete_tr.setting.trainer.output_directory = Path(
+        # Mock Incomplete training
+        main_setting.trainer.n_epoch = 20
+        main_setting.trainer.output_directory = Path(
             'tests/data/linear/linear_short_incomplete')
-        if incomplete_tr.setting.trainer.output_directory.exists():
-            shutil.rmtree(incomplete_tr.setting.trainer.output_directory)
+        if main_setting.trainer.output_directory.exists():
+            shutil.rmtree(main_setting.trainer.output_directory)
+        incomplete_tr = trainer.Trainer(main_setting)
         incomplete_tr.train()
 
         # Restart training several times
@@ -532,12 +552,17 @@ class TestTrainer(unittest.TestCase):
         if output_dir.exists():
             shutil.rmtree(output_dir)
         for n_epoch in [100, 120]:
-            main_setting.trainer.restart_directory \
-                = incomplete_tr.setting.trainer.output_directory
-            main_setting.trainer.output_directory = output_dir
-            restart_tr = trainer.Trainer(main_setting)
-            restart_tr.setting.trainer.n_epoch = n_epoch
-            _ = restart_tr.train()
+            with mock.patch.object(
+                setting.TrainerSetting,
+                "n_epoch",
+                new_callable=mock.PropertyMock,
+                return_value=n_epoch
+            ):
+                main_setting.trainer.restart_directory \
+                    = incomplete_tr.setting.trainer.output_directory
+                main_setting.trainer.output_directory = output_dir
+                restart_tr = trainer.Trainer(main_setting)
+                _ = restart_tr.train()
 
         yaml_files = list(output_dir.glob("*.yml*"))
         assert len(yaml_files) > 0
@@ -554,12 +579,12 @@ class TestTrainer(unittest.TestCase):
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/linear/linear_short.yml'))
         # Incomplete training
-        incomplete_tr = trainer.Trainer(main_setting)
-        incomplete_tr.setting.trainer.n_epoch = 20
-        incomplete_tr.setting.trainer.output_directory = Path(
+        main_setting.trainer.n_epoch = 20
+        main_setting.trainer.output_directory = Path(
             'tests/data/linear/linear_short_incomplete')
-        if incomplete_tr.setting.trainer.output_directory.exists():
-            shutil.rmtree(incomplete_tr.setting.trainer.output_directory)
+        if main_setting.trainer.output_directory.exists():
+            shutil.rmtree(main_setting.trainer.output_directory)
+        incomplete_tr = trainer.Trainer(main_setting)
         incomplete_tr.train()
 
         # Restart training
@@ -569,12 +594,11 @@ class TestTrainer(unittest.TestCase):
             main_setting.trainer.output_directory \
                 = incomplete_tr.setting.trainer.output_directory
             restart_tr = trainer.Trainer(main_setting)
-            restart_tr.setting.trainer.n_epoch = 20
             _ = restart_tr.train()
 
-        print(restart_tr.setting.trainer.output_directory)
+        print(main_setting.trainer.output_directory)
         restart_df = pd.read_csv(
-            restart_tr.setting.trainer.output_directory / 'log.csv',
+            main_setting.trainer.output_directory / 'log.csv',
             header=0, index_col=None, skipinitialspace=True)
         self.assertEqual(len(restart_df.values), 2)
 
@@ -787,8 +811,8 @@ class TestTrainer(unittest.TestCase):
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/heat_boundary/residual_loss.yml'))
         tr = trainer.Trainer(main_setting)
-        if tr.setting.trainer.output_directory.exists():
-            shutil.rmtree(tr.setting.trainer.output_directory)
+        if main_setting.trainer.output_directory.exists():
+            shutil.rmtree(main_setting.trainer.output_directory)
         loss_implicit = tr.train()
 
         main_setting = setting.MainSetting.read_settings_yaml(

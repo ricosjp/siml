@@ -20,6 +20,15 @@ class InnerTrainingSetting:
     def trainer_setting(self) -> TrainerSetting:
         return self.main_settings.trainer
 
+    @property
+    def log_file_path(self):
+        return self.trainer_setting.output_directory / 'log.csv'
+
+    @property
+    def loss_figure_path(self):
+        return self.trainer_setting.output_directory \
+            / f"plot.{self.trainer_setting.figure_format}"
+
     def __post_init_post_parse__(self):
         self._check_restart_and_pretrain()
         if self.trainer_setting.restart_directory is not None:

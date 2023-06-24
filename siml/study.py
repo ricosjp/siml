@@ -77,7 +77,6 @@ class Study():
 
     def initialize_study_setting(self):
         template_trainer = trainer.Trainer(self.original_setting)
-        template_trainer.prepare_training(draw=False)
         total_data_directories = np.unique(np.concatenate([
             template_trainer.train_loader.dataset.data_directories,
             template_trainer.validation_loader.dataset.data_directories]))

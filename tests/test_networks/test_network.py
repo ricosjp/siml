@@ -18,8 +18,8 @@ class TestNetwork(unittest.TestCase):
 
         if main_setting.trainer.output_directory.exists():
             shutil.rmtree(main_setting.trainer.output_directory)
-        tr = trainer.Trainer(main_setting)
         with self.assertRaisesRegex(ValueError, 'Cycle found in the network'):
+            tr = trainer.Trainer(main_setting)
             tr.train()
 
     def test_raise_valueerror_when_block_has_no_predecessors(self):
@@ -28,9 +28,9 @@ class TestNetwork(unittest.TestCase):
 
         if main_setting.trainer.output_directory.exists():
             shutil.rmtree(main_setting.trainer.output_directory)
-        tr = trainer.Trainer(main_setting)
         with self.assertRaisesRegex(
                 ValueError, 'NO_PREDECESSORS has no predecessors'):
+            tr = trainer.Trainer(main_setting)
             tr.train()
 
     def test_raise_valueerror_when_block_has_no_successors(self):
@@ -39,9 +39,9 @@ class TestNetwork(unittest.TestCase):
 
         if main_setting.trainer.output_directory.exists():
             shutil.rmtree(main_setting.trainer.output_directory)
-        tr = trainer.Trainer(main_setting)
         with self.assertRaisesRegex(
                 ValueError, 'NO_SUCCESSORS has no successors'):
+            tr = trainer.Trainer(main_setting)
             tr.train()
 
     def test_raise_valueerror_when_block_has_missing_destinations(self):
@@ -50,9 +50,9 @@ class TestNetwork(unittest.TestCase):
 
         if main_setting.trainer.output_directory.exists():
             shutil.rmtree(main_setting.trainer.output_directory)
-        tr = trainer.Trainer(main_setting)
         with self.assertRaisesRegex(
                 ValueError, 'NOT_EXISTING_BLOCK does not exist'):
+            tr = trainer.Trainer(main_setting)
             tr.train()
 
     def test_node_number_inference(self):
