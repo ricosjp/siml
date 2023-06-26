@@ -7,6 +7,7 @@ from siml import setting
 from siml.preprocessing import ScalersComposition
 from siml.services.model_selector import ModelSelectorBuilder
 from siml.services.path_rules import SimlPathRules
+from siml.services.environment import ModelEnvironmentSetting
 
 
 # HACK
@@ -163,3 +164,13 @@ class InnerInfererSetting(pydantic.BaseModel):
             return True
 
         return False
+
+    def create_model_env_setting(self) -> ModelEnvironmentSetting:
+        _model_env = ModelEnvironmentSetting(
+            gpu_id=self.inferer_setting.gpu_id,
+            seed=self.trainer_setting.seed,
+            data_parallel=self.trainer_setting.data_parallel,
+            model_parallel=self.trainer_setting.model_parallel,
+            time_series=self.trainer_setting.time_series
+        )
+        return _model_env

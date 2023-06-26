@@ -135,3 +135,31 @@ def test__is_skip_fem_data_when_skip_True(write_simulation_base):
     inner_setting = InnerInfererSetting(main_setting=main_setting)
 
     assert inner_setting.skip_fem_data_creation(write_simulation_base)
+
+
+@pytest.mark.parametrize("gpu_id", [
+    0, 1
+])
+def test__enable_gpu_create_model_env_settings(gpu_id: int):
+    main_setting = setting.MainSetting()
+    main_setting.inferer.gpu_id = gpu_id
+
+    inner_setting = InnerInfererSetting(main_setting=main_setting)
+
+    with mock.patch("torch.cuda.is_available", return_value=True):
+        env_setting = inner_setting.create_model_env_setting()
+        assert env_setting.gpu_id == gpu_id
+
+
+@pytest.mark.parametrize("gpu_id", [
+    -1
+])
+def test__enable_cpu_create_model_env_settings(gpu_id: int):
+    main_setting = setting.MainSetting()
+    main_setting.inferer.gpu_id = gpu_id
+
+    inner_setting = InnerInfererSetting(main_setting=main_setting)
+
+    with mock.patch("torch.cuda.is_available", return_value=False):
+        env_setting = inner_setting.create_model_env_setting()
+        assert env_setting.gpu_id == gpu_id
