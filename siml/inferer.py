@@ -219,8 +219,9 @@ class Inferer():
         model_directory: pathlib.Path,
         converter_parameters_pkl: Optional[pathlib.Path] = None,
         model_select_method: str = "best",
-        decrypt_key: bytes = None,
-        infer_epoch: int = None,
+        decrypt_key: Optional[bytes] = None,
+        infer_epoch: Optional[int] = None,
+        main_setting: Optional[setting.MainSetting] = None,
         **kwargs
     ):
         """Load model data from a deployed directory.
@@ -241,6 +242,9 @@ class Inferer():
             method name to select model. By default, best
         infer_epoch: int, optional
             If fed, model which corresponds to infer_epoch is used.
+        main_setting: setting.MainSetting
+            If fed, use it as settings. If not fed, main settings are
+             loaded from model_directory
 
         Returns
         --------
@@ -263,17 +267,18 @@ class Inferer():
         else:
             pickle_file_path = converter_parameters_pkl
 
-        setting_file = siml_directory.find_yaml_file('settings')
         selector = ModelSelectorBuilder.create(model_select_method)
         model_path = selector.select_model(
             model_directory,
             infer_epoch=infer_epoch
         )
 
-        main_setting = setting.MainSetting.read_settings_yaml(
-            setting_file.file_path,
-            decrypt_key=decrypt_key,
-        )
+        if main_setting is None:
+            setting_file = siml_directory.find_yaml_file('settings')
+            main_setting = setting.MainSetting.read_settings_yaml(
+                setting_file.file_path,
+                decrypt_key=decrypt_key,
+            )
 
         obj = cls(
             main_setting=main_setting,
@@ -346,7 +351,7 @@ class Inferer():
             data_addition_function=data_addition_function
         )
 
-        self._model_env = self._create_model_env_setting()
+        self._model_env = self._inner_setting.create_model_env_setting()
         self._collate_fn = self._create_collate_fn()
         self._dataloader_builder = self._create_data_loader_builder()
         self._core_inferer = self._create_core_inferer(
@@ -356,17 +361,6 @@ class Inferer():
             inner_setting=self._inner_setting,
             user_save_function=save_function
         )
-
-    def _create_model_env_setting(self) -> ModelEnvironmentSetting:
-        trainer_setting = self._inner_setting.trainer_setting
-        _model_env = ModelEnvironmentSetting(
-            gpu_id=trainer_setting.gpu_id,
-            seed=trainer_setting.seed,
-            data_parallel=trainer_setting.data_parallel,
-            model_parallel=trainer_setting.model_parallel,
-            time_series=trainer_setting.time_series
-        )
-        return _model_env
 
     def _create_collate_fn(self):
         trainer_setting = self._inner_setting.trainer_setting
