@@ -37,6 +37,7 @@ class ModelBuilder():
         decrypt_key: Optional[bytes] = None
     ):
         siml_file = SimlFileBuilder.checkpoint_file(checkpoint_file)
+        print(f"Load snapshot file: {siml_file.file_path}")
 
         model = self.create_initialized()
         model_state_dict = self._load_model_state_dict(
