@@ -80,6 +80,7 @@ class Trainer:
         self._stop_watch: SimlStopWatch = None
 
     def train(self, draw_model: bool = True):
+        self._env_setting.set_seed()
         self._initialize_state()
         self._prepare_files_and_dirs(draw_model=draw_model)
         validation_loss = self._run_training()
@@ -138,9 +139,6 @@ class Trainer:
         )
 
     def _run_training(self):
-        # start training
-        self._env_setting.set_seed()
-
         # start logging
         print(self._console_logger.output_header())
         self._file_logger.write_header_if_needed()
