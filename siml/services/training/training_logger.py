@@ -1,16 +1,13 @@
 import pathlib
 
-from typing import Optional
-from ignite.engine import Engine
-import torch
-from torch.optim import Optimizer
 import matplotlib.pyplot as plt
 import pandas as pd
+from torch.optim import Optimizer
 
-from siml.path_like_objects import SimlFileBuilder
 from siml.networks import Network
-from siml.setting import TrainerSetting
+from siml.path_like_objects import SimlFileBuilder
 from siml.services.training.logging_items import ILoggingItem, create_logitems
+from siml.setting import TrainerSetting
 
 
 class LogRecordItems:

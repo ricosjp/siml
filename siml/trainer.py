@@ -51,9 +51,9 @@ class Trainer:
 
         self.user_loss_function_dic = user_loss_function_dic
 
-        self._inner_setting = InnerTrainingSetting(main_settings=main_settings)
+        self._inner_setting = InnerTrainingSetting(main_setting=main_settings)
         # HACK: temporarly hack. Better to handle as a inner setting.
-        self.setting = self._inner_setting.main_settings
+        self.setting = self._inner_setting.main_setting
 
         self.optuna_trial = optuna_trial
         self._env_setting = self._create_model_env_setting()
@@ -82,7 +82,8 @@ class Trainer:
     def train(self, draw_model: bool = True):
         self._initialize_state()
         self._prepare_files_and_dirs(draw_model=draw_model)
-        self._start_training()
+        validation_loss = self._run_training()
+        return validation_loss
 
     def evaluate(self, evaluate_test=False, load_best_model=False):
         if load_best_model:
@@ -111,7 +112,7 @@ class Trainer:
         self._console_logger, self._file_logger = self._setup_loggers(
             self._model
         )
-        self._stop_watch = self._setup_stopwatch()
+        self._stop_watch = self._setup_stopwatch(self._file_logger)
 
         # HACK: NEED to be called last
         self._assign_trainer_events(self._trainer)
@@ -136,7 +137,7 @@ class Trainer:
             key=self.setting.trainer.model_key
         )
 
-    def _start_training(self):
+    def _run_training(self):
         # start training
         self._env_setting.set_seed()
 
@@ -183,6 +184,7 @@ class Trainer:
             validation_loader=self.validation_loader,
             evaluator=self._evaluator,
             model=self._model,
+            optimizer=self._optimizer,
             timer=self._stop_watch
         )
         train_events.assign_handlers(trainer)

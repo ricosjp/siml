@@ -5,6 +5,7 @@ import optuna
 from ignite.engine import Engine, Events
 from ignite.handlers import EarlyStopping
 from torch.utils.data import DataLoader
+from torch.optim import Optimizer
 from tqdm import tqdm
 
 from siml.networks import Network
@@ -29,6 +30,7 @@ class TrainerEventsAssigner:
         validation_loader: DataLoader,
         evaluator: Engine,
         model: Network,
+        optimizer: Optimizer,
         timer: SimlStopWatch
     ) -> None:
         self._file_logger = file_logger
@@ -39,6 +41,7 @@ class TrainerEventsAssigner:
         self._model = model
         self._trainer_setting = trainer_setting
         self._timer = timer
+        self._optimizer = optimizer
 
         self._desc: str = "loss: {:.5e}"
         self._trick = 1
@@ -100,6 +103,8 @@ class TrainerEventsAssigner:
         self._file_logger.save_model(
             epoch=engine.state.epoch,
             model=self._model,
+            optimizer=self._optimizer,
+            validation_loss=validation_loss,
             trainer_setting=self._trainer_setting
         )
 

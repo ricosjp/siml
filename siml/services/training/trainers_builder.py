@@ -125,7 +125,8 @@ class TrainersBuilder():
         self._evaluator_builder = EvaluatorEngineBuilder(
             env_setting=self._env_setting,
             prepare_batch_function=self._prepare_batch_function,
-            trainer_setting=self._trainer_setting
+            trainer_setting=self._trainer_setting,
+            loss_function=self._loss_function
         )
 
     def create(

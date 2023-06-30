@@ -11,6 +11,7 @@ from siml.networks import Network
 from siml.services.environment import ModelEnvironmentSetting
 from siml.setting import TrainerSetting
 from siml.update_functions import IStepUpdateFunction
+from siml.loss_operations import ILossCalculator
 
 
 class TrainerEngineBuilder:
@@ -101,11 +102,13 @@ class EvaluatorEngineBuilder:
         self,
         env_setting: ModelEnvironmentSetting,
         prepare_batch_function: Callable,
-        trainer_setting: TrainerSetting
+        trainer_setting: TrainerSetting,
+        loss_function: ILossCalculator
     ) -> None:
         self._env_setting = env_setting
         self._prepare_batch_func = prepare_batch_function
         self._trainer_setting = trainer_setting
+        self._loss = loss_function
 
     def create_supervised_evaluator(
         self,
@@ -172,7 +175,7 @@ class EvaluatorEngineBuilder:
 
         evaluator_engine = ignite.engine.Engine(_inference)
 
-        metrics = {'loss': ignite.metrics.Loss(self.loss)}
+        metrics = {'loss': ignite.metrics.Loss(self._loss)}
         for loss_key in model.get_loss_keys():
             metrics.update({loss_key: self._generate_metric(loss_key)})
 

@@ -119,7 +119,7 @@ class DataLoaderBuilder():
             recursive=recursive, allow_no_data=True, decrypt_key=decrypt_key)
 
         random_generator = torch.Generator()
-        random_generator.manual_seed(self.setting.trainer.seed)
+        random_generator.manual_seed(self._trainer_setting.seed)
 
         print(f"num_workers for data_loader: {num_workers}")
         train_loader = DataLoader(
