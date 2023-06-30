@@ -1,5 +1,6 @@
 from typing import Any, Union
 
+import pydantic
 import pydantic.dataclasses as dc
 
 from siml.path_like_objects import SimlDirectory
@@ -15,6 +16,15 @@ class InnerTrainingSetting:
 
     class Config:
         arbitrary_types_allowed = True
+
+    @pydantic.root_validator
+    def _check_not_empty_variables_names(cls, values):
+        # HACK: Check in the training settings
+        main_setting: MainSetting = values["main_settings"]
+        if len(main_setting.trainer.input_names) == 0:
+            raise ValueError('No input_names fed')
+        if len(main_setting.trainer.output_names) == 0:
+            raise ValueError('No output_names fed')
 
     @property
     def trainer_setting(self) -> TrainerSetting:

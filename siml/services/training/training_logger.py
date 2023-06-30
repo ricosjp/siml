@@ -1,8 +1,15 @@
 import pathlib
 
+from typing import Optional
+from ignite.engine import Engine
+import torch
+from torch.optim import Optimizer
 import matplotlib.pyplot as plt
 import pandas as pd
 
+from siml.path_like_objects import SimlFileBuilder
+from siml.networks import Network
+from siml.setting import TrainerSetting
 from siml.services.training.logging_items import ILoggingItem, create_logitems
 
 
@@ -175,3 +182,27 @@ class SimlTrainingFileLogger:
         plt.legend()
         plt.savefig(self._loss_figure_path)
         plt.close(fig)
+
+    def save_model(
+        self,
+        epoch: int,
+        model: Network,
+        optimizer: Optimizer,
+        validation_loss: float,
+        trainer_setting: TrainerSetting
+    ) -> None:
+        enc_ext = ".enc" if trainer_setting.model_key is not None else ""
+        file_path = trainer_setting.output_directory / \
+            pathlib.Path(f"snapshot_epoch_{epoch}.pth{enc_ext}")
+        siml_file = SimlFileBuilder.checkpoint_file(file_path)
+
+        data = {
+            'epoch': epoch,
+            'validation_loss': validation_loss,
+            'model_state_dict': model.state_dict(),
+            'optimizer_state_dict': optimizer.state_dict()
+        }
+        siml_file.save(
+            data,
+            encrypt_key=trainer_setting.model_key
+        )

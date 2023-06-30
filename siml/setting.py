@@ -1,10 +1,11 @@
+import itertools
 import dataclasses as dc
 import io
 import os
 import typing
 from enum import Enum
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 import numpy as np
 import optuna
@@ -691,6 +692,45 @@ class TrainerSetting(TypedDataClass):
         out_dict.update(self.outputs.to_dict())
         return out_dict
 
+    @property
+    def input_is_dict(self):
+        return isinstance(self.inputs.variables, dict)
+
+    @property
+    def output_is_dict(self):
+        return isinstance(self.outputs.variables, dict)
+
+    @property
+    def input_names_list(self):
+        return self._convert_to_list(self.input_names)
+
+    @property
+    def output_names_list(self):
+        return self._convert_to_list(self.output_names)
+
+    @property
+    def overwrite_restart_mode(self):
+        if self.restart_directory is None:
+            return False
+
+        if self.output_directory == self.restart_directory:
+            return True
+
+        return False
+
+    def _convert_to_list(self, values: Union[list, dict[str, list]]):
+        if isinstance(values, list):
+            return values
+        if isinstance(values, dict):
+            _list = [
+                v for v in values.values()
+            ]
+            return list(itertools.chain.from_iterable(_list))
+
+        raise NotImplementedError(
+            f"Unknown data type: {type(values)}"
+        )
+
     def determine_element_wise(self) -> bool:
         if self.time_series:
             return False
@@ -714,6 +754,43 @@ class TrainerSetting(TypedDataClass):
             suffix_string = f"_{self.suffix}"
         self.output_directory = base \
             / f"{self.name}{suffix_string}{id_string}_{util.date_string()}"
+
+    def determine_batch_sizes(self) -> tuple[int, int]:
+        element_wise = self.determine_element_wise()
+        if element_wise:
+            if self.element_batch_size > 0:
+                return (
+                    self.element_batch_size,
+                    self.validation_element_batch_size
+                )
+            if self.simplified_model:
+                return self.batch_size, self.validation_batch_size
+            raise ValueError(
+                'element_batch_size is '
+                f"{self.element_batch_size} < 1 "
+                'while element_wise is set to be true.')
+
+        if self.element_batch_size > 1 and self.batch_size > 1:
+            raise ValueError(
+                'batch_size cannot be > 1 when element_batch_size > 1.')
+
+        return self.batch_size, self.validation_batch_size
+
+    def get_input_time_series_keys(self) -> list[str]:
+        if not isinstance(self.inputs.time_series, dict):
+            return []
+        return [
+            k for k, v in self.inputs.time_series.items()
+            if np.any(v)
+        ]
+
+    def get_output_time_series_keys(self) -> list[str]:
+        if not isinstance(self.outputs.time_series, dict):
+            return []
+        return [
+            k for k, v in self.outputs.time_series.items()
+            if np.any(v)
+        ]
 
 
 @dc.dataclass
