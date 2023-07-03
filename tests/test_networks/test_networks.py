@@ -38,12 +38,12 @@ class TestNetworks(unittest.TestCase):
         x = np.reshape(np.arange(5*3), (1, 5, 3)).astype(np.float32) * .1
         original_shapes = [[1, 5]]
 
-        y_wo_permutation = tr.model({
+        y_wo_permutation = tr._model({
             'x': torch.from_numpy(x), 'original_shapes': original_shapes})
 
         x_w_permutation = np.concatenate(
             [x[0, None, 2:], x[0, None, :2]], axis=1)
-        y_w_permutation = tr.model({
+        y_w_permutation = tr._model({
             'x': torch.from_numpy(x_w_permutation),
             'original_shapes': original_shapes})
 
@@ -250,7 +250,7 @@ class TestNetworks(unittest.TestCase):
             shutil.rmtree(tr.setting.trainer.output_directory)
         loss = tr.train()
         np.testing.assert_array_less(loss, 1.)
-        self.assertIsNone(tr.model.dict_block['Block'].linears[0].bias)
+        self.assertIsNone(tr._model.dict_block['Block'].linears[0].bias)
 
     def test_time_norm(self):
         main_setting = setting.MainSetting.read_settings_yaml(
@@ -263,7 +263,7 @@ class TestNetworks(unittest.TestCase):
         self.assertLess(loss, 1.)
         input_data = tr.train_loader.dataset[0]
         input_data = {'x': input_data['x']}
-        out = tr.model(input_data)
+        out = tr._model(input_data)
         np.testing.assert_almost_equal(out.detach().numpy()[0], 0.)
 
     def test_integration_y1(self):
@@ -332,7 +332,7 @@ class TestNetworks(unittest.TestCase):
         loss = tr.train()
         np.testing.assert_array_less(loss, 1.)
         x = torch.from_numpy(np.random.rand(1, 4, 6).astype(np.float32))
-        y = tr.model.dict_block['RES_MLP'](x)
+        y = tr._model.dict_block['RES_MLP'](x)
         abs_residual = np.abs((y - x).detach().numpy())
         zero_fraction = np.sum(abs_residual < 1e-5) / abs_residual.size
         self.assertLess(.3, zero_fraction)
@@ -355,7 +355,7 @@ class TestNetworks(unittest.TestCase):
         s = [torch.sparse_coo_tensor(
             torch.stack([torch.from_numpy(_s.row), torch.from_numpy(_s.col)]),
             torch.from_numpy(_s.data), _s.shape)]
-        y = tr.model.dict_block['RES_GCN'](x, supports=s)
+        y = tr._model.dict_block['RES_GCN'](x, supports=s)
         abs_residual = np.abs((y - x).detach().numpy())
         zero_fraction = np.sum(abs_residual < 1e-5) / abs_residual.size
         self.assertLess(.3, zero_fraction)
@@ -371,7 +371,7 @@ class TestNetworks(unittest.TestCase):
 
         e = np.random.rand(1, 4, 1).astype(np.float32)
         epsilon = np.random.rand(1, 4, 6).astype(np.float32)
-        sigma = tr.model.dict_block['MUL'](
+        sigma = tr._model.dict_block['MUL'](
             torch.from_numpy(e), torch.from_numpy(epsilon))
         np.testing.assert_almost_equal(
             sigma.detach().numpy(), e * epsilon)
@@ -500,7 +500,7 @@ class TestNetworks(unittest.TestCase):
         np.testing.assert_array_less(loss, 10.)
 
         x = np.random.rand(10 + 20, 6).astype(np.float32)
-        t = tr.model.dict_block['TRANSLATE'](
+        t = tr._model.dict_block['TRANSLATE'](
             torch.from_numpy(x), original_shapes=[(10,), (20,)]
         ).detach().numpy()
         np.testing.assert_almost_equal(np.min(t[:, 0]), 0.)
@@ -515,8 +515,8 @@ class TestNetworks(unittest.TestCase):
         tr.train()
 
         for l_ref, l_inv in zip(
-                tr.model.dict_block['MLP'].linears,
-                tr.model.dict_block['PINV_MLP'].linears[-1::-1]):
+                tr._model.dict_block['MLP'].linears,
+                tr._model.dict_block['PINV_MLP'].linears[-1::-1]):
             np.testing.assert_almost_equal(
                 l_inv.weight.detach().numpy(),
                 np.linalg.pinv(l_ref.weight.detach().numpy()),
@@ -525,22 +525,22 @@ class TestNetworks(unittest.TestCase):
                 l_inv.bias.detach().numpy(), - l_ref.bias.detach().numpy())
 
         x = torch.rand(100, 3, 3, 6)
-        y = tr.model.dict_block['MLP'](x)
-        x_ = tr.model.dict_block['PINV_MLP'](y)
+        y = tr._model.dict_block['MLP'](x)
+        x_ = tr._model.dict_block['PINV_MLP'](y)
         np.testing.assert_almost_equal(
             x_.detach().numpy(), x.detach().numpy(),
             decimal=5)
 
         x = torch.rand(100, 3, 3, 6) * 1e-2
-        y = tr.model.dict_block['MLP'](x)
-        x_ = tr.model.dict_block['PINV_MLP'](y)
+        y = tr._model.dict_block['MLP'](x)
+        x_ = tr._model.dict_block['PINV_MLP'](y)
         np.testing.assert_almost_equal(
             x_.detach().numpy() / 1e-2, x.detach().numpy() / 1e-2,
             decimal=3)
 
         x = torch.rand(100, 3, 3, 6) * 100
-        y = tr.model.dict_block['MLP'](x)
-        x_ = tr.model.dict_block['PINV_MLP'](y)
+        y = tr._model.dict_block['MLP'](x)
+        x_ = tr._model.dict_block['PINV_MLP'](y)
         np.testing.assert_almost_equal(
             x_.detach().numpy() / 100, x.detach().numpy() / 100,
             decimal=5)
@@ -554,8 +554,8 @@ class TestNetworks(unittest.TestCase):
         tr.train()
 
         for l_ref, l_inv in zip(
-                tr.model.dict_block['MLP'].linears,
-                tr.model.dict_block['PINV_MLP'].linears[-1::-1]):
+                tr._model.dict_block['MLP'].linears,
+                tr._model.dict_block['PINV_MLP'].linears[-1::-1]):
             np.testing.assert_almost_equal(
                 l_inv.weight.detach().numpy(),
                 np.linalg.pinv(l_ref.weight.detach().numpy()),
@@ -564,22 +564,22 @@ class TestNetworks(unittest.TestCase):
             self.assertIsNone(l_ref.bias)
 
         x = torch.rand(100, 3, 3, 6)
-        y = tr.model.dict_block['MLP'](x)
-        x_ = tr.model.dict_block['PINV_MLP'](y)
+        y = tr._model.dict_block['MLP'](x)
+        x_ = tr._model.dict_block['PINV_MLP'](y)
         np.testing.assert_almost_equal(
             x_.detach().numpy(), x.detach().numpy(),
             decimal=5)
 
         x = torch.rand(100, 3, 3, 6) * 1e-2
-        y = tr.model.dict_block['MLP'](x)
-        x_ = tr.model.dict_block['PINV_MLP'](y)
+        y = tr._model.dict_block['MLP'](x)
+        x_ = tr._model.dict_block['PINV_MLP'](y)
         np.testing.assert_almost_equal(
             x_.detach().numpy() / 1e-2, x.detach().numpy() / 1e-2,
             decimal=3)
 
         x = torch.rand(100, 3, 3, 6) * 100
-        y = tr.model.dict_block['MLP'](x)
-        x_ = tr.model.dict_block['PINV_MLP'](y)
+        y = tr._model.dict_block['MLP'](x)
+        x_ = tr._model.dict_block['PINV_MLP'](y)
         np.testing.assert_almost_equal(
             x_.detach().numpy() / 100, x.detach().numpy() / 100,
             decimal=5)
@@ -593,16 +593,16 @@ class TestNetworks(unittest.TestCase):
         tr.train()
 
         for l_ref, l_inv in zip(
-                tr.model.dict_block['MLP'].linears,
-                tr.model.dict_block['SHARE'].linears):
+                tr._model.dict_block['MLP'].linears,
+                tr._model.dict_block['SHARE'].linears):
             np.testing.assert_almost_equal(
                 l_inv.weight.detach().numpy(), l_ref.weight.detach().numpy())
             np.testing.assert_almost_equal(
                 l_inv.bias.detach().numpy(), l_ref.bias.detach().numpy())
 
         x = torch.rand(100, 3, 3, 1)
-        y = tr.model.dict_block['MLP'](x)
-        y_ = tr.model.dict_block['SHARE'](x)
+        y = tr._model.dict_block['MLP'](x)
+        y_ = tr._model.dict_block['SHARE'](x)
         np.testing.assert_almost_equal(
             y_.detach().numpy(), y.detach().numpy())
 
@@ -620,14 +620,14 @@ class TestNetworks(unittest.TestCase):
         x = np.reshape(np.arange(5*12), (5, 12)).astype(np.float32) * .1
         original_shapes = [[5]]
 
-        tr.model.eval()
+        tr._model.eval()
         with torch.no_grad():
-            y_wo_permutation = tr.model({
+            y_wo_permutation = tr._model({
                 'x': torch.from_numpy(x), 'original_shapes': original_shapes})
 
             x_w_permutation = np.concatenate(
                 [x[2:], x[:2]], axis=0)
-            y_w_permutation = tr.model({
+            y_w_permutation = tr._model({
                 'x': torch.from_numpy(x_w_permutation),
                 'original_shapes': original_shapes})
 
@@ -649,14 +649,14 @@ class TestNetworks(unittest.TestCase):
         x = np.reshape(np.arange(5*7), (5, 7)).astype(np.float32) * .1
         original_shapes = [[5]]
 
-        tr.model.eval()
+        tr._model.eval()
         with torch.no_grad():
-            y_wo_permutation = tr.model({
+            y_wo_permutation = tr._model({
                 'x': torch.from_numpy(x), 'original_shapes': original_shapes})
 
             x_w_permutation = np.concatenate(
                 [x[2:], x[:2]], axis=0)
-            y_w_permutation = tr.model({
+            y_w_permutation = tr._model({
                 'x': torch.from_numpy(x_w_permutation),
                 'original_shapes': original_shapes})
 

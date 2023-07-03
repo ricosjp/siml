@@ -363,7 +363,7 @@ class TestTrainer(unittest.TestCase):
             main_setting.trainer.output_directory, ignore_errors=True)
         tr = trainer.Trainer(main_setting)
         tr.train()
-        train_state, _ = tr.evaluate()
+        train_state, _, _ = tr.evaluate()
         train_loss = train_state.metrics['loss']
 
         trained_setting = setting.MainSetting.read_settings_yaml(

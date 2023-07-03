@@ -67,7 +67,7 @@ class Trainer:
             prepare_batch=self._collate_fn.prepare_batch
         )
 
-        # SET WHEN TRAINING START
+        # SET IN _initialize_state()
         self.train_loader: DataLoader = None
         self.validation_loader: DataLoader = None
         self.test_loader: DataLoader = None
@@ -79,9 +79,11 @@ class Trainer:
         self._file_logger: SimlTrainingFileLogger = None
         self._stop_watch: SimlStopWatch = None
 
-    def train(self, draw_model: bool = True):
+        # Prepare
         self._env_setting.set_seed()
         self._initialize_state()
+
+    def train(self, draw_model: bool = True):
         self._prepare_files_and_dirs(draw_model=draw_model)
         validation_loss = self._run_training()
         return validation_loss
