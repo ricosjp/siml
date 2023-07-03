@@ -111,7 +111,7 @@ class TestNetwork(unittest.TestCase):
         np.testing.assert_array_less(loss, 1.)
         x = torch.from_numpy(np.random.rand(2000, 100).astype(np.float32))
 
-        out_cutoff1 = tr.model.dict_block['CUTOFF1'](x).detach().numpy()
+        out_cutoff1 = tr._model.dict_block['CUTOFF1'](x).detach().numpy()
         np.testing.assert_almost_equal(
             np.max(out_cutoff1),
             main_setting.model.blocks[1].optional['upper'])
@@ -119,7 +119,7 @@ class TestNetwork(unittest.TestCase):
             np.min(out_cutoff1),
             main_setting.model.blocks[1].optional['lower'])
 
-        out_cutoff2 = tr.model.dict_block['CUTOFF2'](x).detach().numpy()
+        out_cutoff2 = tr._model.dict_block['CUTOFF2'](x).detach().numpy()
         np.testing.assert_almost_equal(
             np.max(out_cutoff2),
             main_setting.model.blocks[2].optional['upper'])

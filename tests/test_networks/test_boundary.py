@@ -698,9 +698,9 @@ class TestBoundary(unittest.TestCase):
         neumann = torch.rand(100, 1)
         normals = torch.zeros(100, 3, 1)
         normals[:, 0, 0] = 1.
-        encoded_directed_neumann = tr.model.dict_block['NEUMANN_ENCODER'](
+        encoded_directed_neumann = tr._model.dict_block['NEUMANN_ENCODER'](
             x, neumann, normals)
-        decoded_neumann = tr.model.dict_block['NEUMANN_DECODER'](
+        decoded_neumann = tr._model.dict_block['NEUMANN_DECODER'](
             encoded_directed_neumann, x)
         np.testing.assert_almost_equal(
             decoded_neumann[:, 0, 0].detach().numpy(),

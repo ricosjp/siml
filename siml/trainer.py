@@ -6,7 +6,7 @@ from torch import Tensor
 from torch.optim import Optimizer
 from torch.utils.data import DataLoader
 
-from siml.loss_operations import LossCalculatorBuilder
+from siml.loss_operations import LossCalculatorBuilder, ILossCalculator
 from siml.networks import Network
 from siml.services.environment import ModelEnvironmentSetting
 from siml.services.training import (InnerTrainingSetting,
@@ -63,8 +63,13 @@ class Trainer:
             collate_fn=self._collate_fn,
             decrypt_key=self.setting.get_crypt_key()
         )
+        self._loss_calculator = LossCalculatorBuilder.create(
+            trainer_setting=self.setting.trainer,
+            user_loss_function_dic=self.user_loss_function_dic
+        )
         self._trainers_builder = self._create_trainers_builder(
-            prepare_batch=self._collate_fn.prepare_batch
+            prepare_batch=self._collate_fn.prepare_batch,
+            loss_calculator=self._loss_calculator
         )
 
         # SET IN _initialize_state()
@@ -264,12 +269,11 @@ class Trainer:
         )
         return collate_fn
 
-    def _create_trainers_builder(self, prepare_batch: Callable):
-        loss_calculator = LossCalculatorBuilder.create(
-            trainer_setting=self.setting.trainer,
-            user_loss_function_dic=self.user_loss_function_dic
-        )
-
+    def _create_trainers_builder(
+        self,
+        prepare_batch: Callable,
+        loss_calculator: ILossCalculator
+    ):
         trainers_builder = TrainersBuilder(
             trainer_setting=self.setting.trainer,
             model_setting=self.setting.model,

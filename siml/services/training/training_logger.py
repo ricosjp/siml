@@ -65,7 +65,7 @@ class SimlTrainingConsoleLogger:
             v.format(padding_margin=self._display_margin)
             for v in self._headers
         ]
-        return "".join(strings)
+        return "\n" + "".join(strings)
 
     def output(self, log_record: LogRecordItems) -> str:
         strings = [

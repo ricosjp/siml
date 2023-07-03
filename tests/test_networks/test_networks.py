@@ -34,7 +34,6 @@ class TestNetworks(unittest.TestCase):
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/linear/deepsets.yml'))
         tr = trainer.Trainer(main_setting)
-        tr.prepare_training()
         x = np.reshape(np.arange(5*3), (1, 5, 3)).astype(np.float32) * .1
         original_shapes = [[1, 5]]
 
@@ -616,7 +615,6 @@ class TestNetworks(unittest.TestCase):
         np.testing.assert_array_less(loss, 1.)
 
         # Test permutation invariance
-        tr.prepare_training()
         x = np.reshape(np.arange(5*12), (5, 12)).astype(np.float32) * .1
         original_shapes = [[5]]
 
@@ -645,7 +643,6 @@ class TestNetworks(unittest.TestCase):
         np.testing.assert_array_less(loss, 1.)
 
         # Test permutation equivariance
-        tr.prepare_training()
         x = np.reshape(np.arange(5*7), (5, 7)).astype(np.float32) * .1
         original_shapes = [[5]]
 

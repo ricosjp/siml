@@ -154,9 +154,7 @@ class TrainersBuilder():
             update_function=update_function
         )
         evaluator = self._evaluator_builder.create_supervised_evaluator(
-            model=model,
-            input_time_series_keys=self._trainer_setting.get_input_time_series_keys(),  # NOQA
-            output_time_series_keys=self._trainer_setting.get_output_time_series_keys(),  # NOQA
+            model=model
         )
         return trainer, evaluator
 
