@@ -1,17 +1,19 @@
-from typing import Callable
+from typing import Callable, Union
 
 import ignite
+from ignite.engine import Engine
 import numpy as np
 import torch
 import yaml
 
 from siml import util
-from siml.siml_variables import siml_tensor_variables
+from siml.loss_operations import ILossCalculator
 from siml.networks import Network
 from siml.services.environment import ModelEnvironmentSetting
 from siml.setting import TrainerSetting
+from siml.siml_variables import siml_tensor_variables
 from siml.update_functions import IStepUpdateFunction
-from siml.loss_operations import ILossCalculator
+from siml.services.training.tensor_spliter import TensorSpliter
 
 
 class TrainerEngineBuilder:
@@ -30,7 +32,23 @@ class TrainerEngineBuilder:
         model: Network,
         optimizer: torch.optim.Optimizer,
         update_function: IStepUpdateFunction
-    ) -> ignite.engine.Engine:
+    ) -> Engine:
+        """Create supervised trainer engine
+
+        Parameters
+        ----------
+        model : Network
+            model object
+        optimizer : torch.optim.Optimizer
+            optimizer
+        update_function : IStepUpdateFunction
+            update function
+
+        Returns
+        -------
+        Engine
+            Ignite trainer engine
+        """
 
         def update_model(engine, batch):
             model.train()
@@ -53,13 +71,13 @@ class TrainerEngineBuilder:
                 self.output_stats(model, engine)
             return loss
 
-        return ignite.engine.Engine(update_model)
+        return Engine(update_model)
 
     def output_stats(
         self,
         model: Network,
-        engine: ignite.engine.Engine
-    ):
+        engine: Engine
+    ) -> dict[str, Union[float, int, dict[str, float]]]:
         dict_stats = {
             name: self._calculate_stats(parameter)
             for name, parameter in model.named_parameters()}
@@ -103,24 +121,36 @@ class EvaluatorEngineBuilder:
         env_setting: ModelEnvironmentSetting,
         prepare_batch_function: Callable,
         trainer_setting: TrainerSetting,
-        loss_function: ILossCalculator
+        loss_function: ILossCalculator,
+        spliter: TensorSpliter
     ) -> None:
         self._env_setting = env_setting
         self._prepare_batch_func = prepare_batch_function
         self._trainer_setting = trainer_setting
         self._loss = loss_function
+        self._spliter = spliter
 
     def create_supervised_evaluator(
         self,
-        model: Network,
-        input_time_series_keys: list[str],
-        output_time_series_keys: list[str],
-        split_data_if_needed: Callable,
-        update_original_shapes: Callable
-    ) -> ignite.engine.Engine:
+        model: Network
+    ) -> Engine:
+        """Create supervised evaluator
 
-        # HACK: split_data_if_needed, update_original_shapes functions
-        # should be implemented in ISimlVariables
+        Parameters
+        ----------
+        model : Network
+            model object
+
+        Returns
+        -------
+        Engine
+            Ignite Engine
+        """
+
+        input_time_series_keys = \
+            self._trainer_setting.get_input_time_series_keys()
+        output_time_series_keys = \
+            self._trainer_setting.get_output_time_series_keys()
 
         def _inference(engine, batch):
             model.eval()
@@ -138,7 +168,7 @@ class EvaluatorEngineBuilder:
                     support_device=support_device,
                     non_blocking=self._trainer_setting.non_blocking
                 )
-                split_xs, split_ys = split_data_if_needed(
+                split_xs, split_ys = self._spliter._split_data_if_needed(
                     x, y,
                     self._trainer_setting.time_series_split_evaluation)
 
@@ -155,7 +185,7 @@ class EvaluatorEngineBuilder:
                     cat_x = util.cat_time_series(
                         [split_x['x'] for split_x in split_xs],
                         time_series_keys=input_time_series_keys)
-                    original_shapes = update_original_shapes(
+                    original_shapes = self._spliter._update_original_shapes(
                         cat_x, x['original_shapes']
                     )
                 y_pred = util.cat_time_series(
@@ -183,7 +213,7 @@ class EvaluatorEngineBuilder:
             metric.attach(evaluator_engine, name)
         return evaluator_engine
 
-    def _generate_metric(self, loss_key: str):
+    def _generate_metric(self, loss_key: str) -> float:
         if 'residual' in loss_key:
             def gather_loss_key(x):
                 model = x[2]['model']

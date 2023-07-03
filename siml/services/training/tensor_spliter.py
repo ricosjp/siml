@@ -4,6 +4,9 @@ import numpy as np
 
 # HACK: THIS IS TEMPORAL IMPLEMENTATION
 # theses should be implemented in siml tensors
+# HACK: split_data_if_needed, update_original_shapes functions
+# should be implemented in ISimlVariables
+
 
 class TensorSpliter:
     def __init__(

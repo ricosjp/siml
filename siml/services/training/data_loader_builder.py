@@ -45,6 +45,13 @@ class DataLoaderBuilder():
     def create(
         self
     ) -> tuple[DataLoader, DataLoader, DataLoader]:
+        """Create dataloaders
+
+        Returns
+        -------
+        tuple[DataLoader, DataLoader, DataLoader]
+            Train loader, validaition loader, test loader
+        """
 
         self._set_dataset_directories()
         batch_size, validation_batch_size = \

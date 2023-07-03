@@ -1,7 +1,7 @@
-from typing import Callable
+from typing import Callable, Union
 
 import numpy as np
-from ignite.engine import Engine
+from ignite.engine import Engine, State
 from torch import Tensor
 from torch.optim import Optimizer
 from torch.utils.data import DataLoader
@@ -83,12 +83,43 @@ class Trainer:
         self._env_setting.set_seed()
         self._initialize_state()
 
-    def train(self, draw_model: bool = True):
+    def train(self, draw_model: bool = True) -> float:
+        """Start training
+
+        Parameters
+        ----------
+        draw_model : bool, optional
+            If True, output figure of models, by default True
+
+        Returns
+        -------
+        float
+            loss for validaiton data
+        """
         self._prepare_files_and_dirs(draw_model=draw_model)
         validation_loss = self._run_training()
         return validation_loss
 
-    def evaluate(self, evaluate_test=False, load_best_model=False):
+    def evaluate(
+        self,
+        evaluate_test: bool = False,
+        load_best_model: bool = False
+    ) -> tuple[State, Union[State, None], Union[State, None]]:
+        """Evaluate model performance
+
+        Parameters
+        ----------
+        evaluate_test : bool, optional
+            If True, evaluation by test dataset is performed, by default False
+        load_best_model : bool, optional
+            If True, best model is used to evaluate, by default False
+
+        Returns
+        -------
+        tuple[State, Union[State, None], Union[State, None]]
+            ignite State objects for train, validation and test dataset 
+        """
+
         if load_best_model:
             self.setting.trainer.pretrain_directory \
                 = self.setting.trainer.output_directory

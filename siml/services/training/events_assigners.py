@@ -51,6 +51,13 @@ class TrainerEventsAssigner:
         self._pbar = _create_pbar(total, self._desc.format(0))
 
     def assign_handlers(self, trainer: Engine) -> None:
+        """Assign handlers to trainer engine
+
+        Parameters
+        ----------
+        trainer : Engine
+            trainer engine object
+        """
         trainer.add_event_handler(
             Events.ITERATION_COMPLETED,
             self.log_training_loss
@@ -171,6 +178,15 @@ class ValidationEventsAssigner:
         evaluator: Engine,
         optuna_trial: bool
     ) -> None:
+        """Assign handlers to evaluator engine
+
+        Parameters
+        ----------
+        evaluator : Engine
+            evaluator engine
+        optuna_trial : bool
+            If true, run optuna
+        """
         evaluator.add_event_handler(
             Events.ITERATION_COMPLETED(every=self._evaluator_tick),
             self.log_evaluation

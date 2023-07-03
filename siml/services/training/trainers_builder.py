@@ -126,7 +126,8 @@ class TrainersBuilder():
             env_setting=self._env_setting,
             prepare_batch_function=self._prepare_batch_function,
             trainer_setting=self._trainer_setting,
-            loss_function=self._loss_function
+            loss_function=self._loss_function,
+            spliter=self._spliter
         )
 
     def create(
@@ -156,8 +157,6 @@ class TrainersBuilder():
             model=model,
             input_time_series_keys=self._trainer_setting.get_input_time_series_keys(),  # NOQA
             output_time_series_keys=self._trainer_setting.get_output_time_series_keys(),  # NOQA
-            split_data_if_needed=self._spliter._split_data_if_needed,
-            update_original_shapes=self._spliter._update_original_shapes
         )
         return trainer, evaluator
 
