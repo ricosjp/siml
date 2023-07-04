@@ -23,6 +23,13 @@ class ModelBuilder():
         return self._trainer_setting.state_dict_strict
 
     def create_initialized(self) -> networks.Network:
+        """Create initialized network object
+
+        Returns
+        -------
+        networks.Network
+            network object
+        """
         model = networks.Network(self._model_setting, self._trainer_setting)
         if self._env_setting.data_parallel:
             model = data_parallel.DataParallel(model)
@@ -35,7 +42,21 @@ class ModelBuilder():
         self,
         checkpoint_file: pathlib.Path,
         decrypt_key: Optional[bytes] = None
-    ):
+    ) -> networks.Network:
+        """Create network object loaded from checkpoint file
+
+        Parameters
+        ----------
+        checkpoint_file : pathlib.Path
+            Path to checkpoint file
+        decrypt_key : Optional[bytes], optional
+            decrpt byte key, by default None
+
+        Returns
+        -------
+        networks.Network
+            network object
+        """
         siml_file = SimlFileBuilder.checkpoint_file(checkpoint_file)
         print(f"Load snapshot file: {siml_file.file_path}")
 

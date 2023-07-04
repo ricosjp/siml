@@ -9,7 +9,7 @@ from siml.inferer import ModelEnvironmentSetting
 from siml.loss_operations import ILossCalculator
 from siml.services.model_builder import ModelBuilder
 
-from .engine_bulider import InferenceEngineBuilder
+from .engine_builder import InferenceEngineBuilder
 from .metrics_builder import MetricsBuilder
 from .postprocessing import PostProcessor
 

@@ -86,8 +86,8 @@ class TestTrainer(unittest.TestCase):
 
         # Confirm input feature dimension is as expected
         self.assertEqual(
-            tr.model.dict_block['ResGCN1'].subchains[0][0].in_features, 6)
-        self.assertEqual(tr.model.dict_block['MLP'].linears[0].in_features, 1)
+            tr._model.dict_block['ResGCN1'].subchains[0][0].in_features, 6)
+        self.assertEqual(tr._model.dict_block['MLP'].linears[0].in_features, 1)
 
     def test_train_element_wise(self):
         main_setting = setting.MainSetting.read_settings_yaml(
@@ -98,7 +98,7 @@ class TestTrainer(unittest.TestCase):
         loss = tr.train()
         np.testing.assert_array_less(loss, 10.)
         self.assertEqual(len(tr.train_loader.dataset), 1000)
-        self.assertEqual(tr.trainer.state.iteration, 1000 // 10 * 100)
+        self.assertEqual(tr._trainer.state.iteration, 1000 // 10 * 100)
 
     def test_train_element_batch(self):
         main_setting = setting.MainSetting.read_settings_yaml(
@@ -153,31 +153,30 @@ class TestTrainer(unittest.TestCase):
         main_setting.trainer.output_directory.mkdir(
             parents=True, exist_ok=True)
         tr = trainer.Trainer(main_setting)
-        tr.prepare_training()
         x = np.reshape(np.arange(10*5*3), (10, 5, 3)).astype(np.float32) * .1
         y = torch.from_numpy((x[:, :, :2] * 2 - .5))
 
-        tr.model.eval()
-        pred_y_wo_padding = tr.model({'x': torch.from_numpy(x)})
-        tr.optimizer.zero_grad()
-        loss_wo_padding = tr.loss(
+        tr._model.eval()
+        pred_y_wo_padding = tr._model({'x': torch.from_numpy(x)})
+        tr._optimizer.zero_grad()
+        loss_wo_padding = tr._loss_calculator(
             pred_y_wo_padding, y, original_shapes=np.array([[10, 5]]))
         loss_wo_padding.backward(retain_graph=True)
-        w_grad_wo_padding = tr.model.dict_block['Block'].linears[0].weight.grad
-        b_grad_wo_padding = tr.model.dict_block['Block'].linears[0].bias.grad
+        w_grad_wo_padding = tr._model.dict_block['Block'].linears[0].weight.grad  # NOQA
+        b_grad_wo_padding = tr._model.dict_block['Block'].linears[0].bias.grad
 
-        tr.optimizer.zero_grad()
+        tr._optimizer.zero_grad()
         padded_x = np.concatenate([x, np.zeros((3, 5, 3))], axis=0).astype(
             np.float32)
         padded_y = np.concatenate([y, np.zeros((3, 5, 2))], axis=0).astype(
             np.float32)
-        pred_y_w_padding = tr.model({'x': torch.from_numpy(padded_x)})
-        loss_w_padding = tr.loss(
+        pred_y_w_padding = tr._model({'x': torch.from_numpy(padded_x)})
+        loss_w_padding = tr._loss_calculator(
             pred_y_w_padding, torch.from_numpy(padded_y),
             original_shapes=np.array([[10, 5]]))
         loss_wo_padding.backward()
-        w_grad_w_padding = tr.model.dict_block['Block'].linears[0].weight.grad
-        b_grad_w_padding = tr.model.dict_block['Block'].linears[0].bias.grad
+        w_grad_w_padding = tr._model.dict_block['Block'].linears[0].weight.grad
+        b_grad_w_padding = tr._model.dict_block['Block'].linears[0].bias.grad
 
         np.testing.assert_almost_equal(
             loss_wo_padding.detach().numpy(), loss_w_padding.detach().numpy())
@@ -230,9 +229,9 @@ class TestTrainer(unittest.TestCase):
         if tr.setting.trainer.output_directory.exists():
             shutil.rmtree(tr.setting.trainer.output_directory)
         tr.train()
-        self.assertLess(tr.trainer.state.epoch, main_setting.trainer.n_epoch)
+        self.assertLess(tr._trainer.state.epoch, main_setting.trainer.n_epoch)
         self.assertEqual(
-            tr.trainer.state.epoch % main_setting.trainer.stop_trigger_epoch,
+            tr._trainer.state.epoch % main_setting.trainer.stop_trigger_epoch,
             0)
 
     def test_whole_processs(self):
@@ -363,7 +362,7 @@ class TestTrainer(unittest.TestCase):
             main_setting.trainer.output_directory, ignore_errors=True)
         tr = trainer.Trainer(main_setting)
         tr.train()
-        train_state, _ = tr.evaluate()
+        train_state, _, _ = tr.evaluate()
         train_loss = train_state.metrics['loss']
 
         trained_setting = setting.MainSetting.read_settings_yaml(
@@ -833,8 +832,8 @@ class TestTrainer(unittest.TestCase):
             AssertionError, np.testing.assert_almost_equal,
             loss_implicit, loss0, decimal=5)  # Assert almost not equal
         self.assertLess(
-            tr.evaluator.state.metrics['GROUP1/residual'],
-            tr0.evaluator.state.metrics['GROUP1/residual'])
+            tr._evaluator.state.metrics['GROUP1/residual'],
+            tr0._evaluator.state.metrics['GROUP1/residual'])
         np.testing.assert_almost_equal(
             loss0, ref_loss_implicit, decimal=5)
 

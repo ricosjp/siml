@@ -387,8 +387,8 @@ class TestIsoGCN(equivariance_base.EquivarianceBase):
             shutil.rmtree(tr.setting.trainer.output_directory)
         loss = tr.train()
         np.testing.assert_array_less(loss, 1.)
-        self.assertEqual(len(tr.model.dict_block['ISO_GCN1'].subchains), 1)
-        self.assertEqual(len(tr.model.dict_block['ISO_GCN2'].subchains), 1)
+        self.assertEqual(len(tr._model.dict_block['ISO_GCN1'].subchains), 1)
+        self.assertEqual(len(tr._model.dict_block['ISO_GCN2'].subchains), 1)
 
         # Confirm results does not change under rigid body transformation
         original_path = Path(
