@@ -260,9 +260,12 @@ class SimlModule(torch.nn.Module, metaclass=abc.ABCMeta):
 
         try:
             if self.block_setting.no_grad:
-                with torch.no_grad():
-                    h = self._forward(
-                        x, supports=supports, original_shapes=original_shapes)
+                # NOTE: Do not use torch.no_grad() to preserve grad of inputs
+                self.requires_grad_(False)
+                h = self._forward(
+                    x, supports=supports,
+                    original_shapes=original_shapes)
+                self.requires_grad_(True)
             else:
                 h = self._forward(
                     x, supports=supports, original_shapes=original_shapes)
