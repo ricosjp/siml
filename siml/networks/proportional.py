@@ -51,8 +51,8 @@ class Proportional(siml_module.SimlModule):
             Output of the NN.
         """
         if self.positive_weight:
-            h = torch.einsum(
-                'n...f,fg->n...g', x, torch.relu(self.linears[0].weight.T))
+            h = x + torch.einsum(
+                'n...f,fg->n...g', x, torch.tanh(self.linears[0].weight.T))
         else:
             h = torch.einsum(
                 'n...f,fg->n...g', x, self.linears[0].weight.T)
