@@ -133,7 +133,7 @@ class DataLoaderBuilder():
             train_dataset,
             collate_fn=self._collate_fn,
             batch_size=batch_size,
-            shuffle=True,
+            shuffle=self._trainer_setting.train_data_shuffle,
             num_workers=num_workers,
             worker_init_fn=self._seed_worker,
             generator=random_generator

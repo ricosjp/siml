@@ -577,6 +577,7 @@ class TrainerSetting(TypedDataClass):
     recursive: bool = True
     state_dict_strict: bool = True
 
+    train_data_shuffle: bool = True
     data_parallel: bool = False
     model_parallel: bool = False
     draw_network: bool = True
