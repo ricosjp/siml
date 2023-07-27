@@ -5,7 +5,7 @@ from ignite.engine import Engine, State
 from torch.utils.data import DataLoader
 
 from siml import networks, setting
-from siml.inferer import ModelEnvironmentSetting
+from siml.services.environment import ModelEnvironmentSetting
 from siml.loss_operations import ILossCalculator
 from siml.services.model_builder import ModelBuilder
 

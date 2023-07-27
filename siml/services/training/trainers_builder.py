@@ -8,7 +8,7 @@ from torch.optim import Optimizer
 from .tensor_spliter import TensorSpliter
 from siml import networks, setting
 from siml import update_functions
-from siml.inferer import ModelEnvironmentSetting
+from siml.services.environment import ModelEnvironmentSetting
 from siml.services.model_selector import ModelSelectorBuilder
 from siml.loss_operations import ILossCalculator
 from siml.services.model_builder import ModelBuilder
