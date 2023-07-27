@@ -122,7 +122,7 @@ class Trainer:
         Returns
         -------
         tuple[State, Union[State, None], Union[State, None]]
-            ignite State objects for train, validation and test dataset 
+            ignite State objects for train, validation and test dataset
         """
 
         if load_best_model:

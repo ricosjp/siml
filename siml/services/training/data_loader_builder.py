@@ -168,8 +168,10 @@ class DataLoaderBuilder():
 
         )
 
-        if self._trainer_setting.train_data_shuffle:
-            self._output_dataset_pathes(train_dataset)
+        if not self._trainer_setting.train_data_shuffle:
+            if self._trainer_setting.lazy:
+                # When shuffle = False, output data sequence
+                self._output_dataset_pathes(train_dataset)
 
         return train_loader, validation_loader, test_loader
 

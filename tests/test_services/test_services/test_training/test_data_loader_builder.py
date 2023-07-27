@@ -27,6 +27,5 @@ def test__consider_shuffle_option(shuffle):
 
     if shuffle:
         assert isinstance(train_loader.sampler, RandomSampler)
-    
     else:
         assert isinstance(train_loader.sampler, SequentialSampler)
