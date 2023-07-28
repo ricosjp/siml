@@ -165,13 +165,7 @@ class DataLoaderBuilder():
         self._check_data_dimension(
             train_loader,
             self._trainer_setting.output_names_list
-
         )
-
-        if not self._trainer_setting.train_data_shuffle:
-            if self._trainer_setting.lazy:
-                # When shuffle = False, output data sequence
-                self._output_dataset_pathes(train_dataset)
 
         return train_loader, validation_loader, test_loader
 
@@ -215,8 +209,3 @@ class DataLoaderBuilder():
                     f"{shape} vs {variable_info['dim']}"
                 )
         return
-
-    def _output_dataset_pathes(self, train_dataset: Dataset):
-        print("Dataset is called sequentially.")
-        for i, data in enumerate(train_dataset):
-            print(f'{i}: {data["data_directory"]}')

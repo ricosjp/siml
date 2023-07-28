@@ -1,4 +1,4 @@
-from typing import Callable, Union
+from typing import Callable, Union, Optional
 
 import numpy as np
 from ignite.engine import Engine, State
@@ -12,6 +12,7 @@ from siml.services.environment import ModelEnvironmentSetting
 from siml.services.training import (InnerTrainingSetting,
                                     SimlTrainingConsoleLogger,
                                     SimlTrainingFileLogger)
+from siml.services.training.training_logger import TrainDataDebugLogger
 from siml.services.training.data_loader_builder import DataLoaderBuilder
 from siml.services.training.events_assigners import (TrainerEventsAssigner,
                                                      ValidationEventsAssigner)
@@ -67,9 +68,11 @@ class Trainer:
             trainer_setting=self.setting.trainer,
             user_loss_function_dic=self.user_loss_function_dic
         )
+        self._debug_logger = self._setup_debug_logger()
         self._trainers_builder = self._create_trainers_builder(
             prepare_batch=self._collate_fn.prepare_batch,
-            loss_calculator=self._loss_calculator
+            loss_calculator=self._loss_calculator,
+            debug_logger=self._debug_logger
         )
 
         # SET IN _initialize_state()
@@ -148,9 +151,8 @@ class Trainer:
         self._trainer, self._evaluator, self._model, self._optimizer =\
             self._trainers_builder.create(epoch_length=len(self.train_loader))
 
-        self._console_logger, self._file_logger = self._setup_loggers(
-            self._model
-        )
+        self._console_logger, self._file_logger \
+            = self._setup_loggers(self._model)
         self._stop_watch = self._setup_stopwatch(self._file_logger)
 
         # HACK: NEED to be called last
@@ -178,7 +180,7 @@ class Trainer:
 
     def _run_training(self):
         # start logging
-        print(self._console_logger.output_header())
+        self._console_logger.output_header()
         self._file_logger.write_header_if_needed()
         self._stop_watch.start()
 
@@ -204,7 +206,16 @@ class Trainer:
             loss_keys=model.get_loss_keys(),
             continue_mode=self.setting.trainer.overwrite_restart_mode
         )
+
         return console_logger, file_logger
+
+    def _setup_debug_logger(self) -> Union[TrainDataDebugLogger, None]:
+        if self._inner_setting.trainer_setting.debug_dataset:
+            file_path = self._inner_setting.log_dataset_file_path
+            debug_logger = TrainDataDebugLogger(file_path)
+        else:
+            debug_logger = None
+        return debug_logger
 
     def _setup_stopwatch(self, file_logger: SimlTrainingFileLogger):
         time_offset = file_logger.read_offset_start_time()
@@ -221,7 +232,8 @@ class Trainer:
             evaluator=self._evaluator,
             model=self._model,
             optimizer=self._optimizer,
-            timer=self._stop_watch
+            timer=self._stop_watch,
+            debug_logger=self._debug_logger
         )
         train_events.assign_handlers(trainer)
 
@@ -272,7 +284,8 @@ class Trainer:
     def _create_trainers_builder(
         self,
         prepare_batch: Callable,
-        loss_calculator: ILossCalculator
+        loss_calculator: ILossCalculator,
+        debug_logger: Optional[TrainDataDebugLogger] = None
     ):
         trainers_builder = TrainersBuilder(
             trainer_setting=self.setting.trainer,
@@ -280,6 +293,7 @@ class Trainer:
             env_setting=self._env_setting,
             prepare_batch_function=prepare_batch,
             loss_function=loss_calculator,
-            decrypt_key=self.setting.get_crypt_key()
+            decrypt_key=self.setting.get_crypt_key(),
+            debug_logger=debug_logger
         )
         return trainers_builder

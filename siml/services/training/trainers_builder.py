@@ -15,6 +15,7 @@ from siml.services.model_builder import ModelBuilder
 from siml.services.training.engine_builder import (
     TrainerEngineBuilder, EvaluatorEngineBuilder
 )
+from siml.services.training.training_logger import TrainDataDebugLogger
 
 
 class UpdateFunctionSelector:
@@ -96,7 +97,8 @@ class TrainersBuilder():
         env_setting: ModelEnvironmentSetting,
         prepare_batch_function: Callable,
         loss_function: ILossCalculator,
-        decrypt_key: Optional[bytes] = None
+        decrypt_key: Optional[bytes] = None,
+        debug_logger: Optional[TrainDataDebugLogger] = None
     ) -> None:
 
         self._trainer_setting = trainer_setting
@@ -120,7 +122,8 @@ class TrainersBuilder():
         self._trainer_builder = TrainerEngineBuilder(
             env_setting=self._env_setting,
             prepare_batch_function=self._prepare_batch_function,
-            trainer_setting=self._trainer_setting
+            trainer_setting=self._trainer_setting,
+            debug_logger=debug_logger
         )
         self._evaluator_builder = EvaluatorEngineBuilder(
             env_setting=self._env_setting,

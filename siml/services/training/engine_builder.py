@@ -1,19 +1,20 @@
-from typing import Callable, Union
+from typing import Callable, Optional, Union
 
 import ignite
-from ignite.engine import Engine
 import numpy as np
 import torch
 import yaml
+from ignite.engine import Engine
 
 from siml import util
 from siml.loss_operations import ILossCalculator
 from siml.networks import Network
 from siml.services.environment import ModelEnvironmentSetting
+from siml.services.training.tensor_spliter import TensorSpliter
+from siml.services.training.training_logger import TrainDataDebugLogger
 from siml.setting import TrainerSetting
 from siml.siml_variables import siml_tensor_variables
 from siml.update_functions import IStepUpdateFunction
-from siml.services.training.tensor_spliter import TensorSpliter
 
 
 class TrainerEngineBuilder:
@@ -21,11 +22,13 @@ class TrainerEngineBuilder:
         self,
         env_setting: ModelEnvironmentSetting,
         prepare_batch_function: Callable,
-        trainer_setting: TrainerSetting
+        trainer_setting: TrainerSetting,
+        debug_logger: Optional[TrainDataDebugLogger] = None
     ) -> None:
         self._env_setting = env_setting
         self._prepare_batch_func = prepare_batch_function
         self._trainer_setting = trainer_setting
+        self._debug_logger = debug_logger
 
     def create_supervised_trainer(
         self,
@@ -69,6 +72,10 @@ class TrainerEngineBuilder:
             loss = update_function(x, y, model, optimizer)
             if self._trainer_setting.output_stats:
                 self.output_stats(model, engine)
+
+            if self._trainer_setting.debug_dataset:
+                self._debug_logger.write(batch.get("data_directories", None))
+
             return loss
 
         return Engine(update_model)

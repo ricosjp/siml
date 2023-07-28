@@ -1,4 +1,5 @@
 import enum
+from typing import Optional
 
 import numpy as np
 import optuna
@@ -11,6 +12,7 @@ from tqdm import tqdm
 from siml.networks import Network
 from siml.services.training import (LogRecordItems, SimlTrainingConsoleLogger,
                                     SimlTrainingFileLogger)
+from siml.services.training.training_logger import TrainDataDebugLogger
 from siml.setting import TrainerSetting
 from siml.utils.timer import SimlStopWatch
 
@@ -31,7 +33,8 @@ class TrainerEventsAssigner:
         evaluator: Engine,
         model: Network,
         optimizer: Optimizer,
-        timer: SimlStopWatch
+        timer: SimlStopWatch,
+        debug_logger: Optional[TrainDataDebugLogger] = None
     ) -> None:
         self._file_logger = file_logger
         self._console_logger = console_logger
@@ -42,6 +45,7 @@ class TrainerEventsAssigner:
         self._trainer_setting = trainer_setting
         self._timer = timer
         self._optimizer = optimizer
+        self._debug_logger = debug_logger
 
         self._desc: str = "loss: {:.5e}"
         self._trick = 1
@@ -115,6 +119,8 @@ class TrainerEventsAssigner:
             trainer_setting=self._trainer_setting
         )
 
+        if self._debug_logger is not None:
+            self._debug_logger.write_epoch(engine.state.epoch)
         # Write log
         self._file_logger.write(log_record)
 

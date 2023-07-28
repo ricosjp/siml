@@ -586,6 +586,7 @@ class TrainerSetting(TypedDataClass):
     figure_format: str = 'pdf'
 
     pseudo_batch_size: int = 0
+    debug_dataset: bool = False
     time_series_split: list[int] = dc.field(
         default=None, metadata={'allow_none': True})
     time_series_split_evaluation: list[int] = dc.field(

@@ -1,4 +1,5 @@
 import pathlib
+from typing import Union
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -60,12 +61,16 @@ class SimlTrainingConsoleLogger:
         headers = [create_logitems(v) for v in headers]
         return headers
 
-    def output_header(self) -> str:
+    def get_header(self) -> str:
         strings = [
             v.format(padding_margin=self._display_margin)
             for v in self._headers
         ]
         return "\n" + "".join(strings)
+
+    def output_header(self) -> None:
+        header = self.get_header()
+        print(header)
 
     def output(self, log_record: LogRecordItems) -> str:
         strings = [
@@ -203,3 +208,26 @@ class SimlTrainingFileLogger:
             data,
             encrypt_key=trainer_setting.model_key
         )
+
+
+class TrainDataDebugLogger:
+    def __init__(self, file_path: pathlib.Path) -> None:
+        self._file_path = file_path
+
+    def _header_strings(self) -> list[str]:
+        return ["data_directory"]
+
+    def write_epoch(self, epoch: int):
+        with open(self._file_path, 'a') as fw:
+            fw.write(f"epoch: {epoch} finished ---------- \n")
+
+    def write(
+        self, data_directories: Union[list[pathlib.Path], None]
+    ) -> None:
+        if data_directories is None:
+            values = []
+        else:
+            values = [str(path) for path in data_directories]
+
+        with open(self._file_path, 'a') as fw:
+            fw.write(", ".join(values) + '\n')
