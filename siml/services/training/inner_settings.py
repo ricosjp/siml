@@ -36,6 +36,10 @@ class InnerTrainingSetting:
         return self.trainer_setting.output_directory / 'log.csv'
 
     @property
+    def log_dataset_file_path(self):
+        return self.trainer_setting.output_directory / 'log_debug_dataset.txt'
+
+    @property
     def loss_figure_path(self):
         return self.trainer_setting.output_directory \
             / f"plot.{self.trainer_setting.figure_format}"

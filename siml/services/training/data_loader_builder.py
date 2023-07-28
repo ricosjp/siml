@@ -133,7 +133,7 @@ class DataLoaderBuilder():
             train_dataset,
             collate_fn=self._collate_fn,
             batch_size=batch_size,
-            shuffle=True,
+            shuffle=self._trainer_setting.train_data_shuffle,
             num_workers=num_workers,
             worker_init_fn=self._seed_worker,
             generator=random_generator
@@ -165,8 +165,8 @@ class DataLoaderBuilder():
         self._check_data_dimension(
             train_loader,
             self._trainer_setting.output_names_list
-
         )
+
         return train_loader, validation_loader, test_loader
 
     def _seed_worker(worker_id) -> None:

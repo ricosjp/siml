@@ -6,7 +6,7 @@ from ignite.engine import Engine
 
 from siml import networks, util
 from siml.siml_variables import siml_tensor_variables
-from siml.inferer import ModelEnvironmentSetting
+from siml.services.environment import ModelEnvironmentSetting
 
 from .record_object import RawPredictionRecord
 from .postprocessing import PostProcessor
