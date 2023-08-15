@@ -543,6 +543,9 @@ class TrainerSetting(TypedDataClass):
     pretrain_directory: Path = dc.field(
         default=None, metadata={'allow_none': True})
     loss_function: typing.Union[str, dict] = 'mse'
+    loss_weights: dict[str, float] = dc.field(
+        default=None, metadata={'allow_none': True}
+    )
     optimizer: str = 'adam'
     compute_accuracy: bool = False
     model_key: bytes = dc.field(

@@ -33,13 +33,15 @@ class LossCalculator(ILossCalculator):
         output_skips=None,
         output_dims=None,
         user_loss_function_dic:
-        dict[str, Callable[[Tensor, Tensor], Tensor]] = None
+        dict[str, Callable[[Tensor, Tensor], Tensor]] = None,
+        loss_weights: Optional[dict[str, float]] = None
     ) -> None:
 
         self.loss_assignment = LossAssignmentCreator.create(loss_setting)
         self.loss_core = CoreLossCalculator(
             loss_assignment=self.loss_assignment,
-            user_loss_function_dic=user_loss_function_dic
+            user_loss_function_dic=user_loss_function_dic,
+            loss_weights=loss_weights
         )
 
         self.output_is_dict = output_is_dict
@@ -95,17 +97,19 @@ class CoreLossCalculator():
     """
 
     def __init__(
-            self,
-            *,
-            loss_assignment: ILossAssignment,
-            user_loss_function_dic:
-            dict[str, Callable[[Tensor, Tensor], Tensor]] = None):
+        self,
+        *,
+        loss_assignment: ILossAssignment,
+        user_loss_function_dic:
+        dict[str, Callable[[Tensor, Tensor], Tensor]] = None,
+        loss_weights: Optional[dict[str, float]] = None
+    ):
 
         self.loss_selector = LossFunctionSelector(
             loss_assignment,
             user_loss_function_dic=user_loss_function_dic
         )
-        return
+        self._loss_weights = loss_weights
 
     def __call__(
         self,
@@ -125,4 +129,18 @@ class CoreLossCalculator():
             Tensor: Loss value
         """
         loss_func = self.loss_selector.get_loss_function(variable_name)
-        return loss_func(input_tensor, target_tensor)
+        loss_weight = self._get_loss_weight(variable_name)
+        return loss_weight * loss_func(input_tensor, target_tensor)
+
+    def _get_loss_weight(self, variable_name: str) -> float:
+        if self._loss_weights is None:
+            return 1.0
+
+        weight = self._loss_weights.get(variable_name)
+        if weight is None:
+            raise KeyError(
+                "Weights for all variables must be set "
+                "when loss weight is defined in settings."
+            )
+
+        return weight

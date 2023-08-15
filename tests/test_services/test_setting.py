@@ -1,6 +1,7 @@
-from pathlib import Path
 import unittest
+from pathlib import Path
 
+import pytest
 import numpy as np
 
 import siml.setting as setting
@@ -93,3 +94,15 @@ def test__enable_to_get_lr():
     )
     assert trainer_setting.optimizer_setting['lr'] == 0.001
     assert trainer_setting.optimizer_setting['betas'] == (0.1, 0.9)
+
+
+@pytest.mark.parametrize("loss_weights", [
+    {"var_x": 2.1, "var_y": 1.0},
+    {"var_k": 3.2, "var_l": 4.5}
+])
+def test__loss_weights(loss_weights):
+    trainer_setting = setting.TrainerSetting(
+        loss_weights=loss_weights
+    )
+    for k, v in loss_weights.items():
+        assert trainer_setting.loss_weights[k] == v
