@@ -1,17 +1,21 @@
 from __future__ import annotations
+
 from typing import Any, Callable
+
 import numpy as np
 import torch
 
+from siml.loss_operations import ILossCalculator
 from siml.networks.network import Network
 from siml.siml_variables import siml_tensor_variables
+
 from .update_interface import IStepUpdateFunction
 
 
 class StandardUpdate(IStepUpdateFunction):
     def __init__(
         self,
-        loss_func: Callable,
+        loss_func: ILossCalculator,
         other_loss_func: Callable,
         split_data_func: Callable,
         device: str,
@@ -52,10 +56,8 @@ class StandardUpdate(IStepUpdateFunction):
             siml_x = siml_tensor_variables(split_x['x']).send(self.device)
             siml_y = siml_tensor_variables(split_y).send(self.output_device)
 
-            split_x['x'] = \
-                siml_x.get_values()
-            split_y = \
-                siml_y.get_values()
+            split_x['x'] = siml_x.get_values()
+            split_y = siml_y.get_values()
 
             split_y_pred = model(split_x)
             siml_y_pred = siml_tensor_variables(split_y_pred)
