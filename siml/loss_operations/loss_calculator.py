@@ -84,7 +84,9 @@ class LossCalculator(ILossCalculator):
             y,
             with_key_names=True)
         name2loss = {
-            key: self.loss_core(myp.view(my.shape), my, key).detach().numpy()
+            key: self.loss_core(
+                myp.view(my.shape), my, key
+            ).detach().cpu().numpy()
             for myp, my, key in zip(masked_y_pred, masked_y, masked_keys)
         }
         return name2loss

@@ -1,5 +1,5 @@
 import pathlib
-from typing import Union
+from typing import Union, Optional
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -21,8 +21,8 @@ class LogRecordItems:
         train_other_losses: dict[str, float],
         validation_other_losses: dict[str, float],
         elapsed_time: float,
-        train_loss_details: dict[str, float],
-        validation_loss_details: dict[str, float]
+        train_loss_details: Optional[dict[str, float]] = None,
+        validation_loss_details: Optional[dict[str, float]] = None
     ) -> None:
         self.epoch = create_logitems(int(epoch), "epoch")
         self.train_loss = create_logitems(train_loss, "train_loss")
@@ -38,17 +38,23 @@ class LogRecordItems:
         self.elapsed_time = create_logitems(
             elapsed_time, "elapsed_time"
         )
+        train_loss_details = self._create_empty_if_none(train_loss_details)
         self.train_loss_details = create_logitems(
             train_loss_details, "train_loss_details/"
         )
+
+        validation_loss_details = \
+            self._create_empty_if_none(validation_loss_details)
         self.validation_loss_details = create_logitems(
             validation_loss_details, "validation_loss_details/"
         )
 
         self._loss_detail_keys = list(train_loss_details.keys())
 
-    def get_loss_details_keys(self) -> list[str]:
-        return self._loss_detail_keys
+    def _create_empty_if_none(self, val: Union[dict, None]) -> dict:
+        if val is None:
+            return {}
+        return val
 
 
 class SimlTrainingConsoleLogger:
@@ -113,14 +119,16 @@ class SimlTrainingFileLogger:
         file_path: pathlib.Path,
         loss_figure_path: pathlib.Path,
         loss_keys: list[str],
+        output_names: list[str],
         continue_mode: bool = False,
     ) -> None:
         self._file_path = file_path
         self._loss_figure_path = loss_figure_path
         self._loss_keys = loss_keys
+        self._output_names = output_names
         self._continue_mode = continue_mode
 
-        self._written_headers = False
+        self._headers = self._get_headers()
 
     def read_offset_start_time(self) -> float:
         if not self._continue_mode:
@@ -132,10 +140,7 @@ class SimlTrainingFileLogger:
             return 0
         return offset_start_time
 
-    def _get_headers(self, log_record: LogRecordItems) -> list[ILoggingItem]:
-
-        # Determine headers lazily
-        detail_keys = log_record.get_loss_details_keys()
+    def _get_headers(self) -> list[ILoggingItem]:
         headers = [
             'epoch',
             'train_loss',
@@ -143,35 +148,26 @@ class SimlTrainingFileLogger:
             'validation_loss',
             *[f"validation/{k}" for k in self._loss_keys],
             'elapsed_time',
-            *[f"train_loss_details/{k}" for k in detail_keys],
-            *[f"validation_loss_details/{k}" for k in detail_keys],
+            *[f"train_loss_details/{k}" for k in self._output_names],
+            *[f"validation_loss_details/{k}" for k in self._output_names],
         ]
         headers = [create_logitems(v) for v in headers]
         return headers
 
-    def _header_strings(self, log_record: LogRecordItems) -> str:
-        _headers = self._get_headers(log_record)
-        headers = [v.format() for v in _headers]
+    def _header_strings(self) -> str:
+        headers = [v.format() for v in self._headers]
         headers = [v for v in headers if len(v) > 0]
         return ", ".join(headers)
 
-    def _write_header_if_needed(
-            self, log_record: LogRecordItems) -> None:
-
+    def write_header_if_needed(self) -> None:
         if self._continue_mode:
-            return
-
-        if self._written_headers:
             return
 
         header_str = self._header_strings()
         with open(self._file_path, 'w') as fw:
             fw.write(header_str + '\n')
-        self._written_headers = True
 
     def write(self, log_record: LogRecordItems) -> None:
-        self._write_header_if_needed(log_record)
-
         values = [
             log_record.epoch.format(),
             log_record.train_loss.format(formatter=".5e"),
@@ -179,8 +175,10 @@ class SimlTrainingFileLogger:
             log_record.validation_loss.format(formatter=".5e"),
             log_record.validation_other_losses.format(formatter=".5e"),
             log_record.elapsed_time.format(formatter=".2f"),
-            log_record.train_loss_details.format(formatter=".5e"),
-            log_record.validation_loss_details.format(formatter=".5e")
+            log_record.train_loss_details.format(
+                formatter=".5e", key_orders=self._output_names),
+            log_record.validation_loss_details.format(
+                formatter=".5e", key_orders=self._output_names)
         ]
         values = [v for v in values if len(v) > 0]
         with open(self._file_path, 'a') as fw:

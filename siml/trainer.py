@@ -181,6 +181,7 @@ class Trainer:
     def _run_training(self):
         # start logging
         self._console_logger.output_header()
+        self._file_logger.write_header_if_needed()
         self._stop_watch.start()
 
         self._trainer.run(
@@ -203,7 +204,8 @@ class Trainer:
             file_path=self._inner_setting.log_file_path,
             loss_figure_path=self._inner_setting.loss_figure_path,
             loss_keys=model.get_loss_keys(),
-            continue_mode=self.setting.trainer.overwrite_restart_mode
+            continue_mode=self.setting.trainer.overwrite_restart_mode,
+            output_names=self.setting.trainer.output_names
         )
 
         return console_logger, file_logger

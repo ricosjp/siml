@@ -1,3 +1,5 @@
+
+from typing import Optional
 import abc
 
 
@@ -16,7 +18,9 @@ class ILoggingItem(metaclass=abc.ABCMeta):
         self,
         *,
         formatter: str = None,
-        padding_margin: int = None
+        padding_margin: int = None,
+        key_orders: Optional[list[str]] = None,
+        **kwards
     ) -> str:
         raise NotImplementedError()
 
@@ -36,7 +40,8 @@ class LoggingIntItem(ILoggingItem):
         self,
         *,
         formatter: str = None,
-        padding_margin: int = None
+        padding_margin: int = None,
+        **kwards
     ) -> str:
         if padding_margin is None:
             return str(self._val)
@@ -60,7 +65,8 @@ class LoggingFloatItem(ILoggingItem):
         self,
         *,
         formatter: str = None,
-        padding_margin: int = None
+        padding_margin: int = None,
+        **kwards
     ) -> str:
         assert formatter is not None
         if padding_margin is None:
@@ -99,21 +105,36 @@ class LoggingDictItem(ILoggingItem):
         self,
         *,
         formatter: str = None,
-        padding_margin: int = None
+        padding_margin: int = None,
+        key_orders: Optional[str] = None,
+        **kwards
     ) -> str:
         assert formatter is not None
+
+        if len(self._val) == 0:
+            return ""
+
+        keys = self._val.keys() if key_orders is None else key_orders
+        for key in keys:
+            if key not in self._val:
+                raise KeyError(f"{key} is not found in self._val")
+
         if padding_margin is None:
-            return self._format_digits(formatter=formatter)
+            return self._format_digits(formatter=formatter, keys=keys)
         else:
             return self._format_padding(
                 formatter=formatter,
-                padding_margin=padding_margin
+                padding_margin=padding_margin,
+                keys=keys
             )
 
-    def _format_padding(self, formatter: str, padding_margin: int) -> str:
+    def _format_padding(
+        self, formatter: str, padding_margin: int, keys: list[str]
+    ) -> str:
         vals = [
-            self._format_each_padding(k, v, formatter, padding_margin)
-            for k, v in self._val.items()
+            self._format_each_padding(
+                k, self._val[k], formatter, padding_margin)
+            for k in keys
         ]
         return "".join(vals)
 
@@ -128,8 +149,8 @@ class LoggingDictItem(ILoggingItem):
         v = f'{value:{formatter}}'
         return v.ljust(str_size, " ")
 
-    def _format_digits(self, formatter: str) -> str:
-        vals = [f"{v:{formatter}}" for v in self._val.values()]
+    def _format_digits(self, formatter: str, keys: list[str]) -> str:
+        vals = [f"{self._val[k]:{formatter}}" for k in keys]
         return ", ".join(vals)
 
 

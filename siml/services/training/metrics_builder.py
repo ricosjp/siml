@@ -17,14 +17,14 @@ class LossDetailsMetrics(Metric):
 
     @reinit__is_reduced
     def update(self, output):
-        y_pred, y = output[0].detach(), output[1].detach()
+        y_pred, y = output[0], output[1]
 
         loss_details = self._loss_calculator.calculate_loss_details(
             y_pred, y
         )
 
         for k, v in loss_details.items():
-            if k in self._results:
+            if k not in self._results:
                 self._results[k] = v.item()
             else:
                 self._results[k] += v.item()
