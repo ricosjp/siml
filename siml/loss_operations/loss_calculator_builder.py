@@ -21,6 +21,7 @@ class LossCalculatorBuilder:
             raise ValueError('pad = True is no longer supported')
 
         loss_setting = trainer_setting.loss_function
+        loss_weights = trainer_setting.loss_weights
         output_is_dict = isinstance(
             trainer_setting.outputs.variables, dict)
         loss_calculator = LossCalculator(
@@ -29,7 +30,8 @@ class LossCalculatorBuilder:
             time_series=trainer_setting.time_series,
             output_skips=trainer_setting.output_skips,
             output_dims=trainer_setting.output_dims,
-            user_loss_function_dic=user_loss_function_dic
+            user_loss_function_dic=user_loss_function_dic,
+            loss_weights=loss_weights
         )
         if not allow_no_answer:
             return loss_calculator
