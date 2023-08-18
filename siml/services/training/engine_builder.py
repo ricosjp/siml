@@ -10,6 +10,7 @@ from siml import util
 from siml.loss_operations import ILossCalculator
 from siml.networks import Network
 from siml.services.environment import ModelEnvironmentSetting
+from siml.services.training.metrics_builder import LossDetailsMetrics
 from siml.services.training.tensor_spliter import TensorSpliter
 from siml.services.training.training_logger import TrainDataDebugLogger
 from siml.setting import TrainerSetting
@@ -215,6 +216,9 @@ class EvaluatorEngineBuilder:
         metrics = {'loss': ignite.metrics.Loss(self._loss)}
         for loss_key in model.get_loss_keys():
             metrics.update({loss_key: self._generate_metric(loss_key)})
+
+        loss_detail_metrics = LossDetailsMetrics(self._loss)
+        metrics.update({"loss_details": loss_detail_metrics})
 
         for name, metric in metrics.items():
             metric.attach(evaluator_engine, name)

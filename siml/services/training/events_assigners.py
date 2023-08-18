@@ -87,11 +87,12 @@ class TrainerEventsAssigner:
     def log_training_results(self, engine: Engine):
         self._pbar.close()
 
-        train_loss, train_other_losses = self._evaluate_losses(
-            self._evaluator,
-            self._train_loader
-        )
-        validation_loss, validation_other_losses = \
+        train_loss, train_other_losses, train_loss_details = \
+            self._evaluate_losses(
+                self._evaluator,
+                self._train_loader
+            )
+        validation_loss, validation_other_losses, validation_loss_details = \
             self._evaluate_losses(
                 self._evaluator,
                 self._validation_loader
@@ -102,7 +103,9 @@ class TrainerEventsAssigner:
             train_other_losses=train_other_losses,
             validation_loss=validation_loss,
             validation_other_losses=validation_other_losses,
-            elapsed_time=self._timer.watch()
+            elapsed_time=self._timer.watch(),
+            train_loss_details=train_loss_details,
+            validation_loss_details=validation_loss_details
         )
 
         # Print log
@@ -136,17 +139,18 @@ class TrainerEventsAssigner:
         self,
         evaluator: Engine,
         data_loader: DataLoader
-    ) -> tuple[float, dict[str, float]]:
+    ) -> tuple[float, dict[str, float], dict[str, float]]:
 
         if len(data_loader) <= 0:
-            return np.nan, {}
+            return np.nan, {}, {}
         evaluator.run(data_loader)
         loss = evaluator.state.metrics['loss']
+        loss_details = evaluator.state.metrics['loss_details']
         other_losses = {
             k: v for k, v in evaluator.state.metrics.items()
-            if k != 'loss'
+            if k != 'loss' and k != 'loss_details'
         }
-        return loss, other_losses
+        return loss, other_losses, loss_details
 
 
 class ValidationEventsAssigner:

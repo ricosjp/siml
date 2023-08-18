@@ -1,12 +1,14 @@
 import abc
-from typing import Callable, Union, Optional
+from typing import Callable, Optional, Union
+
+import numpy as np
 import torch
 from torch import Tensor
 
 from siml import util
 from siml.base.siml_enums import LossType
-from .loss_assignment import ILossAssignment
-from .loss_assignment import LossAssignmentCreator
+
+from .loss_assignment import ILossAssignment, LossAssignmentCreator
 from .loss_selector import LossFunctionSelector
 
 
@@ -19,6 +21,12 @@ class ILossCalculator(metaclass=abc.ABCMeta):
         original_shapes: Optional[tuple] = None,
         **kwargs
     ) -> torch.Tensor:
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def calculate_loss_details(
+        self, y_pred, y, original_shapes=None
+    ) -> dict[str, np.ndarray]:
         raise NotImplementedError()
 
 
@@ -51,20 +59,39 @@ class LossCalculator(ILossCalculator):
         self.mask_function = util.VariableMask(
             output_skips, output_dims, output_is_dict)
 
+    def __call__(
+            self, y_pred, y, original_shapes=None, **kwargs) -> Tensor:
+
         if self.time_series:
-            self.loss = self.loss_function_time_with_padding
-        else:
-            if self.output_is_dict:
-                self.loss = self.loss_function_dict
-            else:
-                self.loss = self.loss_function_without_padding
+            return self._loss_function_time_with_padding(
+                y_pred, y, original_shapes
+            )
 
-        return
+        if self.output_is_dict:
+            return self._loss_function_dict(y_pred, y, original_shapes)
 
-    def __call__(self, y_pred, y, original_shapes=None, **kwargs):
-        return self.loss(y_pred, y, original_shapes)
+        return self._loss_function_without_padding(y_pred, y, original_shapes)
 
-    def loss_function_dict(self, y_pred, y, original_shapes=None):
+    def calculate_loss_details(
+        self, y_pred, y, original_shapes=None
+    ) -> dict[str, np.ndarray]:
+
+        if not self.output_is_dict:
+            return {}
+
+        masked_y_pred, masked_y, masked_keys = self.mask_function(
+            y_pred,
+            y,
+            with_key_names=True)
+        name2loss = {
+            key: self.loss_core(
+                myp.view(my.shape), my, key
+            ).detach().cpu().numpy()
+            for myp, my, key in zip(masked_y_pred, masked_y, masked_keys)
+        }
+        return name2loss
+
+    def _loss_function_dict(self, y_pred, y, original_shapes=None) -> Tensor:
         masked_y_pred, masked_y, masked_keys = self.mask_function(
             y_pred,
             y,
@@ -74,10 +101,13 @@ class LossCalculator(ILossCalculator):
             for myp, my, key in zip(masked_y_pred, masked_y, masked_keys)
         ]))
 
-    def loss_function_without_padding(self, y_pred, y, original_shapes=None):
+    def _loss_function_without_padding(
+            self, y_pred, y, original_shapes=None) -> Tensor:
         return self.loss_core(*self.mask_function(y_pred.view(y.shape), y))
 
-    def loss_function_time_with_padding(self, y_pred, y, original_shapes):
+    def _loss_function_time_with_padding(
+            self, y_pred, y, original_shapes) -> Tensor:
+
         split_y_pred = torch.split(
             y_pred, list(original_shapes[:, 1]), dim=1)
         concatenated_y_pred = torch.cat([

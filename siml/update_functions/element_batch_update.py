@@ -1,9 +1,12 @@
 from __future__ import annotations
+
 from typing import Any, Callable
 
 import torch
 
+from siml.loss_operations import ILossCalculator
 from siml.networks.network import Network
+
 from .update_interface import IStepUpdateFunction
 
 
@@ -11,7 +14,7 @@ class ElementBatchUpdate(IStepUpdateFunction):
     def __init__(
         self,
         element_batch_size: int,
-        loss_func: Callable,
+        loss_func: ILossCalculator,
         other_loss_func: Callable,
         split_data_func: Callable,
         clip_grad_value: float = None,
@@ -38,10 +41,8 @@ class ElementBatchUpdate(IStepUpdateFunction):
         y_pred = model(x)
 
         optimizer.zero_grad()
-        split_y_pred = torch.split(
-            y_pred, self._element_batch_size)
-        split_y = torch.split(
-            y, self._element_batch_size)
+        split_y_pred = torch.split(y_pred, self._element_batch_size)
+        split_y = torch.split(y, self._element_batch_size)
         for syp, sy in zip(split_y_pred, split_y):
             optimizer.zero_grad()
             loss = self._loss_func(y_pred, y)

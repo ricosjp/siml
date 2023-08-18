@@ -1,5 +1,6 @@
 import abc
 from typing import Any
+
 import torch
 
 from siml.networks.network import Network

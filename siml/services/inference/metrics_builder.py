@@ -166,7 +166,7 @@ class RawLossMetrics(Metric):
         self,
         dict_names: list[str],
         data_dict: dict
-    ) -> dict[str: torch.Tensor]:
+    ) -> dict[str, torch.Tensor]:
         return {
             key:
             torch.from_numpy(

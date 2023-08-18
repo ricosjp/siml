@@ -13,18 +13,13 @@ def create_logitems(
         return LoggingStrItem(val=value)
 
     if isinstance(value, float):
-        return LoggingFloatItem(
-            val=value, title=title)
+        return LoggingFloatItem(val=value, title=title)
 
     if isinstance(value, int):
-        return LoggingIntItem(
-            val=value, title=title
-        )
+        return LoggingIntItem(val=value, title=title)
 
     if isinstance(value, dict):
-        return LoggingDictItem(
-            val=value, title=title
-        )
+        return LoggingDictItem(val=value, title=title)
 
     raise NotImplementedError(
         f"{type(value)} is not implemented as a logging item."

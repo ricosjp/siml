@@ -1,5 +1,6 @@
 from typing import Callable, Optional
 
+import numpy as np
 import torch
 
 from siml import setting
@@ -66,3 +67,8 @@ class LossCalculatorNoAnswer(ILossCalculator):
         except Exception:
             print('Skip loss computation.')
             return None
+
+    def calculate_loss_details(
+        self, y_pred, y, original_shapes=None
+    ) -> dict[str, np.ndarray]:
+        return {}

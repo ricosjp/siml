@@ -1,8 +1,11 @@
 from __future__ import annotations
+
 from typing import Any, Callable
+
 import numpy as np
 import torch
 
+from siml.loss_operations import ILossCalculator
 from siml.networks.network import Network
 from siml.siml_variables import siml_tensor_variables
 
@@ -32,7 +35,7 @@ class PseudoBatchStep(IStepUpdateFunction):
     def __init__(
         self,
         batch_size: int,
-        loss_func: Callable,
+        loss_func: ILossCalculator,
         other_loss_func: Callable,
         split_data_func: Callable,
         device: str,

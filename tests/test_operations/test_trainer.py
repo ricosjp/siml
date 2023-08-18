@@ -68,6 +68,29 @@ class TestTrainer(unittest.TestCase):
         loss = tr.train()
         np.testing.assert_array_less(loss, 10.)
 
+    def test_train_cpu_short_output_loss_details(self):
+        main_setting = setting.MainSetting.read_settings_yaml(
+            Path('tests/data/linear/linear_loss_details.yml'))
+        tr = trainer.Trainer(main_setting)
+        if tr.setting.trainer.output_directory.exists():
+            shutil.rmtree(tr.setting.trainer.output_directory)
+        loss = tr.train()
+        np.testing.assert_array_less(loss, 10.)
+
+        output_csv = main_setting.trainer.output_directory / "log.csv"
+        df = pd.read_csv(output_csv, skipinitialspace=True, header=0)
+
+        train_check = (
+            df.loc[:, "train_loss"] == df.loc[:, "train_loss_details/y"]
+        ).to_numpy()
+        assert np.all(train_check)
+
+        validation_check = (
+            df.loc[:, "validation_loss"]
+            == df.loc[:, "validation_loss_details/y"]
+        ).to_numpy()
+        assert np.all(validation_check)
+
     def test_train_general_block_without_support(self):
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/deform/general_block_wo_support.yml'))
