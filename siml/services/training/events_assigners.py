@@ -142,7 +142,7 @@ class TrainerEventsAssigner:
     ) -> tuple[float, dict[str, float], dict[str, float]]:
 
         if len(data_loader) <= 0:
-            return np.nan, {}
+            return np.nan, {}, {}
         evaluator.run(data_loader)
         loss = evaluator.state.metrics['loss']
         loss_details = evaluator.state.metrics['loss_details']
