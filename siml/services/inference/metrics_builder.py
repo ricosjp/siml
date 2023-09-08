@@ -79,10 +79,14 @@ class LossMetrics(Metric):
             y,
             original_shapes=record.original_shapes
         )
+
+        print('--')
+        print(f"              Data: {record.data_directory}")
+        print(f"Inference time [s]: {record.inference_time:.5e}")
         if loss is not None:
             print(f"              Loss: {loss}")
-
             loss = loss.cpu().detach().numpy().item()
+        print('--')
         self._results.append(loss)
         return
 

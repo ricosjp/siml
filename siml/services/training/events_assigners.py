@@ -5,8 +5,8 @@ import numpy as np
 import optuna
 from ignite.engine import Engine, Events
 from ignite.handlers import EarlyStopping
-from torch.utils.data import DataLoader
 from torch.optim import Optimizer
+from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from siml.networks import Network
@@ -15,6 +15,7 @@ from siml.services.training import (LogRecordItems, SimlTrainingConsoleLogger,
 from siml.services.training.training_logger import TrainDataDebugLogger
 from siml.setting import TrainerSetting
 from siml.utils.timer import SimlStopWatch
+from siml.utils.progress_bar import SimlProgressBar
 
 
 # Add early stopping
@@ -49,10 +50,9 @@ class TrainerEventsAssigner:
 
         self._desc: str = "loss: {:.5e}"
         self._trick = 1
-        self._evaluator_tick = 1
 
-        total = len(train_loader) + self._trainer_setting.log_trigger_epoch
-        self._pbar = _create_pbar(total, self._desc.format(0))
+        total = len(train_loader) * self._trainer_setting.log_trigger_epoch
+        self._pbar = SimlProgressBar(total=total)
 
     def assign_handlers(self, trainer: Engine) -> None:
         """Assign handlers to trainer engine
@@ -80,13 +80,11 @@ class TrainerEventsAssigner:
         )
 
     def log_training_loss(self, engine: Engine):
-        self._pbar.desc = self._desc.format(engine.state.output)
-        self._pbar.update(self._trick)
+        desc = self._desc.format(engine.state.output)
+        self._pbar.update(self._trick, desc=desc)
         return
 
     def log_training_results(self, engine: Engine):
-        self._pbar.close()
-
         train_loss, train_other_losses, train_loss_details = \
             self._evaluate_losses(
                 self._evaluator,
@@ -111,7 +109,8 @@ class TrainerEventsAssigner:
         # Print log
         tqdm.write(self._console_logger.output(log_record))
 
-        self._pbar.n = self._pbar.last_print_n = 0
+        # reset after tqdm.write
+        # self._pbar.reset()
 
         # Save checkpoint
         self._file_logger.save_model(
@@ -177,11 +176,10 @@ class ValidationEventsAssigner:
         self._timer = timer
 
         self._desc: str = "evaluating"
-        self._trick = 1
         self._evaluator_tick = 1
 
         total = len(train_loader) + len(validation_loader)
-        self._pbar = _create_pbar(total, self._desc)
+        self._pbar = SimlProgressBar(total=total, desc="evaluating")
 
     def assign_handlers(
         self,
@@ -208,7 +206,6 @@ class ValidationEventsAssigner:
             )
 
     def log_evaluation(self, engine):
-        self._pbar.desc = self._desc
         self._pbar.update(self._evaluator_tick)
         return
 
@@ -235,14 +232,3 @@ class ValidationEventsAssigner:
             optuna_trial, 'loss', self._trainer)
         evaluator.add_event_handler(
             StopTriggerEvents.EVALUATED, pruning_handler)
-
-
-def _create_pbar(total: int, desc: str) -> tqdm:
-    return tqdm(
-        initial=0,
-        leave=False,
-        total=total,
-        desc=desc,
-        ncols=80,
-        ascii=True
-    )

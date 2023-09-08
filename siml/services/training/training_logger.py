@@ -89,6 +89,7 @@ class SimlTrainingConsoleLogger:
 
     def output_header(self) -> None:
         header = self.get_header()
+        # HACK: should use logger instead.
         print(header)
 
     def output(self, log_record: LogRecordItems) -> str:

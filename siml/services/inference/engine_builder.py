@@ -59,11 +59,6 @@ class InferenceEngineBuilder:
             assert len(batch['data_directories']) == 1
 
             data_directory = batch['data_directories'][0]
-            print('--')
-            print(f"              Data: {data_directory}")
-            print(f"Inference time [s]: {elapsed_time:.5e}")
-            print('--')
-
             result = RawPredictionRecord(
                 y_pred=siml_tensor_variables(y_pred),
                 y=siml_tensor_variables(y),
