@@ -8,7 +8,7 @@ import siml.networks.einops as einops
 import siml.setting as setting
 
 
-class TestNetworks(unittest.TestCase):
+class TestEinops(unittest.TestCase):
 
     def test_rearrange(self):
         layer = einops.Rearrange(
