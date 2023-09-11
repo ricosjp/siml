@@ -9,6 +9,7 @@ from . import array2symmat
 from . import boundary
 from . import concatenator
 from . import deepsets
+from . import einops
 from . import einsum
 from . import gcn
 from . import group
@@ -52,6 +53,7 @@ blocks = [
     boundary.NeumannEncoder,
     boundary.NeumannIsoGCN,
     concatenator.Concatenator,
+    einops.Rearrange,
     einsum.EinSum,
     identity.Identity,
     integration.Integration,
@@ -88,6 +90,7 @@ blocks = [
     set_transformer.SetTransformerEncoder,
     share.Share,
     tcn.TCN,
+    tcn.EquivariantTCN,
     tensor_operations.EquivariantMLP,
 ]
 
