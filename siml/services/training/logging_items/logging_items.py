@@ -20,6 +20,7 @@ class ILoggingItem(metaclass=abc.ABCMeta):
         formatter: str = None,
         padding_margin: int = None,
         key_orders: Optional[list[str]] = None,
+        title: str = None,
         **kwards
     ) -> str:
         raise NotImplementedError()
@@ -41,12 +42,16 @@ class LoggingIntItem(ILoggingItem):
         *,
         formatter: str = None,
         padding_margin: int = None,
+        title: str = None,
         **kwards
     ) -> str:
         if padding_margin is None:
             return str(self._val)
 
-        str_size = len(self._title) + padding_margin
+        if title is None:
+            title = self._title
+
+        str_size = len(title) + padding_margin
         return str(self._val).ljust(str_size, " ")
 
 
@@ -66,6 +71,7 @@ class LoggingFloatItem(ILoggingItem):
         *,
         formatter: str = None,
         padding_margin: int = None,
+        title: str = None,
         **kwards
     ) -> str:
         assert formatter is not None
@@ -74,13 +80,19 @@ class LoggingFloatItem(ILoggingItem):
         else:
             return self._format_padding(
                 formatter=formatter,
-                padding_margin=padding_margin
+                padding_margin=padding_margin,
+                title=title
             )
 
     def _format_digit(self, formatter: str) -> str:
         return f'{self._val:{formatter}}'
 
-    def _format_padding(self, formatter: str, padding_margin: int) -> str:
+    def _format_padding(
+        self, formatter: str, padding_margin: int, title: str = None
+    ) -> str:
+
+        if title is None:
+            title = self._title
         val = f'{self._val:{formatter}}'
         str_size = len(self._title) + padding_margin
         return val.ljust(str_size, " ")
@@ -107,6 +119,7 @@ class LoggingDictItem(ILoggingItem):
         formatter: str = None,
         padding_margin: int = None,
         key_orders: Optional[str] = None,
+        title: str = None,
         **kwards
     ) -> str:
         assert formatter is not None
@@ -125,15 +138,22 @@ class LoggingDictItem(ILoggingItem):
             return self._format_padding(
                 formatter=formatter,
                 padding_margin=padding_margin,
-                keys=keys
+                keys=keys,
+                title=title
             )
 
     def _format_padding(
-        self, formatter: str, padding_margin: int, keys: list[str]
+        self,
+        formatter: str,
+        padding_margin: int,
+        keys: list[str],
+        title: str = None
     ) -> str:
         vals = [
             self._format_each_padding(
-                k, self._val[k], formatter, padding_margin)
+                k, self._val[k], formatter, padding_margin,
+                title=title
+            )
             for k in keys
         ]
         return "".join(vals)
@@ -143,9 +163,12 @@ class LoggingDictItem(ILoggingItem):
         key: str,
         value: float,
         formatter: str,
-        padding_margin: int
+        padding_margin: int,
+        title: str = None
     ) -> str:
-        str_size = len(self._title + key) + padding_margin
+        if title is None:
+            title = self._title
+        str_size = len(title + key) + padding_margin
         v = f'{value:{formatter}}'
         return v.ljust(str_size, " ")
 
@@ -167,13 +190,19 @@ class LoggingStrItem(ILoggingItem):
         self,
         *,
         formatter: str = None,
-        padding_margin: int = None
+        padding_margin: int = None,
+        title: str = None,
+        **kwards
     ) -> str:
         if padding_margin is None:
             return self._val
         else:
-            return self._format_padding(padding_margin)
+            return self._format_padding(padding_margin, title=title)
 
-    def _format_padding(self, padding_margin: int) -> str:
-        str_size = len(self._title) + padding_margin
+    def _format_padding(
+        self, padding_margin: int, title: str = None
+    ) -> str:
+        if title is None:
+            title = self._title
+        str_size = len(title) + padding_margin
         return self._val.ljust(str_size, " ")

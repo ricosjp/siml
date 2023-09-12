@@ -199,7 +199,8 @@ class Trainer:
     ) -> tuple[SimlTrainingConsoleLogger, SimlTrainingFileLogger]:
         console_logger = SimlTrainingConsoleLogger(
             display_margin=self.setting.trainer.display_mergin,
-            loss_keys=model.get_loss_keys()
+            loss_keys=model.get_loss_keys(),
+            output_names=self.setting.trainer.output_names
         )
         file_logger = SimlTrainingFileLogger(
             file_path=self._inner_setting.log_file_path,

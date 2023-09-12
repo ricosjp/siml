@@ -61,10 +61,14 @@ class SimlTrainingConsoleLogger:
     def __init__(
         self,
         display_margin: int,
-        loss_keys: list[str]
+        loss_keys: list[str],
+        output_names: list[str],
     ) -> None:
         self._display_margin = display_margin
         self._loss_keys = loss_keys
+        self._output_names = output_names
+        self._train_details_title = r"tr_DTL/"
+        self._validation_details_title = r"vl_DTL/"
 
         self._headers = self._get_headers()
 
@@ -75,7 +79,12 @@ class SimlTrainingConsoleLogger:
             *[f"train/{k}, " for k in self._loss_keys],
             'validation_loss',
             *[f"validation/{k}" for k in self._loss_keys],
-            'elapsed_time'
+            'elapsed_time',
+            *[f"{self._train_details_title}{k}" for k in self._output_names],
+            *[
+                f"{self._validation_details_title}{k}"
+                for k in self._output_names
+            ],
         ]
         headers = [create_logitems(v) for v in headers]
         return headers
@@ -109,6 +118,16 @@ class SimlTrainingConsoleLogger:
             ),
             log_record.elapsed_time.format(
                 formatter=".2f", padding_margin=self._display_margin
+            ),
+            log_record.train_loss_details.format(
+                formatter=".5e", key_orders=self._output_names,
+                padding_margin=self._display_margin,
+                title=self._train_details_title
+            ),
+            log_record.validation_loss_details.format(
+                formatter=".5e", key_orders=self._output_names,
+                padding_margin=self._display_margin,
+                title=self._validation_details_title
             )
         ]
         return "".join(strings)
