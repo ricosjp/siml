@@ -117,7 +117,6 @@ def load_variable(
     *,
     allow_missing: bool = False,
     check_nan: bool = False,
-    retry: bool = True,
     decrypt_key: bytes = None
 ) -> Union[np.ndarray, sp.coo_matrix]:
     """Load variable data.
