@@ -1,20 +1,18 @@
 import datetime as dt
-from glob import glob, iglob
 import io
 import os
-from pathlib import Path
 import re
-import shutil
-import subprocess
-from typing import List
-
-from Cryptodome.Cipher import AES
+from glob import glob, iglob
+from pathlib import Path
+from typing import List, Union
 
 import numpy as np
 import scipy.sparse as sp
 import torch
 import yaml
+from Cryptodome.Cipher import AES
 
+from siml.path_like_objects import SimlDirectory
 
 INFERENCE_FLAG_FILE = 'inference'
 
@@ -114,8 +112,13 @@ def save_variable(
 
 
 def load_variable(
-        data_directory, file_basename, *, allow_missing=False,
-        check_nan=False, retry=True, decrypt_key=None):
+    data_directory: Path,
+    file_basename: str,
+    *,
+    allow_missing: bool = False,
+    check_nan: bool = False,
+    decrypt_key: bytes = None
+) -> Union[np.ndarray, sp.coo_matrix]:
     """Load variable data.
 
     Parameters
@@ -134,99 +137,17 @@ def load_variable(
     --------
         data: numpy.ndarray or scipy.sparse.coo_matrix
     """
-    if (data_directory / (file_basename + '.npy')).exists():
-        loaded_data = np.load(data_directory / (file_basename + '.npy'))
-        data_for_check_nan = loaded_data
-        ext = '.npy'
-    elif (data_directory / (file_basename + '.npy.enc')).exists():
-        if decrypt_key is None:
-            raise ValueError('Feed decrypt key')
-        loaded_data = np.load(decrypt_file(
-            decrypt_key, data_directory / (file_basename + '.npy.enc')))
-        data_for_check_nan = loaded_data
-        ext = '.npy.enc'
-    elif (data_directory / (file_basename + '.npz')).exists():
-        loaded_data = sp.load_npz(data_directory / (file_basename + '.npz'))
-        data_for_check_nan = loaded_data.data
-        ext = '.npz'
-    elif (data_directory / (file_basename + '.npz.enc')).exists():
-        if decrypt_key is None:
-            raise ValueError('Feed decrypt key')
-        loaded_data = sp.load_npz(decrypt_file(
-            decrypt_key, data_directory / (file_basename + '.npz.enc')))
-        data_for_check_nan = loaded_data.data
-        ext = '.npz.enc'
-    else:
-        if allow_missing:
-            return None
-        else:
-            if retry:
-                print(f"Retrying for: {data_directory}")
-                subprocess.run(
-                    f"find {data_directory}", shell=True, check=True)
-                loaded_data = load_variable(
-                    data_directory, file_basename, allow_missing=allow_missing,
-                    check_nan=check_nan, retry=False)
-                return loaded_data
-            else:
-                raise ValueError(
-                    'File type not understood or file missing for: '
-                    f"{file_basename} in {data_directory}")
+    siml_dir = SimlDirectory(data_directory)
 
-    if check_nan and np.any(np.isnan(data_for_check_nan)):
-        raise ValueError(
-            f"NaN found in {data_directory / (file_basename + ext)}")
-
+    siml_file = siml_dir.find_variable_file(
+        file_basename,
+        allow_missing=allow_missing
+    )
+    loaded_data = siml_file.load(
+        check_nan=check_nan,
+        decrypt_key=decrypt_key
+    )
     return loaded_data
-
-
-def copy_variable_file(
-        input_directory, file_basename, output_directory,
-        *, allow_missing=False, retry=True):
-    """Copy variable file.
-
-    Parameters
-    ----------
-    input_directory: pathlib.Path
-        Input directory path.
-    file_basename: str
-        File base name without extenstion.
-    output_directory: pathlib.Path
-        Putput directory path.
-    allow_missing: bool, optional
-        If True, return None when the corresponding file is missing.
-        Otherwise, raise ValueError.
-    """
-    if (input_directory / (file_basename + '.npy')).exists():
-        ext = '.npy'
-    elif (input_directory / (file_basename + '.npy.enc')).exists():
-        ext = '.npy.enc'
-    elif (input_directory / (file_basename + '.npz')).exists():
-        ext = '.npz'
-    elif (input_directory / (file_basename + '.npz.enc')).exists():
-        ext = '.npz.enc'
-    else:
-        if allow_missing:
-            return
-        else:
-            if retry:
-                print(f"Retrying for: {input_directory}")
-                subprocess.run(
-                    f"find {input_directory}", shell=True, check=True)
-                copy_variable_file(
-                    input_directory, file_basename, output_directory,
-                    allow_missing=allow_missing, retry=False)
-                return
-            else:
-                raise ValueError(
-                    'File type not understood or file missing for: '
-                    f"{file_basename} in {input_directory}")
-    basename = file_basename + ext
-    output_directory.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(
-        input_directory / basename, output_directory / basename)
-
-    return
 
 
 def collect_data_directories(
@@ -413,11 +334,15 @@ def files_exist(directory, file_names):
     return a
 
 
-def get_top_directory():
-    completed_process = subprocess.run(
-        ['git', 'rev-parse', '--show-toplevel'],
-        capture_output=True, text=True)
-    path = Path(completed_process.stdout.rstrip('\n'))
+def get_top_directory() -> Path:
+    """Return path of the top-level directory of the working tree
+
+    Returns
+    -------
+    Path
+        path of the top-level directory of the working tree
+    """
+    path = Path(__file__).parent.parent
     return path
 
 

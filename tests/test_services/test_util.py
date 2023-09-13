@@ -55,3 +55,10 @@ class TestUtil(unittest.TestCase):
             Path('tests/data/deform/raw/**/tet2_3*'),
             required_file_names=['*.msh', '*.cnt', '*.res.0.1'])
         self.assertEqual(len(data_directories), 5)
+
+
+def test_get_top_level_directory():
+    path = util.get_top_directory()
+
+    # assumes that README exists if top-level directory
+    assert (path / "README.md").exists()
