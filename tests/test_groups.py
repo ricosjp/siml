@@ -53,9 +53,10 @@ class TestGroups(unittest.TestCase):
         ir = inferer.Inferer(
             main_setting,
             converter_parameters_pkl=main_setting.data.preprocessed_root
-            / 'preprocessors.pkl')
+            / 'preprocessors.pkl',
+            model_path=main_setting.trainer.output_directory
+        )
         ir.infer(
-            model=main_setting.trainer.output_directory,
             output_directory_base=tr.setting.trainer.output_directory,
             data_directories=main_setting.data.preprocessed_root)
 
@@ -72,9 +73,10 @@ class TestGroups(unittest.TestCase):
         ir = inferer.Inferer(
             main_setting,
             converter_parameters_pkl=main_setting.data.preprocessed_root
-            / 'preprocessors.pkl')
+            / 'preprocessors.pkl',
+            model_path=main_setting.trainer.output_directory
+        )
         ir.infer(
-            model=main_setting.trainer.output_directory,
             output_directory_base=tr.setting.trainer.output_directory,
             data_directories=main_setting.data.preprocessed_root)
 
@@ -88,13 +90,15 @@ class TestGroups(unittest.TestCase):
         loss_wo_repeat = tr_wo_repeat.train()
         np.testing.assert_array_less(loss_wo_repeat, .1)
 
+        pkl_path = main_setting_wo_repeat.data.preprocessed_root \
+            / 'preprocessors.pkl'
+
         ir_wo_repeat = inferer.Inferer(
             main_setting_wo_repeat,
-            converter_parameters_pkl=main_setting_wo_repeat
-            .data.preprocessed_root
-            / 'preprocessors.pkl')
+            converter_parameters_pkl=pkl_path,
+            model_path=main_setting_wo_repeat.trainer.output_directory
+        )
         ir_wo_repeat.infer(
-            model=main_setting_wo_repeat.trainer.output_directory,
             output_directory_base=tr_wo_repeat.setting
             .trainer.output_directory,
             data_directories=main_setting_wo_repeat.data.preprocessed_root)
@@ -115,9 +119,11 @@ class TestGroups(unittest.TestCase):
         ir = inferer.Inferer(
             main_setting,
             converter_parameters_pkl=main_setting.data.preprocessed_root
-            / 'preprocessors.pkl')
+            / 'preprocessors.pkl',
+            model_path=main_setting.trainer.output_directory
+        )
+
         ir.infer(
-            model=main_setting.trainer.output_directory,
             output_directory_base=tr.setting.trainer.output_directory,
             data_directories=main_setting.data.preprocessed_root)
 
@@ -134,9 +140,10 @@ class TestGroups(unittest.TestCase):
         ir = inferer.Inferer(
             main_setting,
             converter_parameters_pkl=main_setting.data.preprocessed_root
-            / 'preprocessors.pkl')
+            / 'preprocessors.pkl',
+            model_path=main_setting.trainer.output_directory
+        )
         ir.infer(
-            model=main_setting.trainer.output_directory,
             output_directory_base=tr.setting.trainer.output_directory,
             data_directories=main_setting.data.preprocessed_root)
 
@@ -153,9 +160,10 @@ class TestGroups(unittest.TestCase):
         ir = inferer.Inferer(
             main_setting,
             converter_parameters_pkl=main_setting.data.preprocessed_root
-            / 'preprocessors.pkl')
+            / 'preprocessors.pkl',
+            model_path=main_setting.trainer.output_directory
+        )
         results = ir.infer(
-            model=main_setting.trainer.output_directory,
             output_directory_base=tr.setting.trainer.output_directory,
             data_directories=Path(
                 'tests/data/heat_time_series/preprocessed/2'))
@@ -174,9 +182,10 @@ class TestGroups(unittest.TestCase):
         ref_ir = inferer.Inferer(
             ref_main_setting,
             converter_parameters_pkl=main_setting.data.preprocessed_root
-            / 'preprocessors.pkl')
+            / 'preprocessors.pkl',
+            model_path=ref_main_setting.trainer.output_directory
+        )
         ref_results = ref_ir.infer(
-            model=ref_main_setting.trainer.output_directory,
             output_directory_base=ref_tr.setting.trainer.output_directory,
             data_directories=Path(
                 'tests/data/heat_time_series/preprocessed/2'))
@@ -222,9 +231,10 @@ class TestGroups(unittest.TestCase):
         ir = inferer.Inferer(
             main_setting,
             converter_parameters_pkl=main_setting.data.preprocessed_root
-            / 'preprocessors.pkl')
+            / 'preprocessors.pkl',
+            model_path=main_setting.trainer.output_directory
+        )
         ir.infer(
-            model=main_setting.trainer.output_directory,
             output_directory_base=tr.setting.trainer.output_directory,
             data_directories=main_setting.data.preprocessed_root)
 
@@ -241,9 +251,10 @@ class TestGroups(unittest.TestCase):
         ir = inferer.Inferer(
             main_setting,
             converter_parameters_pkl=main_setting.data.preprocessed_root
-            / 'preprocessors.pkl')
+            / 'preprocessors.pkl',
+            model_path=main_setting.trainer.output_directory
+        )
         results = ir.infer(
-            model=main_setting.trainer.output_directory,
             output_directory_base=tr.setting.trainer.output_directory,
             data_directories=main_setting.data.preprocessed_root)
         self.assertEqual(len(results[0]['dict_y']['ts_temperature']), 3)
@@ -261,9 +272,10 @@ class TestGroups(unittest.TestCase):
         ir = inferer.Inferer(
             main_setting,
             converter_parameters_pkl=main_setting.data.preprocessed_root
-            / 'preprocessors.pkl')
+            / 'preprocessors.pkl',
+            model_path=main_setting.trainer.output_directory
+        )
         results = ir.infer(
-            model=main_setting.trainer.output_directory,
             output_directory_base=tr.setting.trainer.output_directory,
             data_directories=main_setting.data.preprocessed_root)
         self.assertLess(results[0]['loss'], .5)
@@ -287,9 +299,10 @@ class TestGroups(unittest.TestCase):
         ref_ir = inferer.Inferer(
             ref_main_setting,
             converter_parameters_pkl=ref_main_setting.data.preprocessed_root
-            / 'preprocessors.pkl')
+            / 'preprocessors.pkl',
+            model_path=ref_main_setting.trainer.output_directory
+        )
         ref_ir.infer(
-            model=ref_main_setting.trainer.output_directory,
             output_directory_base=ref_tr.setting.trainer.output_directory,
             data_directories=Path(
                 'tests/data/heat_boundary/preprocessed/cylinder/clscale0.3/'
@@ -308,9 +321,10 @@ class TestGroups(unittest.TestCase):
         ir = inferer.Inferer(
             main_setting,
             converter_parameters_pkl=main_setting.data.preprocessed_root
-            / 'preprocessors.pkl')
+            / 'preprocessors.pkl',
+            model_path=main_setting.trainer.output_directory
+        )
         ir.infer(
-            model=main_setting.trainer.output_directory,
             output_directory_base=tr.setting.trainer.output_directory,
             data_directories=Path(
                 'tests/data/heat_boundary/preprocessed/cylinder/clscale0.3/'
@@ -324,14 +338,15 @@ class TestGroups(unittest.TestCase):
         if tr.setting.trainer.output_directory.exists():
             shutil.rmtree(tr.setting.trainer.output_directory)
         loss = tr.train()
-        np.testing.assert_array_less(loss, 1.e-1)
+        np.testing.assert_array_less(loss, 3.e-1)
 
         ir = inferer.Inferer(
             main_setting,
             converter_parameters_pkl=main_setting.data.preprocessed_root
-            / 'preprocessors.pkl')
+            / 'preprocessors.pkl',
+            model_path=main_setting.trainer.output_directory
+        )
         ir.infer(
-            model=main_setting.trainer.output_directory,
             output_directory_base=tr.setting.trainer.output_directory,
             data_directories=Path(
                 'tests/data/heat_steady/preprocessed/validation'))

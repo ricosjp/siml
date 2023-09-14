@@ -1,15 +1,18 @@
+import itertools
 import dataclasses as dc
-from enum import Enum
 import io
 import os
-from pathlib import Path
 import typing
+from enum import Enum
+from pathlib import Path
+from typing import Optional, Union
 
 import numpy as np
 import optuna
 import yaml
 
-from . import util
+from siml import util
+from siml.path_like_objects import SimlFileBuilder
 
 
 @dc.dataclass
@@ -141,6 +144,12 @@ class TypedDataClass:
                     return None
                 else:
                     return str(x)
+        elif field.type == typing.Union[str, dict]:
+            def type_function(x):
+                return x
+        elif field.type == typing.Optional[typing.Union[str, Path]]:
+            def type_function(x):
+                return x
         else:
             type_function = field.type
 
@@ -338,6 +347,10 @@ class CollectionVariableSetting(TypedDataClass):
             raise ValueError(f"Unexpected data: {data}")
 
     @property
+    def is_dict(self):
+        return isinstance(self.variables, dict)
+
+    @property
     def names(self):
         return self.collect_values('name')
 
@@ -367,6 +380,13 @@ class CollectionVariableSetting(TypedDataClass):
         else:
             raise ValueError(f"Invalid format: {s}")
 
+    def get_time_series_keys(self):
+        if not isinstance(self.time_series, dict):
+            return []
+        return [
+            k for k, v in self.time_series.items() if np.any(v)
+        ]
+
     def to_dict(self):
         if isinstance(self.variables, dict):
             ret_dict = {}
@@ -380,6 +400,15 @@ class CollectionVariableSetting(TypedDataClass):
 
 
 @dc.dataclass
+class OptimizerSetting(TypedDataClass):
+    lr: float = 0.001
+    betas: typing.Tuple = \
+        dc.field(default=(0.9, 0.999))
+    eps: float = 1e-8
+    weight_decay: float = 0
+
+
+@dc.dataclass
 class TrainerSetting(TypedDataClass):
 
     """
@@ -389,6 +418,8 @@ class TrainerSetting(TypedDataClass):
         Variable settings of outputs.
     train_directories: list[str] or pathlib.Path
         Training data directories.
+    output_directory_base: str or pathlib.Path
+        Output directory base name.
     output_directory: str or pathlib.Path
         Output directory name.
     validation_directories: list[str] or pathlib.Path, optional
@@ -494,6 +525,7 @@ class TrainerSetting(TypedDataClass):
         default=None, metadata={'allow_none': True})
     outputs: CollectionVariableSetting = dc.field(
         default_factory=CollectionVariableSetting)
+    output_directory_base: Path = Path('models')
     output_directory: Path = None
 
     name: str = 'default'
@@ -510,7 +542,10 @@ class TrainerSetting(TypedDataClass):
         default=None, metadata={'allow_none': True})
     pretrain_directory: Path = dc.field(
         default=None, metadata={'allow_none': True})
-    loss_function: str = 'mse'
+    loss_function: typing.Union[str, dict] = 'mse'
+    loss_weights: dict[str, float] = dc.field(
+        default=None, metadata={'allow_none': True}
+    )
     optimizer: str = 'adam'
     compute_accuracy: bool = False
     model_key: bytes = dc.field(
@@ -532,8 +567,7 @@ class TrainerSetting(TypedDataClass):
         default=None, metadata={'allow_none': True})
     use_siml_updater: bool = True
     iterator: Iter = Iter.SERIAL
-    optimizer_setting: dict = dc.field(
-        default=None, metadata={'convert': False, 'allow_none': True})
+    optimizer_setting: dict = dc.field(default_factory=dict)
     lazy: bool = True
     num_workers: int = dc.field(
         default=None, metadata={'allow_none': True})
@@ -546,12 +580,16 @@ class TrainerSetting(TypedDataClass):
     recursive: bool = True
     state_dict_strict: bool = True
 
+    train_data_shuffle: bool = True
     data_parallel: bool = False
     model_parallel: bool = False
     draw_network: bool = True
     output_stats: bool = False
     split_ratio: dict = dc.field(default_factory=dict)
     figure_format: str = 'pdf'
+
+    pseudo_batch_size: int = 0
+    debug_dataset: bool = False
     time_series_split: list[int] = dc.field(
         default=None, metadata={'allow_none': True})
     time_series_split_evaluation: list[int] = dc.field(
@@ -586,12 +624,10 @@ class TrainerSetting(TypedDataClass):
                         'inconsistently.')
             else:
                 self.support_inputs = [self.support_input]
-        if self.optimizer_setting is None:
-            self.optimizer_setting = {
-                'lr': 0.001,
-                'betas': (0.9, 0.99),
-                'eps': 1e-8,
-                'weight_decay': 0}
+
+        self.optimizer_setting = \
+            dc.asdict(OptimizerSetting(**self.optimizer_setting))
+
         if self.element_wise or self.simplified_model:
             self.use_siml_updater = False
 
@@ -661,9 +697,56 @@ class TrainerSetting(TypedDataClass):
         out_dict.update(self.outputs.to_dict())
         return out_dict
 
+    @property
+    def input_is_dict(self):
+        return isinstance(self.inputs.variables, dict)
+
+    @property
+    def output_is_dict(self):
+        return isinstance(self.outputs.variables, dict)
+
+    @property
+    def input_names_list(self):
+        return self._convert_to_list(self.input_names)
+
+    @property
+    def output_names_list(self):
+        return self._convert_to_list(self.output_names)
+
+    @property
+    def overwrite_restart_mode(self):
+        if self.restart_directory is None:
+            return False
+
+        if self.output_directory == self.restart_directory:
+            return True
+
+        return False
+
+    def _convert_to_list(self, values: Union[list, dict[str, list]]):
+        if isinstance(values, list):
+            return values
+        if isinstance(values, dict):
+            _list = [
+                v for v in values.values()
+            ]
+            return list(itertools.chain.from_iterable(_list))
+
+        raise NotImplementedError(
+            f"Unknown data type: {type(values)}"
+        )
+
+    def determine_element_wise(self) -> bool:
+        if self.time_series:
+            return False
+        if self.element_wise or self.simplified_model:
+            return True
+
+        return False
+
     def update_output_directory(self, *, id_=None, base=None):
         if base is None:
-            base = Path('models')
+            base = Path(self.output_directory_base)
         else:
             base = Path(base)
         if id_ is None:
@@ -676,6 +759,43 @@ class TrainerSetting(TypedDataClass):
             suffix_string = f"_{self.suffix}"
         self.output_directory = base \
             / f"{self.name}{suffix_string}{id_string}_{util.date_string()}"
+
+    def determine_batch_sizes(self) -> tuple[int, int]:
+        element_wise = self.determine_element_wise()
+        if element_wise:
+            if self.element_batch_size > 0:
+                return (
+                    self.element_batch_size,
+                    self.validation_element_batch_size
+                )
+            if self.simplified_model:
+                return self.batch_size, self.validation_batch_size
+            raise ValueError(
+                'element_batch_size is '
+                f"{self.element_batch_size} < 1 "
+                'while element_wise is set to be true.')
+
+        if self.element_batch_size > 1 and self.batch_size > 1:
+            raise ValueError(
+                'batch_size cannot be > 1 when element_batch_size > 1.')
+
+        return self.batch_size, self.validation_batch_size
+
+    def get_input_time_series_keys(self) -> list[str]:
+        if not isinstance(self.inputs.time_series, dict):
+            return []
+        return [
+            k for k, v in self.inputs.time_series.items()
+            if np.any(v)
+        ]
+
+    def get_output_time_series_keys(self) -> list[str]:
+        if not isinstance(self.outputs.time_series, dict):
+            return []
+        return [
+            k for k, v in self.outputs.time_series.items()
+            if np.any(v)
+        ]
 
 
 @dc.dataclass
@@ -759,6 +879,8 @@ class InfererSetting(TypedDataClass):
     gpu_id: int = -1
     less_output: bool = False
     skip_fem_data_creation: bool = False
+    infer_epoch: int = dc.field(
+        default=None, metadata={'allow_none': True})
 
 
 @dc.dataclass
@@ -1037,6 +1159,7 @@ class ConversionSetting(TypedDataClass):
         default_factory=list)
     optional: list[str] = dc.field(
         default_factory=list)
+    output_base_directory: typing.Optional[typing.Union[Path, str]] = None
     finished_file: str = 'converted'
     file_type: str = 'fistr'
     required_file_names: list[str] = dc.field(default_factory=list)
@@ -1069,6 +1192,13 @@ class ConversionSetting(TypedDataClass):
 
         super().__post_init__()
         return
+
+    @property
+    def should_load_mandatory_variables(self) -> bool:
+        if self.mandatory_variables is None:
+            return False
+
+        return len(self.mandatory_variables) > 0
 
 
 @dc.dataclass
@@ -1109,27 +1239,38 @@ class PreprocessSetting:
 
 @dc.dataclass
 class MainSetting:
-    data: DataSetting = DataSetting()
-    conversion: ConversionSetting = ConversionSetting()
+    data: DataSetting = dc.field(default_factory=DataSetting)
+    conversion: ConversionSetting = dc.field(default_factory=ConversionSetting)
     preprocess: dict = dc.field(default_factory=dict)
-    trainer: TrainerSetting = TrainerSetting()
-    inferer: InfererSetting = InfererSetting()
-    model: ModelSetting = ModelSetting()
-    optuna: OptunaSetting = OptunaSetting()
-    study: StudySetting = StudySetting()
+    trainer: TrainerSetting = dc.field(default_factory=TrainerSetting)
+    inferer: InfererSetting = dc.field(default_factory=InfererSetting)
+    model: ModelSetting = dc.field(default_factory=ModelSetting)
+    optuna: OptunaSetting = dc.field(default_factory=OptunaSetting)
+    study: StudySetting = dc.field(default_factory=StudySetting)
     replace_preprocessed: bool = False
     misc: dict = dc.field(default_factory=dict)
 
     @classmethod
-    def read_settings_yaml(cls, settings_yaml, replace_preprocessed=False):
-        dict_settings = util.load_yaml(settings_yaml)
-        if isinstance(settings_yaml, Path):
-            name = settings_yaml.stem
+    def read_settings_yaml(
+        cls,
+        settings_yaml: Path,
+        replace_preprocessed=False,
+        *,
+        decrypt_key: Optional[bytes] = None
+    ):
+
+        siml_file = SimlFileBuilder.yaml_file(settings_yaml)
+        dict_settings = siml_file.load(decrypt_key=decrypt_key)
+        if not siml_file.is_encrypted:
+            name = siml_file.file_path.stem
         else:
             name = None
+
         return cls.read_dict_settings(
-            dict_settings, name=name,
-            replace_preprocessed=replace_preprocessed)
+            dict_settings,
+            name=name,
+            replace_preprocessed=replace_preprocessed
+        )
 
     @classmethod
     def read_dict_settings(
@@ -1216,6 +1357,18 @@ class MainSetting:
                     'Replaced.')
                 self.data.preprocessed = [self.data.train[0].parent]
         return
+
+    def get_crypt_key(self):
+        if self.data.encrypt_key is not None:
+            return self.data.encrypt_key
+
+        if self.inferer.model_key is not None:
+            return self.inferer.model_key
+
+        if self.trainer.model_key is not None:
+            return self.trainer.model_key
+
+        return None
 
     def update_with_dict(self, new_dict):
         original_dict = dc.asdict(self)

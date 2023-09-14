@@ -144,29 +144,8 @@ class PENN(abstract_equivariant_gnn.AbstractEquivariantGNN):
                        ~~~~~~~~~
                        tensor rank - 1 repetition
         """
-        if self.support_tensor_rank != 1:
-            raise NotImplementedError(
-                f"Invalid support_tensor_rank: {self.support_tensor_rank}")
-        if len(supports) != 4:
-            raise ValueError(
-                'Invalid length of supports '
-                f"({len(supports)} given, expected 4)")
-        inversed_moment_tensors = args[0]
-
-        grad_incs = supports[:3]
-        int_inc = supports[3]
-
-        shape = x.shape
-        tensor_rank = len(shape) - 2
-        if tensor_rank == 0:
-            raise ValueError(f"Invalid tensor rank: {x.shape}")
-
-        edge = self.mlp(torch.stack([
-            sparse.mul(grad_inc, x) for grad_inc in grad_incs], axis=1))
-        h = torch.einsum(
-            'ikl,il...kf->i...f', inversed_moment_tensors[..., 0],
-            sparse.mul(int_inc, edge))
-        return h
+        higher_h = self._tensor_product(x, *args, supports=supports)
+        return torch.einsum('ikk...->i...', higher_h)
 
     def _rotation(self, x, *args, supports):
         """Calculate rotation G \\times x.

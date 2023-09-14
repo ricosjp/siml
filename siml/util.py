@@ -1,23 +1,18 @@
 import datetime as dt
-import gc
-from glob import glob, iglob
 import io
 import os
-from pathlib import Path
 import re
-import shutil
-import subprocess
-import pickle
-
-from Cryptodome.Cipher import AES
+from glob import glob, iglob
+from pathlib import Path
+from typing import List, Union
 
 import numpy as np
 import scipy.sparse as sp
-from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn import preprocessing
 import torch
 import yaml
+from Cryptodome.Cipher import AES
 
+from siml.path_like_objects import SimlDirectory
 
 INFERENCE_FLAG_FILE = 'inference'
 
@@ -117,8 +112,13 @@ def save_variable(
 
 
 def load_variable(
-        data_directory, file_basename, *, allow_missing=False,
-        check_nan=False, retry=True, decrypt_key=None):
+    data_directory: Path,
+    file_basename: str,
+    *,
+    allow_missing: bool = False,
+    check_nan: bool = False,
+    decrypt_key: bytes = None
+) -> Union[np.ndarray, sp.coo_matrix]:
     """Load variable data.
 
     Parameters
@@ -137,99 +137,17 @@ def load_variable(
     --------
         data: numpy.ndarray or scipy.sparse.coo_matrix
     """
-    if (data_directory / (file_basename + '.npy')).exists():
-        loaded_data = np.load(data_directory / (file_basename + '.npy'))
-        data_for_check_nan = loaded_data
-        ext = '.npy'
-    elif (data_directory / (file_basename + '.npy.enc')).exists():
-        if decrypt_key is None:
-            raise ValueError('Feed decrypt key')
-        loaded_data = np.load(decrypt_file(
-            decrypt_key, data_directory / (file_basename + '.npy.enc')))
-        data_for_check_nan = loaded_data
-        ext = '.npy.enc'
-    elif (data_directory / (file_basename + '.npz')).exists():
-        loaded_data = sp.load_npz(data_directory / (file_basename + '.npz'))
-        data_for_check_nan = loaded_data.data
-        ext = '.npz'
-    elif (data_directory / (file_basename + '.npz.enc')).exists():
-        if decrypt_key is None:
-            raise ValueError('Feed decrypt key')
-        loaded_data = sp.load_npz(decrypt_file(
-            decrypt_key, data_directory / (file_basename + '.npz.enc')))
-        data_for_check_nan = loaded_data.data
-        ext = '.npz.enc'
-    else:
-        if allow_missing:
-            return None
-        else:
-            if retry:
-                print(f"Retrying for: {data_directory}")
-                subprocess.run(
-                    f"find {data_directory}", shell=True, check=True)
-                loaded_data = load_variable(
-                    data_directory, file_basename, allow_missing=allow_missing,
-                    check_nan=check_nan, retry=False)
-                return loaded_data
-            else:
-                raise ValueError(
-                    'File type not understood or file missing for: '
-                    f"{file_basename} in {data_directory}")
+    siml_dir = SimlDirectory(data_directory)
 
-    if check_nan and np.any(np.isnan(data_for_check_nan)):
-        raise ValueError(
-            f"NaN found in {data_directory / (file_basename + ext)}")
-
+    siml_file = siml_dir.find_variable_file(
+        file_basename,
+        allow_missing=allow_missing
+    )
+    loaded_data = siml_file.load(
+        check_nan=check_nan,
+        decrypt_key=decrypt_key
+    )
     return loaded_data
-
-
-def copy_variable_file(
-        input_directory, file_basename, output_directory,
-        *, allow_missing=False, retry=True):
-    """Copy variable file.
-
-    Parameters
-    ----------
-    input_directory: pathlib.Path
-        Input directory path.
-    file_basename: str
-        File base name without extenstion.
-    output_directory: pathlib.Path
-        Putput directory path.
-    allow_missing: bool, optional
-        If True, return None when the corresponding file is missing.
-        Otherwise, raise ValueError.
-    """
-    if (input_directory / (file_basename + '.npy')).exists():
-        ext = '.npy'
-    elif (input_directory / (file_basename + '.npy.enc')).exists():
-        ext = '.npy.enc'
-    elif (input_directory / (file_basename + '.npz')).exists():
-        ext = '.npz'
-    elif (input_directory / (file_basename + '.npz.enc')).exists():
-        ext = '.npz.enc'
-    else:
-        if allow_missing:
-            return
-        else:
-            if retry:
-                print(f"Retrying for: {input_directory}")
-                subprocess.run(
-                    f"find {input_directory}", shell=True, check=True)
-                copy_variable_file(
-                    input_directory, file_basename, output_directory,
-                    allow_missing=allow_missing, retry=False)
-                return
-            else:
-                raise ValueError(
-                    'File type not understood or file missing for: '
-                    f"{file_basename} in {input_directory}")
-    basename = file_basename + ext
-    output_directory.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(
-        input_directory / basename, output_directory / basename)
-
-    return
 
 
 def collect_data_directories(
@@ -416,436 +334,15 @@ def files_exist(directory, file_names):
     return a
 
 
-class PreprocessConverter():
+def get_top_directory() -> Path:
+    """Return path of the top-level directory of the working tree
 
-    MAX_RETRY = 3
-
-    def __init__(
-            self, setting_data, *,
-            data_files=None, componentwise=True, power=1., method=None,
-            other_components=[], key=None):
-        self.is_erroneous = None
-        self.setting_data = setting_data
-        self.power = power
-        self.other_components = other_components
-        self.key = key
-        self.use_diagonal = False
-        self.method = method
-
-        self._init_converter()
-
-        self.componentwise = componentwise
-        self.retry_count = 0
-
-        if not isinstance(
-                self.converter, (SparseStandardScaler, MaxAbsScaler)):
-            if abs(self.power - 1) > 1e-5:
-                raise ValueError(
-                    f"power option is not supported for {self.converter}")
-
-        if data_files is not None:
-            self.lazy_read_files(data_files)
-        return
-
-    def _init_converter(self):
-        if isinstance(self.setting_data, dict):
-            self._init_with_dict(self.setting_data)
-        elif isinstance(self.setting_data, str):
-            self._init_with_str(self.setting_data)
-        elif isinstance(self.setting_data, BaseEstimator):
-            self._init_with_converter(self.setting_data)
-        elif isinstance(self.setting_data, PreprocessConverter):
-            self._init_with_converter(self.setting_data.converter)
-        else:
-            raise ValueError(f"Unsupported setting_data: {self.setting_data}")
-
-    def _init_with_dict(self, setting_dict):
-        if 'method' in setting_dict:
-            preprocess_method = setting_dict['method']
-            self._init_with_str(preprocess_method)
-        else:
-            if self.method is None:
-                raise ValueError('Feed ''method'' when initialize with pkl')
-            self._init_with_str(self.method)
-            for key, value in setting_dict.items():
-                setattr(self.converter, key, value)
-        return
-
-    def _init_with_str(self, preprocess_method: str):
-        if preprocess_method == 'identity':
-            self.converter = Identity()
-        elif preprocess_method == 'standardize':
-            self.converter = preprocessing.StandardScaler()
-            self.is_erroneous = self.is_standard_scaler_var_nan
-        elif preprocess_method == 'std_scale':
-            self.converter = preprocessing.StandardScaler(with_mean=False)
-            self.is_erroneous = self.is_standard_scaler_var_nan
-        elif preprocess_method == 'sparse_std':
-            self.converter = SparseStandardScaler(
-                power=self.power, other_components=self.other_components)
-            self.is_erroneous = self.is_standard_scaler_var_nan
-        elif preprocess_method == 'isoam_scale':
-            self.converter = IsoAMScaler(
-                other_components=self.other_components)
-            self.is_erroneous = self.is_standard_scaler_var_nan
-            self.use_diagonal = True
-        elif preprocess_method == 'min_max':
-            self.converter = preprocessing.MinMaxScaler()
-        elif preprocess_method == 'max_abs':
-            self.converter = MaxAbsScaler(power=self.power)
-        elif preprocess_method.startswith('user_defined'):
-            pkl_path = preprocess_method.split("?Path=")[1]
-            self.converter = UserDefinedScalar(pkl_path)
-        else:
-            raise ValueError(
-                f"Unknown preprocessing method: {preprocess_method}")
-        return
-
-    def _init_with_converter(self, converter):
-        self.converter = converter
-        return
-
-    def apply_data_with_rehspe_if_needed(
-            self, data, function, return_applied=True, use_diagonal=False):
-        if isinstance(data, np.ndarray):
-            if use_diagonal:
-                raise ValueError('Cannot set use_diagonal=True for dense data')
-            result = self.apply_numpy_data_with_reshape_if_needed(
-                data, function, return_applied=return_applied)
-        elif isinstance(data, (sp.coo_matrix, sp.csr_matrix, sp.csc_matrix)):
-            result = self.apply_sparse_data_with_reshape_if_needed(
-                data, function, return_applied=return_applied,
-                use_diagonal=use_diagonal)
-        else:
-            raise ValueError(f"Unsupported data type: {data.__class__}")
-
-        return result
-
-    def is_standard_scaler_var_nan(self):
-        return np.any(np.isnan(self.converter.var_))
-
-    def apply_sparse_data_with_reshape_if_needed(
-            self, data, function, return_applied=True, use_diagonal=False):
-        if self.componentwise:
-            applied = function(data)
-            if return_applied:
-                return applied.tocoo()
-            else:
-                return
-
-        elif use_diagonal:
-            print('Start diagonal')
-            print(dt.datetime.now())
-            reshaped = data.diagonal()
-            print('Start apply')
-            print(dt.datetime.now())
-            applied_reshaped = function(reshaped)
-            if return_applied:
-                raise ValueError(
-                    'Cannot set return_applied=True when use_diagonal=True')
-            else:
-                return
-
-        else:
-            shape = data.shape
-            print('Start reshape')
-            print(dt.datetime.now())
-            reshaped = data.reshape((shape[0] * shape[1], 1))
-            print('Start apply')
-            print(dt.datetime.now())
-            applied_reshaped = function(reshaped)
-            if return_applied:
-                return applied_reshaped.reshape(shape).tocoo()
-            else:
-                return
-
-    def apply_numpy_data_with_reshape_if_needed(
-            self, data, function, return_applied=True):
-        shape = data.shape
-
-        if self.componentwise:
-            if len(shape) == 2:
-                applied = function(data)
-                if return_applied:
-                    return applied
-                else:
-                    return
-            elif len(shape) == 3:
-                # Time series
-                reshaped = np.reshape(data, (shape[0] * shape[1], shape[2]))
-                applied_reshaped = function(reshaped)
-                if return_applied:
-                    applied = np.reshape(applied_reshaped, shape)
-                    return applied
-                else:
-                    return
-            elif len(shape) == 4:
-                # Batched time series
-                reshaped = np.reshape(
-                    data, (shape[0] * shape[1] * shape[2], shape[3]))
-                applied_reshaped = function(reshaped)
-                if return_applied:
-                    applied = np.reshape(applied_reshaped, shape)
-                    return applied
-                else:
-                    return
-            else:
-                raise ValueError(f"Data shape {data.shape} not understood")
-
-        else:
-            reshaped = np.reshape(data, (-1, 1))
-            applied_reshaped = function(reshaped)
-            if return_applied:
-                applied = np.reshape(applied_reshaped, shape)
-                return applied
-            else:
-                return
-
-    def lazy_read_files(self, data_files):
-        for data_file in data_files:
-            print(f"Start load data: {data_file}")
-            print(dt.datetime.now())
-            data = self.load_file(data_file)
-            print(f"Start partial_fit: {data_file}")
-            print(dt.datetime.now())
-            self.apply_data_with_rehspe_if_needed(
-                data, self.converter.partial_fit, return_applied=False,
-                use_diagonal=self.use_diagonal)
-            print(f"Start del: {data_file}")
-            print(dt.datetime.now())
-            del data
-            print(f"Start GC: {data_file}")
-            print(dt.datetime.now())
-            gc.collect()
-            print(f"Finish one iter: {data_file}")
-            print(dt.datetime.now())
-
-        if self.is_erroneous is not None:
-            # NOTE: Check varianve is not none for StandardScaler with sparse
-            # data. Related to
-            # https://github.com/scikit-learn/scikit-learn/issues/16448
-            if self.is_erroneous():
-                if self.retry_count < self.MAX_RETRY:
-                    print(
-                        f"Retry for {data_file.stem}: {self.retry_count + 1}")
-                    self.retry_count = self.retry_count + 1
-                    np.random.shuffle(data_files)
-                    self._init_converter()
-                    self.lazy_read_files(data_files)
-                else:
-                    raise ValueError('Retry exhausted. Check the data.')
-
-        return
-
-    def load_file(self, data_file):
-        str_data_file = str(data_file)
-        if str_data_file.endswith('.npy'):
-            data = np.load(data_file)
-        elif str_data_file.endswith('.npy.enc'):
-            data = np.load(decrypt_file(self.key, data_file))
-        elif str_data_file.endswith('.npz'):
-            data = sp.load_npz(data_file)
-            if not sp.issparse(data):
-                raise ValueError(f"Data type not understood for: {data_file}")
-        elif str_data_file.endswith('.npz.enc'):
-            data = sp.load_npz(decrypt_file(self.key, data_file))
-            if not sp.issparse(data):
-                raise ValueError(f"Data type not understood for: {data_file}")
-        else:
-            raise ValueError(f"Data type not understood for: {data_file}")
-        return data
-
-    def transform(self, data):
-        return self.apply_data_with_rehspe_if_needed(
-            data, self.converter.transform)
-
-    def inverse(self, data):
-        return self.apply_data_with_rehspe_if_needed(
-            data, self.converter.inverse_transform)
-
-
-class MaxAbsScaler(TransformerMixin, BaseEstimator):
-
-    def __init__(self, power=1.):
-        self.max_ = 0.
-        self.power = power
-        return
-
-    def partial_fit(self, data):
-        if sp.issparse(data):
-            self.max_ = np.maximum(
-                np.ravel(np.max(np.abs(data), axis=0).toarray()), self.max_)
-        else:
-            self.max_ = np.maximum(
-                np.max(np.abs(data), axis=0), self.max_)
-        return self
-
-    def transform(self, data):
-        if np.max(self.max_) == 0.:
-            scale = 0.
-        else:
-            scale = (1 / self.max_)**self.power
-
-        if sp.issparse(data):
-            if len(scale) != 1:
-                raise ValueError('Should be componentwise: false')
-            scale = scale[0]
-        return data * scale
-
-    def inverse_transform(self, data):
-        inverse_scale = self.max_
-        if sp.issparse(data):
-            if len(inverse_scale) != 1:
-                raise ValueError('Should be componentwise: false')
-            inverse_scale = inverse_scale[0]**(self.power)
-        return data * inverse_scale
-
-
-class SparseStandardScaler(TransformerMixin, BaseEstimator):
-    """Class to perform standardization for sparse data."""
-
-    def __init__(self, power=1., other_components=[]):
-        self.var_ = 0.
-        self.std_ = 0.
-        self.mean_square_ = 0.
-        self.n_ = 0
-        self.power = power
-        self.component_dim = len(other_components) + 1
-        return
-
-    def partial_fit(self, data):
-        self._raise_if_not_sparse(data)
-        self._update(data)
-        return self
-
-    def _update(self, sparse_dats):
-        m = np.prod(sparse_dats.shape)
-        mean_square = (
-            self.mean_square_ * self.n_ + np.sum(sparse_dats.data**2)) / (
-                self.n_ + m)
-
-        self.mean_square_ = mean_square
-        self.n_ += m
-
-        # To use mean_i [x_i^2 + y_i^2 + z_i^2], multiply by the dim
-        self.var_ = self.mean_square_ * self.component_dim
-        self.std_ = np.sqrt(self.var_)
-        return
-
-    def _raise_if_not_sparse(self, data):
-        if not sp.issparse(data):
-            raise ValueError('Data is not sparse')
-        return
-
-    def transform(self, data):
-        self._raise_if_not_sparse(data)
-        if self.std_ == 0.:
-            scale = 0.
-        else:
-            scale = (1 / self.std_)**self.power
-        return data * scale
-
-    def inverse_transform(self, data):
-        self._raise_if_not_sparse(data)
-        inverse_scale = self.std_**(self.power)
-        return data * inverse_scale
-
-
-class IsoAMScaler(TransformerMixin, BaseEstimator):
-    """Class to perform scaling for IsoAM based on
-    https://arxiv.org/abs/2005.06316.
+    Returns
+    -------
+    Path
+        path of the top-level directory of the working tree
     """
-
-    def __init__(self, other_components=[]):
-        self.var_ = 0.
-        self.std_ = 0.
-        self.mean_square_ = 0.
-        self.n_ = 0
-        self.component_dim = len(other_components) + 1
-        if self.component_dim == 1:
-            raise ValueError(
-                'To use IsoAMScaler, feed other_components: '
-                f"{other_components}")
-        return
-
-    def partial_fit(self, data):
-        self._update(data)
-        return self
-
-    def _update(self, diagonal_data):
-        if len(diagonal_data.shape) != 1:
-            raise ValueError(f"Input data should be 1D: {diagonal_data}")
-        m = len(diagonal_data)
-        mean_square = (
-            self.mean_square_ * self.n_ + np.sum(diagonal_data**2)) / (
-                self.n_ + m)
-
-        self.mean_square_ = mean_square
-        self.n_ += m
-
-        # To use mean_i [x_i^2 + y_i^2 + z_i^2], multiply by the dim
-        self.var_ = self.mean_square_ * self.component_dim
-        self.std_ = np.sqrt(self.var_)
-        return
-
-    def _raise_if_not_sparse(self, data):
-        if not sp.issparse(data):
-            raise ValueError('Data is not sparse')
-        return
-
-    def transform(self, data):
-        if self.std_ == 0.:
-            scale = 0.
-        else:
-            scale = (1 / self.std_)
-        return data * scale
-
-    def inverse_transform(self, data):
-        inverse_scale = self.std_
-        return data * inverse_scale
-
-
-class Identity(TransformerMixin, BaseEstimator):
-    """Class to perform identity conversion (do nothing)."""
-
-    def partial_fit(self, data):
-        return
-
-    def transform(self, data):
-        return data
-
-    def inverse_transform(self, data):
-        return data
-
-
-class UserDefinedScalar(TransformerMixin, BaseEstimator):
-
-    def __init__(self, pkl_path: Path):
-        self.scalar = self._load_pkl(pkl_path)
-        return
-
-    def _load_pkl(self, pkl_path: Path):
-        with open(pkl_path, 'rb') as fr:
-            scalar = pickle.load(fr)
-        return scalar
-
-    def partial_fit(self, data):
-        return
-
-    def transform(self, data):
-        out = self.scalar.transform(data)
-        return out
-
-    def inverse_transform(self, data):
-        inverse_out = self.scalar.inverse_transform(data)
-        return inverse_out
-
-
-def get_top_directory():
-    completed_process = subprocess.run(
-        ['git', 'rev-parse', '--show-toplevel'],
-        capture_output=True, text=True)
-    path = Path(completed_process.stdout.rstrip('\n'))
+    path = Path(__file__).parent.parent
     return path
 
 
@@ -1073,31 +570,74 @@ class VariableMask:
         return [
             [x[key] for key in xs[0].keys()] for x in xs]
 
-    def _dict_mask(self, *xs, keep_empty_data=True):
+    def _dict_mask(self,
+                   *xs,
+                   keep_empty_data=True,
+                   with_key_names=False):
+        masked_tensors = self._calc_masked_tensors(*xs)
+
+        if keep_empty_data:
+            tensors = self._replace_zero_element_tensor(masked_tensors)
+        else:
+            tensors = self._remove_zero_element_tensor(masked_tensors)
+
+        if with_key_names:
+            keys = self._get_masked_key_names(*xs)
+            return *tensors, keys
+        else:
+            return tensors
+
+    def _array_mask(self, *xs):
+        return [x[..., self.mask] for x in xs]
+
+    def _calc_masked_tensors(self, *xs):
         try:
             masked = [
                 [
-                    x[key][..., self.mask[key]] for key in self.mask.keys()
-                    if key in x]
-                for x in xs]
+                    x[key][..., self.mask[key]]
+                    for key in self.mask.keys() if key in x
+                ]
+                for x in xs
+            ]
+            return masked
         except IndexError as e:
             x = xs[0]
             raise ValueError(f"{e}\n", {
                 key: (x[key].shape, self.mask[key].shape)
-                for key in self.mask.keys() if key in x})
-        if keep_empty_data:
-            return [
-                [
-                    torch.zeros(1).to(m_.device)
-                    if torch.numel(m_) == 0 else m_
-                    for m_ in m]
-                for m in masked]
-        else:
-            return [
-                [m_ for m_ in m if torch.numel(m_) > 0] for m in masked]
+                for key in self.mask.keys() if key in x}
+            )
 
-    def _array_mask(self, *xs):
-        return [x[..., self.mask] for x in xs]
+    def _get_masked_key_names(self, *xs):
+        masked_keys = [
+            [key for key in self.mask.keys() if key in x]
+            for x in xs
+        ]
+
+        # check whether key names are same
+        for i in range(len(masked_keys) - 1):
+            if masked_keys[i] != masked_keys[i + 1]:
+                raise Exception(f"Key names are not matched."
+                                f"{i}: {masked_keys[i]},"
+                                f" {i + 1}: {masked_keys[i+1]}")
+
+        return masked_keys[0]
+
+    def _remove_zero_element_tensor(self,
+                                    tensors: List[torch.Tensor]):
+        return [
+            [m_ for m_ in m if torch.numel(m_) > 0]
+            for m in tensors
+        ]
+
+    def _replace_zero_element_tensor(self,
+                                     tensors: List[torch.Tensor]):
+        return [
+            [
+                torch.zeros(1).to(m_.device)
+                if torch.numel(m_) == 0 else m_ for m_ in m
+            ]
+            for m in tensors
+        ]
 
 
 def cat_time_series(x, time_series_keys):

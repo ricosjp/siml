@@ -77,7 +77,6 @@ class Study():
 
     def initialize_study_setting(self):
         template_trainer = trainer.Trainer(self.original_setting)
-        template_trainer.prepare_training(draw=False)
         total_data_directories = np.unique(np.concatenate([
             template_trainer.train_loader.dataset.data_directories,
             template_trainer.validation_loader.dataset.data_directories]))
@@ -237,7 +236,7 @@ class Study():
         output_names = self.original_setting.trainer.output_names
         if len(output_names) != 1:
             raise NotImplementedError(
-                f"Output names more than 1 cannot be converted automatically")
+                "Output names more than 1 cannot be converted automatically")
         else:
             output_name = output_names[0]
 

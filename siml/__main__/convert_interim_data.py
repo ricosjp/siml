@@ -24,10 +24,10 @@ def main():
         help='Group ID to preprocess variables partially [None]')
     args = parser.parse_args()
 
-    preprocessor = siml.prepost.Preprocessor.read_settings(
-        args.settings_yaml, force_renew=args.force_renew)
-    preprocessor.merge_dict_preprocessor_setting_pkls()
-    preprocessor.convert_interim_data(group_id=args.group_id)
+    preprocessor = siml.preprocessing.ScalingConverter.read_settings(
+        args.settings_yaml, force_renew=args.force_renew
+    )
+    preprocessor.fit_transform()
     print('success')
 
 

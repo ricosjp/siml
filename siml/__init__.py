@@ -14,6 +14,8 @@ from siml import setting  # NOQA
 from siml import study  # NOQA
 from siml import trainer  # NOQA
 from siml import util  # NOQA
+from siml import preprocessing  # NOQA
+from siml import utils  # NOQA
 
 
 def get_version():

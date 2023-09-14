@@ -7,6 +7,9 @@ import random
 import femio
 import numpy as np
 import siml
+from siml.preprocessing import converter
+from siml.preprocessing import ScalingConverter
+from siml.utils import fem_data_utils
 
 
 def main():
@@ -101,9 +104,10 @@ class DataGenerator:
     def preprocess(self):
         main_setting = siml.setting.MainSetting.read_settings_yaml(
             self.output_directory.parent / 'data.yml')
-        preprocessor = siml.prepost.Preprocessor(
-            main_setting, force_renew=True)
-        preprocessor.preprocess_interim_data()
+        preprocessor = ScalingConverter(
+            main_setting, force_renew=True
+        )
+        preprocessor.fit_transform()
 
     def _generate_one_data(self, i_data):
         n_x_element = random.randint(
@@ -180,11 +184,13 @@ class DataGenerator:
         return dict_data
 
     def save(self, output_directory, dict_data, fem_data):
-        siml.prepost.save_dict_data(output_directory, dict_data)
-        fem_data_to_save = siml.prepost.update_fem_data(
-            fem_data, dict_data, allow_overwrite=True)
+        converter.save_dict_data(output_directory, dict_data)
+        wrapped_data = fem_data_utils.FemDataWrapper(fem_data)
+        wrapped_data.update_fem_data(dict_data, allow_overwrite=True)
+        fem_data_to_save = wrapped_data.fem_data
         fem_data_to_save.save(output_directory)
-        fem_data_to_save.write('polyvtk', output_directory / 'mesh.vtu')
+        fem_data_to_save.write(
+            'polyvtk', output_directory / 'mesh.vtu', overwrite=True)
         (output_directory / 'converted').touch()
         return
 

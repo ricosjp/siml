@@ -303,6 +303,19 @@ class Network(torch.nn.Module):
         else:
             return dict_hidden[config.OUTPUT_LAYER_NAME]
 
+    def clip_uniform_if_needed(
+        self,
+        clip_grad_value: float,
+        clip_grad_norm: float
+    ) -> None:
+        if clip_grad_value is not None:
+            torch.nn.utils.clip_grad_value_(
+                self.parameters(), clip_grad_value)
+        if clip_grad_norm is not None:
+            torch.nn.utils.clip_grad_norm_(
+                self.parameters(), clip_grad_norm)
+        return
+
     def clip_if_needed(self):
         for graph_node in self.sorted_graph_nodes:
             block_setting = self.dict_block_setting[graph_node]

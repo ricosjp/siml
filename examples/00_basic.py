@@ -169,7 +169,7 @@ def conversion_function(fem_data, raw_directory):
 
 
 settings_yaml = pathlib.Path('00_basic_data/data.yml')
-raw_converter = siml.prepost.RawConverter.read_settings(
+raw_converter = siml.preprocessing.converter.RawConverter.read_settings(
     settings_yaml, conversion_function=conversion_function)
 raw_converter.convert()
 
@@ -189,9 +189,8 @@ raw_converter.convert()
 #     nodal_isoam_y: identity
 #     nodal_isoam_z: identity
 
-
-preprocessor = siml.prepost.Preprocessor.read_settings(settings_yaml)
-preprocessor.preprocess_interim_data()
+preprocessor = siml.preprocessing.ScalingConverter.read_settings(settings_yaml)
+preprocessor.fit_transform()
 
 ###############################################################################
 # Training
@@ -235,7 +234,10 @@ preprocessor.preprocess_interim_data()
 
 
 isogcn_yaml = pathlib.Path('00_basic_data/isogcn.yml')
-trainer = siml.trainer.Trainer(isogcn_yaml)
+train_main_setting = siml.setting.MainSetting.read_settings_yaml(
+    isogcn_yaml
+)
+trainer = siml.trainer.Trainer(train_main_setting)
 trainer.train()
 
 
@@ -273,11 +275,11 @@ trainer.train()
 # Using the trained model, we can make a prediction.
 # In the isogcn YAML file, the setting for inference is also written.
 
-inferer = siml.inferer.Inferer(
-    isogcn_yaml, model=trainer.setting.trainer.output_directory)
+inferer = siml.inferer.Inferer.read_settings_file(
+    isogcn_yaml, model_path=trainer.setting.trainer.output_directory)
 inferer.infer(
     data_directories=[pathlib.Path('00_basic_data/preprocessed/test')],
-    perform_preprocess=False)
+)
 
 
 ###############################################################################

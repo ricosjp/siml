@@ -60,12 +60,16 @@ trainer:
       dim: 1
   prune: true
   batch_size: 1
-  n_epoch: 10000
+  n_epoch: 500
   log_trigger_epoch: 10
   stop_trigger_epoch: 50
   seed: 0
   lazy: false
   num_workers: 0
+  optimizer_setting:
+    betas:
+      - 0.9
+      - 0.99
 model:
   blocks:
     - name: IN_RANK0

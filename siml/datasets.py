@@ -1,13 +1,14 @@
 import multiprocessing as multi
+import pathlib
+from typing import Union
 
-import femio
-from ignite.utils import convert_tensor
 import numpy as np
 import torch
+from ignite.utils import convert_tensor
 from tqdm import tqdm
 
-from . import prepost
-from . import util
+from siml import util
+from siml.preprocessing import RawConverter, ScalersComposition
 
 
 class BaseDataset(torch.utils.data.Dataset):
@@ -41,6 +42,7 @@ class BaseDataset(torch.utils.data.Dataset):
                 data_directories += util.collect_data_directories(
                     directory, required_file_names=required_file_names,
                     allow_no_data=allow_no_data)
+
             self.data_directories = np.unique(data_directories)
         else:
             self.data_directories = directories
@@ -177,42 +179,24 @@ class PreprocessDataset(BaseDataset):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.prepost_converter = kwargs.get('prepost_converter')
-        self.raw_data_stem = kwargs.get('raw_data_stem', None)
-        self.conversion_function = kwargs.get('conversion_function', None)
-        self.load_function = kwargs.get('load_function', None)
-        self.conversion_setting = kwargs.get('conversion_setting', None)
-        return
+        self.raw_converter: RawConverter \
+            = kwargs.get("raw_converter")
+        self.scalers: ScalersComposition \
+            = kwargs.get("scalers")
 
     def __getitem__(self, i):
         data_directory = self.data_directories[i]
         return self._preprocess_data(data_directory)
 
-    def _preprocess_data(self, raw_data_directory):
-        if self.conversion_setting.skip_femio:
-            dict_data = {}
-            fem_data = None
-        else:
-            fem_data = femio.FEMData.read_directory(
-                self.conversion_setting.file_type, raw_data_directory,
-                save=False)
-            dict_data = prepost.extract_variables(
-                fem_data, self.conversion_setting.mandatory,
-                optional_variables=self.conversion_setting.optional)
-
-        if self.conversion_function is not None:
-            dict_data.update(self.conversion_function(
-                fem_data, raw_data_directory))
-
-        if self.load_function is not None:
-            data_files = util.collect_files(
-                raw_data_directory,
-                self.conversion_setting.required_file_names)
-            loaded_dict_data, _ = self.load_function(
-                data_files, raw_data_directory)
-            dict_data.update(loaded_dict_data)
-
-        converted_dict_data = self.prepost_converter.preprocess(dict_data)
+    def _preprocess_data(self, raw_data_directory: pathlib.Path):
+        dict_data = self.raw_converter.convert_single_data(
+            raw_path=raw_data_directory,
+            return_results=True
+        )
+        dict_data = dict_data[str(raw_data_directory)][0]
+        converted_dict_data = self.scalers.transform_dict(
+            dict_data
+        )
         x_data = self._merge_data(
             converted_dict_data, self.x_variable_names)
 
@@ -283,15 +267,25 @@ class OnMemoryDataset(BaseDataset):
 class SimplifiedDataset(BaseDataset):
 
     def __init__(
-            self, x_variable_names, y_variable_names, raw_dict_x,
-            prepost_converter,
-            *, answer_raw_dict_y=None, num_workers=0, **kwargs):
+        self, x_variable_names, y_variable_names, raw_dict_x,
+        supports: list[str] = None,
+        *,
+        answer_raw_dict_y=None,
+        num_workers: int = 0,
+        directories: list[pathlib.Path] = None,
+        **kwargs
+    ) -> None:
         self.x_variable_names = x_variable_names
         self.y_variable_names = y_variable_names
         self.raw_dict_x = raw_dict_x
         self.answer_raw_dict_y = answer_raw_dict_y
         self.num_workers = num_workers
-        self.prepost_converter = prepost_converter
+        self.supports = supports
+        self.data_directories = directories if directories is not None else []
+        if len(self.data_directories) > 1:
+            raise ValueError(
+                "Simplified Dataset allows one data only."
+            )
 
         self.x_dict_mode = isinstance(self.x_variable_names, dict)
         self.y_dict_mode = isinstance(self.y_variable_names, dict)
@@ -306,21 +300,35 @@ class SimplifiedDataset(BaseDataset):
     def __len__(self):
         return 1
 
+    def _get_data_directory(self) -> Union[pathlib.Path, None]:
+        if len(self.data_directories) == 0:
+            return None
+        return self.data_directories[0]
+
     def __getitem__(self, i):
-        converted_dict_data = self.prepost_converter.preprocess(
-            self.raw_dict_x)
+        dict_data = self.raw_dict_x
         x_data = self._merge_data(
-            converted_dict_data, self.x_variable_names)
+            dict_data,
+            self.x_variable_names
+        )
         if self.answer_raw_dict_y is not None:
-            converted_dict_data.update(self.prepost_converter.preprocess(
-                self.answer_raw_dict_y))
-            y_data = self._merge_data(
-                converted_dict_data, self.y_variable_names)
+            dict_data.update(self.answer_raw_dict_y)
+            y_data = self._merge_data(dict_data, self.y_variable_names)
         else:
             y_data = None
 
-        return {
-            'x': x_data, 't': y_data, 'data_directory': None}
+        if self.supports is None:
+            return {
+                'x': x_data, 't': y_data,
+                'data_directory': self._get_data_directory()
+            }
+        else:
+            support_data = [
+                dict_data[support_input_name].astype(np.float32)
+                for support_input_name in self.supports]
+            return {
+                'x': x_data, 't': y_data, 'supports': support_data,
+                'data_directory': self._get_data_directory()}
 
 
 class DataDict(dict):
