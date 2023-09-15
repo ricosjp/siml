@@ -150,10 +150,11 @@ pages:
   tags:
     - avx
   only:
-    - master
-    - develop
-    - fix_sphinx
-
+    refs:
+      - master
+      - develop
+      - fix_sphinx
+      - /^*_pages$/
 
 .deploy:wheel:
   stage: deploy
