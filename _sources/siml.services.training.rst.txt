@@ -1,0 +1,85 @@
+siml.services.training package
+==============================
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   siml.services.training.logging_items
+
+Submodules
+----------
+
+siml.services.training.data\_loader\_builder module
+---------------------------------------------------
+
+.. automodule:: siml.services.training.data_loader_builder
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.services.training.engine\_builder module
+---------------------------------------------
+
+.. automodule:: siml.services.training.engine_builder
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.services.training.events\_assigners module
+-----------------------------------------------
+
+.. automodule:: siml.services.training.events_assigners
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.services.training.inner\_settings module
+---------------------------------------------
+
+.. automodule:: siml.services.training.inner_settings
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.services.training.metrics\_builder module
+----------------------------------------------
+
+.. automodule:: siml.services.training.metrics_builder
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.services.training.tensor\_spliter module
+---------------------------------------------
+
+.. automodule:: siml.services.training.tensor_spliter
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.services.training.trainers\_builder module
+-----------------------------------------------
+
+.. automodule:: siml.services.training.trainers_builder
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.services.training.training\_logger module
+----------------------------------------------
+
+.. automodule:: siml.services.training.training_logger
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: siml.services.training
+   :members:
+   :undoc-members:
+   :show-inheritance:

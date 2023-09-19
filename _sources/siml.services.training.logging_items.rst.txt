@@ -1,0 +1,21 @@
+siml.services.training.logging\_items package
+=============================================
+
+Submodules
+----------
+
+siml.services.training.logging\_items.logging\_items module
+-----------------------------------------------------------
+
+.. automodule:: siml.services.training.logging_items.logging_items
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: siml.services.training.logging_items
+   :members:
+   :undoc-members:
+   :show-inheritance:

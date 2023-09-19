@@ -1,0 +1,77 @@
+siml.preprocessing.siml\_scalers.scale\_functions package
+=========================================================
+
+Submodules
+----------
+
+siml.preprocessing.siml\_scalers.scale\_functions.identity\_scaler module
+-------------------------------------------------------------------------
+
+.. automodule:: siml.preprocessing.siml_scalers.scale_functions.identity_scaler
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.preprocessing.siml\_scalers.scale\_functions.interface\_scaler module
+--------------------------------------------------------------------------
+
+.. automodule:: siml.preprocessing.siml_scalers.scale_functions.interface_scaler
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.preprocessing.siml\_scalers.scale\_functions.isoam\_scaler module
+----------------------------------------------------------------------
+
+.. automodule:: siml.preprocessing.siml_scalers.scale_functions.isoam_scaler
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.preprocessing.siml\_scalers.scale\_functions.max\_abs\_scaler module
+-------------------------------------------------------------------------
+
+.. automodule:: siml.preprocessing.siml_scalers.scale_functions.max_abs_scaler
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.preprocessing.siml\_scalers.scale\_functions.min\_max\_scaler module
+-------------------------------------------------------------------------
+
+.. automodule:: siml.preprocessing.siml_scalers.scale_functions.min_max_scaler
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.preprocessing.siml\_scalers.scale\_functions.sparse\_standard\_scaler module
+---------------------------------------------------------------------------------
+
+.. automodule:: siml.preprocessing.siml_scalers.scale_functions.sparse_standard_scaler
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.preprocessing.siml\_scalers.scale\_functions.standard\_scaler module
+-------------------------------------------------------------------------
+
+.. automodule:: siml.preprocessing.siml_scalers.scale_functions.standard_scaler
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.preprocessing.siml\_scalers.scale\_functions.user\_defined\_scaler module
+------------------------------------------------------------------------------
+
+.. automodule:: siml.preprocessing.siml_scalers.scale_functions.user_defined_scaler
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: siml.preprocessing.siml_scalers.scale_functions
+   :members:
+   :undoc-members:
+   :show-inheritance:

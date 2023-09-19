@@ -1,0 +1,37 @@
+siml.services.inference.postprocessing package
+==============================================
+
+Submodules
+----------
+
+siml.services.inference.postprocessing.post\_fem\_data module
+-------------------------------------------------------------
+
+.. automodule:: siml.services.inference.postprocessing.post_fem_data
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.services.inference.postprocessing.postprocessor module
+-----------------------------------------------------------
+
+.. automodule:: siml.services.inference.postprocessing.postprocessor
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.services.inference.postprocessing.save\_processor module
+-------------------------------------------------------------
+
+.. automodule:: siml.services.inference.postprocessing.save_processor
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: siml.services.inference.postprocessing
+   :members:
+   :undoc-members:
+   :show-inheritance:

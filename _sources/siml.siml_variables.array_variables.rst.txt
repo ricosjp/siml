@@ -1,0 +1,37 @@
+siml.siml\_variables.array\_variables package
+=============================================
+
+Submodules
+----------
+
+siml.siml\_variables.array\_variables.interface\_wrapper module
+---------------------------------------------------------------
+
+.. automodule:: siml.siml_variables.array_variables.interface_wrapper
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.siml\_variables.array\_variables.ndarray\_wrapper module
+-------------------------------------------------------------
+
+.. automodule:: siml.siml_variables.array_variables.ndarray_wrapper
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.siml\_variables.array\_variables.sparce\_array\_wrapper module
+-------------------------------------------------------------------
+
+.. automodule:: siml.siml_variables.array_variables.sparce_array_wrapper
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: siml.siml_variables.array_variables
+   :members:
+   :undoc-members:
+   :show-inheritance:
