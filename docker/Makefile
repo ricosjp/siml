@@ -16,19 +16,30 @@ build: Dockerfile
 	mkdir dist
 	cp ../pyproject.toml ../README.md ./dist
 	cp -r ../siml ./dist
+	find ./dist/siml | grep -E "(__pycache__|\.pyc|\.pyo$)" | xargs rm -rf
 	docker build -t $(CI_REGISTRY_IMAGE):$(TAG) \
 		-f Dockerfile .
+
+build_cpu:
+	rm -r ./dist || true
+	mkdir dist
+	cp ../pyproject.toml ../README.md ./dist
+	cp -r ../siml ./dist \
+	&& find ./dist/siml | grep -E "(__pycache__|\.pyc|\.pyo$)" | xargs rm -rf
+	docker build -t $(CI_REGISTRY_IMAGE)/cpu:$(TAG) \
+		-f Dockerfile_cpu .
 
 in: build
 	docker run -it --gpus all --rm $(CI_REGISTRY_IMAGE):$(TAG) /bin/bash
 
-push: login build
+push: login build build_cpu
 	docker push $(CI_REGISTRY_IMAGE):$(TAG)
+	docker push $(CI_REGISTRY_IMAGE)/cpu:$(TAG)
 
-ghcr: ghcr_login build
-	docker build -t $(GHCR_IMAGE):$(TAG) \
-		-f Dockerfile --build-arg ricos_pypi_key=$(key) .
-	docker push $(GHCR_IMAGE):$(TAG)
+ghcr: ghcr_login
+	docker pull $(CI_REGISTRY_IMAGE)/cpu:$(TAG)
+	docker tag $(CI_REGISTRY_IMAGE)/cpu:$(TAG) $(GHCR_IMAGE)/cpu:$(TAG)
+	docker push $(GHCR_IMAGE)/cpu:$(TAG)
 
 ghcr_login:
 	docker login $(GHCR_IMAGE)
