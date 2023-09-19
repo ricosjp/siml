@@ -1,5 +1,5 @@
 variables:
-  IMAGE_VERSION: 0.2.9
+  IMAGE_VERSION: 0.2.10
   SIML_IMAGE: registry.ritc.jp/ricos/machine_learning/siml:$IMAGE_VERSION
   CPU_IMAGE: registry.ritc.jp/ricos/machine_learning/siml/cpu:$IMAGE_VERSION
 
