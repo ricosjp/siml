@@ -129,6 +129,7 @@ test_group:
   script:
     - python3.9 -m pytest tests/test_groups.py --capture=no
   tags:
+    - GenuineIntel
     - avx
     - gpu
 
