@@ -173,7 +173,7 @@ class EquivariantMLP(siml_module.SimlModule):
                 setting.BlockSetting(
                     nodes=[
                         block_setting.nodes[0],
-                        block_setting.nodes[1],
+                        block_setting.nodes[-1],
                     ],
                     activations=['identity'],
                     optional={'positive_weight': self.positive},
