@@ -4,7 +4,7 @@ import time
 import torch
 from ignite.engine import Engine
 
-from siml import networks, util
+from siml import networks
 from siml.siml_variables import siml_tensor_variables
 from siml.services.environment import ModelEnvironmentSetting
 
@@ -18,12 +18,14 @@ class InferenceEngineBuilder:
         env_setting: ModelEnvironmentSetting,
         prepare_batch_function: Callable,
         post_processor: PostProcessor,
-        non_blocking: bool
+        non_blocking: bool,
+        inference_start_datetime: str
     ) -> None:
         self._model_env = env_setting
         self._prepare_batch_func = prepare_batch_function
         self._post_processor = post_processor
         self._non_blocking = non_blocking
+        self._start_datetime = inference_start_datetime
 
     def create(
         self,
@@ -49,7 +51,6 @@ class InferenceEngineBuilder:
                 support_device=self._model_env.get_device(),
                 non_blocking=self._non_blocking
             )
-            start_datetime = util.date_string()
             with torch.no_grad():
                 start_time = time.time()
                 y_pred = model(x)
@@ -68,7 +69,7 @@ class InferenceEngineBuilder:
                 inference_time=elapsed_time
             )
             post_result = self._post_processor.convert(
-                result, start_datetime
+                result, self._start_datetime
             )
             return y_pred, y, {
                 "result": result,

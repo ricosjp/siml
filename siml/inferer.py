@@ -9,7 +9,7 @@ from ignite.engine import State
 from torch import Tensor
 from torch.utils.data import DataLoader
 
-from siml import datasets, setting
+from siml import datasets, setting, util
 from siml.base.siml_const import SimlConstItems
 from siml.loss_operations import LossCalculatorBuilder
 from siml.path_like_objects import SimlDirectory, SimlFileBuilder
@@ -337,6 +337,7 @@ class Inferer():
             decrypt_key=decrypt_key
         )
 
+        self._user_loss_function_dic = user_loss_function_dic
         self.load_function = load_function
         self.data_addition_function = data_addition_function
         self.save_function = save_function
@@ -355,9 +356,6 @@ class Inferer():
         self._model_env = self._inner_setting.create_model_env_setting()
         self._collate_fn = self._create_collate_fn()
         self._dataloader_builder = self._create_data_loader_builder()
-        self._core_inferer = self._create_core_inferer(
-            user_loss_function_dic
-        )
         self._save_processor = SaveProcessor(
             inner_setting=self._inner_setting,
             user_save_function=save_function
@@ -393,6 +391,7 @@ class Inferer():
 
     def _create_core_inferer(
         self,
+        inference_start_datetime: str,
         user_loss_function_dic: dict = None
     ) -> CoreInferer:
         post_processor = PostProcessor(
@@ -412,7 +411,8 @@ class Inferer():
             prepare_batch_function=self._collate_fn.prepare_batch,
             loss_function=loss_function,
             post_processor=post_processor,
-            decrypt_key=self._inner_setting.get_crypt_key()
+            decrypt_key=self._inner_setting.get_crypt_key(),
+            inference_start_datetime=inference_start_datetime
         )
         return _core_inferer
 
@@ -477,7 +477,12 @@ class Inferer():
         inference_loader = self._dataloader_builder.create(
             data_directories=data_directories
         )
-        inference_state = self._core_inferer.run(inference_loader)
+        _core_inferer = self._create_core_inferer(
+            user_loss_function_dic=self._user_loss_function_dic,
+            inference_start_datetime=util.date_string()
+        )
+
+        inference_state = _core_inferer.run(inference_loader)
 
         records = self._create_post_records(inference_state)
         if self._inner_setting.inferer_setting.save:
@@ -535,7 +540,11 @@ class Inferer():
             shuffle=False,
             num_workers=0
         )
-        inference_state = self._core_inferer.run(inference_loader)
+        _core_inferer = self._create_core_inferer(
+            user_loss_function_dic=self._user_loss_function_dic,
+            inference_start_datetime=util.date_string()
+        )
+        inference_state = _core_inferer.run(inference_loader)
 
         records = self._create_post_records(inference_state)
         if self._inner_setting.inferer_setting.save:
@@ -595,7 +604,11 @@ class Inferer():
             answer_raw_dict_y=scaled_dict_answer,
             data_directories=data_directories
         )
-        inference_state = self._core_inferer.run(inference_loader)
+        _core_inferer = self._create_core_inferer(
+            user_loss_function_dic=self._user_loss_function_dic,
+            inference_start_datetime=util.date_string()
+        )
+        inference_state = _core_inferer.run(inference_loader)
 
         records = self._create_post_records(
             inference_state,

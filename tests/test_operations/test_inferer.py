@@ -17,8 +17,12 @@ class TestInferer(unittest.TestCase):
     def test_infer_with_preprocessed_data(self):
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/linear/pretrained/settings.yml'))
-        main_setting.inferer.output_directory_root = Path(
-            'tests/data/linear/inferred')
+
+        output_base_dir = Path('tests/data/linear/inferred')
+        if output_base_dir.exists():
+            shutil.rmtree(output_base_dir)
+
+        main_setting.inferer.output_directory_base = output_base_dir
         ir = inferer.Inferer(
             main_setting,
             model_path=Path('tests/data/linear/pretrained'),
@@ -33,6 +37,10 @@ class TestInferer(unittest.TestCase):
             res[0]['dict_y']['y'],
             np.load('tests/data/linear/interim/validation/0/y.npy'), decimal=3)
         np.testing.assert_array_less(res[0]['loss'], 1e-7)
+
+        # NOTE: Check whether results are saved in the same folder
+        n_dirs = list(output_base_dir.glob("*"))
+        assert len(n_dirs) == 1
 
     def test_infer_with_raw_data_deform(self):
         main_setting = setting.MainSetting.read_settings_yaml(
