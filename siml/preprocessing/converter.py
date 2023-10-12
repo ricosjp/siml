@@ -161,7 +161,7 @@ class SingleDataConverter:
             )
         except BaseException as e:
             raise ValueError(
-                f"{e}\nload_function failed for: {self.raw_path}"
+                f"{e}. load_function failed for: {self.raw_path}"
             )
 
         if not self.filter_function(fem_data, self.raw_path, dict_data):

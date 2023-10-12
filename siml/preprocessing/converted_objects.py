@@ -33,6 +33,17 @@ class SimlConvertedItemContainer:
         items = self.select_non_successed_items()
         return len(items) == 0
 
+    def query_num_status_items(self, *status: str) -> int:
+        for s in status:
+            if s not in SimlConvertedStatus.__members__:
+                raise ValueError(f"status name: {s} is not defined.")
+
+        n_vals = len([
+            v for v in self._values.values()
+            if v.get_status() in status
+        ])
+        return n_vals
+
     def merge(
         self, other: SimlConvertedItemContainer
     ) -> SimlConvertedItemContainer:
@@ -95,7 +106,9 @@ class SimlConvertedItem:
         """Set status as skipped
         """
         self._status = SimlConvertedStatus.skipped
-        self._failed_message = message
+        if message is None:
+            return
+        self._failed_message = "".join(message.splitlines())
 
     def failed(self, message: Optional[str] = None) -> None:
         """Set status as failed
@@ -106,7 +119,9 @@ class SimlConvertedItem:
             If fed, register failed message
         """
         self._status = SimlConvertedStatus.failed
-        self._failed_message = message
+        if message is None:
+            return
+        self._failed_message = "".join(message.splitlines())
 
     def successed(self) -> None:
         """Set status as successed

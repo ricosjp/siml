@@ -12,14 +12,16 @@ def get_status_item(status: SimlConvertedStatus) -> SimlConvertedItem:
     if status == SimlConvertedStatus.successed:
         item.successed()
         return item
-    if status == SimlConvertedItem.failed:
+    if status == SimlConvertedStatus.failed:
         item.failed()
         return item
-    if status == SimlConvertedItem.skipped:
+    if status == SimlConvertedStatus.skipped:
         item.skipped()
         return item
+    if status == SimlConvertedStatus.not_finished:
+        return item
 
-    return item
+    raise NotImplementedError()
 
 
 def get_status_container(
@@ -174,3 +176,38 @@ def test__get_keys_incontainer(n_unfinished, n_success, n_failed, n_skipped):
 
     items = container.select_non_successed_items()
     assert len(items) == n_unfinished + n_failed + n_skipped
+
+
+@pytest.mark.parametrize("n_unfinished, n_success, n_failed, n_skipped", [
+    (5, 4, 3, 1),
+    (2, 2, 0, 1),
+    (0, 0, 0, 1)
+])
+def test__query_num_status_items(n_unfinished, n_success, n_failed, n_skipped):
+    container = get_status_container(
+        n_unfinished, n_success, n_failed, n_skipped
+    )
+
+    assert container.query_num_status_items('not_finished') == n_unfinished
+    assert container.query_num_status_items('successed') == n_success
+    assert container.query_num_status_items('failed') == n_failed
+    assert container.query_num_status_items('skipped') == n_skipped
+    assert container.query_num_status_items(
+        'not_finished', 'successed'
+    ) == n_unfinished + n_success
+    assert container.query_num_status_items(
+        'not_finished', 'successed', 'skipped'
+    ) == n_unfinished + n_success + n_skipped
+    assert container.query_num_status_items(
+        'not_finished', 'successed', 'failed'
+    ) == n_unfinished + n_success + n_failed
+    assert container.query_num_status_items(
+        'not_finished', 'successed', 'failed', 'skipped'
+    ) == n_unfinished + n_success + n_failed + n_skipped
+
+
+def test__raise_error_unknown_status():
+    container = SimlConvertedItemContainer({})
+
+    with pytest.raises(ValueError):
+        container.query_num_status_items('NONE')

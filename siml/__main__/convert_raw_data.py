@@ -43,7 +43,7 @@ def main(
         read_npy=args.read_npy, read_res=False)
     results = raw_converter.convert()
 
-    if not results.is_all_successed:
+    if results.query_num_status_items(status='failed') != 0:
         raise ValueError('Failed items are included. Check logs.')
     print('success')
 
