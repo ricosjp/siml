@@ -1,13 +1,14 @@
 from __future__ import annotations
+from _collections_abc import dict_keys
+
+from enum import Enum
 from typing import Optional, Union
 
 import femio
 import numpy as np
 
-from enum import Enum
 
-
-class ConvertedStatus(Enum):
+class SimlConvertedStatus(Enum):
     not_finished = 0
     successed = 1
     failed = 2
@@ -18,22 +19,58 @@ class SimlConvertedItemContainer:
     def __init__(self, values: dict[str, SimlConvertedItem]) -> None:
         self._values = values
 
+    def __len__(self):
+        return len(self._values)
+
+    def keys(self) -> dict_keys[str]:
+        return self._values.keys()
+
     def __getitem__(self, name: str) -> SimlConvertedItem:
         return self._values[name]
 
-    def select_successed(
+    def merge(
+        self, other: SimlConvertedItemContainer
+    ) -> SimlConvertedItemContainer:
+        """merge self data and other and return new object.
+        if same key exists in both objects, key in other is prioritised.
+
+        Parameters
+        ----------
+        other : SimlConvertedItemContainer
+            container to merge
+
+        Returns
+        -------
+        SimlConvertedItemContainer
+            new container object which has merged data
+        """
+        new_values = self._values | other._values
+        return SimlConvertedItemContainer(new_values)
+
+    def select_successed_items(
         self
-    ) -> dict[str, tuple[
-        Union[dict[str, np.ndarray], None],
-        Union[femio.FEMData, None]
-    ]]:
+    ) -> dict[str, SimlConvertedItem]:
+        """Select items of which status is successed.
+
+        Returns
+        -------
+        dict[str, SimlConvertedItem]
+            successed items
+        """
         vals = {
-            k: v.get_values()
-            for k, v in self._values.items() if v.is_successed
+            k: v for k, v in self._values.items() if v.is_successed
         }
         return vals
 
-    def select_failed_items(self) -> dict[str, SimlConvertedItem]:
+    def select_non_successed_items(self) -> dict[str, SimlConvertedItem]:
+        """Select items of which status is not successed, such as failed,
+         skipped, unfinished.
+
+        Returns
+        -------
+        dict[str, SimlConvertedItem]
+            non successed items
+        """
         vals = {
             k: v
             for k, v in self._values.items() if not v.is_successed
@@ -43,22 +80,33 @@ class SimlConvertedItemContainer:
 
 class SimlConvertedItem:
     def __init__(self) -> None:
-        self._status = ConvertedStatus.not_finished
+        self._status = SimlConvertedStatus.not_finished
         self._dict_data: Union[dict[str, np.ndarray], None] = None
         self._fem_data: Union[femio.FEMData, None] = None
 
         self._failed_message: str = ""
 
     def skipped(self) -> None:
-        self._status = ConvertedStatus.skipped
+        """Set status as skipped
+        """
+        self._status = SimlConvertedStatus.skipped
 
-    def failed(self, message: str) -> None:
-        self._status = ConvertedStatus.failed
+    def failed(self, message: Optional[str] = None) -> None:
+        """Set status as failed
+
+        Parameters
+        ----------
+        message : Optional[str]
+            If fed, register failed message
+        """
+
+        self._status = SimlConvertedStatus.failed
         self._failed_message = message
 
     def successed(self) -> None:
-        self._status = ConvertedStatus.successed
-        self._successed = True
+        """Set status as successed
+        """
+        self._status = SimlConvertedStatus.successed
 
     def register(
         self,
@@ -66,6 +114,27 @@ class SimlConvertedItem:
         dict_data: Optional[dict[str, np.ndarray]],
         fem_data: Optional[femio.FEMData]
     ) -> None:
+        """Register result items
+
+        Parameters
+        ----------
+        dict_data : Optional[dict[str, np.ndarray]]
+            dict data of features
+        fem_data : Optional[femio.FEMData]
+            femio data
+
+        Raises
+        ------
+        ValueError
+            If dict_data has been already registered. raise this error.
+        ValueError
+            If fem_data has been already registered. raise this error.
+        """
+        if not self.is_successed:
+            raise ValueError(
+                'Status is not successed. '
+                'Please call "successed" method beforehand.'
+            )
         if self._dict_data is not None:
             raise ValueError(
                 'dict_data has already been registered. '
@@ -83,15 +152,21 @@ class SimlConvertedItem:
 
     @property
     def is_successed(self):
-        return self._successed == ConvertedStatus.successed
+        return self._status == SimlConvertedStatus.successed
 
     @property
     def is_failed(self):
-        return self._status == ConvertedStatus.failed
+        return self._status == SimlConvertedStatus.failed
 
     @property
     def is_skipped(self):
-        return self._status == ConvertedStatus.skipped
+        return self._status == SimlConvertedStatus.skipped
+
+    def get_status(self) -> str:
+        return self._status.name
+
+    def get_failed_message(self) -> str:
+        return self._failed_message
 
     def get_values(
         self

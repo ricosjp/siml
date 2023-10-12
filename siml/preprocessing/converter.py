@@ -352,10 +352,9 @@ class RawConverter:
                 chunksize=chunksize
             )
 
-        tmp_values: list[dict[str, SimlConvertedItem]] = \
-            [v._values for v in results]
-        flatten_results = reduce(lambda x, y: x | y, tmp_values)
-        return SimlConvertedItemContainer(flatten_results)
+        flatten_results: SimlConvertedItemContainer = \
+            reduce(lambda x, y: x.merge(y), results)
+        return flatten_results
 
     def convert_single_data(
         self,

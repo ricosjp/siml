@@ -193,8 +193,8 @@ class PreprocessDataset(BaseDataset):
             raw_path=raw_data_directory,
             return_results=True
         )
-        successed_items = result.select_successed()
-        dict_data = successed_items[str(raw_data_directory)][0]
+        successed_items = result.select_successed_items()
+        dict_data, _ = successed_items[str(raw_data_directory)].get_values()
         converted_dict_data = self.scalers.transform_dict(
             dict_data
         )
