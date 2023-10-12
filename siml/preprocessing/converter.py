@@ -114,7 +114,7 @@ class SingleDataConverter:
             values = self._convert()
         except SimlSkipNotificationError as ex:
             print(str(ex))
-            result.skipped()
+            result.skipped(message=str(ex))
             return result
         except BaseException as ex2:
             print(str(ex2))

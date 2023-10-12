@@ -193,6 +193,9 @@ class PreprocessDataset(BaseDataset):
             raw_path=raw_data_directory,
             return_results=True
         )
+        if not result.is_all_successed:
+            raise ValueError("Conversion failed items are included")
+
         successed_items = result.select_successed_items()
         dict_data, _ = successed_items[str(raw_data_directory)].get_values()
         converted_dict_data = self.scalers.transform_dict(

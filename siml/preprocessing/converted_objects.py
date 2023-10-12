@@ -28,6 +28,11 @@ class SimlConvertedItemContainer:
     def __getitem__(self, name: str) -> SimlConvertedItem:
         return self._values[name]
 
+    @property
+    def is_all_successed(self) -> bool:
+        items = self.select_non_successed_items()
+        return len(items) == 0
+
     def merge(
         self, other: SimlConvertedItemContainer
     ) -> SimlConvertedItemContainer:
@@ -86,10 +91,11 @@ class SimlConvertedItem:
 
         self._failed_message: str = ""
 
-    def skipped(self) -> None:
+    def skipped(self, message: Optional[str] = None) -> None:
         """Set status as skipped
         """
         self._status = SimlConvertedStatus.skipped
+        self._failed_message = message
 
     def failed(self, message: Optional[str] = None) -> None:
         """Set status as failed
@@ -99,7 +105,6 @@ class SimlConvertedItem:
         message : Optional[str]
             If fed, register failed message
         """
-
         self._status = SimlConvertedStatus.failed
         self._failed_message = message
 

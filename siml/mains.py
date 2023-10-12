@@ -40,7 +40,9 @@ def convert_raw_data(
         force_renew=args.force_renew,
         recursive=args.recursive,
         read_npy=args.read_npy, **kwargs)
-    raw_converter.convert()
+    results = raw_converter.convert()
+    if not results.is_all_successed:
+        raise ValueError('Failed items are included. Check logs.')
     print('success')
 
     return
