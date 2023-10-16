@@ -117,11 +117,12 @@ def test__is_same_results_when_not_save_results():
         interim_directory = data_setting.interim_root / f'train/{name}'
         raw_directory = Path('tests/data/csv_prepost/raw') / f"train/{name}"
         result = results[str(raw_directory)]
+        _dict_data, _fem_data = result.get_values()
 
         for value_name in value_names:
             value_array = np.load(interim_directory / f'{value_name}.npy')
             np.testing.assert_array_almost_equal(
-                value_array, result[0][value_name]
+                value_array, _dict_data[value_name]
             )
 
 

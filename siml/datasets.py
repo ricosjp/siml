@@ -189,11 +189,15 @@ class PreprocessDataset(BaseDataset):
         return self._preprocess_data(data_directory)
 
     def _preprocess_data(self, raw_data_directory: pathlib.Path):
-        dict_data = self.raw_converter.convert_single_data(
+        result = self.raw_converter.convert_single_data(
             raw_path=raw_data_directory,
             return_results=True
         )
-        dict_data = dict_data[str(raw_data_directory)][0]
+        if not result.is_all_successed:
+            raise ValueError("Conversion failed items are included")
+
+        successed_items = result.select_successed_items()
+        dict_data, _ = successed_items[str(raw_data_directory)].get_values()
         converted_dict_data = self.scalers.transform_dict(
             dict_data
         )
