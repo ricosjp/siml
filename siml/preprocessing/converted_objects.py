@@ -34,6 +34,18 @@ class SimlConvertedItemContainer:
         return len(items) == 0
 
     def query_num_status_items(self, *status: str) -> int:
+        """query the number of data which has the status.
+
+        Returns
+        -------
+        int
+            number of data to be selected
+
+        Raises
+        ------
+        ValueError
+            If status is not defined, raise this error.
+        """
         for s in status:
             if s not in SimlConvertedStatus.__members__:
                 raise ValueError(f"status name: {s} is not defined.")
@@ -47,7 +59,7 @@ class SimlConvertedItemContainer:
     def merge(
         self, other: SimlConvertedItemContainer
     ) -> SimlConvertedItemContainer:
-        """merge self data and other and return new object.
+        """return new object merging self data and others.
         if same key exists in both objects, key in other is prioritised.
 
         Parameters
@@ -194,4 +206,11 @@ class SimlConvertedItem:
         Union[dict[str, np.ndarray], None],
         Union[femio.FEMData, None]
     ]:
+        """Get items which this object manages
+
+        Returns
+        -------
+        tuple[ Union[dict[str, np.ndarray], None], Union[femio.FEMData, None] ]
+            Return dict_data and fem_data if necessary
+        """
         return (self._dict_data, self._fem_data)
