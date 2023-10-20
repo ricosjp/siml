@@ -3,6 +3,8 @@ from __future__ import annotations
 import abc
 import multiprocessing as multi
 import pathlib
+import sys
+import traceback
 from functools import cache, partial, reduce
 from operator import or_
 from typing import Dict, Optional, Union
@@ -117,7 +119,7 @@ class SingleDataConverter:
             result.skipped(message=str(ex))
             return result
         except BaseException as ex2:
-            print(str(ex2))
+            traceback.print_exc(file=sys.stdout)
             result.failed(message=str(ex2))
             return result
 
