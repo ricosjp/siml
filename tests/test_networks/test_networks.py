@@ -10,6 +10,8 @@ import torch
 import siml.inferer as inferer
 import siml.networks.array2diagmat as array2diagmat
 import siml.networks.array2symmat as array2symmat
+import siml.networks.pinv_mlp as pinv_mlp
+import siml.networks.proportional as proportional
 import siml.networks.reducer as reducer
 import siml.networks.reshape as reshape
 import siml.networks.symmat2array as symmat2array
@@ -580,6 +582,26 @@ class TestNetworks(unittest.TestCase):
         x_ = tr.model.dict_block['PINV_MLP'](y)
         np.testing.assert_almost_equal(
             x_.detach().numpy() / 100, x.detach().numpy() / 100,
+            decimal=5)
+
+    def test_pinv_proportional_positive_weight(self):
+        prop = proportional.Proportional(
+            setting.BlockSetting(
+                name='PROP',
+                nodes=[4, 8], activations=['identity'], optional={
+                    'positive_weight': True,
+                }))
+        pinv = pinv_mlp.PInvMLP(
+            setting.BlockSetting(
+                name='PINV',
+                nodes=[8, 4], activations=['identity']),
+            reference_block=prop)
+
+        x = torch.rand(10, 4)
+        h = prop(x)
+        x_ = pinv(h)
+        np.testing.assert_almost_equal(
+            x_.detach().numpy(), x.detach().numpy(),
             decimal=5)
 
     def test_share(self):

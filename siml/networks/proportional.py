@@ -52,8 +52,14 @@ class Proportional(siml_module.SimlModule):
         """
         if self.positive_weight:
             h = torch.einsum(
-                'n...f,fg->n...g', x, torch.tanh(self.linears[0].weight.T) + 1)
+                'n...f,fg->n...g', x, self.get_weight().T)
         else:
             h = torch.einsum(
-                'n...f,fg->n...g', x, self.linears[0].weight.T)
+                'n...f,fg->n...g', x, self.get_weight().T)
         return h
+
+    def get_weight(self):
+        if self.positive_weight:
+            return torch.sigmoid(self.linears[0].weight)
+        else:
+            return self.linears[0].weight

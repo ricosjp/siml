@@ -5,6 +5,7 @@ from . import activations
 from . import id_mlp
 from . import mlp
 from . import normalized_mlp
+from . import proportional
 from . import siml_module
 from . import tensor_operations
 
@@ -57,13 +58,19 @@ class PInvMLP(siml_module.SimlModule):
         elif isinstance(
                 self.reference_block, tensor_operations.EnSEquivariantMLP):
             self.option = 'ens_equivariant_mlp'
+        elif isinstance(self.reference_block, proportional.Proportional):
+            self.option = 'proportional'
         else:
             raise ValueError(
                 f"Unexpected reference block {self.reference_block}"
                 f"for {self.block_setting}")
-        self.linears = [
-            PInvLinear(linear, option=self.option)
-            for linear in self.reference_block.linears[-1::-1]]
+        if self.option == 'proportional':
+            self.linears = [
+                PInvLinear(self.reference_block, option=self.option)]
+        else:
+            self.linears = [
+                PInvLinear(linear, option=self.option)
+                for linear in self.reference_block.linears[-1::-1]]
         self.activations = [
             self._define_activation(name)
             for name in self.reference_block.block_setting.activations[-1::-1]]
@@ -155,7 +162,8 @@ class PInvLinear(torch.nn.Module):
         return
 
     def forward(self, x):
-        h = torch.einsum('n...f,fg->n...g', x + self.bias, self.weight.T)
+        h = torch.einsum(
+            'n...f,fg->n...g', x + self.bias, self.weight.T)
         return h
 
     @property
@@ -167,6 +175,8 @@ class PInvLinear(torch.nn.Module):
             w = self.ref.weight + 1
         elif self.option in ['mlp', 'ens_equivariant_mlp']:
             w = self.ref.weight
+        elif self.option in ['proportional']:
+            w = self.ref.get_weight()
         else:
             raise ValueError(f"Unexpected option: {self.option}")
         return torch.pinverse(w)
@@ -174,7 +184,9 @@ class PInvLinear(torch.nn.Module):
     @property
     def bias(self):
         """Return inverse bias."""
-        if self.ref.bias is None:
+        if not hasattr(self.ref, 'bias'):
+            return 0
+        elif self.ref.bias is None:
             return 0
         else:
             return - self.ref.bias
