@@ -164,6 +164,8 @@ class EquivariantMLP(siml_module.SimlModule):
             'create_linear_weight', False)
         self.positive = self.block_setting.optional.get(
             'positive', False)
+        self.normalize = self.block_setting.optional.get(
+            'normalize', False)
         self.sqrt = self.block_setting.optional.get('sqrt', False)
         if block_setting.nodes[0] == block_setting.nodes[-1] and \
                 not self.create_linear_weight:
@@ -207,10 +209,13 @@ class EquivariantMLP(siml_module.SimlModule):
             Output of the NN.
         """
         h = self.contraction(x)
+        if self.normalize:
+            x = torch.einsum('n...f,nf->n...f', x, 1 / torch.sqrt(h + 1e-5))
         if self.sqrt:
             h = torch.sqrt(h + 1e-5)  # To avoid infinite gradient
         if self.residual:
             original_h = torch.clone(h)
+
         linear_x = self.linear_weight(x)
         for linear, dropout_ratio, activation in zip(
                 self.linears, self.dropout_ratios, self.activations):
@@ -247,6 +252,8 @@ class EnSEquivariantMLP(EquivariantMLP):
         self.power_length = dimension['length']
         self.power_time = dimension['time']
         self.power_mass = dimension['mass']
+
+        self.show_scale = block_setting.optional.get('show_scale', False)
 
         return
 
@@ -303,6 +310,9 @@ class EnSEquivariantMLP(EquivariantMLP):
                 / torch.sum(volume)
             x = x - mean
 
+        if self.show_scale:
+            x_norm = torch.einsum('...,...->', x, x)**.5
+            print(f"{self.block_setting.name}: {x_norm}")
         h = super()._forward_core(x)
 
         if self.diff:
