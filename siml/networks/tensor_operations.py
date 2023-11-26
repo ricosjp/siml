@@ -279,13 +279,15 @@ class EnSEquivariantMLP(EquivariantMLP):
             raise ValueError(f"Feed dimension data for: {self.block_setting}")
 
         x = xs[0]
-        length = xs[1][..., 0]
+        length = xs[1]
         if len(xs) > 2:
             time = xs[2][0, 0]  # NOTE: Assume global data
         else:
             time = 1
         if len(xs) > 3:
-            mass = xs[3][0, 0]  # NOTE: Assume global data
+            mass = xs[3]
+            if mass is None:
+                mass = 1
         else:
             mass = 1
         if len(xs) > 4:
@@ -298,16 +300,22 @@ class EnSEquivariantMLP(EquivariantMLP):
         if power_mass is None:
             power_mass = self.power_mass
 
-        x = torch.einsum(
-            'i...,i->i...', x, 1 / length**power_length) \
-            / time**power_time \
-            / mass**power_mass
+        if isinstance(mass, torch.Tensor):
+            x = torch.einsum(
+                'i...,ia,ia->i...', x,
+                1 / length**power_length, 1 / mass**power_mass) \
+                / time**power_time
+        else:
+            x = torch.einsum(
+                'i...,ia->i...', x, 1 / length**power_length) \
+                / time**power_time \
+                / mass**power_mass
 
         if self.diff:
             volume = length**3
             mean = torch.sum(
-                torch.einsum('i...,i->i...', x, volume), dim=0, keepdim=True) \
-                / torch.sum(volume)
+                torch.einsum('i...,ia->i...', x, volume),
+                dim=0, keepdim=True) / torch.sum(volume)
             x = x - mean
 
         if self.show_scale:
@@ -319,10 +327,15 @@ class EnSEquivariantMLP(EquivariantMLP):
             linear_mean = self.linear_weight(mean)
             h = h + linear_mean
 
-        h = torch.einsum(
-            'i...,i->i...', h, length**power_length) \
-            * time**power_time \
-            * mass**power_mass
+        if isinstance(mass, torch.Tensor):
+            h = torch.einsum(
+                'i...,ia,ia->i...', h,
+                length**power_length, mass**power_mass) * time**power_time
+        else:
+            h = torch.einsum(
+                'i...,ia->i...', h, length**power_length) \
+                * time**power_time \
+                * mass**power_mass
         return h
 
 
