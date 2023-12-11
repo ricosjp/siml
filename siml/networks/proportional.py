@@ -35,6 +35,22 @@ class Proportional(siml_module.SimlModule):
                 f"{self.block_setting}")
         self.positive_weight = self.block_setting.optional.get(
             'positive_weight', False)
+        str_positive_weight_method = self.block_setting.optional.get(
+            'positive_weight_method', 'sigmoid')  # or 'square', 'shifted_tanh'
+        if self.positive_weight:
+            if str_positive_weight_method == 'sigmoid':
+                self.compute_weight = torch.sigmoid
+            elif str_positive_weight_method == 'abs':
+                self.compute_weight = torch.abs
+            elif str_positive_weight_method == 'square':
+                self.compute_weight = self._square
+            elif str_positive_weight_method == 'shifted_tanh':
+                self.compute_weight = self._shifted_tanh
+            else:
+                raise ValueError(f"Unexpected {str_positive_weight_method = }")
+            print(f"positive_weight_method: {str_positive_weight_method}")
+        else:
+            self.compute_weight = self._id
         return
 
     def _forward_core(self, x, supports=None, original_shapes=None):
@@ -50,16 +66,17 @@ class Proportional(siml_module.SimlModule):
         y: numpy.ndarray or cupy.ndarray
             Output of the NN.
         """
-        if self.positive_weight:
-            h = torch.einsum(
-                'n...f,fg->n...g', x, self.get_weight().T)
-        else:
-            h = torch.einsum(
-                'n...f,fg->n...g', x, self.get_weight().T)
+        h = torch.einsum('n...f,fg->n...g', x, self.get_weight().T)
         return h
 
     def get_weight(self):
-        if self.positive_weight:
-            return torch.sigmoid(self.linears[0].weight)
-        else:
-            return self.linears[0].weight
+        return self.compute_weight(self.linears[0].weight)
+
+    def _id(self, w):
+        return w
+
+    def _square(self, w):
+        return torch.einsum('ij,ij->ij', w, w)
+
+    def _shifted_tanh(self, w):
+        return torch.tanh(w) + 1

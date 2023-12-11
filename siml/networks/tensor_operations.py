@@ -164,6 +164,8 @@ class EquivariantMLP(siml_module.SimlModule):
             'create_linear_weight', False)
         self.positive = self.block_setting.optional.get(
             'positive', False)
+        self.positive_weight_method = self.block_setting.optional.get(
+            'positive_weight_method', 'sigmoid')
         self.normalize = self.block_setting.optional.get(
             'normalize', False)
         self.sqrt = self.block_setting.optional.get('sqrt', False)
@@ -178,7 +180,10 @@ class EquivariantMLP(siml_module.SimlModule):
                         block_setting.nodes[-1],
                     ],
                     activations=['identity'],
-                    optional={'positive_weight': self.positive},
+                    optional={
+                        'positive_weight': self.positive,
+                        'positive_weight_method': self.positive_weight_method,
+                    },
                 ))
 
         if self.positive:
