@@ -191,6 +191,11 @@ class EquivariantMLP(siml_module.SimlModule):
         else:
             self.filter_coeff = activations.identity
         self.contraction = Contraction(setting.BlockSetting())
+
+        if self.residual:
+            self.residual_weight = self.block_setting.optional.get(
+                'residual_weight', 0.5)
+            print(f"Residual EqMLP with coeff: {self.residual_weight}")
         return
 
     def _forward(self, x, supports=None, original_shapes=None):
@@ -231,7 +236,8 @@ class EquivariantMLP(siml_module.SimlModule):
             h = activation(h)
 
         if self.residual:
-            h = h + self.shortcut(original_h)
+            h = (1 - self.residual_weight) * h \
+                + self.residual_weight * self.shortcut(original_h)
         return torch.einsum('i...f,if->i...f', linear_x, self.filter_coeff(h))
 
 
