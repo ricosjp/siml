@@ -196,6 +196,10 @@ class EquivariantMLP(siml_module.SimlModule):
             self.residual_weight = self.block_setting.optional.get(
                 'residual_weight', 0.5)
             print(f"Residual EqMLP with coeff: {self.residual_weight}")
+
+        self.invariant = block_setting.optional.get('invariant', False)
+        if self.invariant:
+            print(f"Invariant for {block_setting.name}")
         return
 
     def _forward(self, x, supports=None, original_shapes=None):
@@ -238,7 +242,12 @@ class EquivariantMLP(siml_module.SimlModule):
         if self.residual:
             h = (1 - self.residual_weight) * h \
                 + self.residual_weight * self.shortcut(original_h)
-        return torch.einsum('i...f,if->i...f', linear_x, self.filter_coeff(h))
+
+        if self.invariant:
+            return self.filter_coeff(h)
+        else:
+            return torch.einsum(
+                'i...f,if->i...f', linear_x, self.filter_coeff(h))
 
 
 class EnSEquivariantMLP(EquivariantMLP):
@@ -265,6 +274,9 @@ class EnSEquivariantMLP(EquivariantMLP):
         self.power_mass = dimension['mass']
 
         self.show_scale = block_setting.optional.get('show_scale', False)
+        self.invariant = block_setting.optional.get('invariant', False)
+        if self.invariant:
+            print(f"Invariant for {block_setting.name}")
 
         return
 
@@ -338,16 +350,19 @@ class EnSEquivariantMLP(EquivariantMLP):
             linear_mean = self.linear_weight(mean)
             h = h + linear_mean
 
-        if isinstance(mass, torch.Tensor):
-            h = torch.einsum(
-                'i...,ia,ia->i...', h,
-                length**power_length, mass**power_mass) * time**power_time
+        if self.invariant:
+            return h
         else:
-            h = torch.einsum(
-                'i...,ia->i...', h, length**power_length) \
-                * time**power_time \
-                * mass**power_mass
-        return h
+            if isinstance(mass, torch.Tensor):
+                h = torch.einsum(
+                    'i...,ia,ia->i...', h,
+                    length**power_length, mass**power_mass) * time**power_time
+            else:
+                h = torch.einsum(
+                    'i...,ia->i...', h, length**power_length) \
+                    * time**power_time \
+                    * mass**power_mass
+            return h
 
 
 class SharedEnSEquivariantMLP(siml_module.SimlModule):
