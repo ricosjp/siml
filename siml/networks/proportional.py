@@ -51,6 +51,21 @@ class Proportional(siml_module.SimlModule):
             print(f"positive_weight_method: {str_positive_weight_method}")
         else:
             self.compute_weight = self._id
+
+        if 'weight_filter' in self.block_setting.optional:
+            str_weight_filter = self.block_setting.optional['weight_filter']
+        else:
+            str_weight_filter = 'identity'
+        if str_weight_filter != 'identity':
+            print(f"Weight filter: {str_weight_filter}")
+
+        if str_weight_filter == 'identity':
+            self.weight_filter = self._id
+        elif str_weight_filter == 'tanh':
+            self.weight_filter = torch.tanh
+        else:
+            raise ValueError(f"Unexpected {str_weight_filter = }")
+
         return
 
     def _forward_core(self, x, supports=None, original_shapes=None):
@@ -70,7 +85,7 @@ class Proportional(siml_module.SimlModule):
         return h
 
     def get_weight(self):
-        return self.compute_weight(self.linears[0].weight)
+        return self.weight_filter(self.compute_weight(self.linears[0].weight))
 
     def _id(self, w):
         return w
