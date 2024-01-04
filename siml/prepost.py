@@ -364,13 +364,22 @@ def add_difference(
 
     difference_dict_data = {
         intersection:
-        np.reshape(
-            dict_data[intersection], reference_dict_data[intersection].shape)
-        - reference_dict_data[intersection]
+        _compute_difference(
+            dict_data[intersection], reference_dict_data[intersection])
         for intersection in intersections}
     fem_data = update_fem_data(fem_data, difference_dict_data, prefix=prefix)
 
     return fem_data
+
+
+def _compute_difference(x, y):
+    if x.shape[0] == y.shape[0]:
+        return np.reshape(x, y.shape) - y
+    else:
+        if x.shape[0] > y.shape[0]:
+            return np.reshape(x[:y.shape[0]], y.shape) - y
+        else:
+            return x - np.reshape(y[:x.shape[0]], x.shape)
 
 
 def add_abs_difference(
@@ -385,10 +394,8 @@ def add_abs_difference(
     difference_dict_data = {
         intersection:
         np.abs(
-            np.reshape(
-                dict_data[intersection],
-                reference_dict_data[intersection].shape)
-            - reference_dict_data[intersection])
+            _compute_difference(
+                dict_data[intersection], reference_dict_data[intersection]))
         for intersection in intersections}
     fem_data = update_fem_data(fem_data, difference_dict_data, prefix=prefix)
 
