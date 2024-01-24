@@ -44,6 +44,7 @@ visualize_graph = "siml.__main__.visualize_graph:main"
 [tool.poetry.dev-dependencies]
 chainer = "^7.0"
 pytest = "^5.3"
+pytest-timeout = "^2.2"
 autopep8 = "^1.4"
 sphinx = "^2.3"
 sphinx_rtd_theme = "^0.4.3"

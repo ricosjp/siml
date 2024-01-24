@@ -1,5 +1,4 @@
 from __future__ import annotations
-import multiprocessing as multi
 import pathlib
 import pickle
 from functools import partial
@@ -12,6 +11,7 @@ from siml.path_like_objects import SimlDirectory, ISimlNumpyFile
 from siml.siml_variables import ArrayDataType
 from siml.services.path_rules import SimlPathRules
 from siml.base.siml_enums import DirectoryType
+from siml.utils import SimlMultiprocessor
 
 from .siml_scalers import IScalingSaveFunction, DefaultSaveFunction
 from .scalers_composition import ScalersComposition
@@ -275,16 +275,15 @@ class ScalingConverter:
         interim_dirs = self._setting.collect_interim_directories()
         variable_names = self._scalers.get_variable_names(group_id=group_id)
 
-        # Parallel by scaling
-        with multi.Pool(self.max_process) as pool:
-            pool.map(
-                partial(
-                    self._transform_directories,
-                    directories=interim_dirs
-                ),
-                variable_names,
-                chunksize=1
-            )
+        SimlMultiprocessor.run(
+            max_process=self.max_process,
+            target_fn=partial(
+                self._transform_directories,
+                directories=interim_dirs
+            ),
+            inputs=variable_names,
+            chunksize=1
+        )
 
     def inverse_transform(
         self,

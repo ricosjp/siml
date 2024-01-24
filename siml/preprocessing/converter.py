@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import abc
-import multiprocessing as multi
 import pathlib
 import sys
 import traceback
@@ -17,7 +16,7 @@ from siml.base.siml_enums import DirectoryType
 from siml.preprocessing.converted_objects import (SimlConvertedItem,
                                                   SimlConvertedItemContainer)
 from siml.services.path_rules import SimlPathRules
-from siml.utils import fem_data_utils
+from siml.utils import fem_data_utils, SimlMultiprocessor
 from siml.utils.errors import SimlSkipNotificationError
 
 
@@ -344,15 +343,15 @@ class RawConverter:
         raw_directories = self._search_raw_directories(raw_directory)
         chunksize = max(len(raw_directories) // self.max_process // 16, 1)
 
-        with multi.Pool(self.max_process) as pool:
-            results = pool.map(
-                partial(
-                    self.convert_single_data,
-                    return_results=return_results
-                ),
-                raw_directories,
-                chunksize=chunksize
-            )
+        results = SimlMultiprocessor.run(
+            max_process=self.max_process,
+            target_fn=partial(
+                self.convert_single_data,
+                return_results=return_results
+            ),
+            inputs=raw_directories,
+            chunksize=chunksize
+        )
 
         flatten_results: SimlConvertedItemContainer = \
             reduce(lambda x, y: x.merge(y), results)
