@@ -12,6 +12,7 @@ import femio
 from siml import setting
 from siml import util
 from siml.preprocessing import converter
+from siml.utils.errors import SimlMultiprocessError
 import preprocess
 
 
@@ -244,6 +245,7 @@ def test__create_save_function():
 def failed_job_mock():
     sys.exit(1)
 
+
 @pytest.mark.timeout(60)
 def test__run_failed_job_with_multiprocess():
     main_setting = setting.MainSetting.read_settings_yaml(
@@ -257,6 +259,7 @@ def test__run_failed_job_with_multiprocess():
         max_process=3
     )
 
-    with mock.patch.object(converter.SingleDataConverter, "run") as mocked:
-        mocked.side_effect = failed_job_mock
-        raw_converter.convert()
+    with pytest.raises(SimlMultiprocessError):
+        with mock.patch.object(converter.SingleDataConverter, "run") as mocked:
+            mocked.side_effect = failed_job_mock
+            raw_converter.convert()

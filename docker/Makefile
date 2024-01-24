@@ -32,6 +32,12 @@ build_cpu:
 in: build
 	docker run -it --gpus all --rm $(CI_REGISTRY_IMAGE):$(TAG) /bin/bash
 
+push_gpu: login build
+	docker push $(CI_REGISTRY_IMAGE):$(TAG)
+
+push_cpu: login build_cpu
+	docker push $(CI_REGISTRY_IMAGE)/cpu:$(TAG)
+
 push: login build build_cpu
 	docker push $(CI_REGISTRY_IMAGE):$(TAG)
 	docker push $(CI_REGISTRY_IMAGE)/cpu:$(TAG)

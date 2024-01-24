@@ -6,7 +6,13 @@ from typing import Any, Callable, Iterable, TypeVar
 from siml.utils.errors import SimlMultiprocessError
 
 
-def _process_chunk(fn: Callable, chunk: list[Iterable[Any]]):
+T = TypeVar("T")
+
+
+def _process_chunk(
+    fn: Callable[[Any], T],
+    chunk: list[Iterable[Any]]
+) -> list[T]:
     """ Processes a chunk of an iterable passed to map.
 
     Runs the function passed to map() on a chunk of the
@@ -18,7 +24,10 @@ def _process_chunk(fn: Callable, chunk: list[Iterable[Any]]):
     return [fn(*args) for args in chunk]
 
 
-def _get_chunks(*iterables, chunksize):
+def _get_chunks(
+    *iterables: Iterable[Any],
+    chunksize: int
+) -> Iterable[list[Any]]:
     """ Iterates over zip()ed iterables in chunks. """
     it = zip(*iterables)
     while True:
@@ -37,26 +46,46 @@ def _santize_futures(futures: list[cf.Future]) -> None:
         raise SimlMultiprocessError(
             "Some jobs are failed under multiprocess conditions. "
             f"Exception: {ex}. "
-            "If exeception content is only a integer number like 1, "
-            "usage memory maybe be insufficient to run."
+            "If content of exception above is only shown a integer number "
+            "such as '1', it means that child process is killed by errors "
+            "caused by parent system such as OOM kill."
         )
-
-
-T = TypeVar("T")
 
 
 class SimlMultiprocessor():
     @staticmethod
     def run(
+        *inputs: list[Any],
         max_process: int,
         target_fn: Callable[[Any], T],
-        inputs: list[Any],
-        *,
-        chunksize: int
+        chunksize: int = 1
     ) -> list[T]:
+        """Wrapper function for concurrent.futures
+         to run safely with multiple processes.
+
+        Parameters
+        ----------
+        max_process : int
+            the number of processes to use
+        target_fn : Callable[[Any], T]
+            function to execute
+        chunksize : int, optional
+            chunck size, by default 1
+
+        Returns
+        -------
+        list[T]
+            Iterable of objects returned from target_fn
+
+        Raises
+        -------
+        SimlMultiprocessError:
+            If some processes fail due to system issues such as OOM,
+             this error raises.
+        """
         futures: list[cf.Future] = []
         with cf.ProcessPoolExecutor(max_process) as executor:
-            for chunk in _get_chunks(inputs, chunksize=chunksize):
+            for chunk in _get_chunks(*inputs, chunksize=chunksize):
                 future = executor.submit(
                     partial(_process_chunk, target_fn),
                     chunk
@@ -68,4 +97,5 @@ class SimlMultiprocessor():
 
         _santize_futures(futures)
 
-        return itertools.chain.from_iterable([f.result() for f in futures])
+        # flatten
+        return sum([f.result() for f in futures], start=[])
