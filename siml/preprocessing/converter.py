@@ -343,9 +343,9 @@ class RawConverter:
         raw_directories = self._search_raw_directories(raw_directory)
         chunksize = max(len(raw_directories) // self.max_process // 16, 1)
 
-        results = SimlMultiprocessor.run(
+        processor = SimlMultiprocessor(max_process=self.max_process)
+        results = processor.run(
             raw_directories,
-            max_process=self.max_process,
             target_fn=partial(
                 self.convert_single_data,
                 return_results=return_results

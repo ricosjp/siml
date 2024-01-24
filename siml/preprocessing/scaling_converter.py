@@ -275,9 +275,9 @@ class ScalingConverter:
         interim_dirs = self._setting.collect_interim_directories()
         variable_names = self._scalers.get_variable_names(group_id=group_id)
 
-        SimlMultiprocessor.run(
+        processor = SimlMultiprocessor(max_process=self.max_process)
+        processor.run(
             variable_names,
-            max_process=self.max_process,
             target_fn=partial(
                 self._transform_directories,
                 directories=interim_dirs

@@ -72,9 +72,9 @@ def freaky_job(num: int):
     )
 ])
 def test__can_execute_functions(inputs, expects):
-    results = SimlMultiprocessor.run(
+    processor = SimlMultiprocessor(max_process=2)
+    results = processor.run(
         inputs,
-        max_process=2,
         target_fn=freaky_job
     )
 
@@ -87,9 +87,9 @@ def test__can_execute_functions(inputs, expects):
 ])
 def test__can_detect_child_process_error(inputs):
     with pytest.raises(SimlMultiprocessError):
-        _ = SimlMultiprocessor.run(
+        processor = SimlMultiprocessor(max_process=2)
+        _ = processor.run(
             inputs,
-            max_process=2,
             target_fn=freaky_job
         )
 
@@ -107,9 +107,9 @@ def test__can_use_multi_core(max_process, inputs, expects):
     assert cpu_count >= max_process
 
     start = time.time()
-    _ = SimlMultiprocessor.run(
+    processor = SimlMultiprocessor(max_process)
+    _ = processor.run(
         inputs,
-        max_process=max_process,
         target_fn=sample_sleep_job,
     )
     elapsed_time = time.time() - start
@@ -126,9 +126,9 @@ def test__can_consider_chunksize(max_process, inputs, chunksize, expects):
     assert cpu_count >= max_process
 
     start = time.time()
-    _ = SimlMultiprocessor.run(
+    processor = SimlMultiprocessor(max_process)
+    _ = processor.run(
         inputs,
-        max_process=max_process,
         target_fn=sample_sleep_job,
         chunksize=chunksize,
     )
@@ -149,9 +149,9 @@ def test__can_flatten_return_objects(max_process, inputs, chunksize, expects):
     cpu_count = os.cpu_count()
     assert cpu_count >= max_process
 
-    results = SimlMultiprocessor.run(
+    processor = SimlMultiprocessor(max_process)
+    results = processor.run(
         *inputs,
-        max_process=max_process,
         target_fn=sample_add,
         chunksize=chunksize,
     )

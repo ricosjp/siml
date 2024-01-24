@@ -46,17 +46,19 @@ def _santize_futures(futures: list[cf.Future]) -> None:
         raise SimlMultiprocessError(
             "Some jobs are failed under multiprocess conditions. "
             f"Exception: {ex}. "
-            "If content of exception above is only shown a integer number "
-            "such as '1', it means that child process is killed by errors "
-            "caused by parent system such as OOM kill."
+            "If content of exception above is shown only a integer number "
+            "such as '1', it means that child process is killed by host system"
+            " like OOM killer."
         )
 
 
 class SimlMultiprocessor():
-    @staticmethod
+    def __init__(self, max_process: int):
+        self.max_process = max_process
+
     def run(
+        self,
         *inputs: list[Any],
-        max_process: int,
         target_fn: Callable[[Any], T],
         chunksize: int = 1
     ) -> list[T]:
@@ -80,11 +82,11 @@ class SimlMultiprocessor():
         Raises
         -------
         SimlMultiprocessError:
-            If some processes fail due to system issues such as OOM,
+            If some processes are killed by host system such as OOM killer,
              this error raises.
         """
         futures: list[cf.Future] = []
-        with cf.ProcessPoolExecutor(max_process) as executor:
+        with cf.ProcessPoolExecutor(self.max_process) as executor:
             for chunk in _get_chunks(*inputs, chunksize=chunksize):
                 future = executor.submit(
                     partial(_process_chunk, target_fn),
