@@ -46,7 +46,7 @@ def _santize_futures(futures: list[cf.Future]) -> None:
         raise SimlMultiprocessError(
             "Some jobs are failed under multiprocess conditions. "
             f"Exception: {ex}. "
-            "If content of exception above is shown only a integer number "
+            "If content of exception shown above is only a integer number "
             "such as '1', it means that child process is killed by host system"
             " like OOM killer."
         )
