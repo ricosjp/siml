@@ -133,6 +133,7 @@ test_group:
     - GenuineIntel
     - avx
     - gpu
+    - sm_61
 
 pages:
   stage: deploy
