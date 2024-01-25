@@ -73,6 +73,7 @@ test_gpu:
   tags:
     - multi-gpu
     - avx
+    - sm_61
 
 test_gpu_parallel:
   extends: .test
@@ -132,6 +133,7 @@ test_group:
     - GenuineIntel
     - avx
     - gpu
+    - sm_61
 
 pages:
   stage: deploy
