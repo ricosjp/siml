@@ -38,6 +38,7 @@ from . import threshold
 from . import time_norm
 from . import translator
 from . import upper_limit
+from . import cross_product
 
 
 # Add block information
@@ -71,6 +72,7 @@ blocks = [
     time_norm.TimeNorm,
     translator.Translator,
     upper_limit.UpperLimit,
+    cross_product.CrossProduct,
 
     # Layers with weights
     deepsets.DeepSets,
