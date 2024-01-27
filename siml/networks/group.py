@@ -76,7 +76,6 @@ class Group(siml_module.SimlModule):
         self.group_setting = self.create_group_setting(
             block_setting, model_setting)
         self.group = self._create_group(block_setting, model_setting)
-        self.loop = self.group_setting.repeat > 1
         self.mode = self.group_setting.mode
         self.time_series_length = self.group_setting.time_series_length
         self.time_series_mask = util.VariableMask(
@@ -91,6 +90,8 @@ class Group(siml_module.SimlModule):
                 if np.any(v)]
         else:
             raise ValueError(f"Invalid format: {self.group_setting.inputs}")
+        self.loop = self.group_setting.repeat > 1 or len(
+            self.time_series_keys) > 0
         self.debug = self.group_setting.debug
 
         self.componentwise_alpha = self.group_setting.optional.get(
