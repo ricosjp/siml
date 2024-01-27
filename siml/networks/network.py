@@ -123,8 +123,8 @@ class Network(torch.nn.Module):
             self.dict_block_information[block_name](block_setting).to(
                 block_setting.device)
             for block_name, block_setting in self.dict_block_setting.items()
-            if (block_setting.reference_block_name is None) and
-            (block_setting.type != 'group')
+            if (block_setting.reference_block_name is None)
+            and (block_setting.type != 'group')
         })
 
         # Update dict_block for blocks depending on other blocks
@@ -209,16 +209,26 @@ class Network(torch.nn.Module):
                             for predecessor
                             in self.call_graph.predecessors(graph_node)]
                     elif block_setting.input_keys is not None:
-                        inputs = [
-                            torch.cat(
-                                [
-                                    dict_hidden[predecessor][input_key][
-                                        ..., block_setting.input_selection
-                                    ].to(device)
-                                    for input_key in block_setting.input_keys
-                                ], dim=-1)
-                            for predecessor
-                            in self.call_graph.predecessors(graph_node)]
+                        try:
+                            inputs = [
+                                torch.cat(
+                                    [
+                                        dict_hidden[predecessor][input_key][
+                                            ..., block_setting.input_selection
+                                        ].to(device)
+                                        for input_key
+                                        in block_setting.input_keys
+                                    ], dim=-1)
+                                for predecessor
+                                in self.call_graph.predecessors(graph_node)]
+                        except KeyError:
+                            input_keys = block_setting.input_keys
+                            keys = [
+                                dict_hidden[predecessor].keys()
+                                for predecessor
+                                in self.call_graph.predecessors(graph_node)]
+                            raise KeyError(
+                                f"{input_keys} not found in:\n{keys}")
 
                     elif block_setting.input_names is not None:
                         if set(block_setting.input_names) != set(
