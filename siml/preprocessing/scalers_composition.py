@@ -28,8 +28,14 @@ class ScalersComposition():
         variable_name_to_scalers = parameters.pop(
             cls.REGISTERED_KEY, None
         )
-        scalers_dict = ScalersComposition._load_scalers(parameters, key=key)
-        if variable_name_to_scalers is None:
+
+        is_old_format = (variable_name_to_scalers is None)
+        scalers_dict = ScalersComposition._load_scalers(
+            parameters,
+            key=key,
+            is_old_format=is_old_format
+        )
+        if is_old_format:
             # When old version, key "varaible_name_to_scalers" does not exist
             variable_name_to_scalers = {k: k for k in scalers_dict.keys()}
 
@@ -287,12 +293,14 @@ class ScalersComposition():
     @staticmethod
     def _load_scalers(
         parameters: dict,
-        key: Optional[bytes] = None
+        key: Optional[bytes] = None,
+        is_old_format: bool = False
     ) -> dict[str, SimlScalerWrapper]:
         scalers_dict = {}
         for k, dict_data in parameters.items():
             scalers_dict[k] = SimlScalerWrapper.create(
                 dict_data,
-                key=key
+                key=key,
+                is_old_format=is_old_format
             )
         return scalers_dict

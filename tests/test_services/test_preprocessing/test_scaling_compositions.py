@@ -88,3 +88,12 @@ def test__load_converters_pkl():
         real_file_converter.get_scaler('standardize').converter.var_,
         dict_data['standardize']['preprocess_converter']['var_']
     )
+
+
+@pytest.mark.parametrize("pkl_path", [
+    pathlib.Path("tests/data/old_pkl_files/preprocessors.pkl")
+])
+def test__can_load_old_format_pkl(pkl_path):
+    _ = ScalersComposition.create_from_file(
+        pkl_path
+    )
