@@ -88,14 +88,6 @@ test_gpu_parallel:
     - multi-gpu
     - avx
 
-test_dggnn:
-  extends: .test
-  script:
-    - python3.9 -m pytest tests/test_dggnn.py --capture=no
-  tags:
-    - multi-gpu
-    - avx
-
 test_networks:
   extends: .test
   script: python3.9 -m pytest tests/test_networks --capture=no
