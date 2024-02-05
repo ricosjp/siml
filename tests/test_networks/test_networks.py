@@ -774,3 +774,34 @@ class TestNetworks(unittest.TestCase):
         to_f = reshape.TimeSeriesToFeatures(setting.BlockSetting(is_last=True))
         reversed_y = to_f(torch.from_numpy(y)).detach().numpy()
         np.testing.assert_almost_equal(reversed_y, x)
+
+    def test_conservative_ens_equivariant_mlp(self):
+        x = torch.from_numpy(np.random.rand(10, 3, 16).astype(np.float32))
+        c_ens = tensor_operations.ConservativeEnSEquivariantMLP(
+            setting.BlockSetting(
+                nodes=[16, 16, 16],
+                activations=['tanh', 'tanh'],
+                optional={
+                    'dimension': {
+                        'length': 1, 'time': -1, 'mass': 0}
+                }
+            )
+        )
+        length_scale = torch.from_numpy(
+            np.arange(10)[:, None].astype(np.float32) + 1) / 10
+        time_scale = torch.from_numpy(np.array([[.1]]).astype(np.float32))
+        h = c_ens([x, length_scale, time_scale]).detach().numpy()
+        volume = length_scale.numpy()**3
+        np.testing.assert_almost_equal(
+            np.einsum('cpa,cb->pa', h, volume),
+            np.einsum('cpa,cb->pa', x, volume), decimal=6)
+
+        length_factor = 1.5
+        time_factor = 1.2
+        scaled_h = c_ens([
+            x * length_factor / time_factor, length_scale * length_factor,
+            time_scale * time_factor]).detach().numpy() \
+            / length_factor * time_factor
+        np.testing.assert_almost_equal(
+            np.einsum('cpa,cb->pa', scaled_h, volume),
+            np.einsum('cpa,cb->pa', x, volume), decimal=6)

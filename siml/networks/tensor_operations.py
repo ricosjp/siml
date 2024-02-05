@@ -433,3 +433,51 @@ class SharedEnSEquivariantMLP(siml_module.SimlModule):
             Output of the NN.
         """
         return self.reference_block(xs)
+
+
+class ConservativeEnSEquivariantMLP(EnSEquivariantMLP):
+
+    @staticmethod
+    def get_name():
+        return 'cons_ens_equivariant_mlp'
+
+    @staticmethod
+    def accepts_multiple_inputs():
+        return True
+
+    def __init__(self, block_setting):
+        super().__init__(block_setting)
+        self.spatial_weight = self.block_setting.optional.get(
+            'spatial_weight', True)
+        return
+
+    def _forward_core(
+            self, xs, supports=None, original_shapes=None,
+            power_length=None, power_time=None, power_mass=None):
+        """Execute the NN's forward computation.
+
+        Parameters
+        -----------
+        xs: list[torch.Tensor]
+            - 0: Input of the NN.
+            - 1: Length scales.
+            - 2: Time scales.
+            - 3: Mass scales.
+
+        Returns
+        --------
+        y: torch.Tensor
+            Output of the NN.
+        """
+        x = xs[0]
+        cons_x = self.integral(x, xs[1])
+        h = super()._forward_core(xs)
+        cons_h = self.integral(h, xs[1])
+        return torch.einsum('...,i...->i...', cons_x / cons_h, h)
+
+    def integral(self, x, length_scale):
+        if self.spatial_weight:
+            weight = length_scale**3  # Volume
+            return torch.einsum('ia,i...->...', weight, x)
+        else:
+            return torch.sum(x, dim=0)

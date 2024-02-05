@@ -90,6 +90,8 @@ blocks = [
     set_transformer.SetTransformerEncoder,
     share.Share,
     tcn.TCN,
+    tensor_operations.ConservativeEnSEquivariantMLP,
+    tensor_operations.EnSEquivariantMLP,
     tensor_operations.EquivariantMLP,
 ]
 
