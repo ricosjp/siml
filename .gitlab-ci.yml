@@ -112,6 +112,7 @@ test_services:
     - python3.9 -m pytest tests/test_services --capture=no
   tags:
     - gpu
+    - sm_75
 
 test_reproducibility:
   extends: .test
@@ -130,6 +131,7 @@ test_group:
   tags:
     - avx
     - gpu
+    - sm_86
 
 pages:
   stage: deploy
