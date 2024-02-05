@@ -9,7 +9,6 @@ from . import array2symmat
 from . import boundary
 from . import concatenator
 from . import deepsets
-from . import dggnn
 from . import einsum
 from . import gcn
 from . import group
@@ -73,7 +72,6 @@ blocks = [
 
     # Layers with weights
     deepsets.DeepSets,
-    dggnn.DGGNN,
     gcn.GCN,
     group.Group,
     id_mlp.IdMLP,
