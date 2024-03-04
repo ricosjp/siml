@@ -28,12 +28,12 @@ class SimlScalerWrapper(ISimlScaler):
                 dict_data["method"],
                 componentwise=dict_data.get("componentwise", True),
                 key=key,
-                other_components=dict_data.get("preprocess_converter"),
+                other_components=dict_data.get("other_components"),
                 **dict_data['preprocess_converter']
             )
         else:
             # Pass all dict_data['preprocess_converter'] items
-            # to avoid Exception by checking 
+            # to avoid Exception by checking
             # when initialization (Ex. IsoAMSclaer)
             _cls = cls(
                 dict_data["method"],
