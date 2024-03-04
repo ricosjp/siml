@@ -174,16 +174,18 @@ class ScalersComposition():
 
     def transform_dict(
         self,
-        dict_data: dict[str, ArrayDataType]
+        dict_data: dict[str, ArrayDataType],
+        raise_missing_warning: bool = True
     ) -> dict[str, ArrayDataType]:
 
         converted_dict_data: dict[str, ArrayDataType] = {}
         for variable_name, data in dict_data.items():
             scaler = self.get_scaler(variable_name, allow_missing=True)
             if scaler is None:
-                warnings.warn(
-                    f"Scaler for {variable_name} is not found. Skipped"
-                )
+                if raise_missing_warning:
+                    warnings.warn(
+                        f"Scaler for {variable_name} is not found. Skipped"
+                    )
                 continue
 
             converted_data = scaler.transform(data)
@@ -206,16 +208,18 @@ class ScalersComposition():
 
     def inverse_transform_dict(
         self,
-        dict_data: dict[str, ArrayDataType]
+        dict_data: dict[str, ArrayDataType],
+        raise_missing_warning: bool = True
     ) -> dict[str, ArrayDataType]:
 
         converted_dict_data: dict[str, ArrayDataType] = {}
         for variable_name, data in dict_data.items():
             scaler = self.get_scaler(variable_name, allow_missing=True)
             if scaler is None:
-                warnings.warn(
-                    f"Scaler for {variable_name} is not found. Skipped"
-                )
+                if raise_missing_warning:
+                    warnings.warn(
+                        f"Scaler for {variable_name} is not found. Skipped"
+                    )
                 continue
 
             converted_data = scaler.inverse_transform(data)
