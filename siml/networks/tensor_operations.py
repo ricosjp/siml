@@ -5,6 +5,7 @@ import torch
 from .. import setting
 from . import activations
 from . import proportional
+from . import mlp
 from . import siml_module
 from . import reducer
 
@@ -262,6 +263,141 @@ class EnSEquivariantMLP(EquivariantMLP):
 
     def __init__(self, block_setting):
         super().__init__(block_setting)
+        if 'dimension' not in block_setting.optional:
+            raise ValueError(f"Set optional.dimension for: {block_setting}")
+
+        self.diff = block_setting.optional.get('diff', True)
+        if self.diff:
+            print(f"diff mode for {block_setting.name}")
+        dimension = block_setting.optional['dimension']
+        self.power_length = dimension['length']
+        self.power_time = dimension['time']
+        self.power_mass = dimension['mass']
+
+        self.show_scale = block_setting.optional.get('show_scale', False)
+        self.invariant = block_setting.optional.get('invariant', False)
+        if self.invariant:
+            print(f"Invariant for {block_setting.name}")
+
+        return
+
+    def _forward_core(
+            self, xs, supports=None, original_shapes=None,
+            power_length=None, power_time=None, power_mass=None):
+        """Execute the NN's forward computation.
+
+        Parameters
+        -----------
+        xs: list[torch.Tensor]
+            - 0: Input of the NN.
+            - 1: Length scales.
+            - 2: Time scales.
+            - 3: Mass scales.
+
+        Returns
+        --------
+        y: torch.Tensor
+            Output of the NN.
+        """
+        if len(xs) < 2:
+            raise ValueError(f"Feed dimension data for: {self.block_setting}")
+
+        x = xs[0]
+        length = xs[1]
+        if len(xs) > 2:
+            time = xs[2][0, 0]  # NOTE: Assume global data
+        else:
+            time = 1
+        if len(xs) > 3:
+            mass = xs[3]
+            if mass is None:
+                mass = 1
+        else:
+            mass = 1
+        if len(xs) > 4:
+            raise ValueError(f"Unexpected input type: {xs}")
+
+        if power_length is None:
+            power_length = self.power_length
+        if power_time is None:
+            power_time = self.power_time
+        if power_mass is None:
+            power_mass = self.power_mass
+
+        if isinstance(mass, torch.Tensor):
+            x = torch.einsum(
+                'i...,ia,ia->i...', x,
+                1 / length**power_length, 1 / mass**power_mass) \
+                / time**power_time
+        else:
+            x = torch.einsum(
+                'i...,ia->i...', x, 1 / length**power_length) \
+                / time**power_time \
+                / mass**power_mass
+
+        if self.diff:
+            volume = length**3
+            mean = torch.sum(
+                torch.einsum('i...,ia->i...', x, volume),
+                dim=0, keepdim=True) / torch.sum(volume)
+            x = x - mean
+
+        if self.show_scale:
+            x_norm = torch.einsum('...,...->', x, x)**.5
+            print(f"{self.block_setting.name}: {x_norm}")
+        h = super()._forward_core(x)
+
+        if self.diff:
+            linear_mean = self.linear_weight(mean)
+            h = h + linear_mean
+
+        if self.invariant:
+            return h
+        else:
+            if isinstance(mass, torch.Tensor):
+                h = torch.einsum(
+                    'i...,ia,ia->i...', h,
+                    length**power_length, mass**power_mass) * time**power_time
+            else:
+                h = torch.einsum(
+                    'i...,ia->i...', h, length**power_length) \
+                    * time**power_time \
+                    * mass**power_mass
+            return h
+
+
+class SEquivariantMLP(mlp.MLP):
+
+    @staticmethod
+    def get_name():
+        return 's_equivariant_mlp'
+
+    @staticmethod
+    def accepts_multiple_inputs():
+        return True
+
+    def __init__(self, block_setting):
+        super().__init__(block_setting)
+
+        self.create_linear_weight = self.block_setting.optional.get(
+            'create_linear_weight', False)
+        if block_setting.nodes[0] == block_setting.nodes[-1] and \
+                not self.create_linear_weight:
+            self.linear_weight = activations.identity
+        else:
+            self.linear_weight = proportional.Proportional(
+                setting.BlockSetting(
+                    nodes=[
+                        block_setting.nodes[0],
+                        block_setting.nodes[-1],
+                    ],
+                    activations=['identity'],
+                    optional={
+                        'positive_weight': self.positive,
+                        'positive_weight_method': self.positive_weight_method,
+                    },
+                ))
+
         if 'dimension' not in block_setting.optional:
             raise ValueError(f"Set optional.dimension for: {block_setting}")
 

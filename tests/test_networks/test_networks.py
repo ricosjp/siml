@@ -805,3 +805,29 @@ class TestNetworks(unittest.TestCase):
         np.testing.assert_almost_equal(
             np.einsum('cpa,cb->pa', scaled_h, volume),
             np.einsum('cpa,cb->pa', x, volume), decimal=6)
+
+    def test_s_equivariant_mlp(self):
+        n_node = 100
+        x = torch.from_numpy(np.random.rand(n_node, 3, 32).astype(np.float32))
+        seq = tensor_operations.SEquivariantMLP(
+            setting.BlockSetting(
+                nodes=[32, 32, 32],
+                activations=['tanh', 'tanh'],
+                optional={
+                    'dimension': {
+                        'length': 1, 'time': -1, 'mass': 0}
+                }
+            )
+        )
+        length_scale = torch.from_numpy(
+            np.arange(n_node)[:, None].astype(np.float32) + 1) / n_node
+        time_scale = torch.from_numpy(np.array([[.1]]).astype(np.float32))
+        h = seq([x, length_scale, time_scale]).detach().numpy()
+
+        length_factor = 1.5
+        time_factor = 1.2
+        scaled_h = seq([
+            x * length_factor / time_factor, length_scale * length_factor,
+            time_scale * time_factor]).detach().numpy() \
+            / length_factor * time_factor
+        np.testing.assert_almost_equal(scaled_h, h, decimal=6)

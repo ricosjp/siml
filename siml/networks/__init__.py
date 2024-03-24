@@ -91,6 +91,7 @@ blocks = [
     tensor_operations.ConservativeEnSEquivariantMLP,
     tensor_operations.EnSEquivariantMLP,
     tensor_operations.EquivariantMLP,
+    tensor_operations.SEquivariantMLP,
 ]
 
 for block in blocks:
