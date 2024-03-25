@@ -381,6 +381,11 @@ class SEquivariantMLP(mlp.MLP):
 
         self.create_linear_weight = self.block_setting.optional.get(
             'create_linear_weight', False)
+        self.positive = self.block_setting.optional.get(
+            'positive', False)
+        self.positive_weight_method = self.block_setting.optional.get(
+            'positive_weight_method', 'sigmoid')
+
         if block_setting.nodes[0] == block_setting.nodes[-1] and \
                 not self.create_linear_weight:
             self.linear_weight = activations.identity
