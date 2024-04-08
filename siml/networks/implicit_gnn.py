@@ -27,11 +27,11 @@ from siml.setting import BlockSetting
 from . import siml_module
 
 
-def get_spectral_rad(sparse_tensor: torch.Tensor, tol: float = 1e-5):
+def calculate_spectral_rad(sparse_tensor: torch.Tensor) -> np.ndarray:
     """Compute spectral radius from a tensor"""
     A = sparse_tensor.data.coalesce().detach()
     A_scipy = sp.coo_matrix((np.abs(A.values().numpy()), A.indices().numpy()), shape=A.shape)
-    return np.abs(sp.linalg.eigs(A_scipy, k=1, return_eigenvectors=False)[0]) + tol
+    return np.abs(sp.linalg.eigs(A_scipy, k=1, return_eigenvectors=False)[0])
 
 
 class ImplicitGNN(siml_module.SimlModule):
@@ -65,29 +65,38 @@ class ImplicitGNN(siml_module.SimlModule):
 
         self.kappa = block_setting.optional.get("kappa", 0.99)
 
+        self._validate_setting()
+
         nodes = self.block_setting.nodes
-        assert(len(nodes) == 2)
-        assert(len(self.activations) == 1)
-
-        self.weight = Parameter(torch.FloatTensor(nodes[0], nodes[0]))
-        # assumed feature dimension of U is same as that of X
-        self.omega = Parameter(torch.FloatTensor(nodes[0], nodes[0]))
-        self.init()
-
-    def init(self):
+        self.weight = Parameter(torch.FloatTensor(nodes[0], nodes[1]))
         nn.init.xavier_normal_(self.weight)
+        # assumed feature dimension of U is same as that of X
+        self.omega = Parameter(torch.FloatTensor(nodes[0], nodes[1]))
         nn.init.xavier_normal_(self.omega)
 
-    def forward(self, x, supports: Optional[list[sp.coo_matrix]]):
+    def _validate_setting(self):
+        nodes = self.block_setting.nodes 
+        if len(nodes) != 2:
+            raise ValueError(f"size of nodes must be two. input: {len(nodes)}")
+        
+        if len(self.activations) > 1:
+            raise ValueError(
+                "the num. of activation functions must be one. "
+                f"input: {self.activations}"
+            )
+
+    def forward(self, x, supports: Optional[list[sp.coo_matrix]], *args, **kwards):
         if len(x.shape) != 2:
             raise NotImplementedError("For now, only zero rank tensor features are allowed.")
 
-        return self._forward(
+        assert len(supports) == 1
+        out = self._forward(
             X_0 = x.T,
-            A = supports[self.block_setting.support_input_index],
+            A = supports[0],
             U = x.T,
             phi = self.activations[0]
         )
+        return out.T
 
     def _forward(
         self,
@@ -95,7 +104,6 @@ class ImplicitGNN(siml_module.SimlModule):
         A: torch.Tensor,
         U: torch.Tensor,
         phi: Callable[[torch.Tensor], torch.Tensor],
-        A_rho: float = 1.0,
         fw_mitr: int = 300,
         bw_mitr: int = 300,
         A_orig: Optional[torch.Tensor] = None,
@@ -124,7 +132,9 @@ class ImplicitGNN(siml_module.SimlModule):
 
         """
         if self.kappa is not None: # when self.k = 0, A_rho is not required
-            projection_norm_inf(self.weight, criteria=self.kappa/A_rho)
+            A_rho = calculate_spectral_rad(A)
+            tol: float = 1e-5
+            projection_norm_inf(self.weight, criteria=self.kappa / (A_rho + tol))
 
         # b_omega = omega U A
         # In order to account for feature information from neighbouring nodes
