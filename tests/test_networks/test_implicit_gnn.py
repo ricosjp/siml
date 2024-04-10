@@ -22,3 +22,16 @@ def test__train_implicit_gnn():
 
     loss = trainer.train()
     np.testing.assert_array_less(loss, .1)
+
+
+@pytest.mark.parametrize("settings", [
+    {"activations": ["tanh", "tanh"], "nodes": [10, 10, 10]},
+    {"activations": [], "nodes": [10]},
+])
+def test__not_accepting_settings(settings):
+
+    block_settings = siml.setting.BlockSetting(
+        **settings
+    )
+    with pytest.raises(ValueError):
+        _ = ImplicitGNN(block_settings)

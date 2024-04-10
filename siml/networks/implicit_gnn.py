@@ -28,8 +28,19 @@ from . import siml_module
 
 
 def calculate_spectral_rad(sparse_tensor: torch.Tensor) -> np.ndarray:
-    """Compute spectral radius from a tensor"""
-    A = sparse_tensor.data.coalesce().detach()
+    """Compute spectral radius from a tensor
+
+    Parameters
+    ----------
+    sparse_tensor : torch.Tensor
+        tensor to calculate
+
+    Returns
+    -------
+    np.ndarray
+        spectral radius
+    """
+    A = sparse_tensor.data.coalesce().cpu()
     A_scipy = sp.coo_matrix((np.abs(A.values().numpy()), A.indices().numpy()), shape=A.shape)
     return np.abs(sp.linalg.eigs(A_scipy, k=1, return_eigenvectors=False)[0])
 
@@ -70,6 +81,7 @@ class ImplicitGNN(siml_module.SimlModule):
         nodes = self.block_setting.nodes
         self.weight = Parameter(torch.FloatTensor(nodes[0], nodes[1]))
         nn.init.xavier_normal_(self.weight)
+
         # assumed feature dimension of U is same as that of X
         self.omega = Parameter(torch.FloatTensor(nodes[0], nodes[1]))
         nn.init.xavier_normal_(self.omega)
@@ -77,7 +89,7 @@ class ImplicitGNN(siml_module.SimlModule):
     def _validate_setting(self):
         nodes = self.block_setting.nodes 
         if len(nodes) != 2:
-            raise ValueError(f"size of nodes must be two. input: {len(nodes)}")
+            raise ValueError(f"size of nodes must be two. input: {nodes}")
         
         if len(self.activations) > 1:
             raise ValueError(
@@ -85,9 +97,9 @@ class ImplicitGNN(siml_module.SimlModule):
                 f"input: {self.activations}"
             )
 
-    def forward(self, x, supports: Optional[list[sp.coo_matrix]], *args, **kwards):
+    def forward(self, x: torch.Tensor, supports: Optional[list[sp.coo_matrix]], *args, **kwards):
         if len(x.shape) != 2:
-            raise NotImplementedError("For now, only zero rank tensor features are allowed.")
+            raise NotImplementedError("For now, only zero rank tensor is allowed.")
 
         assert len(supports) == 1
         out = self._forward(
@@ -121,8 +133,6 @@ class ImplicitGNN(siml_module.SimlModule):
             (shape : [n_feature, n_node])
         phi : Callable[[torch.Tensor], torch.Tensor]
             activation function
-        A_rho : float, optional
-            hyper parameter to restrict weight matrix, by default 1.0
         fw_mitr : int, optional
             the maximum number of forward iterations, by default 300
         bw_mitr : int, optional
@@ -182,13 +192,9 @@ class ImplicitFunction(Function):
     # This function has only a single output, so it gets only one gradient
     @staticmethod
     def backward(ctx, *grad_outputs):
-
-        #import pydevd
-        #pydevd.settrace(suspend=False, trace_only_current_thread=True)
         W, X, A, B, D, X_0, bw_mitr = ctx.saved_tensors
 
-        # HACK: Is there any way to loop without doing cpu()
-        bw_mitr = bw_mitr.cpu().numpy()
+        bw_mitr = bw_mitr.detach().numpy()
         grad_x = grad_outputs[0]
 
         dphi = lambda X: torch.mul(X, D)
@@ -275,20 +281,25 @@ def projection_norm_inf(
     A: torch.Tensor,
     criteria: float = 0.99
 ) -> None:
-    """ project onto ||A||_inf <= criteria return updated A"""
-    # v = criteria
-    # if transpose:
-    #     A_np = A.T.clone().detach().cpu().numpy()
-    # else:
-    #     A_np = A.clone().detach().cpu().numpy()
+    """Project onto ||A||_inf <= criteria return updated A
+
+    Parameters
+    ----------
+    A : torch.Tensor
+        Tensor object
+    criteria : float, optional
+        criteria value, by default 0.99
+    """
     A_np = A.clone().detach().cpu().numpy()
     inf_norms = np.abs(A_np).sum(axis=-1)
 
     positions = np.where(inf_norms > criteria)
     A_np[positions] *= (criteria / inf_norms[positions])[:, np.newaxis]
+
     # vertify
     epsilon = 1e-5
     assert np.linalg.norm(A_np, ord=np.inf) <= criteria + epsilon
+
     A.data.copy_(
         torch.tensor(A_np, dtype=A.dtype, device=A.device),
         non_blocking=True
