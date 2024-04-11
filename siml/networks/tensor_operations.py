@@ -203,14 +203,15 @@ class EquivariantMLP(siml_module.SimlModule):
             print(f"Invariant for {block_setting.name}")
         return
 
-    def _forward(self, x, supports=None, original_shapes=None):
+    def _forward(self, x, supports=None, original_shapes=None, **kwargs):
         # NOTE: We define _forward instead of _forward_core to manage
         #       residual connection by itself.
         h = self._forward_core(
-            x, supports=supports, original_shapes=original_shapes)
+            x, supports=supports, original_shapes=original_shapes, **kwargs)
         return h
 
-    def _forward_core(self, x, supports=None, original_shapes=None):
+    def _forward_core(
+            self, x, supports=None, original_shapes=None, invariant=False):
         """Execute the NN's forward computation.
 
         Parameters
@@ -244,7 +245,7 @@ class EquivariantMLP(siml_module.SimlModule):
             h = (1 - self.residual_weight) * h \
                 + self.residual_weight * self.shortcut(original_h)
 
-        if self.invariant:
+        if self.invariant or invariant:
             return self.filter_coeff(h)
         else:
             return torch.einsum(
@@ -283,7 +284,8 @@ class EnSEquivariantMLP(EquivariantMLP):
 
     def _forward_core(
             self, xs, supports=None, original_shapes=None,
-            power_length=None, power_time=None, power_mass=None):
+            power_length=None, power_time=None, power_mass=None,
+            invariant=False):
         """Execute the NN's forward computation.
 
         Parameters
@@ -345,13 +347,13 @@ class EnSEquivariantMLP(EquivariantMLP):
         if self.show_scale:
             x_norm = torch.einsum('...,...->', x, x)**.5
             print(f"{self.block_setting.name}: {x_norm}")
-        h = super()._forward_core(x)
+        h = super()._forward_core(x, invariant=invariant)
 
         if self.diff:
             linear_mean = self.linear_weight(mean)
             h = h + linear_mean
 
-        if self.invariant:
+        if self.invariant or invariant:
             return h
         else:
             if isinstance(mass, torch.Tensor):
@@ -423,7 +425,8 @@ class SEquivariantMLP(mlp.MLP):
 
     def _forward_core(
             self, xs, supports=None, original_shapes=None,
-            power_length=None, power_time=None, power_mass=None):
+            power_length=None, power_time=None, power_mass=None,
+            invariant=False):
         """Execute the NN's forward computation.
 
         Parameters
@@ -485,13 +488,13 @@ class SEquivariantMLP(mlp.MLP):
         if self.show_scale:
             x_norm = torch.einsum('...,...->', x, x)**.5
             print(f"{self.block_setting.name}: {x_norm}")
-        h = super()._forward_core(x)
+        h = super()._forward_core(x, invariant=invariant)
 
         if self.diff:
             linear_mean = self.linear_weight(mean)
             h = h + linear_mean
 
-        if self.invariant:
+        if self.invariant or invariant:
             return h
         else:
             if isinstance(mass, torch.Tensor):

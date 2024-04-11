@@ -249,7 +249,7 @@ class SimlModule(torch.nn.Module, metaclass=abc.ABCMeta):
                 raise ValueError(f"Unexpected loss type: {self.losses[k]}")
         return
 
-    def forward(self, x, supports=None, original_shapes=None):
+    def forward(self, x, supports=None, original_shapes=None, **kwargs):
         if self.block_setting.clone:
             if isinstance(x, list):
                 h = [_.clone() for _ in x]
@@ -264,11 +264,12 @@ class SimlModule(torch.nn.Module, metaclass=abc.ABCMeta):
                 self.requires_grad_(False)
                 h = self._forward(
                     x, supports=supports,
-                    original_shapes=original_shapes)
+                    original_shapes=original_shapes, **kwargs)
                 self.requires_grad_(True)
             else:
                 h = self._forward(
-                    x, supports=supports, original_shapes=original_shapes)
+                    x, supports=supports, original_shapes=original_shapes,
+                    **kwargs)
         except Exception as e:
             raise ValueError(f"{e}\nError occured in: {self.block_setting}")
 
@@ -277,9 +278,9 @@ class SimlModule(torch.nn.Module, metaclass=abc.ABCMeta):
         else:
             return h
 
-    def _forward(self, x, supports=None, original_shapes=None):
+    def _forward(self, x, supports=None, original_shapes=None, **kwargs):
         h = self._forward_core(
-            x, supports=supports, original_shapes=original_shapes)
+            x, supports=supports, original_shapes=original_shapes, **kwargs)
         if self.residual:
             if self.block_setting.activation_after_residual:
                 return self.activations[-1](h + self.shortcut(x))
