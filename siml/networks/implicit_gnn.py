@@ -97,7 +97,7 @@ class ImplicitGNN(siml_module.SimlModule):
                 f"input: {self.activations}"
             )
 
-    def forward(self, x: torch.Tensor, supports: Optional[list[sp.coo_matrix]], *args, **kwards):
+    def forward(self, x: torch.Tensor, supports: Optional[list[torch.Tensor]], *args, **kwards):
         if len(x.shape) != 2:
             raise NotImplementedError("For now, only zero rank tensor is allowed.")
 
@@ -125,12 +125,12 @@ class ImplicitGNN(siml_module.SimlModule):
         Parameters
         ----------
         X_0 : torch.Tensor
-            tensor of initial value (shape : [n_feature, n_node])
+            tensor of initial value (shape : [n_node, n_feature])
         A : torch.Tensor
             adjacent matrix tensor
         U : torch.Tensor
             feature matrix provided as additional information of each node
-            (shape : [n_feature, n_node])
+            (shape : [n_node, n_feature])
         phi : Callable[[torch.Tensor], torch.Tensor]
             activation function
         fw_mitr : int, optional
@@ -220,8 +220,6 @@ class ImplicitFunction(Function):
         compute_dphi: bool = True
     ):
         status = IGNNIterationStatus.reached_max_itration
-        # print(A.shape)
-        # print((W @ X).shape)
         for _ in range(n_itr):
             support = torch.spmm(A, (W @ X).T).T
             X_new = phi(support + B)
