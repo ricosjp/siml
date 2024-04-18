@@ -10,7 +10,6 @@ Original Implementation is found here: https://github.com/SwiftieH/IGNN
 
 """
 
-import math
 from enum import Enum
 from typing import Any, Callable, Optional
 
@@ -41,7 +40,9 @@ def calculate_spectral_rad(sparse_tensor: torch.Tensor) -> np.ndarray:
         spectral radius
     """
     A = sparse_tensor.data.coalesce().cpu()
-    A_scipy = sp.coo_matrix((np.abs(A.values().numpy()), A.indices().numpy()), shape=A.shape)
+    A_scipy = sp.coo_matrix(
+        (np.abs(A.values().numpy()), A.indices().numpy()), shape=A.shape
+    )
     return np.abs(sp.linalg.eigs(A_scipy, k=1, return_eigenvectors=False)[0])
 
 
@@ -71,7 +72,7 @@ class ImplicitGNN(siml_module.SimlModule):
             block_setting,
             create_linears=False,
             create_activations=True,
-            create_dropouts=False
+            create_dropouts=False,
         )
 
         self.kappa = block_setting.optional.get("kappa", 0.99)
@@ -87,26 +88,31 @@ class ImplicitGNN(siml_module.SimlModule):
         nn.init.xavier_normal_(self.omega)
 
     def _validate_setting(self):
-        nodes = self.block_setting.nodes 
+        nodes = self.block_setting.nodes
         if len(nodes) != 2:
             raise ValueError(f"size of nodes must be two. input: {nodes}")
-        
+
         if len(self.activations) > 1:
             raise ValueError(
                 "the num. of activation functions must be one. "
                 f"input: {self.activations}"
             )
 
-    def forward(self, x: torch.Tensor, supports: Optional[list[torch.Tensor]], *args, **kwards):
+    def forward(
+        self,
+        x: torch.Tensor,
+        supports: Optional[list[torch.Tensor]],
+        *args,
+        **kwards,
+    ):
         if len(x.shape) != 2:
-            raise NotImplementedError("For now, only zero rank tensor is allowed.")
+            raise NotImplementedError(
+                "For now, only zero rank tensor is allowed."
+            )
 
         assert len(supports) == 1
         out = self._forward(
-            X_0 = x.T,
-            A = supports[0],
-            U = x.T,
-            phi = self.activations[0]
+            X_0=x.T, A=supports[0], U=x.T, phi=self.activations[0]
         )
         return out.T
 
@@ -141,10 +147,12 @@ class ImplicitGNN(siml_module.SimlModule):
             If fed, A matrix is replaced with this matrix, by default None
 
         """
-        if self.kappa is not None: # when self.k = 0, A_rho is not required
+        if self.kappa is not None:  # when self.k = 0, A_rho is not required
             A_rho = calculate_spectral_rad(A)
             tol: float = 1e-5
-            projection_norm_inf(self.weight, criteria=self.kappa / (A_rho + tol))
+            projection_norm_inf(
+                self.weight, criteria=self.kappa / (A_rho + tol)
+            )
 
         # b_omega = omega U A
         # In order to account for feature information from neighbouring nodes
@@ -158,7 +166,7 @@ class ImplicitGNN(siml_module.SimlModule):
             b_omega,
             phi,
             fw_mitr,
-            bw_mitr
+            bw_mitr,
         )
 
 
@@ -169,7 +177,7 @@ class IGNNIterationStatus(Enum):
 
 
 class ImplicitFunction(Function):
-    #ImplicitFunction.apply(input, A, U, self.X_0, self.W, self.Omega_1, self.Omega_2)
+    # ImplicitFunction.apply(input, A, U, self.X_0, self.W, self.Omega_1, self.Omega_2)
     @staticmethod
     def forward(
         ctx: Any,
@@ -179,14 +187,18 @@ class ImplicitFunction(Function):
         B: torch.Tensor,
         phi: Callable[[torch.Tensor], torch.Tensor],
         fd_mitr: int = 300,
-        bw_mitr: int = 300
+        bw_mitr: int = 300,
     ):
         X_0 = B if X_0 is None else X_0
-        X, err, status, D = ImplicitFunction._forward_iteration(W, X_0, A, B, phi, n_itr=fd_mitr)
+        X, err, status, D = ImplicitFunction._forward_iteration(
+            W, X_0, A, B, phi, n_itr=fd_mitr
+        )
         # X, err, status, D = ImplicitFunction.inn_pred(W, X_0, A, B, phi, mitr=fd_mitr, compute_dphi=True)
         ctx.save_for_backward(W, X, A, B, D, X_0, torch.tensor(bw_mitr))
         if status != IGNNIterationStatus.converged:
-            print(f"Iterations not converging! err: {err}, status: {status.name}")
+            print(
+                f"Iterations not converging! err: {err}, status: {status.name}"
+            )
         return X
 
     # This function has only a single output, so it gets only one gradient
@@ -197,8 +209,10 @@ class ImplicitFunction(Function):
         bw_mitr = bw_mitr.detach().numpy()
         grad_x = grad_outputs[0]
 
-        dphi = lambda X: torch.mul(X, D)
-        grad_z, err, status  = ImplicitFunction._backward_iteration(W, X_0, A, grad_x, dphi, n_itr=bw_mitr)
+        def dphi(X): return torch.mul(X, D)
+        grad_z, err, status = ImplicitFunction._backward_iteration(
+            W, X_0, A, grad_x, dphi, n_itr=bw_mitr
+        )
 
         grad_W = grad_z @ torch.spmm(A, X.T)
         grad_B = grad_z
@@ -217,7 +231,7 @@ class ImplicitFunction(Function):
         phi: Callable[[torch.Tensor], torch.Tensor],
         n_itr: int = 300,
         tol: float = 3e-6,
-        compute_dphi: bool = True
+        compute_dphi: bool = True,
     ):
         status = IGNNIterationStatus.reached_max_itration
         for _ in range(n_itr):
@@ -256,7 +270,7 @@ class ImplicitFunction(Function):
         B: torch.Tensor,
         dphi: Callable[[torch.Tensor], torch.Tensor],
         n_itr: int = 300,
-        tol: float = 3e-6
+        tol: float = 3e-6,
     ):
         status = IGNNIterationStatus.reached_max_itration
         At = torch.transpose(A, 0, 1)
@@ -275,10 +289,7 @@ class ImplicitFunction(Function):
         return grad_Z_new, err, status
 
 
-def projection_norm_inf(
-    A: torch.Tensor,
-    criteria: float = 0.99
-) -> None:
+def projection_norm_inf(A: torch.Tensor, criteria: float = 0.99) -> None:
     """Project onto ||A||_inf <= criteria return updated A
 
     Parameters
@@ -299,7 +310,6 @@ def projection_norm_inf(
     assert np.linalg.norm(A_np, ord=np.inf) <= criteria + epsilon
 
     A.data.copy_(
-        torch.tensor(A_np, dtype=A.dtype, device=A.device),
-        non_blocking=True
+        torch.tensor(A_np, dtype=A.dtype, device=A.device), non_blocking=True
     )
     return
