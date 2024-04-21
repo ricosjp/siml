@@ -39,6 +39,7 @@ from . import time_norm
 from . import translator
 from . import upper_limit
 from . import cross_product
+from . import implicit_gnn
 
 
 # Add block information
@@ -94,6 +95,7 @@ blocks = [
     tcn.TCN,
     tcn.EquivariantTCN,
     tensor_operations.EquivariantMLP,
+    implicit_gnn.ImplicitGNN
 ]
 
 for block in blocks:
