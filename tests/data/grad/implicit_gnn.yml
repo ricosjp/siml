@@ -1,0 +1,98 @@
+data:
+  raw: tests/data/grad/raw
+  interim: tests/data/grad/interim
+  preprocessed: tests/data/grad/preprocessed
+  inferred: tests/data/grad/inferred
+  train:
+    - tests/data/grad/preprocessed/train
+  validation:
+    - tests/data/grad/preprocessed/validation
+conversion:
+  file_type: 'ucd'
+  required_file_names:
+    - '*.inp'
+inferer:
+  write_simulation_type: ucd
+  read_simulation_type: ucd
+
+trainer:
+  output_directory: tests/data/grad/implicit_gnn
+  inputs:
+    rank0:
+      - name: phi
+        dim: 1
+  support_inputs:
+    - nodal_grad_x
+    - nodal_grad_y
+    - nodal_grad_z
+    - nodal_nadj
+  outputs:
+    - name: grad
+      dim: 1
+  prune: false
+  n_epoch: 1000
+  log_trigger_epoch: 10
+  stop_trigger_epoch: 10
+  seed: 0
+  lazy: false
+  batch_size: 1
+  num_workers: 0
+
+model:
+  blocks:
+    # Encoder
+    - name: IN_MLP
+      type: mlp
+      is_first: true
+      bias: false
+      input_keys:
+        - rank0
+      destinations:
+        - IGNN
+      nodes:
+        - -1
+        - 16
+      activations:
+        - identity
+
+    # Processor 1
+    - name: IGNN
+      type: implicit_gnn
+      bias: false
+      destinations:
+        - ISOGCN_1
+      nodes:
+        - -1
+        - 16
+      activations:
+        - tanh
+      support_input_indices: 
+        - 3
+      optional:
+        kappa: 0.9
+
+    - name: ISOGCN_1
+      type: iso_gcn
+      bias: false
+      destinations:
+        - OUT_MLP
+      nodes:
+        - -1
+        - 16
+      activations:
+        - identity
+      support_input_indices:
+        - 0
+        - 1
+        - 2
+      optional:
+        propagations:
+          - convolution
+        ah_w: true
+
+    # Decoder
+    - name: OUT_MLP
+      type: mlp
+      nodes:
+        - -1
+        - -1
