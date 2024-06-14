@@ -11,10 +11,9 @@ data:
   validation:
   - tests/data/deform/preprocessed/validation
 conversion:
+  file_type: ucd
   required_file_names:
-    - '*.msh'
-    - '*.cnt'
-    - '*.res.*'
+    - '*.inp'
   mandatory_variables:
     - elemental_strain
     - modulus

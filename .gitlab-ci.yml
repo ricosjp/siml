@@ -40,7 +40,6 @@ stages:
 preprocess:
   stage: preprocess
   script:
-    - python3.9 -m pip freeze
     - python3.9 tests/preprocess.py
   artifacts:
     paths:
