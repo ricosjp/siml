@@ -240,6 +240,7 @@ class AbstractEquivariantGNN(abstract_gcn.AbstractGCN):
         return h_res
 
     def _add_neumann(self, grad, directed_neumann, inversed_moment_tensors):
+        directed_neumann[torch.isnan(directed_neumann)] = 0.
         neumann = torch.einsum(
             'ikl,il...f->ik...f',
             inversed_moment_tensors[..., 0],

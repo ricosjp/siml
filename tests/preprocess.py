@@ -30,6 +30,7 @@ class ConversionFunction(converter.IConvertFunction):
         pass
 
     def __call__(self, fem_data: femio.FEMData, data_directory: pathlib.Path):
+        fem_data = fem_data.to_first_order()
         adj = fem_data.calculate_adjacency_matrix_element()
         nadj = prepost.normalize_adjacency_matrix(adj)
 
@@ -561,6 +562,7 @@ class ConversionFunctionRotationThermalStress(converter.IConvertFunction):
         pass
 
     def __call__(self, fem_data: femio.FEMData, raw_directory: pathlib.Path):
+        fem_data = fem_data.to_first_order()
 
         adj = fem_data.calculate_adjacency_matrix_node()
         nadj = prepost.normalize_adjacency_matrix(adj)
