@@ -39,6 +39,16 @@ class ISimlNumpyFile(ISimlBaseFile, metaclass=abc.ABCMeta):
     ) -> ArrayDataType:
         raise NotImplementedError()
 
+    @abc.abstractmethod
+    def save(
+        self,
+        data: ArrayDataType,
+        *,
+        encrypt_key: bytes = None,
+        overwrite: bool = True
+    ) -> None:
+        ...
+
 
 class ISimlPickleFile(ISimlBaseFile, metaclass=abc.ABCMeta):
     @abc.abstractmethod

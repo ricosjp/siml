@@ -1,6 +1,7 @@
-from typing import Callable
+from typing import Callable, Optional
 import time
 
+import pathlib
 import torch
 from ignite.engine import Engine
 
@@ -29,17 +30,20 @@ class InferenceEngineBuilder:
 
     def create(
         self,
-        model: networks.Network
+        model: networks.Network,
+        debug_output_directory: Optional[pathlib.Path] = None
     ) -> Engine:
         inference_process = self._create_process_function(
-            model=model
+            model=model,
+            debug_output_directory=debug_output_directory
         )
         evaluator_engine = Engine(inference_process)
         return evaluator_engine
 
     def _create_process_function(
         self,
-        model: networks.Network
+        model: networks.Network,
+        debug_output_directory: Optional[pathlib.Path] = None
     ) -> Callable:
 
         def _inference_process(engine, batch):
@@ -51,6 +55,10 @@ class InferenceEngineBuilder:
                 support_device=self._model_env.get_device(),
                 non_blocking=self._non_blocking
             )
+
+            if debug_output_directory is not None:
+                x["debug_output_directory"] = debug_output_directory
+
             with torch.no_grad():
                 start_time = time.time()
                 y_pred = model(x)

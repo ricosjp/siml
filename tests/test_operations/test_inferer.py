@@ -381,3 +381,26 @@ class TestInferer(unittest.TestCase):
                 raw_fem_data.elemental_data.get_attribute_data(
                     'ElementalSTRESS'), decimal=-1)
         return
+
+    def test_infer_simplified_model_as_debug(self):
+        setting_yaml = Path("tests/data/simplified/mlp.yml")
+        main_setting = setting.MainSetting.read_settings_yaml(
+            settings_yaml=setting_yaml
+        )
+        ir = inferer.WholeInferProcessor(
+            main_setting=main_setting,
+            model_path=Path("tests/data/simplified/pretrained/snapshot_epoch_1000.pth"),
+            converter_parameters_pkl=Path(
+                "tests/data/simplified/pretrained/preprocessors.pkl"
+            ),
+        )
+        debug_output_path = Path("tests/data/simplified/prediction/debug")
+        debug_output_path.mkdir(parents=True, exist_ok=True)
+
+        seed_a = np.random.rand(10, 1)
+        raw_dict_x = {
+            "a": np.concatenate([seed_a, seed_a * 2, seed_a * 3], axis=1),
+            "b": np.random.rand(10, 1) * 100.0,
+        }
+
+        _ = ir.run_dict_data(raw_dict_x, debug_output_directory=debug_output_path)

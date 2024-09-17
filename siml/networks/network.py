@@ -177,10 +177,11 @@ class Network(torch.nn.Module):
             self.dict_block[loss_block].reset()
         return
 
-    def forward(self, x_):
+    def forward(self, x_: dict):
         x = x_['x']
         supports = x_.get('supports', None)
         original_shapes = x_.get('original_shapes', None)
+        debug_output_directory = x_.get("debug_output_directory", None)
 
         dict_hidden = {
             block_name: None for block_name in self.call_graph.nodes}
@@ -249,8 +250,11 @@ class Network(torch.nn.Module):
 
                     if block_setting.type == 'group':
                         output = self.dict_block[graph_node](
-                            inputs, supports=supports,
-                            original_shapes=original_shapes)
+                            inputs,
+                            supports=supports,
+                            original_shapes=original_shapes,
+                            debug_output_directory=debug_output_directory,
+                        )
                         hidden = output
 
                     elif self.dict_block_information[
@@ -271,11 +275,17 @@ class Network(torch.nn.Module):
                                     in block_setting.support_input_indices]
 
                         hidden = self.dict_block[graph_node](
-                            *inputs, supports=selected_supports,
-                            original_shapes=original_shapes)
+                            *inputs,
+                            supports=selected_supports,
+                            original_shapes=original_shapes,
+                            debug_output_directory=debug_output_directory,
+                        )
                     else:
                         hidden = self.dict_block[graph_node](
-                            *inputs, original_shapes=original_shapes)
+                            *inputs,
+                            original_shapes=original_shapes,
+                            debug_output_directory=debug_output_directory,
+                        )
 
                     if block_setting.coeff is not None:
                         if isinstance(hidden, dict):

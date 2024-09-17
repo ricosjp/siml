@@ -1,10 +1,11 @@
+from __future__ import annotations
 import datetime as dt
 import io
 import os
 import re
 from glob import glob, iglob
 from pathlib import Path
-from typing import List, Union
+from typing import Union, Callable, Any, TYPE_CHECKING
 
 import numpy as np
 import scipy.sparse as sp
@@ -12,7 +13,12 @@ import torch
 import yaml
 from Cryptodome.Cipher import AES
 
-from siml.path_like_objects import SimlDirectory
+from siml.path_like_objects import SimlDirectory, SimlFileBuilder
+
+
+if TYPE_CHECKING:
+    from siml.networks import SimlModule
+
 
 INFERENCE_FLAG_FILE = 'inference'
 
@@ -622,20 +628,12 @@ class VariableMask:
 
         return masked_keys[0]
 
-    def _remove_zero_element_tensor(self,
-                                    tensors: List[torch.Tensor]):
-        return [
-            [m_ for m_ in m if torch.numel(m_) > 0]
-            for m in tensors
-        ]
+    def _remove_zero_element_tensor(self, tensors: list[torch.Tensor]):
+        return [[m_ for m_ in m if torch.numel(m_) > 0] for m in tensors]
 
-    def _replace_zero_element_tensor(self,
-                                     tensors: List[torch.Tensor]):
+    def _replace_zero_element_tensor(self, tensors: list[torch.Tensor]):
         return [
-            [
-                torch.zeros(1).to(m_.device)
-                if torch.numel(m_) == 0 else m_ for m_ in m
-            ]
+            [torch.zeros(1).to(m_.device) if torch.numel(m_) == 0 else m_ for m_ in m]
             for m in tensors
         ]
 
@@ -651,3 +649,20 @@ def cat_time_series(x, time_series_keys):
             for k in x[0].keys()}
     else:
         return torch.cat(x, dim=1)  # Assume all are time series
+
+
+def debug_if_necessary(method: Callable):
+    def _wrapper(self: SimlModule, *args: Any, **kwargs: Any) -> Any:
+        debug_output_directory: Union[Path, None] = kwargs.get(
+            "debug_output_directory", None
+        )
+        result: torch.Tensor = method(self, *args, **kwargs)
+
+        if debug_output_directory is not None:
+            file_path = Path(debug_output_directory) / f"{self.block_setting.name}.npy"
+            numpy_file = SimlFileBuilder.numpy_file(file_path)
+            numpy_file.save(result.detach().numpy())
+
+        return result
+
+    return _wrapper
