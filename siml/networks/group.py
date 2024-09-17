@@ -2,8 +2,9 @@
 import numpy as np
 import torch
 import pathlib
-from typing import Optional
+from typing import Optional, Union
 
+from siml.util import debug_if_necessary
 from siml.path_like_objects import SimlFileBuilder
 from .. import setting
 from .. import util
@@ -190,6 +191,7 @@ class Group(siml_module.SimlModule):
             support_input=self.group_setting.support_inputs)
         return network.Network(group_model_setting, trainer_setting)
 
+    @debug_if_necessary
     def forward_time_series(
         self,
         x,
@@ -213,15 +215,7 @@ class Group(siml_module.SimlModule):
                 )
             )
 
-        h = self._stack(ts[1:])
-
-        if debug_output_directory is not None:
-            numpy_file = SimlFileBuilder.numpy_file(
-                debug_output_directory / f"{self.block_setting.name}.npy"
-            )
-            numpy_file.save(data=h)
-
-        return h
+        return self._stack(ts[1:])
 
     def _get_time_series_length(self, x):
         if isinstance(x, dict):
@@ -258,10 +252,14 @@ class Group(siml_module.SimlModule):
             raise NotImplementedError
 
     def forward_wo_loop(self, x, supports, original_shapes=None, debug_output_directory: Optional[pathlib.Path] = None):
+
+        if debug_output_directory is not None:
+            debug_output_directory = debug_output_directory / self.group_setting.name
+
         h = self.group({
             'x': x, 'supports': supports,
             'original_shapes': original_shapes,
-            'debug_output_directory': debug_output_directory / self.group_setting.name
+            'debug_output_directory': debug_output_directory
         })
         return h
 
@@ -269,10 +267,20 @@ class Group(siml_module.SimlModule):
         h = x
         for i_repeat in range(self.group_setting.repeat):
             h_previous = self.mask_function(h)[0]
+
+            
+            if debug_output_directory is not None:
+                _debug_output_directory = (
+                    debug_output_directory
+                    / f"{self.group_setting.name}_loop_{i_repeat}"
+                )
+            else:
+                _debug_output_directory = None
+
             h.update(self.group({
                 'x': h, 'supports': supports,
                 'original_shapes': original_shapes,
-                'debug_output_directory': debug_output_directory / self.group_setting.name
+                'debug_output_directory': _debug_output_directory
             }))
             if self.group_setting.convergence_threshold is not None:
                 residual = self.calculate_residual(
@@ -298,16 +306,25 @@ class Group(siml_module.SimlModule):
                 pass
         return h
 
-    def forward_implicit(self, x, supports, original_shapes=None):
+    def forward_implicit(self, x, supports, original_shapes=None, debug_output_directory: Optional[pathlib.Path] = None, **kwargs):
         masked_x = self.mask_function(x, keep_empty_data=False)[0]
         h = x
         masked_h = self.mask_function(h, keep_empty_data=False)[0]
         masked_h_previous = masked_h
-        operator = self.group({
-            'x': h, 'supports': supports,
-            'original_shapes': original_shapes})
-        masked_operator = self.mask_function(
-            operator, keep_empty_data=False)[0]
+
+        _debug_output_directory: Union[pathlib.Path, None]   = None
+        if debug_output_directory is not None:
+            _debug_output_directory = debug_output_directory / self.block_setting.name
+
+        operator = self.group(
+            {
+                "x": h,
+                "supports": supports,
+                "original_shapes": original_shapes,
+                "debug_output_directory": debug_output_directory,
+            }
+        )
+        masked_operator = self.mask_function(operator, keep_empty_data=False)[0]
         masked_nabla_f = self.operate(self.operate(
             masked_h, masked_x, torch.sub), masked_operator, torch.sub)
 
@@ -316,11 +333,22 @@ class Group(siml_module.SimlModule):
         if self.debug:
             print('\n--\ni_repeat\tresidual\talpha')
         for i_repeat in range(self.group_setting.repeat):
-            operator = self.group({
-                'x': h, 'supports': supports,
-                'original_shapes': original_shapes})
-            masked_operator = self.mask_function(
-                operator, keep_empty_data=False)[0]
+
+            if debug_output_directory is not None:
+                _debug_output_directory = (
+                    debug_output_directory
+                    / f"{self.block_setting.name}_loop_{i_repeat}"
+                )
+
+            operator = self.group(
+                {
+                    "x": h,
+                    "supports": supports,
+                    "original_shapes": original_shapes,
+                    "debug_output_directory": _debug_output_directory,
+                }
+            )
+            masked_operator = self.mask_function(operator, keep_empty_data=False)[0]
 
             if self.steady:
                 # R(u) = - D[u] dt

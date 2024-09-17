@@ -5,6 +5,7 @@ import torch
 from . import activations
 from . import siml_module
 
+from siml.util import debug_if_necessary
 
 class Reducer(siml_module.SimlModule):
     """Broadcastive operation block."""
@@ -68,7 +69,8 @@ class Reducer(siml_module.SimlModule):
 
         return
 
-    def forward(self, *xs, op=None, supports=None, original_shapes=None):
+    @debug_if_necessary
+    def forward(self, *xs, op=None, supports=None, original_shapes=None, **kwargs):
         if len(xs) == 1:
             raise ValueError(f"At least 2 inputs expected. Given: {len(xs)}")
 

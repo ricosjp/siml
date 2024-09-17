@@ -5,6 +5,8 @@ from . import activations
 from . import pinv_mlp
 from . import siml_module
 
+from siml.util import debug_if_necessary
+
 
 class Dirichlet(siml_module.SimlModule):
     """Dirichlet boundary condition management."""
@@ -49,8 +51,9 @@ class Dirichlet(siml_module.SimlModule):
             block_setting, no_parameter=True, create_activations=False)
         return
 
+    @debug_if_necessary
     def forward(
-            self, *xs, supports=None, original_shapes=None):
+            self, *xs, supports=None, original_shapes=None, **kwargs):
         """
         Take into account Dirichlet boundary condition.
 
@@ -157,8 +160,9 @@ class NeumannIsoGCN(siml_module.SimlModule):
             self.coeff = torch.nn.Linear(1, 1, bias=False)
         return
 
+    @debug_if_necessary
     def forward(
-            self, *xs, supports=None, original_shapes=None):
+            self, *xs, supports=None, original_shapes=None, **kwargs):
         """
         Take into account Neumann boundary condition using IsoGCN.
 
@@ -244,8 +248,9 @@ class NeumannEncoder(siml_module.SimlModule):
     def activations(self):
         return self.reference_block.activations
 
+    @debug_if_necessary
     def forward(
-            self, *xs, supports=None, original_shapes=None):
+            self, *xs, supports=None, original_shapes=None, **kwargs):
         """
         Take into account Neumann boundary condition using IsoGCN.
 
@@ -377,8 +382,9 @@ class NeumannDecoder(siml_module.SimlModule):
                     f"{self.block_setting}")
         return
 
+    @debug_if_necessary
     def forward(
-            self, *xs, supports=None, original_shapes=None):
+            self, *xs, supports=None, original_shapes=None, **kwargs):
         """
         Take into account Neumann boundary condition using IsoGCN.
 
@@ -482,8 +488,9 @@ class Interaction(siml_module.SimlModule):
         self.factor = self.block_setting.optional.get('factor', 1.)
         return
 
+    @debug_if_necessary
     def forward(
-            self, *xs, supports=None, original_shapes=None):
+            self, *xs, supports=None, original_shapes=None, **kwargs):
         """
         Compute interactions between two meshes.
 
@@ -564,8 +571,9 @@ class Assignment(siml_module.SimlModule):
         self.clone = self.block_setting.optional.get('clone', False)
         return
 
+    @debug_if_necessary
     def forward(
-            self, *xs, supports=None, original_shapes=None):
+            self, *xs, supports=None, original_shapes=None, **kwargs):
         """
         Assign values.
 

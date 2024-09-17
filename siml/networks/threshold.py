@@ -1,3 +1,5 @@
+
+from siml.util import debug_if_necessary
 from . import siml_module
 import torch
 
@@ -45,9 +47,9 @@ class Threshold(siml_module.SimlModule):
 
         return block_setting.optional['value']
 
-    def forward(self,
-                x: torch.Tensor,
-                supports=None,
-                original_shapes=None) -> torch.Tensor:
+    @debug_if_necessary
+    def forward(
+        self, x: torch.Tensor, supports=None, original_shapes=None, **kwargs
+    ) -> torch.Tensor:
         out = self._func(x)
         return out

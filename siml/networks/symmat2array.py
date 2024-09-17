@@ -1,6 +1,7 @@
 
 import torch
 
+from siml.util import debug_if_necessary
 from . import siml_module
 
 
@@ -36,7 +37,8 @@ class Symmat2Array(siml_module.SimlModule):
         self.indices_symmat2array = [0, 4, 8, 1, 5, 2]
         return
 
-    def forward(self, x, supports=None, original_shapes=None):
+    @debug_if_necessary
+    def forward(self, x, supports=None, original_shapes=None, **kwargs):
         n_feature = x.shape[-1]
         y = torch.reshape(x, (-1, 9, n_feature))[
             :, self.indices_symmat2array]

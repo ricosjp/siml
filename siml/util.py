@@ -656,13 +656,41 @@ def debug_if_necessary(method: Callable):
         debug_output_directory: Union[Path, None] = kwargs.get(
             "debug_output_directory", None
         )
-        result: torch.Tensor = method(self, *args, **kwargs)
+        result: torch.Tensor | dict[torch.Tensor] | tuple[torch.Tensor] = method(self, *args, **kwargs)
 
         if debug_output_directory is not None:
-            file_path = Path(debug_output_directory) / f"{self.block_setting.name}.npy"
-            numpy_file = SimlFileBuilder.numpy_file(file_path)
-            numpy_file.save(result.detach().numpy())
-
+            _dump_debug_items(
+                debug_output_directory=Path(debug_output_directory),
+                filename=self.block_setting.name,
+                result=result
+            )
+            
         return result
 
     return _wrapper
+
+
+def _dump_debug_items(
+    debug_output_directory: Path,
+    filename: str,
+    result: torch.Tensor | dict[torch.Tensor] | tuple[torch.Tensor]
+):
+    if isinstance(result, torch.Tensor):
+        file_path = debug_output_directory / f"{filename}.npy"
+        numpy_file = SimlFileBuilder.numpy_file(file_path)
+        numpy_file.save(result.detach().numpy())
+        return
+
+    if isinstance(result, tuple):
+        for i, v in enumerate(result):
+            _dump_debug_items(debug_output_directory, f"{filename}_index_{i}", v)
+        return
+
+    if isinstance(result, dict):
+        for k, v in result.items():
+            _dump_debug_items(debug_output_directory, f"{filename}_{k}", v)
+        return
+
+    raise NotImplementedError(
+        f"Result of which type is {type(result)} cannot be dumped."
+    )

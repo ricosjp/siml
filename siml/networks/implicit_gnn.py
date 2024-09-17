@@ -22,6 +22,7 @@ from torch.autograd import Function
 from torch.nn import Parameter
 
 from siml.setting import BlockSetting
+from siml.util import debug_if_necessary
 
 from . import siml_module
 
@@ -98,6 +99,7 @@ class ImplicitGNN(siml_module.SimlModule):
                 f"input: {self.activations}"
             )
 
+    @debug_if_necessary
     def forward(
         self,
         x: torch.Tensor,
