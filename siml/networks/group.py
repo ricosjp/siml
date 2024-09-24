@@ -212,6 +212,7 @@ class Group(siml_module.SimlModule):
                     self._generate_time_series_input(ts[-1], x, i_time),
                     supports,
                     original_shapes=original_shapes,
+                    debug_output_directory=debug_output_directory
                 )
             )
 
@@ -251,6 +252,7 @@ class Group(siml_module.SimlModule):
         else:
             raise NotImplementedError
 
+    @debug_if_necessary
     def forward_wo_loop(self, x, supports, original_shapes=None, debug_output_directory: Optional[pathlib.Path] = None):
 
         if debug_output_directory is not None:
@@ -263,6 +265,7 @@ class Group(siml_module.SimlModule):
         })
         return h
 
+    @debug_if_necessary
     def forward_w_loop(self, x, supports, original_shapes=None, debug_output_directory: Optional[pathlib.Path] = None):
         h = x
         for i_repeat in range(self.group_setting.repeat):
@@ -306,6 +309,7 @@ class Group(siml_module.SimlModule):
                 pass
         return h
 
+    @debug_if_necessary
     def forward_implicit(self, x, supports, original_shapes=None, debug_output_directory: Optional[pathlib.Path] = None, **kwargs):
         masked_x = self.mask_function(x, keep_empty_data=False)[0]
         h = x
@@ -321,7 +325,7 @@ class Group(siml_module.SimlModule):
                 "x": h,
                 "supports": supports,
                 "original_shapes": original_shapes,
-                "debug_output_directory": debug_output_directory,
+                "debug_output_directory": _debug_output_directory,
             }
         )
         masked_operator = self.mask_function(operator, keep_empty_data=False)[0]
