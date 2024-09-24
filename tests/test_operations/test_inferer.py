@@ -395,7 +395,6 @@ class TestInferer(unittest.TestCase):
             ),
         )
         debug_output_path = Path("tests/data/simplified/prediction/debug")
-        debug_output_path.mkdir(parents=True, exist_ok=True)
 
         seed_a = np.random.rand(10, 1)
         raw_dict_x = {
@@ -405,4 +404,5 @@ class TestInferer(unittest.TestCase):
 
         _ = ir.run_dict_data(raw_dict_x, debug_output_directory=debug_output_path)
 
-        assert (debug_output_path / "OUTPUT.npy").exists()
+        for block in main_setting.model.blocks:
+            assert (debug_output_path / f"{block.name}.npy").exists()
