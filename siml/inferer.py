@@ -73,7 +73,8 @@ class WholeInferProcessor:
         data_directories: Union[list[pathlib.Path], pathlib.Path],
         output_directory_base: Optional[pathlib.Path] = None,
         perform_preprocess: bool = True,
-        save_summary: Optional[bool] = True
+        save_summary: Optional[bool] = True,
+        debug_output_directory: Optional[pathlib.Path] = None
     ) -> dict:
         """run whole inference processes.
 
@@ -87,6 +88,8 @@ class WholeInferProcessor:
             If True, perform preprocessing and scaling, by default True
         save : Optional[bool], optional
             If True, save items, by default None
+        debug_output_directory: Optional[pathlib.Path]
+            If fed, output debug information
 
         Returns
         -------
@@ -97,20 +100,23 @@ class WholeInferProcessor:
             return self._run_with_preprocess(
                 data_directories=data_directories,
                 output_directory_base=output_directory_base,
-                save_summary=save_summary
+                save_summary=save_summary,
+                debug_output_directory=debug_output_directory
             )
         else:
             return self.inferer.infer(
                 data_directories=data_directories,
                 output_directory_base=output_directory_base,
-                save_summary=save_summary
+                save_summary=save_summary,
+                debug_output_directory=debug_output_directory
             )
 
     def _run_with_preprocess(
         self,
         data_directories: Union[list[pathlib.Path], pathlib.Path],
         output_directory_base: Optional[pathlib.Path] = None,
-        save_summary: Optional[bool] = True
+        save_summary: Optional[bool] = True,
+        debug_output_directory: Optional[pathlib.Path] = None
     ) -> dict:
         if isinstance(data_directories, pathlib.Path):
             data_directories = [data_directories]
@@ -133,7 +139,8 @@ class WholeInferProcessor:
         return self.inferer.infer_dataset(
             dataset,
             output_directory_base=output_directory_base,
-            save_summary=save_summary
+            save_summary=save_summary,
+            debug_output_directory=debug_output_directory
         )
 
     def run_dict_data(
@@ -435,7 +442,8 @@ class Inferer():
         data_directories: Optional[list[pathlib.Path]] = None,
         output_directory_base: Optional[pathlib.Path] = None,
         output_all: bool = False,
-        save_summary: Optional[bool] = True
+        save_summary: Optional[bool] = True,
+        debug_output_directory: Optional[pathlib.Path] = None
     ):
         """Perform infererence.
 
@@ -484,7 +492,8 @@ class Inferer():
         )
         _core_inferer = self._create_core_inferer(
             user_loss_function_dic=self._user_loss_function_dic,
-            inference_start_datetime=util.date_string()
+            inference_start_datetime=util.date_string(),
+            debug_output_directory=debug_output_directory
         )
 
         inference_state = _core_inferer.run(inference_loader)
@@ -504,7 +513,8 @@ class Inferer():
         self,
         preprocess_dataset: datasets.PreprocessDataset,
         output_directory_base: Optional[pathlib.Path] = None,
-        save_summary: Optional[bool] = True
+        save_summary: Optional[bool] = True,
+        debug_output_directory: Optional[pathlib.Path] = None
     ) -> list[dict]:
         """Perform inference for datasets
 
@@ -547,7 +557,8 @@ class Inferer():
         )
         _core_inferer = self._create_core_inferer(
             user_loss_function_dic=self._user_loss_function_dic,
-            inference_start_datetime=util.date_string()
+            inference_start_datetime=util.date_string(),
+            debug_output_directory=debug_output_directory
         )
         inference_state = _core_inferer.run(inference_loader)
 

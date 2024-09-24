@@ -1,7 +1,7 @@
 import torch
 
 
-def mul(sparse, tensor):
+def mul(sparse: torch.Tensor, tensor):
     """Multiply sparse tensors and tensors.
 
     Parameters

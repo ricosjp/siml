@@ -404,3 +404,5 @@ class TestInferer(unittest.TestCase):
         }
 
         _ = ir.run_dict_data(raw_dict_x, debug_output_directory=debug_output_path)
+
+        assert (debug_output_path / "OUTPUT.npy").exists()
