@@ -633,7 +633,8 @@ class VariableMask:
 
     def _replace_zero_element_tensor(self, tensors: list[torch.Tensor]):
         return [
-            [torch.zeros(1).to(m_.device) if torch.numel(m_) == 0 else m_ for m_ in m]
+            [torch.zeros(1).to(m_.device) if torch.numel(m_)
+             == 0 else m_ for m_ in m]
             for m in tensors
         ]
 
@@ -656,7 +657,8 @@ def debug_if_necessary(method: Callable):
         debug_output_directory: Union[Path, None] = kwargs.get(
             "debug_output_directory", None
         )
-        result: torch.Tensor | dict[torch.Tensor] | tuple[torch.Tensor] = method(self, *args, **kwargs)
+        result: torch.Tensor | dict[torch.Tensor] | tuple[torch.Tensor] = method(
+            self, *args, **kwargs)
 
         if debug_output_directory is not None:
             _dump_debug_items(
@@ -664,7 +666,7 @@ def debug_if_necessary(method: Callable):
                 filename=self.block_setting.name,
                 result=result
             )
-            
+
         return result
 
     return _wrapper
@@ -683,7 +685,8 @@ def _dump_debug_items(
 
     if isinstance(result, tuple):
         for i, v in enumerate(result):
-            _dump_debug_items(debug_output_directory, f"{filename}_index_{i}", v)
+            _dump_debug_items(debug_output_directory,
+                              f"{filename}_index_{i}", v)
         return
 
     if isinstance(result, dict):

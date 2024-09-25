@@ -63,7 +63,8 @@ class CoreInferer():
             post_processor=self._post_processor,
             inference_start_datetime=self._inference_start_datetime,
         )
-        evaluator_engine = bulider.create(self._model, self._debug_output_directory)
+        evaluator_engine = bulider.create(
+            self._model, self._debug_output_directory)
 
         metrics_builder = MetricsBuilder(
             trainer_setting=self._trainer_setting, loss_function=self._loss_function

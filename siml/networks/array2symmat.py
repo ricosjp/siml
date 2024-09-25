@@ -5,6 +5,7 @@ from . import siml_module
 
 from siml.util import debug_if_necessary
 
+
 class Array2Symmat(siml_module.SimlModule):
     """Convert array to symmetric matrix."""
 

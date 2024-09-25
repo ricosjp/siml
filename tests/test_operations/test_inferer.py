@@ -389,7 +389,8 @@ class TestInferer(unittest.TestCase):
         )
         ir = inferer.WholeInferProcessor(
             main_setting=main_setting,
-            model_path=Path("tests/data/simplified/pretrained/snapshot_epoch_1000.pth"),
+            model_path=Path(
+                "tests/data/simplified/pretrained/snapshot_epoch_1000.pth"),
             converter_parameters_pkl=Path(
                 "tests/data/simplified/pretrained/preprocessors.pkl"
             ),
@@ -402,7 +403,8 @@ class TestInferer(unittest.TestCase):
             "b": np.random.rand(10, 1) * 100.0,
         }
 
-        _ = ir.run_dict_data(raw_dict_x, debug_output_directory=debug_output_path)
+        _ = ir.run_dict_data(
+            raw_dict_x, debug_output_directory=debug_output_path)
 
         for block in main_setting.model.blocks:
             assert (debug_output_path / f"{block.name}.npy").exists()

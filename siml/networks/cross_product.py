@@ -5,6 +5,7 @@ from . import siml_module
 
 from siml.util import debug_if_necessary
 
+
 class CrossProduct(siml_module.SimlModule):
     """Cross Product block."""
 

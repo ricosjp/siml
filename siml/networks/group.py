@@ -271,7 +271,6 @@ class Group(siml_module.SimlModule):
         for i_repeat in range(self.group_setting.repeat):
             h_previous = self.mask_function(h)[0]
 
-            
             if debug_output_directory is not None:
                 _debug_output_directory = (
                     debug_output_directory
@@ -316,7 +315,7 @@ class Group(siml_module.SimlModule):
         masked_h = self.mask_function(h, keep_empty_data=False)[0]
         masked_h_previous = masked_h
 
-        _debug_output_directory: Union[pathlib.Path, None]   = None
+        _debug_output_directory: Union[pathlib.Path, None] = None
         if debug_output_directory is not None:
             _debug_output_directory = debug_output_directory / self.block_setting.name
 
@@ -328,7 +327,8 @@ class Group(siml_module.SimlModule):
                 "debug_output_directory": _debug_output_directory,
             }
         )
-        masked_operator = self.mask_function(operator, keep_empty_data=False)[0]
+        masked_operator = self.mask_function(
+            operator, keep_empty_data=False)[0]
         masked_nabla_f = self.operate(self.operate(
             masked_h, masked_x, torch.sub), masked_operator, torch.sub)
 
@@ -352,7 +352,8 @@ class Group(siml_module.SimlModule):
                     "debug_output_directory": _debug_output_directory,
                 }
             )
-            masked_operator = self.mask_function(operator, keep_empty_data=False)[0]
+            masked_operator = self.mask_function(
+                operator, keep_empty_data=False)[0]
 
             if self.steady:
                 # R(u) = - D[u] dt

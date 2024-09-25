@@ -7,6 +7,7 @@ from . import siml_module
 
 from siml.util import debug_if_necessary
 
+
 class Reducer(siml_module.SimlModule):
     """Broadcastive operation block."""
 

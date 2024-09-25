@@ -3,6 +3,7 @@ from . import siml_module
 
 from siml.util import debug_if_necessary
 
+
 class Activation(siml_module.SimlModule):
     """Activation block."""
 
@@ -28,7 +29,6 @@ class Activation(siml_module.SimlModule):
             'max_pool', 'max', 'mean']
         self.dict_key = block_setting.optional.get('dict_key', None)
         return
-
 
     @debug_if_necessary
     def forward(self, x, supports=None, original_shapes=None, **kwargs):
