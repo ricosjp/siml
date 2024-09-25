@@ -3,6 +3,8 @@ import torch
 
 from . import siml_module
 
+from siml.util import debug_if_necessary
+
 
 class Concatenator(siml_module.SimlModule):
     """Concatenation operation block."""
@@ -41,5 +43,6 @@ class Concatenator(siml_module.SimlModule):
         super().__init__(block_setting, no_parameter=True)
         return
 
-    def forward(self, *xs, op=None, supports=None, original_shapes=None):
+    @debug_if_necessary
+    def forward(self, *xs, op=None, supports=None, original_shapes=None, **kwargs):
         return self.activation(torch.cat(xs, dim=-1))

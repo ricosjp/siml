@@ -1,5 +1,7 @@
 from . import siml_module
 
+from siml.util import debug_if_necessary
+
 
 class Identity(siml_module.SimlModule):
     """Identity block."""
@@ -24,7 +26,8 @@ class Identity(siml_module.SimlModule):
         super().__init__(block_setting, no_parameter=True)
         return
 
-    def forward(self, *x, supports=None, original_shapes=None):
+    @debug_if_necessary
+    def forward(self, *x, supports=None, original_shapes=None, **kwargs):
         if len(x) == 1:
             return x[0]
         else:

@@ -1,6 +1,7 @@
 
 import torch
 
+from siml.util import debug_if_necessary
 from . import siml_module
 
 
@@ -113,7 +114,8 @@ class AbstractGCN(siml_module.SimlModule):
             torch.nn.Linear(*node_tuple, bias=bias)
             for node_tuple in node_tuples])
 
-    def forward(self, x, *args, supports=None, original_shapes=None):
+    @debug_if_necessary
+    def forward(self, x, *args, supports=None, original_shapes=None, **kwargs):
         """Execute the NN's forward computation.
 
         Parameters

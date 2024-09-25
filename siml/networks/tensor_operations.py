@@ -2,6 +2,8 @@
 import numpy as np
 import torch
 
+from siml.util import debug_if_necessary
+
 from .. import setting
 from . import activations
 from . import siml_module
@@ -47,7 +49,8 @@ class Contraction(siml_module.SimlModule):
         super().__init__(block_setting, no_parameter=True)
         return
 
-    def forward(self, *xs, supports=None, original_shapes=None):
+    @debug_if_necessary
+    def forward(self, *xs, supports=None, original_shapes=None, **kwargs):
         """Calculate tensor contraction of rank n ( > m) and m tensors
         \\sum_{l_1, ..., l_m}
         A_{i,k_1,k_2,...,l_1,l_2,...,l_{m}} B_{i,l_1,l_2,...,l_m}
@@ -113,7 +116,8 @@ class TensorProduct(siml_module.SimlModule):
         super().__init__(block_setting, no_parameter=True)
         return
 
-    def forward(self, *xs, supports=None, original_shapes=None):
+    @debug_if_necessary
+    def forward(self, *xs, supports=None, original_shapes=None, **kwargs):
         """Calculate tensor product of rank n and m tensors
         A_{i,k_1,k_2,...,k_m} B_{i,l_1,l_2,...,l_m}
         """

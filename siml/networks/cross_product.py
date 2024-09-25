@@ -3,6 +3,8 @@ import torch
 
 from . import siml_module
 
+from siml.util import debug_if_necessary
+
 
 class CrossProduct(siml_module.SimlModule):
     """Cross Product block."""
@@ -43,7 +45,8 @@ class CrossProduct(siml_module.SimlModule):
         super().__init__(block_setting, no_parameter=True)
         return
 
-    def forward(self, *xs, supports=None, original_shapes=None):
+    @debug_if_necessary
+    def forward(self, *xs, supports=None, original_shapes=None, **kwargs):
         """Calculate cross product of tensors
 
         Parameters

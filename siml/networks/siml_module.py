@@ -1,7 +1,13 @@
 import abc
 
+import pathlib
+from typing import Optional
 import numpy as np
 import torch
+
+from siml.setting import BlockSetting
+from siml.util import debug_if_necessary
+from siml.path_like_objects import SimlFileBuilder
 
 from .. import config
 from . import activations as acts
@@ -147,7 +153,7 @@ class SimlModule(torch.nn.Module, metaclass=abc.ABCMeta):
             create_linears=True, create_activations=True, create_dropouts=True,
             no_parameter=False, residual_dimension=None, **kwargs):
         super().__init__()
-        self.block_setting = block_setting
+        self.block_setting: BlockSetting = block_setting
         self.residual = self.block_setting.residual
         self.coeff = self.block_setting.coeff
 
@@ -249,7 +255,15 @@ class SimlModule(torch.nn.Module, metaclass=abc.ABCMeta):
                 raise ValueError(f"Unexpected loss type: {self.losses[k]}")
         return
 
-    def forward(self, x, supports=None, original_shapes=None):
+    @debug_if_necessary
+    def forward(
+        self,
+        x,
+        supports=None,
+        original_shapes=None,
+        *,
+        debug_output_directory: Optional[pathlib.Path] = None,
+    ):
         try:
             if self.block_setting.no_grad:
                 with torch.no_grad():
@@ -260,6 +274,7 @@ class SimlModule(torch.nn.Module, metaclass=abc.ABCMeta):
                     x, supports=supports, original_shapes=original_shapes)
         except Exception as e:
             raise ValueError(f"{e}\nError occured in: {self.block_setting}")
+
         return h
 
     def _forward(self, x, supports=None, original_shapes=None):

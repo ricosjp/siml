@@ -3,6 +3,8 @@ import torch
 
 from . import siml_module
 
+from siml.util import debug_if_necessary
+
 
 class Reshape(siml_module.SimlModule):
     """Reshape block."""
@@ -34,7 +36,8 @@ class Reshape(siml_module.SimlModule):
         self.new_shape = block_setting.optional['new_shape']
         return
 
-    def forward(self, x, supports=None, original_shapes=None):
+    @debug_if_necessary
+    def forward(self, x, supports=None, original_shapes=None, **kwargs):
         return torch.reshape(x, self.new_shape)
 
 
@@ -67,7 +70,8 @@ class FeaturesToTimeSeries(siml_module.SimlModule):
         super().__init__(block_setting, no_parameter=True)
         return
 
-    def forward(self, x, supports=None, original_shapes=None):
+    @debug_if_necessary
+    def forward(self, x, supports=None, original_shapes=None, **kwargs):
         axes = list(range(len(x.shape)))
         return torch.permute(x, [-1] + axes[:-1])[..., None]
 
@@ -110,7 +114,8 @@ class TimeSeriesToFeatures(siml_module.SimlModule):
         #     raise ValueError(f"Should be at last: {block_setting}")
         return
 
-    def forward(self, x, supports=None, original_shapes=None):
+    @debug_if_necessary
+    def forward(self, x, supports=None, original_shapes=None, **kwargs):
         axes = list(range(len(x.shape)))
         return torch.reshape(
             torch.permute(x, axes[1:] + [0]), list(x.shape[1:-1]) + [-1])
@@ -140,5 +145,6 @@ class Accessor(siml_module.SimlModule):
         self.index = block_setting.optional.get('index', 0)
         return
 
-    def forward(self, x, supports=None, original_shapes=None):
+    @debug_if_necessary
+    def forward(self, x, supports=None, original_shapes=None, **kwargs):
         return x[self.index]

@@ -1,3 +1,4 @@
+from siml.util import debug_if_necessary
 from . import siml_module
 import torch
 
@@ -24,10 +25,10 @@ class UpperLimit(siml_module.SimlModule):
                          create_activations=False,
                          no_parameter=True)
 
-    def forward(self,
-                *xs,
-                supports=None,
-                original_shapes=None) -> torch.Tensor:
+    @debug_if_necessary
+    def forward(
+        self, *xs, supports=None, original_shapes=None, **kwargs
+    ) -> torch.Tensor:
         x = xs[0]
         max_values = xs[1]
 

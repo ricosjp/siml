@@ -4,6 +4,8 @@ import torch
 
 from . import siml_module
 
+from siml.util import debug_if_necessary
+
 
 class EinSum(siml_module.SimlModule):
     """EinSum block."""
@@ -52,6 +54,7 @@ class EinSum(siml_module.SimlModule):
 
         return
 
-    def forward(self, *xs, supports=None, original_shapes=None):
+    @debug_if_necessary
+    def forward(self, *xs, supports=None, original_shapes=None, **kwargs):
         """Calculate EinSum."""
         return torch.einsum(self.equation, *xs)
