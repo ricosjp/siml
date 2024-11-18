@@ -73,7 +73,6 @@ test_gpu:
   tags:
     - multi-gpu
     - avx
-    - sm_61
 
 test_gpu_parallel:
   extends: .test
