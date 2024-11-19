@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 from enum import Enum
+import pathlib
 from typing import Optional, Union
 
 import femio
 import numpy as np
+from siml.path_like_objects import SimlFileBuilder
 from _collections_abc import dict_keys
 
 
@@ -16,6 +18,18 @@ class SimlConvertedStatus(Enum):
 
 
 class SimlConvertedItemContainer:
+
+    @classmethod
+    def from_interim_directories(
+        cls,
+        interim_directories: list[pathlib.Path],
+        decrypt_key: bytes | None = None,
+    ):
+        return cls({
+            str(interim_directory):
+            SimlConvertedItem.from_interim_directory(interim_directory)
+            for interim_directory in interim_directories})
+
     def __init__(self, values: dict[str, SimlConvertedItem]) -> None:
         self._values = values
 
@@ -107,6 +121,34 @@ class SimlConvertedItemContainer:
 
 
 class SimlConvertedItem:
+
+    @classmethod
+    def from_interim_directory(
+        cls,
+        interim_directory: pathlib.Path,
+        decrypt_key: bytes | None = None,
+    ):
+        interims = [
+            SimlFileBuilder.numpy_file(p)
+            for p in interim_directory.glob("*.npy*")
+            if not p.name.startswith("femio_")
+        ] + [
+            SimlFileBuilder.numpy_file(p)
+            for p in interim_directory.glob("*.npz*")
+            if not p.name.startswith("femio_")
+        ]
+
+        dict_data = {
+            p.file_path.name.removesuffix(p.file_extension):
+            p.load(decrypt_key=decrypt_key)
+            for p in interims
+        }
+
+        result = cls()
+        result.successed()
+        result.register(dict_data=dict_data, fem_data=None)
+        return result
+
     def __init__(self) -> None:
         self._status = SimlConvertedStatus.not_finished
         self._dict_data: Union[dict[str, np.ndarray], None] = None
