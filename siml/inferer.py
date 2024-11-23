@@ -578,7 +578,8 @@ class Inferer():
         scaled_dict_answer: Optional[dict] = None,
         save_summary: Optional[bool] = True,
         base_fem_data: Optional[femio.FEMData] = None,
-        debug_output_directory: Optional[pathlib.Path] = None
+        debug_output_directory: Optional[pathlib.Path] = None,
+        core_inferer: Optional[CoreInferer] = None,
     ):
         """
         Infer with dictionary data.
@@ -595,7 +596,9 @@ class Inferer():
             If True, save summary information of inference
         base_fem_data: femio.FEMData, optional
             If fed, inference results are registered to base_fem_data and
-             saved as a file.
+            saved as a file.
+        core_inferer: CoreInferer, optional
+            If fed, use the given inferer for prediction.
 
 
         Returns
@@ -621,12 +624,13 @@ class Inferer():
             answer_raw_dict_y=scaled_dict_answer,
             data_directories=data_directories
         )
-        _core_inferer = self._create_core_inferer(
-            user_loss_function_dic=self._user_loss_function_dic,
-            inference_start_datetime=util.date_string(),
-            debug_output_directory=debug_output_directory
-        )
-        inference_state = _core_inferer.run(inference_loader)
+        if core_inferer is None:
+            core_inferer = self._create_core_inferer(
+                user_loss_function_dic=self._user_loss_function_dic,
+                inference_start_datetime=util.date_string(),
+                debug_output_directory=debug_output_directory
+            )
+        inference_state = core_inferer.run(inference_loader)
 
         records = self._create_post_records(
             inference_state,
