@@ -1,6 +1,10 @@
 
+import pathlib
+
 import femio
+import numpy as np
 import pytest
+import scipy.sparse as sp
 
 from siml.preprocessing.converted_objects import (SimlConvertedItem,
                                                   SimlConvertedItemContainer,
@@ -211,3 +215,32 @@ def test__raise_error_unknown_status():
 
     with pytest.raises(ValueError):
         container.query_num_status_items('NONE')
+
+
+def write_interim_data(directory: pathlib.Path):
+    directory.mkdir(parents=True, exist_ok=True)
+    np.save(directory / "a.npy", np.random.rand(10, 3))
+    sp.save_npz(directory / "s.npz", sp.eye(10))
+
+
+def test__siml_converted_item_from_interim_directory():
+    directory = pathlib.Path("tests/data/tmp/converted_item/interim/0")
+    write_interim_data(directory)
+    converted_item = SimlConvertedItem.from_interim_directory(directory)
+    np.testing.assert_array_equal(
+        converted_item._dict_data['a'].shape, (10, 3)
+    )
+    np.testing.assert_array_equal(
+        converted_item._dict_data['s'].shape, (10, 10)
+    )
+
+
+def test__siml_converted_item_container_from_interim_directory():
+    directories = [
+        pathlib.Path("tests/data/tmp/converted_item/interim/0"),
+        pathlib.Path("tests/data/tmp/converted_item/interim/1"),
+    ]
+    [write_interim_data(d) for d in directories]
+    converted_item = SimlConvertedItemContainer.from_interim_directories(
+        directories)
+    assert len(converted_item) == 2
