@@ -24,12 +24,14 @@ class SimlScalerWrapper(ISimlScaler):
     ) -> SimlScalerWrapper:
 
         if is_old_format:
+            other_components = dict_data.get("other_components")
+            dict_data["preprocess_converter"].pop("other_components", None)
             _cls = cls(
                 dict_data["method"],
                 componentwise=dict_data.get("componentwise", True),
                 key=key,
-                other_components=dict_data.get("other_components"),
-                **dict_data['preprocess_converter']
+                other_components=other_components,
+                **dict_data["preprocess_converter"],
             )
         else:
             # Pass all dict_data['preprocess_converter'] items
