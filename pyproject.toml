@@ -9,8 +9,8 @@ repository = "https://github.com/ricosjp/pysiml"
 documentation = "https://ricosjp.github.io/pysiml/"
 packages = [
     { include = "siml"},
+    { include = "pyproject.toml"}
 ]
-include = ["pyproject.toml"]
 
 [tool.poetry.dependencies]
 python = ">=3.9, <3.10"
