@@ -1,0 +1,371 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>siml.loss_operations package &mdash; siml  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/gallery.css" type="text/css" />
+  <link rel="stylesheet" href="_static/gallery-binder.css" type="text/css" />
+  <link rel="stylesheet" href="_static/gallery-dataframe.css" type="text/css" />
+  <link rel="stylesheet" href="_static/gallery-rendered-html.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="siml.networks package" href="siml.networks.html" />
+    <link rel="prev" title="siml package" href="siml.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> siml
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="examples/index.html">Examples</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="siml.html">siml package</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="siml.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">siml.loss_operations package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-siml.loss_operations.loss_assignment">siml.loss_operations.loss_assignment module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-siml.loss_operations.loss_calculator">siml.loss_operations.loss_calculator module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-siml.loss_operations.loss_calculator_builder">siml.loss_operations.loss_calculator_builder module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-siml.loss_operations.loss_selector">siml.loss_operations.loss_selector module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-siml.loss_operations">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="siml.networks.html">siml.networks package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="siml.path_like_objects.html">siml.path_like_objects package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="siml.preprocessing.html">siml.preprocessing package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="siml.services.html">siml.services package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="siml.siml_variables.html">siml.siml_variables package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="siml.update_functions.html">siml.update_functions package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="siml.utils.html">siml.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.config">siml.config module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.data_parallel">siml.data_parallel module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.datasets">siml.datasets module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.inferer">siml.inferer module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.mains">siml.mains module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.optimize">siml.optimize module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.prepost">siml.prepost module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.setting">siml.setting module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.study">siml.study module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.trainer">siml.trainer module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.util">siml.util module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">siml</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="siml.html">siml package</a> &raquo;</li>
+        
+      <li>siml.loss_operations package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/siml.loss_operations.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <section id="siml-loss-operations-package">
+<h1>siml.loss_operations package<a class="headerlink" href="#siml-loss-operations-package" title="Permalink to this heading">¶</a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading">¶</a></h2>
+</section>
+<section id="module-siml.loss_operations.loss_assignment">
+<span id="siml-loss-operations-loss-assignment-module"></span><h2>siml.loss_operations.loss_assignment module<a class="headerlink" href="#module-siml.loss_operations.loss_assignment" title="Permalink to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.loss_operations.loss_assignment.DictLossAssignment">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.loss_operations.loss_assignment.</span></span><span class="sig-name descname"><span class="pre">DictLossAssignment</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">loss_setting</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.loss_operations.loss_assignment.DictLossAssignment" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#siml.loss_operations.loss_assignment.ILossAssignment" title="siml.loss_operations.loss_assignment.ILossAssignment"><code class="xref py py-class docutils literal notranslate"><span class="pre">ILossAssignment</span></code></a></p>
+<dl class="py property">
+<dt class="sig sig-object py" id="siml.loss_operations.loss_assignment.DictLossAssignment.loss_names">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">loss_names</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#siml.loss_operations.loss_assignment.DictLossAssignment.loss_names" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.loss_operations.loss_assignment.ILossAssignment">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.loss_operations.loss_assignment.</span></span><span class="sig-name descname"><span class="pre">ILossAssignment</span></span><a class="headerlink" href="#siml.loss_operations.loss_assignment.ILossAssignment" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py property">
+<dt class="sig sig-object py" id="siml.loss_operations.loss_assignment.ILossAssignment.loss_names">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">loss_names</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#siml.loss_operations.loss_assignment.ILossAssignment.loss_names" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.loss_operations.loss_assignment.LossAssignmentCreator">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.loss_operations.loss_assignment.</span></span><span class="sig-name descname"><span class="pre">LossAssignmentCreator</span></span><a class="headerlink" href="#siml.loss_operations.loss_assignment.LossAssignmentCreator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.loss_operations.loss_assignment.LossAssignmentCreator.create">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">create</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">loss_setting</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#siml.loss_operations.loss_assignment.ILossAssignment" title="siml.loss_operations.loss_assignment.ILossAssignment"><span class="pre">ILossAssignment</span></a></span></span><a class="headerlink" href="#siml.loss_operations.loss_assignment.LossAssignmentCreator.create" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.loss_operations.loss_assignment.StrLossAssignment">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.loss_operations.loss_assignment.</span></span><span class="sig-name descname"><span class="pre">StrLossAssignment</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">loss_setting</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.loss_operations.loss_assignment.StrLossAssignment" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#siml.loss_operations.loss_assignment.ILossAssignment" title="siml.loss_operations.loss_assignment.ILossAssignment"><code class="xref py py-class docutils literal notranslate"><span class="pre">ILossAssignment</span></code></a></p>
+<dl class="py property">
+<dt class="sig sig-object py" id="siml.loss_operations.loss_assignment.StrLossAssignment.loss_names">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">loss_names</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#siml.loss_operations.loss_assignment.StrLossAssignment.loss_names" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-siml.loss_operations.loss_calculator">
+<span id="siml-loss-operations-loss-calculator-module"></span><h2>siml.loss_operations.loss_calculator module<a class="headerlink" href="#module-siml.loss_operations.loss_calculator" title="Permalink to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.loss_operations.loss_calculator.CoreLossCalculator">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.loss_operations.loss_calculator.</span></span><span class="sig-name descname"><span class="pre">CoreLossCalculator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_assignment</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#siml.loss_operations.loss_assignment.ILossAssignment" title="siml.loss_operations.loss_assignment.ILossAssignment"><span class="pre">ILossAssignment</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">user_loss_function_dic</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">torch.Tensor</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">torch.Tensor</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">torch.Tensor</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_weights</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.loss_operations.loss_calculator.CoreLossCalculator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Calculate loss according to variable name and function name</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.loss_operations.loss_calculator.ILossCalculator">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.loss_operations.loss_calculator.</span></span><span class="sig-name descname"><span class="pre">ILossCalculator</span></span><a class="headerlink" href="#siml.loss_operations.loss_calculator.ILossCalculator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.loss_operations.loss_calculator.ILossCalculator.calculate_loss_details">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">calculate_loss_details</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">original_shapes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#siml.loss_operations.loss_calculator.ILossCalculator.calculate_loss_details" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.loss_operations.loss_calculator.LossCalculator">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.loss_operations.loss_calculator.</span></span><span class="sig-name descname"><span class="pre">LossCalculator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_setting</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'mse'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_series</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_is_dict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_skips</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_dims</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">user_loss_function_dic</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">torch.Tensor</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">torch.Tensor</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">torch.Tensor</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_weights</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.loss_operations.loss_calculator.LossCalculator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#siml.loss_operations.loss_calculator.ILossCalculator" title="siml.loss_operations.loss_calculator.ILossCalculator"><code class="xref py py-class docutils literal notranslate"><span class="pre">ILossCalculator</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.loss_operations.loss_calculator.LossCalculator.calculate_loss_details">
+<span class="sig-name descname"><span class="pre">calculate_loss_details</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">original_shapes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#siml.loss_operations.loss_calculator.LossCalculator.calculate_loss_details" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-siml.loss_operations.loss_calculator_builder">
+<span id="siml-loss-operations-loss-calculator-builder-module"></span><h2>siml.loss_operations.loss_calculator_builder module<a class="headerlink" href="#module-siml.loss_operations.loss_calculator_builder" title="Permalink to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.loss_operations.loss_calculator_builder.LossCalculatorBuilder">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.loss_operations.loss_calculator_builder.</span></span><span class="sig-name descname"><span class="pre">LossCalculatorBuilder</span></span><a class="headerlink" href="#siml.loss_operations.loss_calculator_builder.LossCalculatorBuilder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.loss_operations.loss_calculator_builder.LossCalculatorBuilder.create">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">create</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trainer_setting</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.html#siml.setting.TrainerSetting" title="siml.setting.TrainerSetting"><span class="pre">TrainerSetting</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pad</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">allow_no_answer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">user_loss_function_dic</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Callable</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#siml.loss_operations.loss_calculator.ILossCalculator" title="siml.loss_operations.loss_calculator.ILossCalculator"><span class="pre">ILossCalculator</span></a></span></span><a class="headerlink" href="#siml.loss_operations.loss_calculator_builder.LossCalculatorBuilder.create" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.loss_operations.loss_calculator_builder.LossCalculatorNoAnswer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.loss_operations.loss_calculator_builder.</span></span><span class="sig-name descname"><span class="pre">LossCalculatorNoAnswer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">loss_calculator</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#siml.loss_operations.loss_calculator.ILossCalculator" title="siml.loss_operations.loss_calculator.ILossCalculator"><span class="pre">ILossCalculator</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.loss_operations.loss_calculator_builder.LossCalculatorNoAnswer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#siml.loss_operations.loss_calculator.ILossCalculator" title="siml.loss_operations.loss_calculator.ILossCalculator"><code class="xref py py-class docutils literal notranslate"><span class="pre">ILossCalculator</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.loss_operations.loss_calculator_builder.LossCalculatorNoAnswer.calculate_loss_details">
+<span class="sig-name descname"><span class="pre">calculate_loss_details</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">original_shapes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#siml.loss_operations.loss_calculator_builder.LossCalculatorNoAnswer.calculate_loss_details" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-siml.loss_operations.loss_selector">
+<span id="siml-loss-operations-loss-selector-module"></span><h2>siml.loss_operations.loss_selector module<a class="headerlink" href="#module-siml.loss_operations.loss_selector" title="Permalink to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.loss_operations.loss_selector.LossFunctionSelector">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.loss_operations.loss_selector.</span></span><span class="sig-name descname"><span class="pre">LossFunctionSelector</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">loss_assignment</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#siml.loss_operations.loss_assignment.ILossAssignment" title="siml.loss_operations.loss_assignment.ILossAssignment"><span class="pre">ILossAssignment</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">user_loss_function_dic</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">torch.Tensor</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">torch.Tensor</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">torch.Tensor</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.loss_operations.loss_selector.LossFunctionSelector" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Resposibility: Select loss function for each variable name</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.loss_operations.loss_selector.LossFunctionSelector.get_loss_function">
+<span class="sig-name descname"><span class="pre">get_loss_function</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">variable_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">Tensor</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Tensor</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Tensor</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#siml.loss_operations.loss_selector.LossFunctionSelector.get_loss_function" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-siml.loss_operations">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-siml.loss_operations" title="Permalink to this heading">¶</a></h2>
+</section>
+</section>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="siml.networks.html" class="btn btn-neutral float-right" title="siml.networks package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="siml.html" class="btn btn-neutral float-left" title="siml package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, RICOS Co. Ltd.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

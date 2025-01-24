@@ -1,0 +1,53 @@
+siml.preprocessing package
+==========================
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   siml.preprocessing.siml_scalers
+
+Submodules
+----------
+
+siml.preprocessing.converted\_objects module
+--------------------------------------------
+
+.. automodule:: siml.preprocessing.converted_objects
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.preprocessing.converter module
+-----------------------------------
+
+.. automodule:: siml.preprocessing.converter
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.preprocessing.scalers\_composition module
+----------------------------------------------
+
+.. automodule:: siml.preprocessing.scalers_composition
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.preprocessing.scaling\_converter module
+--------------------------------------------
+
+.. automodule:: siml.preprocessing.scaling_converter
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: siml.preprocessing
+   :members:
+   :undoc-members:
+   :show-inheritance:

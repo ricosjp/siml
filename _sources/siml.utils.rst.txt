@@ -1,0 +1,53 @@
+siml.utils package
+==================
+
+Submodules
+----------
+
+siml.utils.errors module
+------------------------
+
+.. automodule:: siml.utils.errors
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.utils.fem\_data\_utils module
+----------------------------------
+
+.. automodule:: siml.utils.fem_data_utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.utils.multiprocessor module
+--------------------------------
+
+.. automodule:: siml.utils.multiprocessor
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.utils.progress\_bar module
+-------------------------------
+
+.. automodule:: siml.utils.progress_bar
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.utils.timer module
+-----------------------
+
+.. automodule:: siml.utils.timer
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: siml.utils
+   :members:
+   :undoc-members:
+   :show-inheritance:

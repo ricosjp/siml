@@ -1,0 +1,287 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>siml.siml_variables package &mdash; siml  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/gallery.css" type="text/css" />
+  <link rel="stylesheet" href="_static/gallery-binder.css" type="text/css" />
+  <link rel="stylesheet" href="_static/gallery-dataframe.css" type="text/css" />
+  <link rel="stylesheet" href="_static/gallery-rendered-html.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="siml.siml_variables.array_variables package" href="siml.siml_variables.array_variables.html" />
+    <link rel="prev" title="siml.services.training.logging_items package" href="siml.services.training.logging_items.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> siml
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="examples/index.html">Examples</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="siml.html">siml package</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="siml.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="siml.loss_operations.html">siml.loss_operations package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="siml.networks.html">siml.networks package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="siml.path_like_objects.html">siml.path_like_objects package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="siml.preprocessing.html">siml.preprocessing package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="siml.services.html">siml.services package</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">siml.siml_variables package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#subpackages">Subpackages</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-siml.siml_variables">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="siml.update_functions.html">siml.update_functions package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="siml.utils.html">siml.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.config">siml.config module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.data_parallel">siml.data_parallel module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.datasets">siml.datasets module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.inferer">siml.inferer module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.mains">siml.mains module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.optimize">siml.optimize module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.prepost">siml.prepost module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.setting">siml.setting module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.study">siml.study module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.trainer">siml.trainer module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.util">siml.util module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">siml</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="siml.html">siml package</a> &raquo;</li>
+        
+      <li>siml.siml_variables package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/siml.siml_variables.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <section id="siml-siml-variables-package">
+<h1>siml.siml_variables package<a class="headerlink" href="#siml-siml-variables-package" title="Permalink to this heading">¶</a></h1>
+<section id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this heading">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="siml.siml_variables.array_variables.html">siml.siml_variables.array_variables package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="siml.siml_variables.array_variables.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.siml_variables.array_variables.html#module-siml.siml_variables.array_variables.interface_wrapper">siml.siml_variables.array_variables.interface_wrapper module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="siml.siml_variables.array_variables.html#siml.siml_variables.array_variables.interface_wrapper.ISimlArray"><code class="docutils literal notranslate"><span class="pre">ISimlArray</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="siml.siml_variables.array_variables.html#siml.siml_variables.array_variables.interface_wrapper.ISimlArray.apply"><code class="docutils literal notranslate"><span class="pre">ISimlArray.apply()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="siml.siml_variables.array_variables.html#siml.siml_variables.array_variables.interface_wrapper.ISimlArray.reshape"><code class="docutils literal notranslate"><span class="pre">ISimlArray.reshape()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="siml.siml_variables.array_variables.html#siml.siml_variables.array_variables.interface_wrapper.ISimlArray.shape"><code class="docutils literal notranslate"><span class="pre">ISimlArray.shape</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="siml.siml_variables.array_variables.html#module-siml.siml_variables.array_variables.ndarray_wrapper">siml.siml_variables.array_variables.ndarray_wrapper module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="siml.siml_variables.array_variables.html#siml.siml_variables.array_variables.ndarray_wrapper.NdArrayWrapper"><code class="docutils literal notranslate"><span class="pre">NdArrayWrapper</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="siml.siml_variables.array_variables.html#siml.siml_variables.array_variables.ndarray_wrapper.NdArrayWrapper.apply"><code class="docutils literal notranslate"><span class="pre">NdArrayWrapper.apply()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="siml.siml_variables.array_variables.html#siml.siml_variables.array_variables.ndarray_wrapper.NdArrayWrapper.reshape"><code class="docutils literal notranslate"><span class="pre">NdArrayWrapper.reshape()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="siml.siml_variables.array_variables.html#siml.siml_variables.array_variables.ndarray_wrapper.NdArrayWrapper.shape"><code class="docutils literal notranslate"><span class="pre">NdArrayWrapper.shape</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="siml.siml_variables.array_variables.html#module-siml.siml_variables.array_variables.sparce_array_wrapper">siml.siml_variables.array_variables.sparce_array_wrapper module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="siml.siml_variables.array_variables.html#siml.siml_variables.array_variables.sparce_array_wrapper.SparseArrayWrapper"><code class="docutils literal notranslate"><span class="pre">SparseArrayWrapper</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="siml.siml_variables.array_variables.html#siml.siml_variables.array_variables.sparce_array_wrapper.SparseArrayWrapper.apply"><code class="docutils literal notranslate"><span class="pre">SparseArrayWrapper.apply()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="siml.siml_variables.array_variables.html#siml.siml_variables.array_variables.sparce_array_wrapper.SparseArrayWrapper.reshape"><code class="docutils literal notranslate"><span class="pre">SparseArrayWrapper.reshape()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="siml.siml_variables.array_variables.html#siml.siml_variables.array_variables.sparce_array_wrapper.SparseArrayWrapper.shape"><code class="docutils literal notranslate"><span class="pre">SparseArrayWrapper.shape</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="siml.siml_variables.array_variables.html#module-siml.siml_variables.array_variables">Module contents</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="siml.siml_variables.array_variables.html#siml.siml_variables.array_variables.create_siml_arrray"><code class="docutils literal notranslate"><span class="pre">create_siml_arrray()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="module-siml.siml_variables">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-siml.siml_variables" title="Permalink to this heading">¶</a></h2>
+</section>
+</section>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="siml.siml_variables.array_variables.html" class="btn btn-neutral float-right" title="siml.siml_variables.array_variables package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="siml.services.training.logging_items.html" class="btn btn-neutral float-left" title="siml.services.training.logging_items package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, RICOS Co. Ltd.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

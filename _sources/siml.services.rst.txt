@@ -1,0 +1,54 @@
+siml.services package
+=====================
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   siml.services.inference
+   siml.services.training
+
+Submodules
+----------
+
+siml.services.environment module
+--------------------------------
+
+.. automodule:: siml.services.environment
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.services.model\_builder module
+-----------------------------------
+
+.. automodule:: siml.services.model_builder
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.services.model\_selector module
+------------------------------------
+
+.. automodule:: siml.services.model_selector
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.services.path\_rules module
+--------------------------------
+
+.. automodule:: siml.services.path_rules
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: siml.services
+   :members:
+   :undoc-members:
+   :show-inheritance:

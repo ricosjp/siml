@@ -1,0 +1,18 @@
+siml.siml\_variables package
+============================
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   siml.siml_variables.array_variables
+
+Module contents
+---------------
+
+.. automodule:: siml.siml_variables
+   :members:
+   :undoc-members:
+   :show-inheritance:

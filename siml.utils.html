@@ -1,0 +1,438 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>siml.utils package &mdash; siml  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/gallery.css" type="text/css" />
+  <link rel="stylesheet" href="_static/gallery-binder.css" type="text/css" />
+  <link rel="stylesheet" href="_static/gallery-dataframe.css" type="text/css" />
+  <link rel="stylesheet" href="_static/gallery-rendered-html.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="siml.update_functions package" href="siml.update_functions.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> siml
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="examples/index.html">Examples</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="siml.html">siml package</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="siml.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="siml.loss_operations.html">siml.loss_operations package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="siml.networks.html">siml.networks package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="siml.path_like_objects.html">siml.path_like_objects package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="siml.preprocessing.html">siml.preprocessing package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="siml.services.html">siml.services package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="siml.siml_variables.html">siml.siml_variables package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="siml.update_functions.html">siml.update_functions package</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">siml.utils package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-siml.utils.errors">siml.utils.errors module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-siml.utils.fem_data_utils">siml.utils.fem_data_utils module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-siml.utils.multiprocessor">siml.utils.multiprocessor module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-siml.utils.progress_bar">siml.utils.progress_bar module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-siml.utils.timer">siml.utils.timer module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-siml.utils">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.config">siml.config module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.data_parallel">siml.data_parallel module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.datasets">siml.datasets module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.inferer">siml.inferer module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.mains">siml.mains module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.optimize">siml.optimize module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.prepost">siml.prepost module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.setting">siml.setting module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.study">siml.study module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.trainer">siml.trainer module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.util">siml.util module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">siml</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="siml.html">siml package</a> &raquo;</li>
+        
+      <li>siml.utils package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/siml.utils.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <section id="siml-utils-package">
+<h1>siml.utils package<a class="headerlink" href="#siml-utils-package" title="Permalink to this heading">¶</a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading">¶</a></h2>
+</section>
+<section id="module-siml.utils.errors">
+<span id="siml-utils-errors-module"></span><h2>siml.utils.errors module<a class="headerlink" href="#module-siml.utils.errors" title="Permalink to this heading">¶</a></h2>
+<dl class="py exception">
+<dt class="sig sig-object py" id="siml.utils.errors.SimlMultiprocessError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.utils.errors.</span></span><span class="sig-name descname"><span class="pre">SimlMultiprocessError</span></span><a class="headerlink" href="#siml.utils.errors.SimlMultiprocessError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ValueError</span></code></p>
+<p>This error raises when a process is failed
+under multiprocess condition</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="siml.utils.errors.SimlSkipNotificationError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.utils.errors.</span></span><span class="sig-name descname"><span class="pre">SimlSkipNotificationError</span></span><a class="headerlink" href="#siml.utils.errors.SimlSkipNotificationError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ValueError</span></code></p>
+<p>This error raises when a process is skipped</p>
+</dd></dl>
+
+</section>
+<section id="module-siml.utils.fem_data_utils">
+<span id="siml-utils-fem-data-utils-module"></span><h2>siml.utils.fem_data_utils module<a class="headerlink" href="#module-siml.utils.fem_data_utils" title="Permalink to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.utils.fem_data_utils.FemDataWrapper">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.utils.fem_data_utils.</span></span><span class="sig-name descname"><span class="pre">FemDataWrapper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fem_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">FEMData</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.utils.fem_data_utils.FemDataWrapper" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.utils.fem_data_utils.FemDataWrapper.add_abs_difference">
+<span class="sig-name descname"><span class="pre">add_abs_difference</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dict_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reference_dict_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prefix</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'difference_abs'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#siml.utils.fem_data_utils.FemDataWrapper.add_abs_difference" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.utils.fem_data_utils.FemDataWrapper.add_difference">
+<span class="sig-name descname"><span class="pre">add_difference</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dict_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reference_dict_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prefix</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'difference'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#siml.utils.fem_data_utils.FemDataWrapper.add_difference" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.utils.fem_data_utils.FemDataWrapper.extract_variables">
+<span class="sig-name descname"><span class="pre">extract_variables</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mandatory_variables</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optional_variables</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#siml.utils.fem_data_utils.FemDataWrapper.extract_variables" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extract variables from FEMData object to convert to data dictionary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>mandatory_variables</strong> (<em>list</em><em>[</em><em>str</em><em>]</em>) – Mandatory variable names.</p></li>
+<li><p><strong>optional_variables</strong> (<em>list</em><em>[</em><em>str</em><em>]</em><em>, </em><em>optional</em>) – Optional variable names.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>dict_data</strong> – Data dictionary.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.utils.fem_data_utils.FemDataWrapper.update_fem_data">
+<span class="sig-name descname"><span class="pre">update_fem_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dict_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prefix</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">allow_overwrite</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">answer_keys</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">answer_prefix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.utils.fem_data_utils.FemDataWrapper.update_fem_data" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="siml.utils.fem_data_utils.reshape_data_if_needed">
+<span class="sig-prename descclassname"><span class="pre">siml.utils.fem_data_utils.</span></span><span class="sig-name descname"><span class="pre">reshape_data_if_needed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.utils.fem_data_utils.reshape_data_if_needed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reshape numpy.ndarray-like to be writable to visualization files.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>value</strong> (<em>numpy.ndarray</em>) – Data to be processed.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>reshaped_data</strong></p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-siml.utils.multiprocessor">
+<span id="siml-utils-multiprocessor-module"></span><h2>siml.utils.multiprocessor module<a class="headerlink" href="#module-siml.utils.multiprocessor" title="Permalink to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.utils.multiprocessor.SimlMultiprocessor">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.utils.multiprocessor.</span></span><span class="sig-name descname"><span class="pre">SimlMultiprocessor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">max_process</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.utils.multiprocessor.SimlMultiprocessor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.utils.multiprocessor.SimlMultiprocessor.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">inputs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_fn</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">T</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chunksize</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">T</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#siml.utils.multiprocessor.SimlMultiprocessor.run" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>Wrapper function for concurrent.futures</dt><dd><p>to run safely with multiple processes.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>max_process</strong> (<em>int</em>) – the number of processes to use</p></li>
+<li><p><strong>target_fn</strong> (<em>Callable</em><em>[</em><em>[</em><em>Any</em><em>]</em><em>, </em><em>T</em><em>]</em>) – function to execute</p></li>
+<li><p><strong>chunksize</strong> (<em>int</em><em>, </em><em>optional</em>) – chunck size, by default 1</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Iterable of objects returned from target_fn</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list[T]</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>SimlMultiprocessError:</strong> – If some processes are killed by host system such as OOM killer,
+     this error raises.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-siml.utils.progress_bar">
+<span id="siml-utils-progress-bar-module"></span><h2>siml.utils.progress_bar module<a class="headerlink" href="#module-siml.utils.progress_bar" title="Permalink to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.utils.progress_bar.SimlProgressBar">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.utils.progress_bar.</span></span><span class="sig-name descname"><span class="pre">SimlProgressBar</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">total</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">desc</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.utils.progress_bar.SimlProgressBar" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.utils.progress_bar.SimlProgressBar.destroy">
+<span class="sig-name descname"><span class="pre">destroy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#siml.utils.progress_bar.SimlProgressBar.destroy" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.utils.progress_bar.SimlProgressBar.update">
+<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trick</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">desc</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#siml.utils.progress_bar.SimlProgressBar.update" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update progress bar</p>
+<p>If Progress bar is not created, create it automatically.
+When counter becomes full, progress bar is destroyed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>trick</strong> (<em>int</em>) – Increment to add to the internal counter of iterations</p></li>
+<li><p><strong>desc</strong> (<em>str</em><em>, </em><em>optional</em>) – Set/modify description of the progress bar. [Default: None]
+If None, skip to modify description.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-siml.utils.timer">
+<span id="siml-utils-timer-module"></span><h2>siml.utils.timer module<a class="headerlink" href="#module-siml.utils.timer" title="Permalink to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.utils.timer.SimlStopWatch">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.utils.timer.</span></span><span class="sig-name descname"><span class="pre">SimlStopWatch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">offset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.utils.timer.SimlStopWatch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.utils.timer.SimlStopWatch.reset">
+<span class="sig-name descname"><span class="pre">reset</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#siml.utils.timer.SimlStopWatch.reset" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.utils.timer.SimlStopWatch.start">
+<span class="sig-name descname"><span class="pre">start</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#siml.utils.timer.SimlStopWatch.start" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.utils.timer.SimlStopWatch.stop">
+<span class="sig-name descname"><span class="pre">stop</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#siml.utils.timer.SimlStopWatch.stop" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.utils.timer.SimlStopWatch.watch">
+<span class="sig-name descname"><span class="pre">watch</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#siml.utils.timer.SimlStopWatch.watch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return elapsed time since timer started..</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Elapsed time from start time</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>ValueError</strong> – If timer has not started, raise this error</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-siml.utils">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-siml.utils" title="Permalink to this heading">¶</a></h2>
+</section>
+</section>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="siml.update_functions.html" class="btn btn-neutral float-left" title="siml.update_functions package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, RICOS Co. Ltd.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

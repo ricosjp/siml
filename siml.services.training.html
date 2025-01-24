@@ -1,0 +1,678 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>siml.services.training package &mdash; siml  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/gallery.css" type="text/css" />
+  <link rel="stylesheet" href="_static/gallery-binder.css" type="text/css" />
+  <link rel="stylesheet" href="_static/gallery-dataframe.css" type="text/css" />
+  <link rel="stylesheet" href="_static/gallery-rendered-html.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="siml.services.training.logging_items package" href="siml.services.training.logging_items.html" />
+    <link rel="prev" title="siml.services.inference.postprocessing package" href="siml.services.inference.postprocessing.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> siml
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="examples/index.html">Examples</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="siml.html">siml package</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="siml.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="siml.loss_operations.html">siml.loss_operations package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="siml.networks.html">siml.networks package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="siml.path_like_objects.html">siml.path_like_objects package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="siml.preprocessing.html">siml.preprocessing package</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="siml.services.html">siml.services package</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="siml.services.html#subpackages">Subpackages</a></li>
+<li class="toctree-l4"><a class="reference internal" href="siml.services.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="siml.services.html#module-siml.services.environment">siml.services.environment module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="siml.services.html#module-siml.services.model_builder">siml.services.model_builder module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="siml.services.html#module-siml.services.model_selector">siml.services.model_selector module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="siml.services.html#module-siml.services.path_rules">siml.services.path_rules module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="siml.services.html#module-siml.services">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="siml.siml_variables.html">siml.siml_variables package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="siml.update_functions.html">siml.update_functions package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="siml.utils.html">siml.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.config">siml.config module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.data_parallel">siml.data_parallel module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.datasets">siml.datasets module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.inferer">siml.inferer module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.mains">siml.mains module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.optimize">siml.optimize module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.prepost">siml.prepost module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.setting">siml.setting module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.study">siml.study module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.trainer">siml.trainer module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.util">siml.util module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">siml</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="siml.html">siml package</a> &raquo;</li>
+        
+          <li><a href="siml.services.html">siml.services package</a> &raquo;</li>
+        
+      <li>siml.services.training package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/siml.services.training.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <section id="siml-services-training-package">
+<h1>siml.services.training package<a class="headerlink" href="#siml-services-training-package" title="Permalink to this heading">¶</a></h1>
+<section id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this heading">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="siml.services.training.logging_items.html">siml.services.training.logging_items package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="siml.services.training.logging_items.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.services.training.logging_items.html#module-siml.services.training.logging_items.logging_items">siml.services.training.logging_items.logging_items module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="siml.services.training.logging_items.html#siml.services.training.logging_items.logging_items.ILoggingItem"><code class="docutils literal notranslate"><span class="pre">ILoggingItem</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="siml.services.training.logging_items.html#siml.services.training.logging_items.logging_items.ILoggingItem.format"><code class="docutils literal notranslate"><span class="pre">ILoggingItem.format()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="siml.services.training.logging_items.html#siml.services.training.logging_items.logging_items.LoggingDictItem"><code class="docutils literal notranslate"><span class="pre">LoggingDictItem</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="siml.services.training.logging_items.html#siml.services.training.logging_items.logging_items.LoggingDictItem.format"><code class="docutils literal notranslate"><span class="pre">LoggingDictItem.format()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="siml.services.training.logging_items.html#siml.services.training.logging_items.logging_items.LoggingFloatItem"><code class="docutils literal notranslate"><span class="pre">LoggingFloatItem</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="siml.services.training.logging_items.html#siml.services.training.logging_items.logging_items.LoggingFloatItem.format"><code class="docutils literal notranslate"><span class="pre">LoggingFloatItem.format()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="siml.services.training.logging_items.html#siml.services.training.logging_items.logging_items.LoggingIntItem"><code class="docutils literal notranslate"><span class="pre">LoggingIntItem</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="siml.services.training.logging_items.html#siml.services.training.logging_items.logging_items.LoggingIntItem.format"><code class="docutils literal notranslate"><span class="pre">LoggingIntItem.format()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="siml.services.training.logging_items.html#siml.services.training.logging_items.logging_items.LoggingStrItem"><code class="docutils literal notranslate"><span class="pre">LoggingStrItem</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="siml.services.training.logging_items.html#siml.services.training.logging_items.logging_items.LoggingStrItem.format"><code class="docutils literal notranslate"><span class="pre">LoggingStrItem.format()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="siml.services.training.logging_items.html#module-siml.services.training.logging_items">Module contents</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="siml.services.training.logging_items.html#siml.services.training.logging_items.create_logitems"><code class="docutils literal notranslate"><span class="pre">create_logitems()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading">¶</a></h2>
+</section>
+<section id="module-siml.services.training.data_loader_builder">
+<span id="siml-services-training-data-loader-builder-module"></span><h2>siml.services.training.data_loader_builder module<a class="headerlink" href="#module-siml.services.training.data_loader_builder" title="Permalink to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.services.training.data_loader_builder.DataLoaderBuilder">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.services.training.data_loader_builder.</span></span><span class="sig-name descname"><span class="pre">DataLoaderBuilder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">main_setting</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.html#siml.setting.MainSetting" title="siml.setting.MainSetting"><span class="pre">MainSetting</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">collate_fn</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.html#siml.datasets.CollateFunctionGenerator" title="siml.datasets.CollateFunctionGenerator"><span class="pre">CollateFunctionGenerator</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">decrypt_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.services.training.data_loader_builder.DataLoaderBuilder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.services.training.data_loader_builder.DataLoaderBuilder.create">
+<span class="sig-name descname"><span class="pre">create</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">torch.utils.data.dataloader.DataLoader</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">torch.utils.data.dataloader.DataLoader</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">torch.utils.data.dataloader.DataLoader</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#siml.services.training.data_loader_builder.DataLoaderBuilder.create" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create dataloaders</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Train loader, validaition loader, test loader</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>tuple[DataLoader, DataLoader, DataLoader]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-siml.services.training.engine_builder">
+<span id="siml-services-training-engine-builder-module"></span><h2>siml.services.training.engine_builder module<a class="headerlink" href="#module-siml.services.training.engine_builder" title="Permalink to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.services.training.engine_builder.EvaluatorEngineBuilder">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.services.training.engine_builder.</span></span><span class="sig-name descname"><span class="pre">EvaluatorEngineBuilder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">env_setting</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.services.html#siml.services.environment.ModelEnvironmentSetting" title="siml.services.environment.ModelEnvironmentSetting"><span class="pre">ModelEnvironmentSetting</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">prepare_batch_function</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trainer_setting</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.html#siml.setting.TrainerSetting" title="siml.setting.TrainerSetting"><span class="pre">TrainerSetting</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_function</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.loss_operations.html#siml.loss_operations.loss_calculator.ILossCalculator" title="siml.loss_operations.loss_calculator.ILossCalculator"><span class="pre">ILossCalculator</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">spliter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#siml.services.training.tensor_spliter.TensorSpliter" title="siml.services.training.tensor_spliter.TensorSpliter"><span class="pre">TensorSpliter</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.services.training.engine_builder.EvaluatorEngineBuilder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.services.training.engine_builder.EvaluatorEngineBuilder.create_supervised_evaluator">
+<span class="sig-name descname"><span class="pre">create_supervised_evaluator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.networks.html#siml.networks.network.Network" title="siml.networks.network.Network"><span class="pre">Network</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Engine</span></span></span><a class="headerlink" href="#siml.services.training.engine_builder.EvaluatorEngineBuilder.create_supervised_evaluator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create supervised evaluator</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>model</strong> (<a class="reference internal" href="siml.networks.html#siml.networks.network.Network" title="siml.networks.network.Network"><em>Network</em></a>) – model object</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Ignite Engine</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Engine</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.services.training.engine_builder.TrainerEngineBuilder">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.services.training.engine_builder.</span></span><span class="sig-name descname"><span class="pre">TrainerEngineBuilder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">env_setting</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.services.html#siml.services.environment.ModelEnvironmentSetting" title="siml.services.environment.ModelEnvironmentSetting"><span class="pre">ModelEnvironmentSetting</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">prepare_batch_function</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trainer_setting</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.html#siml.setting.TrainerSetting" title="siml.setting.TrainerSetting"><span class="pre">TrainerSetting</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">debug_logger</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#siml.services.training.training_logger.TrainDataDebugLogger" title="siml.services.training.training_logger.TrainDataDebugLogger"><span class="pre">TrainDataDebugLogger</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.services.training.engine_builder.TrainerEngineBuilder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.services.training.engine_builder.TrainerEngineBuilder.create_supervised_trainer">
+<span class="sig-name descname"><span class="pre">create_supervised_trainer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.networks.html#siml.networks.network.Network" title="siml.networks.network.Network"><span class="pre">Network</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optimizer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">update_function</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.update_functions.html#siml.update_functions.update_interface.IStepUpdateFunction" title="siml.update_functions.update_interface.IStepUpdateFunction"><span class="pre">IStepUpdateFunction</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Engine</span></span></span><a class="headerlink" href="#siml.services.training.engine_builder.TrainerEngineBuilder.create_supervised_trainer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create supervised trainer engine</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> (<a class="reference internal" href="siml.networks.html#siml.networks.network.Network" title="siml.networks.network.Network"><em>Network</em></a>) – model object</p></li>
+<li><p><strong>optimizer</strong> (<em>torch.optim.Optimizer</em>) – optimizer</p></li>
+<li><p><strong>update_function</strong> (<a class="reference internal" href="siml.update_functions.html#siml.update_functions.update_interface.IStepUpdateFunction" title="siml.update_functions.update_interface.IStepUpdateFunction"><em>IStepUpdateFunction</em></a>) – update function</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Ignite trainer engine</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Engine</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.services.training.engine_builder.TrainerEngineBuilder.output_stats">
+<span class="sig-name descname"><span class="pre">output_stats</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.networks.html#siml.networks.network.Network" title="siml.networks.network.Network"><span class="pre">Network</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">engine</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Engine</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#siml.services.training.engine_builder.TrainerEngineBuilder.output_stats" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-siml.services.training.events_assigners">
+<span id="siml-services-training-events-assigners-module"></span><h2>siml.services.training.events_assigners module<a class="headerlink" href="#module-siml.services.training.events_assigners" title="Permalink to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.services.training.events_assigners.StopTriggerEvents">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.services.training.events_assigners.</span></span><span class="sig-name descname"><span class="pre">StopTriggerEvents</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.services.training.events_assigners.StopTriggerEvents" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Enum</span></code></p>
+<p>An enumeration.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="siml.services.training.events_assigners.StopTriggerEvents.EVALUATED">
+<span class="sig-name descname"><span class="pre">EVALUATED</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'evaluated'</span></em><a class="headerlink" href="#siml.services.training.events_assigners.StopTriggerEvents.EVALUATED" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.services.training.events_assigners.TrainerEventsAssigner">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.services.training.events_assigners.</span></span><span class="sig-name descname"><span class="pre">TrainerEventsAssigner</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trainer_setting</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.html#siml.setting.TrainerSetting" title="siml.setting.TrainerSetting"><span class="pre">TrainerSetting</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_logger</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#siml.services.training.training_logger.SimlTrainingFileLogger" title="siml.services.training.training_logger.SimlTrainingFileLogger"><span class="pre">SimlTrainingFileLogger</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">console_logger</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#siml.services.training.training_logger.SimlTrainingConsoleLogger" title="siml.services.training.training_logger.SimlTrainingConsoleLogger"><span class="pre">SimlTrainingConsoleLogger</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_loader</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataLoader</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">validation_loader</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataLoader</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">evaluator</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Engine</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.networks.html#siml.networks.network.Network" title="siml.networks.network.Network"><span class="pre">Network</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optimizer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.utils.html#siml.utils.timer.SimlStopWatch" title="siml.utils.timer.SimlStopWatch"><span class="pre">SimlStopWatch</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">debug_logger</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#siml.services.training.training_logger.TrainDataDebugLogger" title="siml.services.training.training_logger.TrainDataDebugLogger"><span class="pre">TrainDataDebugLogger</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.services.training.events_assigners.TrainerEventsAssigner" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.services.training.events_assigners.TrainerEventsAssigner.assign_handlers">
+<span class="sig-name descname"><span class="pre">assign_handlers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trainer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Engine</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#siml.services.training.events_assigners.TrainerEventsAssigner.assign_handlers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Assign handlers to trainer engine</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>trainer</strong> (<em>Engine</em>) – trainer engine object</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.services.training.events_assigners.TrainerEventsAssigner.fire_stop_trigger">
+<span class="sig-name descname"><span class="pre">fire_stop_trigger</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">engine</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.services.training.events_assigners.TrainerEventsAssigner.fire_stop_trigger" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.services.training.events_assigners.TrainerEventsAssigner.log_training_loss">
+<span class="sig-name descname"><span class="pre">log_training_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">engine</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Engine</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.services.training.events_assigners.TrainerEventsAssigner.log_training_loss" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.services.training.events_assigners.TrainerEventsAssigner.log_training_results">
+<span class="sig-name descname"><span class="pre">log_training_results</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">engine</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Engine</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.services.training.events_assigners.TrainerEventsAssigner.log_training_results" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.services.training.events_assigners.ValidationEventsAssigner">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.services.training.events_assigners.</span></span><span class="sig-name descname"><span class="pre">ValidationEventsAssigner</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_logger</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#siml.services.training.training_logger.SimlTrainingFileLogger" title="siml.services.training.training_logger.SimlTrainingFileLogger"><span class="pre">SimlTrainingFileLogger</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">console_logger</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#siml.services.training.training_logger.SimlTrainingConsoleLogger" title="siml.services.training.training_logger.SimlTrainingConsoleLogger"><span class="pre">SimlTrainingConsoleLogger</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_trigger_epoch</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_loader</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataLoader</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">validation_loader</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataLoader</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trainer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Engine</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.networks.html#siml.networks.network.Network" title="siml.networks.network.Network"><span class="pre">Network</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">trainer_setting</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.html#siml.setting.TrainerSetting" title="siml.setting.TrainerSetting"><span class="pre">TrainerSetting</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">timer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.utils.html#siml.utils.timer.SimlStopWatch" title="siml.utils.timer.SimlStopWatch"><span class="pre">SimlStopWatch</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.services.training.events_assigners.ValidationEventsAssigner" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.services.training.events_assigners.ValidationEventsAssigner.assign_handlers">
+<span class="sig-name descname"><span class="pre">assign_handlers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">evaluator</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Engine</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optuna_trial</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#siml.services.training.events_assigners.ValidationEventsAssigner.assign_handlers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Assign handlers to evaluator engine</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>evaluator</strong> (<em>Engine</em>) – evaluator engine</p></li>
+<li><p><strong>optuna_trial</strong> (<em>bool</em>) – If true, run optuna</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.services.training.events_assigners.ValidationEventsAssigner.log_evaluation">
+<span class="sig-name descname"><span class="pre">log_evaluation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">engine</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.services.training.events_assigners.ValidationEventsAssigner.log_evaluation" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.services.training.events_assigners.ValidationEventsAssigner.score_function">
+<span class="sig-name descname"><span class="pre">score_function</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">engine</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Engine</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#siml.services.training.events_assigners.ValidationEventsAssigner.score_function" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-siml.services.training.inner_settings">
+<span id="siml-services-training-inner-settings-module"></span><h2>siml.services.training.inner_settings module<a class="headerlink" href="#module-siml.services.training.inner_settings" title="Permalink to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.services.training.inner_settings.InnerTrainingSetting">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.services.training.inner_settings.</span></span><span class="sig-name descname"><span class="pre">InnerTrainingSetting</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">main_setting</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.html#siml.setting.MainSetting" title="siml.setting.MainSetting"><span class="pre">siml.setting.MainSetting</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.services.training.inner_settings.InnerTrainingSetting" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.services.training.inner_settings.InnerTrainingSetting.Config">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Config</span></span><a class="headerlink" href="#siml.services.training.inner_settings.InnerTrainingSetting.Config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="siml.services.training.inner_settings.InnerTrainingSetting.Config.arbitrary_types_allowed">
+<span class="sig-name descname"><span class="pre">arbitrary_types_allowed</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">True</span></em><a class="headerlink" href="#siml.services.training.inner_settings.InnerTrainingSetting.Config.arbitrary_types_allowed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="siml.services.training.inner_settings.InnerTrainingSetting.log_dataset_file_path">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">log_dataset_file_path</span></span><a class="headerlink" href="#siml.services.training.inner_settings.InnerTrainingSetting.log_dataset_file_path" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="siml.services.training.inner_settings.InnerTrainingSetting.log_file_path">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">log_file_path</span></span><a class="headerlink" href="#siml.services.training.inner_settings.InnerTrainingSetting.log_file_path" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="siml.services.training.inner_settings.InnerTrainingSetting.loss_figure_path">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">loss_figure_path</span></span><a class="headerlink" href="#siml.services.training.inner_settings.InnerTrainingSetting.loss_figure_path" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="siml.services.training.inner_settings.InnerTrainingSetting.main_setting">
+<span class="sig-name descname"><span class="pre">main_setting</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="siml.html#siml.setting.MainSetting" title="siml.setting.MainSetting"><span class="pre">MainSetting</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Any</span></em><a class="headerlink" href="#siml.services.training.inner_settings.InnerTrainingSetting.main_setting" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="siml.services.training.inner_settings.InnerTrainingSetting.trainer_setting">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">trainer_setting</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="siml.html#siml.setting.TrainerSetting" title="siml.setting.TrainerSetting"><span class="pre">TrainerSetting</span></a></em><a class="headerlink" href="#siml.services.training.inner_settings.InnerTrainingSetting.trainer_setting" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-siml.services.training.metrics_builder">
+<span id="siml-services-training-metrics-builder-module"></span><h2>siml.services.training.metrics_builder module<a class="headerlink" href="#module-siml.services.training.metrics_builder" title="Permalink to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.services.training.metrics_builder.LossDetailsMetrics">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.services.training.metrics_builder.</span></span><span class="sig-name descname"><span class="pre">LossDetailsMetrics</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">loss_calculator</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.loss_operations.html#siml.loss_operations.loss_calculator.ILossCalculator" title="siml.loss_operations.loss_calculator.ILossCalculator"><span class="pre">ILossCalculator</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.services.training.metrics_builder.LossDetailsMetrics" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Metric</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.services.training.metrics_builder.LossDetailsMetrics.compute">
+<span class="sig-name descname"><span class="pre">compute</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#siml.services.training.metrics_builder.LossDetailsMetrics.compute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the metric based on it’s accumulated state.</p>
+<p>This is called at the end of each epoch.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the actual quantity of interest.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Any</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>NotComputableError</strong> – raised when the metric cannot be computed.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.services.training.metrics_builder.LossDetailsMetrics.reset">
+<span class="sig-name descname"><span class="pre">reset</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#siml.services.training.metrics_builder.LossDetailsMetrics.reset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Resets the metric to it’s initial state.</p>
+<p>This is called at the start of each epoch.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.services.training.metrics_builder.LossDetailsMetrics.update">
+<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">output</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.services.training.metrics_builder.LossDetailsMetrics.update" title="Permalink to this definition">¶</a></dt>
+<dd><p>Updates the metric’s state using the passed batch output.</p>
+<p>This is called once for each batch.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>output</strong> – the is the output from the engine’s process function.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-siml.services.training.tensor_spliter">
+<span id="siml-services-training-tensor-spliter-module"></span><h2>siml.services.training.tensor_spliter module<a class="headerlink" href="#module-siml.services.training.tensor_spliter" title="Permalink to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.services.training.tensor_spliter.TensorSpliter">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.services.training.tensor_spliter.</span></span><span class="sig-name descname"><span class="pre">TensorSpliter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_time_series_keys</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_time_series_keys</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.services.training.tensor_spliter.TensorSpliter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+</dd></dl>
+
+</section>
+<section id="module-siml.services.training.trainers_builder">
+<span id="siml-services-training-trainers-builder-module"></span><h2>siml.services.training.trainers_builder module<a class="headerlink" href="#module-siml.services.training.trainers_builder" title="Permalink to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.services.training.trainers_builder.TrainersBuilder">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.services.training.trainers_builder.</span></span><span class="sig-name descname"><span class="pre">TrainersBuilder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trainer_setting</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.html#siml.setting.TrainerSetting" title="siml.setting.TrainerSetting"><span class="pre">TrainerSetting</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_setting</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.html#siml.setting.ModelSetting" title="siml.setting.ModelSetting"><span class="pre">ModelSetting</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">env_setting</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.services.html#siml.services.environment.ModelEnvironmentSetting" title="siml.services.environment.ModelEnvironmentSetting"><span class="pre">ModelEnvironmentSetting</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">prepare_batch_function</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_function</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.loss_operations.html#siml.loss_operations.loss_calculator.ILossCalculator" title="siml.loss_operations.loss_calculator.ILossCalculator"><span class="pre">ILossCalculator</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">decrypt_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">debug_logger</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#siml.services.training.training_logger.TrainDataDebugLogger" title="siml.services.training.training_logger.TrainDataDebugLogger"><span class="pre">TrainDataDebugLogger</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.services.training.trainers_builder.TrainersBuilder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.services.training.trainers_builder.TrainersBuilder.create">
+<span class="sig-name descname"><span class="pre">create</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">epoch_length</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">ignite.engine.engine.Engine</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ignite.engine.engine.Engine</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="siml.networks.html#siml.networks.network.Network" title="siml.networks.network.Network"><span class="pre">siml.networks.network.Network</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">torch.optim.optimizer.Optimizer</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#siml.services.training.trainers_builder.TrainersBuilder.create" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.services.training.trainers_builder.TrainersBuilder.create_engines">
+<span class="sig-name descname"><span class="pre">create_engines</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.networks.html#siml.networks.network.Network" title="siml.networks.network.Network"><span class="pre">Network</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optimizer</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">ignite.engine.engine.Engine</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ignite.engine.engine.Engine</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#siml.services.training.trainers_builder.TrainersBuilder.create_engines" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.services.training.trainers_builder.TrainersBuilder.create_model">
+<span class="sig-name descname"><span class="pre">create_model</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#siml.services.training.trainers_builder.TrainersBuilder.create_model" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.services.training.trainers_builder.TrainersBuilder.create_optimizer">
+<span class="sig-name descname"><span class="pre">create_optimizer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.networks.html#siml.networks.network.Network" title="siml.networks.network.Network"><span class="pre">Network</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Optimizer</span></span></span><a class="headerlink" href="#siml.services.training.trainers_builder.TrainersBuilder.create_optimizer" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.services.training.trainers_builder.TrainersBuilder.restore_restart_state_if_needed">
+<span class="sig-name descname"><span class="pre">restore_restart_state_if_needed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.networks.html#siml.networks.network.Network" title="siml.networks.network.Network"><span class="pre">Network</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optimizer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trainer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Engine</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epoch_length</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#siml.services.training.trainers_builder.TrainersBuilder.restore_restart_state_if_needed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.services.training.trainers_builder.UpdateFunctionSelector">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.services.training.trainers_builder.</span></span><span class="sig-name descname"><span class="pre">UpdateFunctionSelector</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trainer_setting</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.html#siml.setting.TrainerSetting" title="siml.setting.TrainerSetting"><span class="pre">TrainerSetting</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">env_setting</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.services.html#siml.services.environment.ModelEnvironmentSetting" title="siml.services.environment.ModelEnvironmentSetting"><span class="pre">ModelEnvironmentSetting</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_function</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.loss_operations.html#siml.loss_operations.loss_calculator.ILossCalculator" title="siml.loss_operations.loss_calculator.ILossCalculator"><span class="pre">ILossCalculator</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">spliter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#siml.services.training.tensor_spliter.TensorSpliter" title="siml.services.training.tensor_spliter.TensorSpliter"><span class="pre">TensorSpliter</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.services.training.trainers_builder.UpdateFunctionSelector" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.services.training.trainers_builder.UpdateFunctionSelector.select">
+<span class="sig-name descname"><span class="pre">select</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="siml.update_functions.html#siml.update_functions.update_interface.IStepUpdateFunction" title="siml.update_functions.update_interface.IStepUpdateFunction"><span class="pre">IStepUpdateFunction</span></a></span></span><a class="headerlink" href="#siml.services.training.trainers_builder.UpdateFunctionSelector.select" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-siml.services.training.training_logger">
+<span id="siml-services-training-training-logger-module"></span><h2>siml.services.training.training_logger module<a class="headerlink" href="#module-siml.services.training.training_logger" title="Permalink to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.services.training.training_logger.LogRecordItems">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.services.training.training_logger.</span></span><span class="sig-name descname"><span class="pre">LogRecordItems</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epoch</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_loss</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">validation_loss</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_other_losses</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">validation_other_losses</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">elapsed_time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_loss_details</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">validation_loss_details</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.services.training.training_logger.LogRecordItems" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.services.training.training_logger.SimlTrainingConsoleLogger">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.services.training.training_logger.</span></span><span class="sig-name descname"><span class="pre">SimlTrainingConsoleLogger</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">display_margin</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_keys</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_names</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.services.training.training_logger.SimlTrainingConsoleLogger" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.services.training.training_logger.SimlTrainingConsoleLogger.get_header">
+<span class="sig-name descname"><span class="pre">get_header</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#siml.services.training.training_logger.SimlTrainingConsoleLogger.get_header" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.services.training.training_logger.SimlTrainingConsoleLogger.output">
+<span class="sig-name descname"><span class="pre">output</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">log_record</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#siml.services.training.training_logger.LogRecordItems" title="siml.services.training.training_logger.LogRecordItems"><span class="pre">LogRecordItems</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#siml.services.training.training_logger.SimlTrainingConsoleLogger.output" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.services.training.training_logger.SimlTrainingConsoleLogger.output_header">
+<span class="sig-name descname"><span class="pre">output_header</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#siml.services.training.training_logger.SimlTrainingConsoleLogger.output_header" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.services.training.training_logger.SimlTrainingFileLogger">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.services.training.training_logger.</span></span><span class="sig-name descname"><span class="pre">SimlTrainingFileLogger</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_figure_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_keys</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_names</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">continue_mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.services.training.training_logger.SimlTrainingFileLogger" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.services.training.training_logger.SimlTrainingFileLogger.read_history">
+<span class="sig-name descname"><span class="pre">read_history</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="headerlink" href="#siml.services.training.training_logger.SimlTrainingFileLogger.read_history" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.services.training.training_logger.SimlTrainingFileLogger.read_offset_start_time">
+<span class="sig-name descname"><span class="pre">read_offset_start_time</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#siml.services.training.training_logger.SimlTrainingFileLogger.read_offset_start_time" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.services.training.training_logger.SimlTrainingFileLogger.save_figure">
+<span class="sig-name descname"><span class="pre">save_figure</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#siml.services.training.training_logger.SimlTrainingFileLogger.save_figure" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.services.training.training_logger.SimlTrainingFileLogger.save_model">
+<span class="sig-name descname"><span class="pre">save_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">epoch</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.networks.html#siml.networks.network.Network" title="siml.networks.network.Network"><span class="pre">Network</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optimizer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">validation_loss</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trainer_setting</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.html#siml.setting.TrainerSetting" title="siml.setting.TrainerSetting"><span class="pre">TrainerSetting</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#siml.services.training.training_logger.SimlTrainingFileLogger.save_model" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.services.training.training_logger.SimlTrainingFileLogger.write">
+<span class="sig-name descname"><span class="pre">write</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">log_record</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#siml.services.training.training_logger.LogRecordItems" title="siml.services.training.training_logger.LogRecordItems"><span class="pre">LogRecordItems</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#siml.services.training.training_logger.SimlTrainingFileLogger.write" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.services.training.training_logger.SimlTrainingFileLogger.write_header_if_needed">
+<span class="sig-name descname"><span class="pre">write_header_if_needed</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#siml.services.training.training_logger.SimlTrainingFileLogger.write_header_if_needed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.services.training.training_logger.TrainDataDebugLogger">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.services.training.training_logger.</span></span><span class="sig-name descname"><span class="pre">TrainDataDebugLogger</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.services.training.training_logger.TrainDataDebugLogger" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.services.training.training_logger.TrainDataDebugLogger.write">
+<span class="sig-name descname"><span class="pre">write</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_directories</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">pathlib.Path</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#siml.services.training.training_logger.TrainDataDebugLogger.write" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.services.training.training_logger.TrainDataDebugLogger.write_epoch">
+<span class="sig-name descname"><span class="pre">write_epoch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">epoch</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.services.training.training_logger.TrainDataDebugLogger.write_epoch" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-siml.services.training">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-siml.services.training" title="Permalink to this heading">¶</a></h2>
+</section>
+</section>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="siml.services.training.logging_items.html" class="btn btn-neutral float-right" title="siml.services.training.logging_items package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="siml.services.inference.postprocessing.html" class="btn btn-neutral float-left" title="siml.services.inference.postprocessing package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, RICOS Co. Ltd.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

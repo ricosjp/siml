@@ -1,0 +1,322 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>siml.services.inference.postprocessing package &mdash; siml  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/gallery.css" type="text/css" />
+  <link rel="stylesheet" href="_static/gallery-binder.css" type="text/css" />
+  <link rel="stylesheet" href="_static/gallery-dataframe.css" type="text/css" />
+  <link rel="stylesheet" href="_static/gallery-rendered-html.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="siml.services.training package" href="siml.services.training.html" />
+    <link rel="prev" title="siml.services.inference package" href="siml.services.inference.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> siml
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="examples/index.html">Examples</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="siml.html">siml package</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="siml.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="siml.loss_operations.html">siml.loss_operations package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="siml.networks.html">siml.networks package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="siml.path_like_objects.html">siml.path_like_objects package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="siml.preprocessing.html">siml.preprocessing package</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="siml.services.html">siml.services package</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="siml.services.html#subpackages">Subpackages</a></li>
+<li class="toctree-l4"><a class="reference internal" href="siml.services.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="siml.services.html#module-siml.services.environment">siml.services.environment module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="siml.services.html#module-siml.services.model_builder">siml.services.model_builder module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="siml.services.html#module-siml.services.model_selector">siml.services.model_selector module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="siml.services.html#module-siml.services.path_rules">siml.services.path_rules module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="siml.services.html#module-siml.services">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="siml.siml_variables.html">siml.siml_variables package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="siml.update_functions.html">siml.update_functions package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="siml.utils.html">siml.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.config">siml.config module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.data_parallel">siml.data_parallel module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.datasets">siml.datasets module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.inferer">siml.inferer module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.mains">siml.mains module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.optimize">siml.optimize module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.prepost">siml.prepost module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.setting">siml.setting module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.study">siml.study module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.trainer">siml.trainer module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.util">siml.util module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">siml</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="siml.html">siml package</a> &raquo;</li>
+        
+          <li><a href="siml.services.html">siml.services package</a> &raquo;</li>
+        
+          <li><a href="siml.services.inference.html">siml.services.inference package</a> &raquo;</li>
+        
+      <li>siml.services.inference.postprocessing package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/siml.services.inference.postprocessing.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <section id="siml-services-inference-postprocessing-package">
+<h1>siml.services.inference.postprocessing package<a class="headerlink" href="#siml-services-inference-postprocessing-package" title="Permalink to this heading">¶</a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading">¶</a></h2>
+</section>
+<section id="module-siml.services.inference.postprocessing.post_fem_data">
+<span id="siml-services-inference-postprocessing-post-fem-data-module"></span><h2>siml.services.inference.postprocessing.post_fem_data module<a class="headerlink" href="#module-siml.services.inference.postprocessing.post_fem_data" title="Permalink to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.services.inference.postprocessing.post_fem_data.IFEMDataAdditionFunction">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.services.inference.postprocessing.post_fem_data.</span></span><span class="sig-name descname"><span class="pre">IFEMDataAdditionFunction</span></span><a class="headerlink" href="#siml.services.inference.postprocessing.post_fem_data.IFEMDataAdditionFunction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.services.inference.postprocessing.post_fem_data.PostFEMDataConverter">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.services.inference.postprocessing.post_fem_data.</span></span><span class="sig-name descname"><span class="pre">PostFEMDataConverter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inferer_setting</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.html#siml.setting.InfererSetting" title="siml.setting.InfererSetting"><span class="pre">InfererSetting</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">conversion_setting</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.html#siml.setting.ConversionSetting" title="siml.setting.ConversionSetting"><span class="pre">ConversionSetting</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">load_function</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.preprocessing.html#siml.preprocessing.converter.ILoadFunction" title="siml.preprocessing.converter.ILoadFunction"><span class="pre">ILoadFunction</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_addition_function</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#siml.services.inference.postprocessing.post_fem_data.IFEMDataAdditionFunction" title="siml.services.inference.postprocessing.post_fem_data.IFEMDataAdditionFunction"><span class="pre">IFEMDataAdditionFunction</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.services.inference.postprocessing.post_fem_data.PostFEMDataConverter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.services.inference.postprocessing.post_fem_data.PostFEMDataConverter.create">
+<span class="sig-name descname"><span class="pre">create</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dict_data_x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dict_data_y</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dict_data_answer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">write_simulation_case_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base_fem_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">FEMData</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">FEMData</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#siml.services.inference.postprocessing.post_fem_data.PostFEMDataConverter.create" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-siml.services.inference.postprocessing.postprocessor">
+<span id="siml-services-inference-postprocessing-postprocessor-module"></span><h2>siml.services.inference.postprocessing.postprocessor module<a class="headerlink" href="#module-siml.services.inference.postprocessing.postprocessor" title="Permalink to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.services.inference.postprocessing.postprocessor.PostProcessor">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.services.inference.postprocessing.postprocessor.</span></span><span class="sig-name descname"><span class="pre">PostProcessor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inner_setting</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.services.inference.html#siml.services.inference.inner_setting.InnerInfererSetting" title="siml.services.inference.inner_setting.InnerInfererSetting"><span class="pre">InnerInfererSetting</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scalers</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.preprocessing.html#siml.preprocessing.scalers_composition.ScalersComposition" title="siml.preprocessing.scalers_composition.ScalersComposition"><span class="pre">ScalersComposition</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.services.inference.postprocessing.postprocessor.PostProcessor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.services.inference.postprocessing.postprocessor.PostProcessor.convert">
+<span class="sig-name descname"><span class="pre">convert</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">record</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.services.inference.html#siml.services.inference.record_object.RawPredictionRecord" title="siml.services.inference.record_object.RawPredictionRecord"><span class="pre">RawPredictionRecord</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_datetime</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="siml.services.inference.html#siml.services.inference.record_object.PredictionRecord" title="siml.services.inference.record_object.PredictionRecord"><span class="pre">PredictionRecord</span></a></span></span><a class="headerlink" href="#siml.services.inference.postprocessing.postprocessor.PostProcessor.convert" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-siml.services.inference.postprocessing.save_processor">
+<span id="siml-services-inference-postprocessing-save-processor-module"></span><h2>siml.services.inference.postprocessing.save_processor module<a class="headerlink" href="#module-siml.services.inference.postprocessing.save_processor" title="Permalink to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.services.inference.postprocessing.save_processor.FEMDataSaveFunction">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.services.inference.postprocessing.save_processor.</span></span><span class="sig-name descname"><span class="pre">FEMDataSaveFunction</span></span><a class="headerlink" href="#siml.services.inference.postprocessing.save_processor.FEMDataSaveFunction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#siml.services.inference.postprocessing.save_processor.IInfererSaveFunction" title="siml.services.inference.postprocessing.save_processor.IInfererSaveFunction"><code class="xref py py-class docutils literal notranslate"><span class="pre">IInfererSaveFunction</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.services.inference.postprocessing.save_processor.FEMDataSaveFunction.get_save_fem_extension">
+<span class="sig-name descname"><span class="pre">get_save_fem_extension</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">write_simulation_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#siml.services.inference.postprocessing.save_processor.FEMDataSaveFunction.get_save_fem_extension" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.services.inference.postprocessing.save_processor.IInfererSaveFunction">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.services.inference.postprocessing.save_processor.</span></span><span class="sig-name descname"><span class="pre">IInfererSaveFunction</span></span><a class="headerlink" href="#siml.services.inference.postprocessing.save_processor.IInfererSaveFunction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.services.inference.postprocessing.save_processor.SaveProcessor">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.services.inference.postprocessing.save_processor.</span></span><span class="sig-name descname"><span class="pre">SaveProcessor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inner_setting</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.services.inference.html#siml.services.inference.inner_setting.InnerInfererSetting" title="siml.services.inference.inner_setting.InnerInfererSetting"><span class="pre">InnerInfererSetting</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">user_save_function</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#siml.services.inference.postprocessing.save_processor.IInfererSaveFunction" title="siml.services.inference.postprocessing.save_processor.IInfererSaveFunction"><span class="pre">IInfererSaveFunction</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.services.inference.postprocessing.save_processor.SaveProcessor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.services.inference.postprocessing.save_processor.SaveProcessor.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">records</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="siml.services.inference.html#siml.services.inference.record_object.PostPredictionRecord" title="siml.services.inference.record_object.PostPredictionRecord"><span class="pre">siml.services.inference.record_object.PostPredictionRecord</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_summary</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#siml.services.inference.postprocessing.save_processor.SaveProcessor.run" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-siml.services.inference.postprocessing">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-siml.services.inference.postprocessing" title="Permalink to this heading">¶</a></h2>
+</section>
+</section>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="siml.services.training.html" class="btn btn-neutral float-right" title="siml.services.training package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="siml.services.inference.html" class="btn btn-neutral float-left" title="siml.services.inference package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, RICOS Co. Ltd.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

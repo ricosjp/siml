@@ -1,0 +1,754 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>siml.services.inference package &mdash; siml  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/gallery.css" type="text/css" />
+  <link rel="stylesheet" href="_static/gallery-binder.css" type="text/css" />
+  <link rel="stylesheet" href="_static/gallery-dataframe.css" type="text/css" />
+  <link rel="stylesheet" href="_static/gallery-rendered-html.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="siml.services.inference.postprocessing package" href="siml.services.inference.postprocessing.html" />
+    <link rel="prev" title="siml.services package" href="siml.services.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> siml
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="examples/index.html">Examples</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="siml.html">siml package</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="siml.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="siml.loss_operations.html">siml.loss_operations package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="siml.networks.html">siml.networks package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="siml.path_like_objects.html">siml.path_like_objects package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="siml.preprocessing.html">siml.preprocessing package</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="siml.services.html">siml.services package</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="siml.services.html#subpackages">Subpackages</a></li>
+<li class="toctree-l4"><a class="reference internal" href="siml.services.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="siml.services.html#module-siml.services.environment">siml.services.environment module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="siml.services.html#module-siml.services.model_builder">siml.services.model_builder module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="siml.services.html#module-siml.services.model_selector">siml.services.model_selector module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="siml.services.html#module-siml.services.path_rules">siml.services.path_rules module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="siml.services.html#module-siml.services">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="siml.siml_variables.html">siml.siml_variables package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="siml.update_functions.html">siml.update_functions package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="siml.utils.html">siml.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.config">siml.config module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.data_parallel">siml.data_parallel module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.datasets">siml.datasets module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.inferer">siml.inferer module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.mains">siml.mains module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.optimize">siml.optimize module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.prepost">siml.prepost module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.setting">siml.setting module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.study">siml.study module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.trainer">siml.trainer module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.util">siml.util module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">siml</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="siml.html">siml package</a> &raquo;</li>
+        
+          <li><a href="siml.services.html">siml.services package</a> &raquo;</li>
+        
+      <li>siml.services.inference package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/siml.services.inference.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <section id="siml-services-inference-package">
+<h1>siml.services.inference package<a class="headerlink" href="#siml-services-inference-package" title="Permalink to this heading">¶</a></h1>
+<section id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this heading">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="siml.services.inference.postprocessing.html">siml.services.inference.postprocessing package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="siml.services.inference.postprocessing.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.services.inference.postprocessing.html#module-siml.services.inference.postprocessing.post_fem_data">siml.services.inference.postprocessing.post_fem_data module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="siml.services.inference.postprocessing.html#siml.services.inference.postprocessing.post_fem_data.IFEMDataAdditionFunction"><code class="docutils literal notranslate"><span class="pre">IFEMDataAdditionFunction</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="siml.services.inference.postprocessing.html#siml.services.inference.postprocessing.post_fem_data.PostFEMDataConverter"><code class="docutils literal notranslate"><span class="pre">PostFEMDataConverter</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="siml.services.inference.postprocessing.html#siml.services.inference.postprocessing.post_fem_data.PostFEMDataConverter.create"><code class="docutils literal notranslate"><span class="pre">PostFEMDataConverter.create()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="siml.services.inference.postprocessing.html#module-siml.services.inference.postprocessing.postprocessor">siml.services.inference.postprocessing.postprocessor module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="siml.services.inference.postprocessing.html#siml.services.inference.postprocessing.postprocessor.PostProcessor"><code class="docutils literal notranslate"><span class="pre">PostProcessor</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="siml.services.inference.postprocessing.html#siml.services.inference.postprocessing.postprocessor.PostProcessor.convert"><code class="docutils literal notranslate"><span class="pre">PostProcessor.convert()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="siml.services.inference.postprocessing.html#module-siml.services.inference.postprocessing.save_processor">siml.services.inference.postprocessing.save_processor module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="siml.services.inference.postprocessing.html#siml.services.inference.postprocessing.save_processor.FEMDataSaveFunction"><code class="docutils literal notranslate"><span class="pre">FEMDataSaveFunction</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="siml.services.inference.postprocessing.html#siml.services.inference.postprocessing.save_processor.FEMDataSaveFunction.get_save_fem_extension"><code class="docutils literal notranslate"><span class="pre">FEMDataSaveFunction.get_save_fem_extension()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="siml.services.inference.postprocessing.html#siml.services.inference.postprocessing.save_processor.IInfererSaveFunction"><code class="docutils literal notranslate"><span class="pre">IInfererSaveFunction</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="siml.services.inference.postprocessing.html#siml.services.inference.postprocessing.save_processor.SaveProcessor"><code class="docutils literal notranslate"><span class="pre">SaveProcessor</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="siml.services.inference.postprocessing.html#siml.services.inference.postprocessing.save_processor.SaveProcessor.run"><code class="docutils literal notranslate"><span class="pre">SaveProcessor.run()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="siml.services.inference.postprocessing.html#module-siml.services.inference.postprocessing">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading">¶</a></h2>
+</section>
+<section id="module-siml.services.inference.core_inferer">
+<span id="siml-services-inference-core-inferer-module"></span><h2>siml.services.inference.core_inferer module<a class="headerlink" href="#module-siml.services.inference.core_inferer" title="Permalink to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.services.inference.core_inferer.CoreInferer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.services.inference.core_inferer.</span></span><span class="sig-name descname"><span class="pre">CoreInferer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trainer_setting</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.html#siml.setting.TrainerSetting" title="siml.setting.TrainerSetting"><span class="pre">TrainerSetting</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_setting</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.html#siml.setting.ModelSetting" title="siml.setting.ModelSetting"><span class="pre">ModelSetting</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">env_setting</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.services.html#siml.services.environment.ModelEnvironmentSetting" title="siml.services.environment.ModelEnvironmentSetting"><span class="pre">ModelEnvironmentSetting</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">snapshot_file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prepare_batch_function</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_function</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.loss_operations.html#siml.loss_operations.loss_calculator.ILossCalculator" title="siml.loss_operations.loss_calculator.ILossCalculator"><span class="pre">ILossCalculator</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">post_processor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.services.inference.postprocessing.html#siml.services.inference.postprocessing.postprocessor.PostProcessor" title="siml.services.inference.postprocessing.postprocessor.PostProcessor"><span class="pre">PostProcessor</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">inference_start_datetime</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decrypt_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">debug_output_directory</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.services.inference.core_inferer.CoreInferer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.services.inference.core_inferer.CoreInferer.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_loader</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataLoader</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">State</span></span></span><a class="headerlink" href="#siml.services.inference.core_inferer.CoreInferer.run" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-siml.services.inference.data_loader_builder">
+<span id="siml-services-inference-data-loader-builder-module"></span><h2>siml.services.inference.data_loader_builder module<a class="headerlink" href="#module-siml.services.inference.data_loader_builder" title="Permalink to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.services.inference.data_loader_builder.InferenceDataLoaderBuilder">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.services.inference.data_loader_builder.</span></span><span class="sig-name descname"><span class="pre">InferenceDataLoaderBuilder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trainer_setting</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.html#siml.setting.TrainerSetting" title="siml.setting.TrainerSetting"><span class="pre">TrainerSetting</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">collate_fn</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.html#siml.datasets.CollateFunctionGenerator" title="siml.datasets.CollateFunctionGenerator"><span class="pre">CollateFunctionGenerator</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">decrypt_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.services.inference.data_loader_builder.InferenceDataLoaderBuilder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.services.inference.data_loader_builder.InferenceDataLoaderBuilder.create">
+<span class="sig-name descname"><span class="pre">create</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_directories</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">pathlib.Path</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raw_dict_x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">answer_raw_dict_y</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">allow_no_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataLoader</span></span></span><a class="headerlink" href="#siml.services.inference.data_loader_builder.InferenceDataLoaderBuilder.create" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-siml.services.inference.engine_builder">
+<span id="siml-services-inference-engine-builder-module"></span><h2>siml.services.inference.engine_builder module<a class="headerlink" href="#module-siml.services.inference.engine_builder" title="Permalink to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.services.inference.engine_builder.InferenceEngineBuilder">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.services.inference.engine_builder.</span></span><span class="sig-name descname"><span class="pre">InferenceEngineBuilder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">env_setting</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.services.html#siml.services.environment.ModelEnvironmentSetting" title="siml.services.environment.ModelEnvironmentSetting"><span class="pre">ModelEnvironmentSetting</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">prepare_batch_function</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">post_processor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.services.inference.postprocessing.html#siml.services.inference.postprocessing.postprocessor.PostProcessor" title="siml.services.inference.postprocessing.postprocessor.PostProcessor"><span class="pre">PostProcessor</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">non_blocking</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inference_start_datetime</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.services.inference.engine_builder.InferenceEngineBuilder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.services.inference.engine_builder.InferenceEngineBuilder.create">
+<span class="sig-name descname"><span class="pre">create</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.networks.html#siml.networks.network.Network" title="siml.networks.network.Network"><span class="pre">Network</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">debug_output_directory</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Engine</span></span></span><a class="headerlink" href="#siml.services.inference.engine_builder.InferenceEngineBuilder.create" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-siml.services.inference.inner_setting">
+<span id="siml-services-inference-inner-setting-module"></span><h2>siml.services.inference.inner_setting module<a class="headerlink" href="#module-siml.services.inference.inner_setting" title="Permalink to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.services.inference.inner_setting.InnerInfererSetting">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.services.inference.inner_setting.</span></span><span class="sig-name descname"><span class="pre">InnerInfererSetting</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">main_setting</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.html#siml.setting.MainSetting" title="siml.setting.MainSetting"><span class="pre">MainSetting</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Any</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force_model_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force_converter_parameters_pkl</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decrypt_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.services.inference.inner_setting.InnerInfererSetting" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseModel</span></code></p>
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.services.inference.inner_setting.InnerInfererSetting.Config">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Config</span></span><a class="headerlink" href="#siml.services.inference.inner_setting.InnerInfererSetting.Config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="siml.services.inference.inner_setting.InnerInfererSetting.Config.arbitrary_types_allowed">
+<span class="sig-name descname"><span class="pre">arbitrary_types_allowed</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">True</span></em><a class="headerlink" href="#siml.services.inference.inner_setting.InnerInfererSetting.Config.arbitrary_types_allowed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="siml.services.inference.inner_setting.InnerInfererSetting.conversion_setting">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">conversion_setting</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="siml.html#siml.setting.ConversionSetting" title="siml.setting.ConversionSetting"><span class="pre">ConversionSetting</span></a></em><a class="headerlink" href="#siml.services.inference.inner_setting.InnerInfererSetting.conversion_setting" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.services.inference.inner_setting.InnerInfererSetting.create_model_env_setting">
+<span class="sig-name descname"><span class="pre">create_model_env_setting</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="siml.services.html#siml.services.environment.ModelEnvironmentSetting" title="siml.services.environment.ModelEnvironmentSetting"><span class="pre">ModelEnvironmentSetting</span></a></span></span><a class="headerlink" href="#siml.services.inference.inner_setting.InnerInfererSetting.create_model_env_setting" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="siml.services.inference.inner_setting.InnerInfererSetting.decrypt_key">
+<span class="sig-name descname"><span class="pre">decrypt_key</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bytes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#siml.services.inference.inner_setting.InnerInfererSetting.decrypt_key" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="siml.services.inference.inner_setting.InnerInfererSetting.force_converter_parameters_pkl">
+<span class="sig-name descname"><span class="pre">force_converter_parameters_pkl</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Path</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#siml.services.inference.inner_setting.InnerInfererSetting.force_converter_parameters_pkl" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="siml.services.inference.inner_setting.InnerInfererSetting.force_model_path">
+<span class="sig-name descname"><span class="pre">force_model_path</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Path</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#siml.services.inference.inner_setting.InnerInfererSetting.force_model_path" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.services.inference.inner_setting.InnerInfererSetting.get_converter_parameters_pkl_path">
+<span class="sig-name descname"><span class="pre">get_converter_parameters_pkl_path</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Path</span></span></span><a class="headerlink" href="#siml.services.inference.inner_setting.InnerInfererSetting.get_converter_parameters_pkl_path" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.services.inference.inner_setting.InnerInfererSetting.get_crypt_key">
+<span class="sig-name descname"><span class="pre">get_crypt_key</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#siml.services.inference.inner_setting.InnerInfererSetting.get_crypt_key" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.services.inference.inner_setting.InnerInfererSetting.get_model_name">
+<span class="sig-name descname"><span class="pre">get_model_name</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#siml.services.inference.inner_setting.InnerInfererSetting.get_model_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.services.inference.inner_setting.InnerInfererSetting.get_output_directory">
+<span class="sig-name descname"><span class="pre">get_output_directory</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">date_string</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_directory</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Path</span></span></span><a class="headerlink" href="#siml.services.inference.inner_setting.InnerInfererSetting.get_output_directory" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.services.inference.inner_setting.InnerInfererSetting.get_snapshot_file_path">
+<span class="sig-name descname"><span class="pre">get_snapshot_file_path</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Path</span></span></span><a class="headerlink" href="#siml.services.inference.inner_setting.InnerInfererSetting.get_snapshot_file_path" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.services.inference.inner_setting.InnerInfererSetting.get_write_simulation_case_dir">
+<span class="sig-name descname"><span class="pre">get_write_simulation_case_dir</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_directory</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Path</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#siml.services.inference.inner_setting.InnerInfererSetting.get_write_simulation_case_dir" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="siml.services.inference.inner_setting.InnerInfererSetting.inferer_setting">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">inferer_setting</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="siml.html#siml.setting.InfererSetting" title="siml.setting.InfererSetting"><span class="pre">InfererSetting</span></a></em><a class="headerlink" href="#siml.services.inference.inner_setting.InnerInfererSetting.inferer_setting" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.services.inference.inner_setting.InnerInfererSetting.load_scalers">
+<span class="sig-name descname"><span class="pre">load_scalers</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="siml.preprocessing.html#siml.preprocessing.scalers_composition.ScalersComposition" title="siml.preprocessing.scalers_composition.ScalersComposition"><span class="pre">ScalersComposition</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#siml.services.inference.inner_setting.InnerInfererSetting.load_scalers" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="siml.services.inference.inner_setting.InnerInfererSetting.main_setting">
+<span class="sig-name descname"><span class="pre">main_setting</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="siml.html#siml.setting.MainSetting" title="siml.setting.MainSetting"><span class="pre">MainSetting</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Any</span></em><a class="headerlink" href="#siml.services.inference.inner_setting.InnerInfererSetting.main_setting" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="siml.services.inference.inner_setting.InnerInfererSetting.model_setting">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">model_setting</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="siml.html#siml.setting.ModelSetting" title="siml.setting.ModelSetting"><span class="pre">ModelSetting</span></a></em><a class="headerlink" href="#siml.services.inference.inner_setting.InnerInfererSetting.model_setting" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="siml.services.inference.inner_setting.InnerInfererSetting.perform_inverse">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">perform_inverse</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#siml.services.inference.inner_setting.InnerInfererSetting.perform_inverse" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.services.inference.inner_setting.InnerInfererSetting.skip_fem_data_creation">
+<span class="sig-name descname"><span class="pre">skip_fem_data_creation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_directory</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#siml.services.inference.inner_setting.InnerInfererSetting.skip_fem_data_creation" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="siml.services.inference.inner_setting.InnerInfererSetting.trainer_setting">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">trainer_setting</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="siml.html#siml.setting.TrainerSetting" title="siml.setting.TrainerSetting"><span class="pre">TrainerSetting</span></a></em><a class="headerlink" href="#siml.services.inference.inner_setting.InnerInfererSetting.trainer_setting" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-siml.services.inference.metrics_builder">
+<span id="siml-services-inference-metrics-builder-module"></span><h2>siml.services.inference.metrics_builder module<a class="headerlink" href="#module-siml.services.inference.metrics_builder" title="Permalink to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.services.inference.metrics_builder.LossMetrics">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.services.inference.metrics_builder.</span></span><span class="sig-name descname"><span class="pre">LossMetrics</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">loss_function</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.loss_operations.html#siml.loss_operations.loss_calculator.ILossCalculator" title="siml.loss_operations.loss_calculator.ILossCalculator"><span class="pre">ILossCalculator</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.services.inference.metrics_builder.LossMetrics" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Metric</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.services.inference.metrics_builder.LossMetrics.compute">
+<span class="sig-name descname"><span class="pre">compute</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#siml.services.inference.metrics_builder.LossMetrics.compute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the metric based on it’s accumulated state.</p>
+<p>This is called at the end of each epoch.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the actual quantity of interest.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Any</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>NotComputableError</strong> – raised when the metric cannot be computed.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.services.inference.metrics_builder.LossMetrics.reset">
+<span class="sig-name descname"><span class="pre">reset</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#siml.services.inference.metrics_builder.LossMetrics.reset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Resets the metric to it’s initial state.</p>
+<p>This is called at the start of each epoch.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.services.inference.metrics_builder.LossMetrics.update">
+<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">output</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.services.inference.metrics_builder.LossMetrics.update" title="Permalink to this definition">¶</a></dt>
+<dd><p>Updates the metric’s state using the passed batch output.</p>
+<p>This is called once for each batch.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>output</strong> – the is the output from the engine’s process function.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.services.inference.metrics_builder.MetricsBuilder">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.services.inference.metrics_builder.</span></span><span class="sig-name descname"><span class="pre">MetricsBuilder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trainer_setting</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.html#siml.setting.TrainerSetting" title="siml.setting.TrainerSetting"><span class="pre">TrainerSetting</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_function</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.loss_operations.html#siml.loss_operations.loss_calculator.ILossCalculator" title="siml.loss_operations.loss_calculator.ILossCalculator"><span class="pre">ILossCalculator</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.services.inference.metrics_builder.MetricsBuilder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.services.inference.metrics_builder.MetricsBuilder.create">
+<span class="sig-name descname"><span class="pre">create</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ignite.metrics.metric.Metric</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#siml.services.inference.metrics_builder.MetricsBuilder.create" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.services.inference.metrics_builder.PostResultsMetrics">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.services.inference.metrics_builder.</span></span><span class="sig-name descname"><span class="pre">PostResultsMetrics</span></span><a class="headerlink" href="#siml.services.inference.metrics_builder.PostResultsMetrics" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Metric</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.services.inference.metrics_builder.PostResultsMetrics.compute">
+<span class="sig-name descname"><span class="pre">compute</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#siml.services.inference.metrics_builder.PostResultsMetrics.compute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the metric based on it’s accumulated state.</p>
+<p>This is called at the end of each epoch.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the actual quantity of interest.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Any</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>NotComputableError</strong> – raised when the metric cannot be computed.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.services.inference.metrics_builder.PostResultsMetrics.reset">
+<span class="sig-name descname"><span class="pre">reset</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#siml.services.inference.metrics_builder.PostResultsMetrics.reset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Resets the metric to it’s initial state.</p>
+<p>This is called at the start of each epoch.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.services.inference.metrics_builder.PostResultsMetrics.update">
+<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">output</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.services.inference.metrics_builder.PostResultsMetrics.update" title="Permalink to this definition">¶</a></dt>
+<dd><p>Updates the metric’s state using the passed batch output.</p>
+<p>This is called once for each batch.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>output</strong> – the is the output from the engine’s process function.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.services.inference.metrics_builder.RawLossMetrics">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.services.inference.metrics_builder.</span></span><span class="sig-name descname"><span class="pre">RawLossMetrics</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trainer_setting</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.html#siml.setting.TrainerSetting" title="siml.setting.TrainerSetting"><span class="pre">TrainerSetting</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_function</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.loss_operations.html#siml.loss_operations.loss_calculator.ILossCalculator" title="siml.loss_operations.loss_calculator.ILossCalculator"><span class="pre">ILossCalculator</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.services.inference.metrics_builder.RawLossMetrics" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Metric</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.services.inference.metrics_builder.RawLossMetrics.compute">
+<span class="sig-name descname"><span class="pre">compute</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#siml.services.inference.metrics_builder.RawLossMetrics.compute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the metric based on it’s accumulated state.</p>
+<p>This is called at the end of each epoch.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the actual quantity of interest.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Any</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>NotComputableError</strong> – raised when the metric cannot be computed.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.services.inference.metrics_builder.RawLossMetrics.reset">
+<span class="sig-name descname"><span class="pre">reset</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#siml.services.inference.metrics_builder.RawLossMetrics.reset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Resets the metric to it’s initial state.</p>
+<p>This is called at the start of each epoch.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.services.inference.metrics_builder.RawLossMetrics.update">
+<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">output</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.services.inference.metrics_builder.RawLossMetrics.update" title="Permalink to this definition">¶</a></dt>
+<dd><p>Updates the metric’s state using the passed batch output.</p>
+<p>This is called once for each batch.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>output</strong> – the is the output from the engine’s process function.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-siml.services.inference.record_object">
+<span id="siml-services-inference-record-object-module"></span><h2>siml.services.inference.record_object module<a class="headerlink" href="#module-siml.services.inference.record_object" title="Permalink to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.services.inference.record_object.PostPredictionRecord">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.services.inference.record_object.</span></span><span class="sig-name descname"><span class="pre">PostPredictionRecord</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dict_x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dict_y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">original_shapes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_directory</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inference_time</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inference_start_datetime</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dict_answer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raw_loss</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_directory</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fem_data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.services.inference.record_object.PostPredictionRecord" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">NamedTuple</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="siml.services.inference.record_object.PostPredictionRecord.data_directory">
+<span class="sig-name descname"><span class="pre">data_directory</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Path</span></em><a class="headerlink" href="#siml.services.inference.record_object.PostPredictionRecord.data_directory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 3</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="siml.services.inference.record_object.PostPredictionRecord.dict_answer">
+<span class="sig-name descname"><span class="pre">dict_answer</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#siml.services.inference.record_object.PostPredictionRecord.dict_answer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 6</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="siml.services.inference.record_object.PostPredictionRecord.dict_x">
+<span class="sig-name descname"><span class="pre">dict_x</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#siml.services.inference.record_object.PostPredictionRecord.dict_x" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 0</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="siml.services.inference.record_object.PostPredictionRecord.dict_y">
+<span class="sig-name descname"><span class="pre">dict_y</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#siml.services.inference.record_object.PostPredictionRecord.dict_y" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 1</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="siml.services.inference.record_object.PostPredictionRecord.fem_data">
+<span class="sig-name descname"><span class="pre">fem_data</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">FEMData</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#siml.services.inference.record_object.PostPredictionRecord.fem_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 10</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="siml.services.inference.record_object.PostPredictionRecord.inference_start_datetime">
+<span class="sig-name descname"><span class="pre">inference_start_datetime</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#siml.services.inference.record_object.PostPredictionRecord.inference_start_datetime" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 5</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="siml.services.inference.record_object.PostPredictionRecord.inference_time">
+<span class="sig-name descname"><span class="pre">inference_time</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#siml.services.inference.record_object.PostPredictionRecord.inference_time" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 4</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="siml.services.inference.record_object.PostPredictionRecord.loss">
+<span class="sig-name descname"><span class="pre">loss</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#siml.services.inference.record_object.PostPredictionRecord.loss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 7</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="siml.services.inference.record_object.PostPredictionRecord.original_shapes">
+<span class="sig-name descname"><span class="pre">original_shapes</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">tuple</span></em><a class="headerlink" href="#siml.services.inference.record_object.PostPredictionRecord.original_shapes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 2</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="siml.services.inference.record_object.PostPredictionRecord.output_directory">
+<span class="sig-name descname"><span class="pre">output_directory</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Path</span></em><a class="headerlink" href="#siml.services.inference.record_object.PostPredictionRecord.output_directory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 9</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="siml.services.inference.record_object.PostPredictionRecord.raw_loss">
+<span class="sig-name descname"><span class="pre">raw_loss</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#siml.services.inference.record_object.PostPredictionRecord.raw_loss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 8</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.services.inference.record_object.PredictionRecord">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.services.inference.record_object.</span></span><span class="sig-name descname"><span class="pre">PredictionRecord</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dict_x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dict_y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">original_shapes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_directory</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inference_time</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inference_start_datetime</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dict_answer</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.services.inference.record_object.PredictionRecord" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">NamedTuple</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="siml.services.inference.record_object.PredictionRecord.data_directory">
+<span class="sig-name descname"><span class="pre">data_directory</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Path</span></em><a class="headerlink" href="#siml.services.inference.record_object.PredictionRecord.data_directory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 3</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="siml.services.inference.record_object.PredictionRecord.dict_answer">
+<span class="sig-name descname"><span class="pre">dict_answer</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#siml.services.inference.record_object.PredictionRecord.dict_answer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 6</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="siml.services.inference.record_object.PredictionRecord.dict_x">
+<span class="sig-name descname"><span class="pre">dict_x</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#siml.services.inference.record_object.PredictionRecord.dict_x" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 0</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="siml.services.inference.record_object.PredictionRecord.dict_y">
+<span class="sig-name descname"><span class="pre">dict_y</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#siml.services.inference.record_object.PredictionRecord.dict_y" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 1</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="siml.services.inference.record_object.PredictionRecord.inference_start_datetime">
+<span class="sig-name descname"><span class="pre">inference_start_datetime</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#siml.services.inference.record_object.PredictionRecord.inference_start_datetime" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 5</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="siml.services.inference.record_object.PredictionRecord.inference_time">
+<span class="sig-name descname"><span class="pre">inference_time</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#siml.services.inference.record_object.PredictionRecord.inference_time" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 4</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="siml.services.inference.record_object.PredictionRecord.original_shapes">
+<span class="sig-name descname"><span class="pre">original_shapes</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">tuple</span></em><a class="headerlink" href="#siml.services.inference.record_object.PredictionRecord.original_shapes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 2</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.services.inference.record_object.RawPredictionRecord">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.services.inference.record_object.</span></span><span class="sig-name descname"><span class="pre">RawPredictionRecord</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">original_shapes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inference_time</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_directory</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.services.inference.record_object.RawPredictionRecord" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">NamedTuple</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="siml.services.inference.record_object.RawPredictionRecord.data_directory">
+<span class="sig-name descname"><span class="pre">data_directory</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Path</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#siml.services.inference.record_object.RawPredictionRecord.data_directory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 5</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="siml.services.inference.record_object.RawPredictionRecord.inference_time">
+<span class="sig-name descname"><span class="pre">inference_time</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#siml.services.inference.record_object.RawPredictionRecord.inference_time" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 4</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="siml.services.inference.record_object.RawPredictionRecord.original_shapes">
+<span class="sig-name descname"><span class="pre">original_shapes</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">tuple</span></em><a class="headerlink" href="#siml.services.inference.record_object.RawPredictionRecord.original_shapes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 3</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="siml.services.inference.record_object.RawPredictionRecord.x">
+<span class="sig-name descname"><span class="pre">x</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ISimlVariables</span></em><a class="headerlink" href="#siml.services.inference.record_object.RawPredictionRecord.x" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 2</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="siml.services.inference.record_object.RawPredictionRecord.y">
+<span class="sig-name descname"><span class="pre">y</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ISimlVariables</span></em><a class="headerlink" href="#siml.services.inference.record_object.RawPredictionRecord.y" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 1</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="siml.services.inference.record_object.RawPredictionRecord.y_pred">
+<span class="sig-name descname"><span class="pre">y_pred</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ISimlVariables</span></em><a class="headerlink" href="#siml.services.inference.record_object.RawPredictionRecord.y_pred" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 0</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-siml.services.inference">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-siml.services.inference" title="Permalink to this heading">¶</a></h2>
+</section>
+</section>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="siml.services.inference.postprocessing.html" class="btn btn-neutral float-right" title="siml.services.inference.postprocessing package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="siml.services.html" class="btn btn-neutral float-left" title="siml.services package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, RICOS Co. Ltd.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

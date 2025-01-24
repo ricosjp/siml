@@ -1,0 +1,53 @@
+siml.networks.pyg package
+=========================
+
+Submodules
+----------
+
+siml.networks.pyg.abstract\_pyg\_gcn module
+-------------------------------------------
+
+.. automodule:: siml.networks.pyg.abstract_pyg_gcn
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.networks.pyg.cluster\_gcn module
+-------------------------------------
+
+.. automodule:: siml.networks.pyg.cluster_gcn
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.networks.pyg.gcnii module
+------------------------------
+
+.. automodule:: siml.networks.pyg.gcnii
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.networks.pyg.gcnii\_pytorch\_geometric module
+--------------------------------------------------
+
+.. automodule:: siml.networks.pyg.gcnii_pytorch_geometric
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.networks.pyg.gin module
+----------------------------
+
+.. automodule:: siml.networks.pyg.gin
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: siml.networks.pyg
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -1,0 +1,906 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>siml.preprocessing package &mdash; siml  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/gallery.css" type="text/css" />
+  <link rel="stylesheet" href="_static/gallery-binder.css" type="text/css" />
+  <link rel="stylesheet" href="_static/gallery-dataframe.css" type="text/css" />
+  <link rel="stylesheet" href="_static/gallery-rendered-html.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="siml.preprocessing.siml_scalers package" href="siml.preprocessing.siml_scalers.html" />
+    <link rel="prev" title="siml.path_like_objects.siml_files package" href="siml.path_like_objects.siml_files.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> siml
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="examples/index.html">Examples</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="siml.html">siml package</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="siml.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="siml.loss_operations.html">siml.loss_operations package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="siml.networks.html">siml.networks package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="siml.path_like_objects.html">siml.path_like_objects package</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">siml.preprocessing package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#subpackages">Subpackages</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-siml.preprocessing.converted_objects">siml.preprocessing.converted_objects module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-siml.preprocessing.converter">siml.preprocessing.converter module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-siml.preprocessing.scalers_composition">siml.preprocessing.scalers_composition module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-siml.preprocessing.scaling_converter">siml.preprocessing.scaling_converter module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-siml.preprocessing">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="siml.services.html">siml.services package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="siml.siml_variables.html">siml.siml_variables package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="siml.update_functions.html">siml.update_functions package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="siml.utils.html">siml.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.config">siml.config module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.data_parallel">siml.data_parallel module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.datasets">siml.datasets module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.inferer">siml.inferer module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.mains">siml.mains module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.optimize">siml.optimize module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.prepost">siml.prepost module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.setting">siml.setting module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.study">siml.study module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.trainer">siml.trainer module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml.util">siml.util module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.html#module-siml">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">siml</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="siml.html">siml package</a> &raquo;</li>
+        
+      <li>siml.preprocessing package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/siml.preprocessing.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <section id="siml-preprocessing-package">
+<h1>siml.preprocessing package<a class="headerlink" href="#siml-preprocessing-package" title="Permalink to this heading">¶</a></h1>
+<section id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this heading">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="siml.preprocessing.siml_scalers.html">siml.preprocessing.siml_scalers package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="siml.preprocessing.siml_scalers.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="siml.preprocessing.siml_scalers.scale_functions.html">siml.preprocessing.siml_scalers.scale_functions package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="siml.preprocessing.siml_scalers.scale_functions.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="siml.preprocessing.siml_scalers.scale_functions.html#module-siml.preprocessing.siml_scalers.scale_functions.identity_scaler">siml.preprocessing.siml_scalers.scale_functions.identity_scaler module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="siml.preprocessing.siml_scalers.scale_functions.html#module-siml.preprocessing.siml_scalers.scale_functions.interface_scaler">siml.preprocessing.siml_scalers.scale_functions.interface_scaler module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="siml.preprocessing.siml_scalers.scale_functions.html#module-siml.preprocessing.siml_scalers.scale_functions.isoam_scaler">siml.preprocessing.siml_scalers.scale_functions.isoam_scaler module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="siml.preprocessing.siml_scalers.scale_functions.html#module-siml.preprocessing.siml_scalers.scale_functions.max_abs_scaler">siml.preprocessing.siml_scalers.scale_functions.max_abs_scaler module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="siml.preprocessing.siml_scalers.scale_functions.html#module-siml.preprocessing.siml_scalers.scale_functions.min_max_scaler">siml.preprocessing.siml_scalers.scale_functions.min_max_scaler module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="siml.preprocessing.siml_scalers.scale_functions.html#module-siml.preprocessing.siml_scalers.scale_functions.sparse_standard_scaler">siml.preprocessing.siml_scalers.scale_functions.sparse_standard_scaler module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="siml.preprocessing.siml_scalers.scale_functions.html#module-siml.preprocessing.siml_scalers.scale_functions.standard_scaler">siml.preprocessing.siml_scalers.scale_functions.standard_scaler module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="siml.preprocessing.siml_scalers.scale_functions.html#module-siml.preprocessing.siml_scalers.scale_functions.user_defined_scaler">siml.preprocessing.siml_scalers.scale_functions.user_defined_scaler module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="siml.preprocessing.siml_scalers.scale_functions.html#module-siml.preprocessing.siml_scalers.scale_functions">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="siml.preprocessing.siml_scalers.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="siml.preprocessing.siml_scalers.html#module-siml.preprocessing.siml_scalers.scaler_result_save">siml.preprocessing.siml_scalers.scaler_result_save module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="siml.preprocessing.siml_scalers.html#siml.preprocessing.siml_scalers.scaler_result_save.DefaultSaveFunction"><code class="docutils literal notranslate"><span class="pre">DefaultSaveFunction</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="siml.preprocessing.siml_scalers.html#siml.preprocessing.siml_scalers.scaler_result_save.IScalingSaveFunction"><code class="docutils literal notranslate"><span class="pre">IScalingSaveFunction</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="siml.preprocessing.siml_scalers.html#module-siml.preprocessing.siml_scalers.scaler_wrapper">siml.preprocessing.siml_scalers.scaler_wrapper module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="siml.preprocessing.siml_scalers.html#siml.preprocessing.siml_scalers.scaler_wrapper.SimlScalerWrapper"><code class="docutils literal notranslate"><span class="pre">SimlScalerWrapper</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="siml.preprocessing.siml_scalers.html#siml.preprocessing.siml_scalers.scaler_wrapper.SimlScalerWrapper.create"><code class="docutils literal notranslate"><span class="pre">SimlScalerWrapper.create()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="siml.preprocessing.siml_scalers.html#siml.preprocessing.siml_scalers.scaler_wrapper.SimlScalerWrapper.get_dumped_dict"><code class="docutils literal notranslate"><span class="pre">SimlScalerWrapper.get_dumped_dict()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="siml.preprocessing.siml_scalers.html#siml.preprocessing.siml_scalers.scaler_wrapper.SimlScalerWrapper.inverse_transform"><code class="docutils literal notranslate"><span class="pre">SimlScalerWrapper.inverse_transform()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="siml.preprocessing.siml_scalers.html#siml.preprocessing.siml_scalers.scaler_wrapper.SimlScalerWrapper.is_erroneous"><code class="docutils literal notranslate"><span class="pre">SimlScalerWrapper.is_erroneous()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="siml.preprocessing.siml_scalers.html#siml.preprocessing.siml_scalers.scaler_wrapper.SimlScalerWrapper.lazy_partial_fit"><code class="docutils literal notranslate"><span class="pre">SimlScalerWrapper.lazy_partial_fit()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="siml.preprocessing.siml_scalers.html#siml.preprocessing.siml_scalers.scaler_wrapper.SimlScalerWrapper.partial_fit"><code class="docutils literal notranslate"><span class="pre">SimlScalerWrapper.partial_fit()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="siml.preprocessing.siml_scalers.html#siml.preprocessing.siml_scalers.scaler_wrapper.SimlScalerWrapper.transform"><code class="docutils literal notranslate"><span class="pre">SimlScalerWrapper.transform()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="siml.preprocessing.siml_scalers.html#siml.preprocessing.siml_scalers.scaler_wrapper.SimlScalerWrapper.use_diagonal"><code class="docutils literal notranslate"><span class="pre">SimlScalerWrapper.use_diagonal</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="siml.preprocessing.siml_scalers.html#module-siml.preprocessing.siml_scalers">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading">¶</a></h2>
+</section>
+<section id="module-siml.preprocessing.converted_objects">
+<span id="siml-preprocessing-converted-objects-module"></span><h2>siml.preprocessing.converted_objects module<a class="headerlink" href="#module-siml.preprocessing.converted_objects" title="Permalink to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.preprocessing.converted_objects.SimlConvertedItem">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.preprocessing.converted_objects.</span></span><span class="sig-name descname"><span class="pre">SimlConvertedItem</span></span><a class="headerlink" href="#siml.preprocessing.converted_objects.SimlConvertedItem" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.preprocessing.converted_objects.SimlConvertedItem.failed">
+<span class="sig-name descname"><span class="pre">failed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#siml.preprocessing.converted_objects.SimlConvertedItem.failed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set status as failed</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>message</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em>) – If fed, register failed message</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.preprocessing.converted_objects.SimlConvertedItem.from_interim_directory">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_interim_directory</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">interim_directory</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pathlib.Path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decrypt_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.preprocessing.converted_objects.SimlConvertedItem.from_interim_directory" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.preprocessing.converted_objects.SimlConvertedItem.get_failed_message">
+<span class="sig-name descname"><span class="pre">get_failed_message</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#siml.preprocessing.converted_objects.SimlConvertedItem.get_failed_message" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.preprocessing.converted_objects.SimlConvertedItem.get_status">
+<span class="sig-name descname"><span class="pre">get_status</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#siml.preprocessing.converted_objects.SimlConvertedItem.get_status" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.preprocessing.converted_objects.SimlConvertedItem.get_values">
+<span class="sig-name descname"><span class="pre">get_values</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">femio.fem_data.FEMData</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#siml.preprocessing.converted_objects.SimlConvertedItem.get_values" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get items which this object manages</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Return dict_data and fem_data if necessary</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>tuple[ Union[dict[str, np.ndarray], None], Union[femio.FEMData, None] ]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="siml.preprocessing.converted_objects.SimlConvertedItem.is_failed">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_failed</span></span><a class="headerlink" href="#siml.preprocessing.converted_objects.SimlConvertedItem.is_failed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="siml.preprocessing.converted_objects.SimlConvertedItem.is_skipped">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_skipped</span></span><a class="headerlink" href="#siml.preprocessing.converted_objects.SimlConvertedItem.is_skipped" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="siml.preprocessing.converted_objects.SimlConvertedItem.is_successed">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_successed</span></span><a class="headerlink" href="#siml.preprocessing.converted_objects.SimlConvertedItem.is_successed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.preprocessing.converted_objects.SimlConvertedItem.register">
+<span class="sig-name descname"><span class="pre">register</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dict_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fem_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">FEMData</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#siml.preprocessing.converted_objects.SimlConvertedItem.register" title="Permalink to this definition">¶</a></dt>
+<dd><p>Register result items</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dict_data</strong> (<em>Optional</em><em>[</em><em>dict</em><em>[</em><em>str</em><em>, </em><em>np.ndarray</em><em>]</em><em>]</em>) – dict data of features</p></li>
+<li><p><strong>fem_data</strong> (<em>Optional</em><em>[</em><em>femio.FEMData</em><em>]</em>) – femio data</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>ValueError</strong> – If dict_data has been already registered. raise this error.</p></li>
+<li><p><strong>ValueError</strong> – If fem_data has been already registered. raise this error.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.preprocessing.converted_objects.SimlConvertedItem.skipped">
+<span class="sig-name descname"><span class="pre">skipped</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#siml.preprocessing.converted_objects.SimlConvertedItem.skipped" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set status as skipped</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.preprocessing.converted_objects.SimlConvertedItem.successed">
+<span class="sig-name descname"><span class="pre">successed</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#siml.preprocessing.converted_objects.SimlConvertedItem.successed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set status as successed</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.preprocessing.converted_objects.SimlConvertedItemContainer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.preprocessing.converted_objects.</span></span><span class="sig-name descname"><span class="pre">SimlConvertedItemContainer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">values</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#siml.preprocessing.converted_objects.SimlConvertedItem" title="siml.preprocessing.converted_objects.SimlConvertedItem"><span class="pre">siml.preprocessing.converted_objects.SimlConvertedItem</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.preprocessing.converted_objects.SimlConvertedItemContainer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.preprocessing.converted_objects.SimlConvertedItemContainer.from_interim_directories">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_interim_directories</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">interim_directories</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">pathlib.Path</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decrypt_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.preprocessing.converted_objects.SimlConvertedItemContainer.from_interim_directories" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="siml.preprocessing.converted_objects.SimlConvertedItemContainer.is_all_successed">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_all_successed</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#siml.preprocessing.converted_objects.SimlConvertedItemContainer.is_all_successed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.preprocessing.converted_objects.SimlConvertedItemContainer.keys">
+<span class="sig-name descname"><span class="pre">keys</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict_keys</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#siml.preprocessing.converted_objects.SimlConvertedItemContainer.keys" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.preprocessing.converted_objects.SimlConvertedItemContainer.merge">
+<span class="sig-name descname"><span class="pre">merge</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#siml.preprocessing.converted_objects.SimlConvertedItemContainer" title="siml.preprocessing.converted_objects.SimlConvertedItemContainer"><span class="pre">SimlConvertedItemContainer</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#siml.preprocessing.converted_objects.SimlConvertedItemContainer" title="siml.preprocessing.converted_objects.SimlConvertedItemContainer"><span class="pre">SimlConvertedItemContainer</span></a></span></span><a class="headerlink" href="#siml.preprocessing.converted_objects.SimlConvertedItemContainer.merge" title="Permalink to this definition">¶</a></dt>
+<dd><p>return new object merging self data and others.
+if same key exists in both objects, key in other is prioritised.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>other</strong> (<a class="reference internal" href="#siml.preprocessing.converted_objects.SimlConvertedItemContainer" title="siml.preprocessing.converted_objects.SimlConvertedItemContainer"><em>SimlConvertedItemContainer</em></a>) – container to merge</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>new container object which has merged data</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#siml.preprocessing.converted_objects.SimlConvertedItemContainer" title="siml.preprocessing.converted_objects.SimlConvertedItemContainer">SimlConvertedItemContainer</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.preprocessing.converted_objects.SimlConvertedItemContainer.query_num_status_items">
+<span class="sig-name descname"><span class="pre">query_num_status_items</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">status</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#siml.preprocessing.converted_objects.SimlConvertedItemContainer.query_num_status_items" title="Permalink to this definition">¶</a></dt>
+<dd><p>query the number of data which has the status.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>number of data to be selected</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>ValueError</strong> – If status is not defined, raise this error.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.preprocessing.converted_objects.SimlConvertedItemContainer.select_non_successed_items">
+<span class="sig-name descname"><span class="pre">select_non_successed_items</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#siml.preprocessing.converted_objects.SimlConvertedItem" title="siml.preprocessing.converted_objects.SimlConvertedItem"><span class="pre">siml.preprocessing.converted_objects.SimlConvertedItem</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#siml.preprocessing.converted_objects.SimlConvertedItemContainer.select_non_successed_items" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>Select items of which status is not successed, such as failed,</dt><dd><p>skipped, unfinished.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>non successed items</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict[str, <a class="reference internal" href="#siml.preprocessing.converted_objects.SimlConvertedItem" title="siml.preprocessing.converted_objects.SimlConvertedItem">SimlConvertedItem</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.preprocessing.converted_objects.SimlConvertedItemContainer.select_successed_items">
+<span class="sig-name descname"><span class="pre">select_successed_items</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#siml.preprocessing.converted_objects.SimlConvertedItem" title="siml.preprocessing.converted_objects.SimlConvertedItem"><span class="pre">siml.preprocessing.converted_objects.SimlConvertedItem</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#siml.preprocessing.converted_objects.SimlConvertedItemContainer.select_successed_items" title="Permalink to this definition">¶</a></dt>
+<dd><p>Select items of which status is successed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>successed items</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict[str, <a class="reference internal" href="#siml.preprocessing.converted_objects.SimlConvertedItem" title="siml.preprocessing.converted_objects.SimlConvertedItem">SimlConvertedItem</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.preprocessing.converted_objects.SimlConvertedStatus">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.preprocessing.converted_objects.</span></span><span class="sig-name descname"><span class="pre">SimlConvertedStatus</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.preprocessing.converted_objects.SimlConvertedStatus" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Enum</span></code></p>
+<p>An enumeration.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="siml.preprocessing.converted_objects.SimlConvertedStatus.failed">
+<span class="sig-name descname"><span class="pre">failed</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2</span></em><a class="headerlink" href="#siml.preprocessing.converted_objects.SimlConvertedStatus.failed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="siml.preprocessing.converted_objects.SimlConvertedStatus.not_finished">
+<span class="sig-name descname"><span class="pre">not_finished</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0</span></em><a class="headerlink" href="#siml.preprocessing.converted_objects.SimlConvertedStatus.not_finished" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="siml.preprocessing.converted_objects.SimlConvertedStatus.skipped">
+<span class="sig-name descname"><span class="pre">skipped</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">3</span></em><a class="headerlink" href="#siml.preprocessing.converted_objects.SimlConvertedStatus.skipped" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="siml.preprocessing.converted_objects.SimlConvertedStatus.successed">
+<span class="sig-name descname"><span class="pre">successed</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></em><a class="headerlink" href="#siml.preprocessing.converted_objects.SimlConvertedStatus.successed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-siml.preprocessing.converter">
+<span id="siml-preprocessing-converter-module"></span><h2>siml.preprocessing.converter module<a class="headerlink" href="#module-siml.preprocessing.converter" title="Permalink to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.preprocessing.converter.DefaultFilterFunction">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.preprocessing.converter.</span></span><span class="sig-name descname"><span class="pre">DefaultFilterFunction</span></span><a class="headerlink" href="#siml.preprocessing.converter.DefaultFilterFunction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#siml.preprocessing.converter.IFilterFunction" title="siml.preprocessing.converter.IFilterFunction"><code class="xref py py-class docutils literal notranslate"><span class="pre">IFilterFunction</span></code></a></p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.preprocessing.converter.DefaultLoadFunction">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.preprocessing.converter.</span></span><span class="sig-name descname"><span class="pre">DefaultLoadFunction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">read_npy</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">read_res</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_femio</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_series</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conversion_function</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#siml.preprocessing.converter.IConvertFunction" title="siml.preprocessing.converter.IConvertFunction"><span class="pre">IConvertFunction</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.preprocessing.converter.DefaultLoadFunction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#siml.preprocessing.converter.ILoadFunction" title="siml.preprocessing.converter.ILoadFunction"><code class="xref py py-class docutils literal notranslate"><span class="pre">ILoadFunction</span></code></a></p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.preprocessing.converter.DefaultSaveFunction">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.preprocessing.converter.</span></span><span class="sig-name descname"><span class="pre">DefaultSaveFunction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">main_setting</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.html#siml.setting.MainSetting" title="siml.setting.MainSetting"><span class="pre">MainSetting</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">write_ucd</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_first_order</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">user_save_function</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#siml.preprocessing.converter.ISaveFunction" title="siml.preprocessing.converter.ISaveFunction"><span class="pre">ISaveFunction</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.preprocessing.converter.DefaultSaveFunction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#siml.preprocessing.converter.ISaveFunction" title="siml.preprocessing.converter.ISaveFunction"><code class="xref py py-class docutils literal notranslate"><span class="pre">ISaveFunction</span></code></a></p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.preprocessing.converter.IConvertFunction">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.preprocessing.converter.</span></span><span class="sig-name descname"><span class="pre">IConvertFunction</span></span><a class="headerlink" href="#siml.preprocessing.converter.IConvertFunction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.preprocessing.converter.IFilterFunction">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.preprocessing.converter.</span></span><span class="sig-name descname"><span class="pre">IFilterFunction</span></span><a class="headerlink" href="#siml.preprocessing.converter.IFilterFunction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.preprocessing.converter.ILoadFunction">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.preprocessing.converter.</span></span><span class="sig-name descname"><span class="pre">ILoadFunction</span></span><a class="headerlink" href="#siml.preprocessing.converter.ILoadFunction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.preprocessing.converter.ISaveFunction">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.preprocessing.converter.</span></span><span class="sig-name descname"><span class="pre">ISaveFunction</span></span><a class="headerlink" href="#siml.preprocessing.converter.ISaveFunction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.preprocessing.converter.RawConverter">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.preprocessing.converter.</span></span><span class="sig-name descname"><span class="pre">RawConverter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">main_setting</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.html#siml.setting.MainSetting" title="siml.setting.MainSetting"><span class="pre">MainSetting</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">recursive</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conversion_function</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#siml.preprocessing.converter.IConvertFunction" title="siml.preprocessing.converter.IConvertFunction"><span class="pre">IConvertFunction</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_function</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#siml.preprocessing.converter.IFilterFunction" title="siml.preprocessing.converter.IFilterFunction"><span class="pre">IFilterFunction</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">load_function</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#siml.preprocessing.converter.ILoadFunction" title="siml.preprocessing.converter.ILoadFunction"><span class="pre">ILoadFunction</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_function</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#siml.preprocessing.converter.ISaveFunction" title="siml.preprocessing.converter.ISaveFunction"><span class="pre">ISaveFunction</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force_renew</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">read_npy</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">write_ucd</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">read_res</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_process</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_first_order</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.preprocessing.converter.RawConverter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.preprocessing.converter.RawConverter.convert">
+<span class="sig-name descname"><span class="pre">convert</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">raw_directory</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_results</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#siml.preprocessing.converted_objects.SimlConvertedItemContainer" title="siml.preprocessing.converted_objects.SimlConvertedItemContainer"><span class="pre">SimlConvertedItemContainer</span></a></span></span><a class="headerlink" href="#siml.preprocessing.converter.RawConverter.convert" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform conversion.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>raw_directory</strong> (<em>pathlib.Path</em><em>, </em><em>optional</em>) – Raw data directory name. If not fed, self.setting.data.raw is used
+instead.</p></li>
+<li><p><strong>return_results</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True, save results and dump files</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><p>key is a path to raw directory.
+If return_results is False, values is a list of None.
+If return_results is True, values is a dictionary</p>
+<blockquote>
+<div><p>of converted values.</p>
+</div></blockquote>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str, Union[dict, None]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.preprocessing.converter.RawConverter.convert_single_data">
+<span class="sig-name descname"><span class="pre">convert_single_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">raw_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_directory</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raise_when_overwrite</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_results</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#siml.preprocessing.converted_objects.SimlConvertedItemContainer" title="siml.preprocessing.converted_objects.SimlConvertedItemContainer"><span class="pre">SimlConvertedItemContainer</span></a></span></span><a class="headerlink" href="#siml.preprocessing.converter.RawConverter.convert_single_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert single directory.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>raw_path</strong> (<em>pathlib.Path</em>) – Input data path of raw data.</p></li>
+<li><p><strong>output_directory</strong> (<em>pathlib.Path</em><em>, </em><em>optional</em>) – If fed, use the fed path as the output directory.</p></li>
+<li><p><strong>raise_when_overwrite</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True, raise when the output directory exists. The default is
+False.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><p>key is a path to raw directory.
+If return_results is False, values is a list of None.
+If return_results is True, values is a dictionary</p>
+<blockquote>
+<div><p>of converted values.</p>
+</div></blockquote>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str, Union[dict, None]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.preprocessing.converter.RawConverter.read_settings">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">read_settings</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">settings_yaml</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.preprocessing.converter.RawConverter.read_settings" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.preprocessing.converter.SingleDataConverter">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.preprocessing.converter.</span></span><span class="sig-name descname"><span class="pre">SingleDataConverter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">setting</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.html#siml.setting.ConversionSetting" title="siml.setting.ConversionSetting"><span class="pre">ConversionSetting</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">raw_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">load_function</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#siml.preprocessing.converter.ILoadFunction" title="siml.preprocessing.converter.ILoadFunction"><span class="pre">ILoadFunction</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_function</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#siml.preprocessing.converter.IFilterFunction" title="siml.preprocessing.converter.IFilterFunction"><span class="pre">IFilterFunction</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_function</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#siml.preprocessing.converter.ISaveFunction" title="siml.preprocessing.converter.ISaveFunction"><span class="pre">ISaveFunction</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_directory</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raise_when_overwrite</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force_renew</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_results</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.preprocessing.converter.SingleDataConverter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py property">
+<dt class="sig sig-object py" id="siml.preprocessing.converter.SingleDataConverter.output_directory">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">output_directory</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Path</span></em><a class="headerlink" href="#siml.preprocessing.converter.SingleDataConverter.output_directory" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.preprocessing.converter.SingleDataConverter.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#siml.preprocessing.converted_objects.SimlConvertedItem" title="siml.preprocessing.converted_objects.SimlConvertedItem"><span class="pre">SimlConvertedItem</span></a></span></span><a class="headerlink" href="#siml.preprocessing.converter.SingleDataConverter.run" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="siml.preprocessing.converter.save_dict_data">
+<span class="sig-prename descclassname"><span class="pre">siml.preprocessing.converter.</span></span><span class="sig-name descname"><span class="pre">save_dict_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">output_directory:</span> <span class="pre">~pathlib.Path,</span> <span class="pre">dict_data:</span> <span class="pre">dict[str,</span> <span class="pre">numpy.ndarray],</span> <span class="pre">*,</span> <span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float32'&gt;,</span> <span class="pre">encrypt_key=None,</span> <span class="pre">finished_file='converted',</span> <span class="pre">save_dtype_dict:</span> <span class="pre">~typing.Dict</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#siml.preprocessing.converter.save_dict_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save dict_data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>output_directory</strong> (<em>pathlib.Path</em>) – Output directory path.</p></li>
+<li><p><strong>dict_data</strong> (<em>dict</em>) – Data dictionary to be saved.</p></li>
+<li><p><strong>dtype</strong> (<em>type</em><em>, </em><em>optional</em>) – Data type to be saved.</p></li>
+<li><p><strong>encrypt_key</strong> (<em>bytes</em><em>, </em><em>optional</em>) – Data for encryption.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-siml.preprocessing.scalers_composition">
+<span id="siml-preprocessing-scalers-composition-module"></span><h2>siml.preprocessing.scalers_composition module<a class="headerlink" href="#module-siml.preprocessing.scalers_composition" title="Permalink to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.preprocessing.scalers_composition.ScalersComposition">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.preprocessing.scalers_composition.</span></span><span class="sig-name descname"><span class="pre">ScalersComposition</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">variable_name_to_scalers</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scalers_dict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="siml.preprocessing.siml_scalers.html#siml.preprocessing.siml_scalers.scaler_wrapper.SimlScalerWrapper" title="siml.preprocessing.siml_scalers.scaler_wrapper.SimlScalerWrapper"><span class="pre">siml.preprocessing.siml_scalers.scaler_wrapper.SimlScalerWrapper</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_process</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decrypt_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.preprocessing.scalers_composition.ScalersComposition" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="siml.preprocessing.scalers_composition.ScalersComposition.REGISTERED_KEY">
+<span class="sig-name descname"><span class="pre">REGISTERED_KEY</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Final</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'variable_name_to_scalers'</span></em><a class="headerlink" href="#siml.preprocessing.scalers_composition.ScalersComposition.REGISTERED_KEY" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.preprocessing.scalers_composition.ScalersComposition.create_from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">create_from_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">preprocess_dict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_process</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#siml.preprocessing.scalers_composition.ScalersComposition" title="siml.preprocessing.scalers_composition.ScalersComposition"><span class="pre">ScalersComposition</span></a></span></span><a class="headerlink" href="#siml.preprocessing.scalers_composition.ScalersComposition.create_from_dict" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.preprocessing.scalers_composition.ScalersComposition.create_from_file">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">create_from_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">converter_parameters_pkl</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_process</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#siml.preprocessing.scalers_composition.ScalersComposition" title="siml.preprocessing.scalers_composition.ScalersComposition"><span class="pre">ScalersComposition</span></a></span></span><a class="headerlink" href="#siml.preprocessing.scalers_composition.ScalersComposition.create_from_file" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.preprocessing.scalers_composition.ScalersComposition.get_dumped_object">
+<span class="sig-name descname"><span class="pre">get_dumped_object</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#siml.preprocessing.scalers_composition.ScalersComposition.get_dumped_object" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.preprocessing.scalers_composition.ScalersComposition.get_scaler">
+<span class="sig-name descname"><span class="pre">get_scaler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">variable_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">allow_missing</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="siml.preprocessing.siml_scalers.html#siml.preprocessing.siml_scalers.scaler_wrapper.SimlScalerWrapper" title="siml.preprocessing.siml_scalers.scaler_wrapper.SimlScalerWrapper"><span class="pre">SimlScalerWrapper</span></a></span></span><a class="headerlink" href="#siml.preprocessing.scalers_composition.ScalersComposition.get_scaler" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.preprocessing.scalers_composition.ScalersComposition.get_scaler_names">
+<span class="sig-name descname"><span class="pre">get_scaler_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">group_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#siml.preprocessing.scalers_composition.ScalersComposition.get_scaler_names" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.preprocessing.scalers_composition.ScalersComposition.get_variable_names">
+<span class="sig-name descname"><span class="pre">get_variable_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">group_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#siml.preprocessing.scalers_composition.ScalersComposition.get_variable_names" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.preprocessing.scalers_composition.ScalersComposition.inverse_transform">
+<span class="sig-name descname"><span class="pre">inverse_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">variable_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">coo_matrix</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">csr_matrix</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">csc_matrix</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">coo_matrix</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">csr_matrix</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">csc_matrix</span></span></span><a class="headerlink" href="#siml.preprocessing.scalers_composition.ScalersComposition.inverse_transform" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.preprocessing.scalers_composition.ScalersComposition.inverse_transform_dict">
+<span class="sig-name descname"><span class="pre">inverse_transform_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dict_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">scipy.sparse._coo.coo_matrix</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">scipy.sparse._csr.csr_matrix</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">scipy.sparse._csc.csc_matrix</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raise_missing_warning</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">scipy.sparse._coo.coo_matrix</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">scipy.sparse._csr.csr_matrix</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">scipy.sparse._csc.csc_matrix</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#siml.preprocessing.scalers_composition.ScalersComposition.inverse_transform_dict" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.preprocessing.scalers_composition.ScalersComposition.lazy_partial_fit">
+<span class="sig-name descname"><span class="pre">lazy_partial_fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scaler_name_to_files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="siml.path_like_objects.siml_files.html#siml.path_like_objects.siml_files.interface.ISimlNumpyFile" title="siml.path_like_objects.siml_files.interface.ISimlNumpyFile"><span class="pre">siml.path_like_objects.siml_files.interface.ISimlNumpyFile</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#siml.preprocessing.scalers_composition.ScalersComposition.lazy_partial_fit" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.preprocessing.scalers_composition.ScalersComposition.transform">
+<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">variable_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">coo_matrix</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">csr_matrix</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">csc_matrix</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">coo_matrix</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">csr_matrix</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">csc_matrix</span></span></span><a class="headerlink" href="#siml.preprocessing.scalers_composition.ScalersComposition.transform" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.preprocessing.scalers_composition.ScalersComposition.transform_dict">
+<span class="sig-name descname"><span class="pre">transform_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dict_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">scipy.sparse._coo.coo_matrix</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">scipy.sparse._csr.csr_matrix</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">scipy.sparse._csc.csc_matrix</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raise_missing_warning</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">scipy.sparse._coo.coo_matrix</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">scipy.sparse._csr.csr_matrix</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">scipy.sparse._csc.csc_matrix</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#siml.preprocessing.scalers_composition.ScalersComposition.transform_dict" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.preprocessing.scalers_composition.ScalersComposition.transform_file">
+<span class="sig-name descname"><span class="pre">transform_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">variable_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">siml_file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.path_like_objects.siml_files.html#siml.path_like_objects.siml_files.interface.ISimlNumpyFile" title="siml.path_like_objects.siml_files.interface.ISimlNumpyFile"><span class="pre">ISimlNumpyFile</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">coo_matrix</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">csr_matrix</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">csc_matrix</span></span></span><a class="headerlink" href="#siml.preprocessing.scalers_composition.ScalersComposition.transform_file" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-siml.preprocessing.scaling_converter">
+<span id="siml-preprocessing-scaling-converter-module"></span><h2>siml.preprocessing.scaling_converter module<a class="headerlink" href="#module-siml.preprocessing.scaling_converter" title="Permalink to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.preprocessing.scaling_converter.Config">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.preprocessing.scaling_converter.</span></span><span class="sig-name descname"><span class="pre">Config</span></span><a class="headerlink" href="#siml.preprocessing.scaling_converter.Config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="siml.preprocessing.scaling_converter.Config.arbitrary_types_allowed">
+<span class="sig-name descname"><span class="pre">arbitrary_types_allowed</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">True</span></em><a class="headerlink" href="#siml.preprocessing.scaling_converter.Config.arbitrary_types_allowed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="siml.preprocessing.scaling_converter.Config.frozen">
+<span class="sig-name descname"><span class="pre">frozen</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">True</span></em><a class="headerlink" href="#siml.preprocessing.scaling_converter.Config.frozen" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="siml.preprocessing.scaling_converter.Config.init">
+<span class="sig-name descname"><span class="pre">init</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">True</span></em><a class="headerlink" href="#siml.preprocessing.scaling_converter.Config.init" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.preprocessing.scaling_converter.PreprocessInnerSettings">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.preprocessing.scaling_converter.</span></span><span class="sig-name descname"><span class="pre">PreprocessInnerSettings</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">preprocess_dict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="s"><span class="pre">'dict'</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interim_directories</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="s"><span class="pre">'list[pathlib.Path]'</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preprocessed_root</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="s"><span class="pre">'pathlib.Path'</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">recursive</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="s"><span class="pre">'bool'</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">REQUIRED_FILE_NAMES</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="s"><span class="pre">'Optional[list[str]]'</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">FINISHED_FILE</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="s"><span class="pre">'str'</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'preprocessed'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">PREPROCESSORS_PKL_NAME</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="s"><span class="pre">'str'</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'preprocessors.pkl'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cached_interim_directories</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="s"><span class="pre">'Optional[list[SimlDirectory]]'</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.preprocessing.scaling_converter.PreprocessInnerSettings" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="siml.preprocessing.scaling_converter.PreprocessInnerSettings.FINISHED_FILE">
+<span class="sig-name descname"><span class="pre">FINISHED_FILE</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'preprocessed'</span></em><a class="headerlink" href="#siml.preprocessing.scaling_converter.PreprocessInnerSettings.FINISHED_FILE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="siml.preprocessing.scaling_converter.PreprocessInnerSettings.PREPROCESSORS_PKL_NAME">
+<span class="sig-name descname"><span class="pre">PREPROCESSORS_PKL_NAME</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'preprocessors.pkl'</span></em><a class="headerlink" href="#siml.preprocessing.scaling_converter.PreprocessInnerSettings.PREPROCESSORS_PKL_NAME" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="siml.preprocessing.scaling_converter.PreprocessInnerSettings.REQUIRED_FILE_NAMES">
+<span class="sig-name descname"><span class="pre">REQUIRED_FILE_NAMES</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#siml.preprocessing.scaling_converter.PreprocessInnerSettings.REQUIRED_FILE_NAMES" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="siml.preprocessing.scaling_converter.PreprocessInnerSettings.cached_interim_directories">
+<span class="sig-name descname"><span class="pre">cached_interim_directories</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="siml.path_like_objects.html#siml.path_like_objects.siml_directory.SimlDirectory" title="siml.path_like_objects.siml_directory.SimlDirectory"><span class="pre">siml.path_like_objects.siml_directory.SimlDirectory</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#siml.preprocessing.scaling_converter.PreprocessInnerSettings.cached_interim_directories" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.preprocessing.scaling_converter.PreprocessInnerSettings.collect_interim_directories">
+<span class="sig-name descname"><span class="pre">collect_interim_directories</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="siml.path_like_objects.html#siml.path_like_objects.siml_directory.SimlDirectory" title="siml.path_like_objects.siml_directory.SimlDirectory"><span class="pre">siml.path_like_objects.siml_directory.SimlDirectory</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#siml.preprocessing.scaling_converter.PreprocessInnerSettings.collect_interim_directories" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.preprocessing.scaling_converter.PreprocessInnerSettings.default_list_check">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">default_list_check</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.preprocessing.scaling_converter.PreprocessInnerSettings.default_list_check" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.preprocessing.scaling_converter.PreprocessInnerSettings.get_default_preprocessors_pkl_path">
+<span class="sig-name descname"><span class="pre">get_default_preprocessors_pkl_path</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Path</span></span></span><a class="headerlink" href="#siml.preprocessing.scaling_converter.PreprocessInnerSettings.get_default_preprocessors_pkl_path" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.preprocessing.scaling_converter.PreprocessInnerSettings.get_output_directory">
+<span class="sig-name descname"><span class="pre">get_output_directory</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_directory</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Path</span></span></span><a class="headerlink" href="#siml.preprocessing.scaling_converter.PreprocessInnerSettings.get_output_directory" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.preprocessing.scaling_converter.PreprocessInnerSettings.get_scaler_fitting_files">
+<span class="sig-name descname"><span class="pre">get_scaler_fitting_files</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">variable_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="siml.path_like_objects.siml_files.html#siml.path_like_objects.siml_files.interface.ISimlNumpyFile" title="siml.path_like_objects.siml_files.interface.ISimlNumpyFile"><span class="pre">siml.path_like_objects.siml_files.interface.ISimlNumpyFile</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#siml.preprocessing.scaling_converter.PreprocessInnerSettings.get_scaler_fitting_files" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="siml.preprocessing.scaling_converter.PreprocessInnerSettings.interim_directories">
+<span class="sig-name descname"><span class="pre">interim_directories</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">pathlib.Path</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#siml.preprocessing.scaling_converter.PreprocessInnerSettings.interim_directories" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="siml.preprocessing.scaling_converter.PreprocessInnerSettings.preprocess_dict">
+<span class="sig-name descname"><span class="pre">preprocess_dict</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span></em><a class="headerlink" href="#siml.preprocessing.scaling_converter.PreprocessInnerSettings.preprocess_dict" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="siml.preprocessing.scaling_converter.PreprocessInnerSettings.preprocessed_root">
+<span class="sig-name descname"><span class="pre">preprocessed_root</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Path</span></em><a class="headerlink" href="#siml.preprocessing.scaling_converter.PreprocessInnerSettings.preprocessed_root" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="siml.preprocessing.scaling_converter.PreprocessInnerSettings.recursive">
+<span class="sig-name descname"><span class="pre">recursive</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">True</span></em><a class="headerlink" href="#siml.preprocessing.scaling_converter.PreprocessInnerSettings.recursive" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="siml.preprocessing.scaling_converter.ScalingConverter">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">siml.preprocessing.scaling_converter.</span></span><span class="sig-name descname"><span class="pre">ScalingConverter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">main_setting</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.html#siml.setting.MainSetting" title="siml.setting.MainSetting"><span class="pre">MainSetting</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force_renew</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.preprocessing.siml_scalers.html#siml.preprocessing.siml_scalers.scaler_result_save.IScalingSaveFunction" title="siml.preprocessing.siml_scalers.scaler_result_save.IScalingSaveFunction"><span class="pre">IScalingSaveFunction</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_process</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">allow_missing</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">recursive</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scalers</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#siml.preprocessing.scalers_composition.ScalersComposition" title="siml.preprocessing.scalers_composition.ScalersComposition"><span class="pre">ScalersComposition</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.preprocessing.scaling_converter.ScalingConverter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>This is Facade Class for scaling process</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.preprocessing.scaling_converter.ScalingConverter.fit_transform">
+<span class="sig-name descname"><span class="pre">fit_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">group_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#siml.preprocessing.scaling_converter.ScalingConverter.fit_transform" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function is consisted of these three process.
+- Determine parameters of scalers by reading data files lazily
+- Transform interim data and save result
+- Save file of parameters</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>group_id</strong> (<em>int</em><em>, </em><em>optional</em>) – group_id to specify chunk of preprocessing group. Useful when
+MemoryError occurs with all variables preprocessed in one node.
+If not specified, process all variables.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.preprocessing.scaling_converter.ScalingConverter.inverse_transform">
+<span class="sig-name descname"><span class="pre">inverse_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dict_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">scipy.sparse._coo.coo_matrix</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">scipy.sparse._csr.csr_matrix</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">scipy.sparse._csc.csc_matrix</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">scipy.sparse._coo.coo_matrix</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">scipy.sparse._csr.csr_matrix</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">scipy.sparse._csc.csc_matrix</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#siml.preprocessing.scaling_converter.ScalingConverter.inverse_transform" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.preprocessing.scaling_converter.ScalingConverter.lazy_fit_all">
+<span class="sig-name descname"><span class="pre">lazy_fit_all</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">group_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#siml.preprocessing.scaling_converter.ScalingConverter.lazy_fit_all" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine preprocessing parameters
+by reading data files lazily.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>group_id</strong> (<em>int</em><em>, </em><em>optional</em>) – group_id to specify chunk of preprocessing group. Useful when
+MemoryError occurs with all variables preprocessed in one node.
+If not specified, process all variables.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.preprocessing.scaling_converter.ScalingConverter.read_pkl">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">read_pkl</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">main_setting</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="siml.html#siml.setting.MainSetting" title="siml.setting.MainSetting"><span class="pre">MainSetting</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">converter_parameters_pkl</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.preprocessing.scaling_converter.ScalingConverter.read_pkl" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.preprocessing.scaling_converter.ScalingConverter.read_settings">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">read_settings</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">settings_yaml</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#siml.preprocessing.scaling_converter.ScalingConverter.read_settings" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.preprocessing.scaling_converter.ScalingConverter.save">
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#siml.preprocessing.scaling_converter.ScalingConverter.save" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save Parameters of scaling converters</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="siml.preprocessing.scaling_converter.ScalingConverter.transform_interim">
+<span class="sig-name descname"><span class="pre">transform_interim</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">group_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#siml.preprocessing.scaling_converter.ScalingConverter.transform_interim" title="Permalink to this definition">¶</a></dt>
+<dd><p>Apply scaling process to data in interim directory and save results
+in preprocessed directory.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>group_id</strong> (<em>int</em><em>, </em><em>optional</em>) – group_id to specify chunk of preprocessing group. Useful when
+MemoryError occurs with all variables preprocessed in one node.
+If not specified, process all variables.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-siml.preprocessing">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-siml.preprocessing" title="Permalink to this heading">¶</a></h2>
+</section>
+</section>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="siml.preprocessing.siml_scalers.html" class="btn btn-neutral float-right" title="siml.preprocessing.siml_scalers package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="siml.path_like_objects.siml_files.html" class="btn btn-neutral float-left" title="siml.path_like_objects.siml_files package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, RICOS Co. Ltd.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

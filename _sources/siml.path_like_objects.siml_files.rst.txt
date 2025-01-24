@@ -1,0 +1,53 @@
+siml.path\_like\_objects.siml\_files package
+============================================
+
+Submodules
+----------
+
+siml.path\_like\_objects.siml\_files.checkpoint\_file module
+------------------------------------------------------------
+
+.. automodule:: siml.path_like_objects.siml_files.checkpoint_file
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.path\_like\_objects.siml\_files.interface module
+-----------------------------------------------------
+
+.. automodule:: siml.path_like_objects.siml_files.interface
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.path\_like\_objects.siml\_files.numpy\_file module
+-------------------------------------------------------
+
+.. automodule:: siml.path_like_objects.siml_files.numpy_file
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.path\_like\_objects.siml\_files.pickle\_file module
+--------------------------------------------------------
+
+.. automodule:: siml.path_like_objects.siml_files.pickle_file
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.path\_like\_objects.siml\_files.yaml\_file module
+------------------------------------------------------
+
+.. automodule:: siml.path_like_objects.siml_files.yaml_file
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: siml.path_like_objects.siml_files
+   :members:
+   :undoc-members:
+   :show-inheritance:

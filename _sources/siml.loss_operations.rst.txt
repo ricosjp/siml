@@ -1,0 +1,45 @@
+siml.loss\_operations package
+=============================
+
+Submodules
+----------
+
+siml.loss\_operations.loss\_assignment module
+---------------------------------------------
+
+.. automodule:: siml.loss_operations.loss_assignment
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.loss\_operations.loss\_calculator module
+---------------------------------------------
+
+.. automodule:: siml.loss_operations.loss_calculator
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.loss\_operations.loss\_calculator\_builder module
+------------------------------------------------------
+
+.. automodule:: siml.loss_operations.loss_calculator_builder
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.loss\_operations.loss\_selector module
+-------------------------------------------
+
+.. automodule:: siml.loss_operations.loss_selector
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: siml.loss_operations
+   :members:
+   :undoc-members:
+   :show-inheritance:

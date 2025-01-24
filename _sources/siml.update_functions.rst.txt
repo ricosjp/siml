@@ -1,0 +1,45 @@
+siml.update\_functions package
+==============================
+
+Submodules
+----------
+
+siml.update\_functions.element\_batch\_update module
+----------------------------------------------------
+
+.. automodule:: siml.update_functions.element_batch_update
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.update\_functions.pseudo\_batch\_update module
+---------------------------------------------------
+
+.. automodule:: siml.update_functions.pseudo_batch_update
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.update\_functions.standard\_update module
+----------------------------------------------
+
+.. automodule:: siml.update_functions.standard_update
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.update\_functions.update\_interface module
+-----------------------------------------------
+
+.. automodule:: siml.update_functions.update_interface
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: siml.update_functions
+   :members:
+   :undoc-members:
+   :show-inheritance:

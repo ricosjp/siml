@@ -1,0 +1,69 @@
+siml.services.inference package
+===============================
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   siml.services.inference.postprocessing
+
+Submodules
+----------
+
+siml.services.inference.core\_inferer module
+--------------------------------------------
+
+.. automodule:: siml.services.inference.core_inferer
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.services.inference.data\_loader\_builder module
+----------------------------------------------------
+
+.. automodule:: siml.services.inference.data_loader_builder
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.services.inference.engine\_builder module
+----------------------------------------------
+
+.. automodule:: siml.services.inference.engine_builder
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.services.inference.inner\_setting module
+---------------------------------------------
+
+.. automodule:: siml.services.inference.inner_setting
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.services.inference.metrics\_builder module
+-----------------------------------------------
+
+.. automodule:: siml.services.inference.metrics_builder
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.services.inference.record\_object module
+---------------------------------------------
+
+.. automodule:: siml.services.inference.record_object
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: siml.services.inference
+   :members:
+   :undoc-members:
+   :show-inheritance:

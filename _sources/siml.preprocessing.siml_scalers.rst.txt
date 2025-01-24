@@ -1,0 +1,37 @@
+siml.preprocessing.siml\_scalers package
+========================================
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   siml.preprocessing.siml_scalers.scale_functions
+
+Submodules
+----------
+
+siml.preprocessing.siml\_scalers.scaler\_result\_save module
+------------------------------------------------------------
+
+.. automodule:: siml.preprocessing.siml_scalers.scaler_result_save
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.preprocessing.siml\_scalers.scaler\_wrapper module
+-------------------------------------------------------
+
+.. automodule:: siml.preprocessing.siml_scalers.scaler_wrapper
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: siml.preprocessing.siml_scalers
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -1,0 +1,37 @@
+siml.path\_like\_objects package
+================================
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   siml.path_like_objects.siml_files
+
+Submodules
+----------
+
+siml.path\_like\_objects.siml\_directory module
+-----------------------------------------------
+
+.. automodule:: siml.path_like_objects.siml_directory
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.path\_like\_objects.siml\_file\_builder module
+---------------------------------------------------
+
+.. automodule:: siml.path_like_objects.siml_file_builder
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: siml.path_like_objects
+   :members:
+   :undoc-members:
+   :show-inheritance:

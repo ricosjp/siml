@@ -1,0 +1,116 @@
+siml package
+============
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   siml.loss_operations
+   siml.networks
+   siml.path_like_objects
+   siml.preprocessing
+   siml.services
+   siml.siml_variables
+   siml.update_functions
+   siml.utils
+
+Submodules
+----------
+
+siml.config module
+------------------
+
+.. automodule:: siml.config
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.data\_parallel module
+--------------------------
+
+.. automodule:: siml.data_parallel
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.datasets module
+--------------------
+
+.. automodule:: siml.datasets
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.inferer module
+-------------------
+
+.. automodule:: siml.inferer
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.mains module
+-----------------
+
+.. automodule:: siml.mains
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.optimize module
+--------------------
+
+.. automodule:: siml.optimize
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.prepost module
+-------------------
+
+.. automodule:: siml.prepost
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.setting module
+-------------------
+
+.. automodule:: siml.setting
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.study module
+-----------------
+
+.. automodule:: siml.study
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.trainer module
+-------------------
+
+.. automodule:: siml.trainer
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+siml.util module
+----------------
+
+.. automodule:: siml.util
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: siml
+   :members:
+   :undoc-members:
+   :show-inheritance:
