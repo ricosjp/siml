@@ -1,6 +1,10 @@
+from unittest import mock
 import shutil
 from pathlib import Path
 
+import pytest
+import os
+import sys
 import numpy as np
 import pandas as pd
 
@@ -8,6 +12,7 @@ import femio
 from siml import setting
 from siml import util
 from siml.preprocessing import converter
+from siml.utils.errors import SimlMultiprocessError
 import preprocess
 
 
@@ -117,11 +122,12 @@ def test__is_same_results_when_not_save_results():
         interim_directory = data_setting.interim_root / f'train/{name}'
         raw_directory = Path('tests/data/csv_prepost/raw') / f"train/{name}"
         result = results[str(raw_directory)]
+        _dict_data, _fem_data = result.get_values()
 
         for value_name in value_names:
             value_array = np.load(interim_directory / f'{value_name}.npy')
             np.testing.assert_array_almost_equal(
-                value_array, result[0][value_name]
+                value_array, _dict_data[value_name]
             )
 
 
@@ -234,3 +240,26 @@ def test__create_save_function():
 
     save_function = raw_converter._create_save_function()
     assert save_function.user_save_function == user_save_function
+
+
+def failed_job_mock():
+    sys.exit(1)
+
+
+@pytest.mark.timeout(60)
+def test__run_failed_job_with_multiprocess():
+    main_setting = setting.MainSetting.read_settings_yaml(
+        Path('tests/data/test_prepost_to_filter/data.yml'))
+
+    cpu_count = os.cpu_count()
+    assert cpu_count > 1
+
+    raw_converter = converter.RawConverter(
+        main_setting,
+        max_process=3
+    )
+
+    with pytest.raises(SimlMultiprocessError):
+        with mock.patch.object(converter.SingleDataConverter, "run") as mocked:
+            mocked.side_effect = failed_job_mock
+            raw_converter.convert()

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pysiml"
-version = "0.2.9"
+version = "0.2.10"
 description = "SiML - a Simulation ML library"
 license = "Apache-2.0"
 authors = ["RICOS Co. Ltd."]
@@ -9,8 +9,8 @@ repository = "https://github.com/ricosjp/pysiml"
 documentation = "https://ricosjp.github.io/pysiml/"
 packages = [
     { include = "siml"},
+    { include = "pyproject.toml"}
 ]
-include = ["pyproject.toml"]
 
 [tool.poetry.dependencies]
 python = ">=3.9, <3.10"
@@ -44,6 +44,7 @@ visualize_graph = "siml.__main__.visualize_graph:main"
 [tool.poetry.dev-dependencies]
 chainer = "^7.0"
 pytest = "^5.3"
+pytest-timeout = "^2.2"
 autopep8 = "^1.4"
 sphinx = "^2.3"
 sphinx_rtd_theme = "^0.4.3"
@@ -56,4 +57,4 @@ PyQt5 = ["PyQt5"]
 
 [build-system]
 requires = ["poetry>=0.12"]
-build-backend = "poetry.masonry.api"
+build-backend = "poetry.core.masonry.api"

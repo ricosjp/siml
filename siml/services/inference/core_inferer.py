@@ -24,7 +24,9 @@ class CoreInferer():
         prepare_batch_function: Callable,
         loss_function: ILossCalculator,
         post_processor: PostProcessor,
-        decrypt_key: Optional[bytes] = None
+        inference_start_datetime: str,
+        decrypt_key: Optional[bytes] = None,
+        debug_output_directory: Optional[pathlib.Path] = None
     ) -> None:
 
         self._trainer_setting = trainer_setting
@@ -35,6 +37,8 @@ class CoreInferer():
         self._loss_function = loss_function
         self._post_processor = post_processor
         self._decrypt_key = decrypt_key
+        self._inference_start_datetime = inference_start_datetime
+        self._debug_output_directory = debug_output_directory
 
         self._model = self._load_model()
         self.inferer_engine = self._create_engine()
@@ -56,13 +60,14 @@ class CoreInferer():
             env_setting=self._env_setting,
             prepare_batch_function=self._prepare_batch_function,
             non_blocking=self._trainer_setting.non_blocking,
-            post_processor=self._post_processor
+            post_processor=self._post_processor,
+            inference_start_datetime=self._inference_start_datetime,
         )
-        evaluator_engine = bulider.create(self._model)
+        evaluator_engine = bulider.create(
+            self._model, self._debug_output_directory)
 
         metrics_builder = MetricsBuilder(
-            trainer_setting=self._trainer_setting,
-            loss_function=self._loss_function
+            trainer_setting=self._trainer_setting, loss_function=self._loss_function
         )
         dict_metrics = metrics_builder.create()
 

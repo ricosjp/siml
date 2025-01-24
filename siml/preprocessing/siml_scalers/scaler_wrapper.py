@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import datetime as dt
 import gc
-from typing import Optional, Union
 import warnings
+from typing import Optional, Union
 
 import numpy as np
 import scipy.sparse as sp
@@ -14,16 +16,33 @@ from siml.siml_variables import ArrayDataType, create_siml_arrray
 
 class SimlScalerWrapper(ISimlScaler):
     @classmethod
-    def create(cls, dict_data: dict, key: Optional[bytes] = None):
+    def create(
+        cls,
+        dict_data: dict,
+        key: Optional[bytes] = None,
+        is_old_format: bool = False
+    ) -> SimlScalerWrapper:
 
-        # Pass all dict_data['preprocess_converter'] items
-        # to avoid Exception by checking when initialization (Ex. IsoAMSclaer)
-        _cls = cls(
-            dict_data["method"],
-            componentwise=dict_data.get("componentwise", True),
-            key=key,
-            **dict_data['preprocess_converter']
-        )
+        if is_old_format:
+            other_components = dict_data.get("other_components")
+            dict_data["preprocess_converter"].pop("other_components", None)
+            _cls = cls(
+                dict_data["method"],
+                componentwise=dict_data.get("componentwise", True),
+                key=key,
+                other_components=other_components,
+                **dict_data["preprocess_converter"],
+            )
+        else:
+            # Pass all dict_data['preprocess_converter'] items
+            # to avoid Exception by checking
+            # when initialization (Ex. IsoAMSclaer)
+            _cls = cls(
+                dict_data["method"],
+                componentwise=dict_data.get("componentwise", True),
+                key=key,
+                **dict_data['preprocess_converter']
+            )
         # After initialization, set other private properties such as var_, max_
         for k, v in dict_data['preprocess_converter'].items():
             setattr(_cls.converter, k, v)

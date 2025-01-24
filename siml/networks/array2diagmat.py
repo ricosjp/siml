@@ -3,6 +3,8 @@ import torch
 
 from . import siml_module
 
+from siml.util import debug_if_necessary
+
 
 class Array2Diagmat(siml_module.SimlModule):
     """Convert array to diagonal matrix. [n, f] -> [n, 3, 3, f]"""
@@ -27,7 +29,8 @@ class Array2Diagmat(siml_module.SimlModule):
         super().__init__(block_setting, no_parameter=True)
         return
 
-    def forward(self, x, supports=None, original_shapes=None):
+    @debug_if_necessary
+    def forward(self, x, supports=None, original_shapes=None, **kwargs):
         eye = torch.eye(3, device=x.device)
         y = torch.einsum('ik,mn->imnk', x, eye)
         return y

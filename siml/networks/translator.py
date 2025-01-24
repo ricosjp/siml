@@ -1,6 +1,8 @@
 
 import torch
 
+from siml.util import debug_if_necessary
+
 from . import siml_module
 from . import activations
 
@@ -42,14 +44,16 @@ class Translator(siml_module.SimlModule):
 
         return
 
-    def _forward_all_components(self, x, supports=None, original_shapes=None):
+    @debug_if_necessary
+    def _forward_all_components(self, x, supports=None, original_shapes=None, **kwards):
         split_x = activations.split(x, original_shapes)
         return torch.cat([
             s - self.aggregate_func(s, dim=0, keepdims=True)
             for s in split_x], dim=0)
 
+    @debug_if_necessary
     def _forward_partial_components(
-            self, x, supports=None, original_shapes=None):
+            self, x, supports=None, original_shapes=None, **kwards):
         split_x = activations.split(x, original_shapes)
         return torch.cat([s - self._aggregate(s) for s in split_x], dim=0)
 

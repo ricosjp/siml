@@ -9,7 +9,7 @@ from ignite.engine import State
 from torch import Tensor
 from torch.utils.data import DataLoader
 
-from siml import datasets, setting
+from siml import datasets, setting, util
 from siml.base.siml_const import SimlConstItems
 from siml.loss_operations import LossCalculatorBuilder
 from siml.path_like_objects import SimlDirectory, SimlFileBuilder
@@ -73,7 +73,8 @@ class WholeInferProcessor:
         data_directories: Union[list[pathlib.Path], pathlib.Path],
         output_directory_base: Optional[pathlib.Path] = None,
         perform_preprocess: bool = True,
-        save_summary: Optional[bool] = True
+        save_summary: Optional[bool] = True,
+        debug_output_directory: Optional[pathlib.Path] = None
     ) -> dict:
         """run whole inference processes.
 
@@ -87,6 +88,8 @@ class WholeInferProcessor:
             If True, perform preprocessing and scaling, by default True
         save : Optional[bool], optional
             If True, save items, by default None
+        debug_output_directory: Optional[pathlib.Path]
+            If fed, output debug information
 
         Returns
         -------
@@ -97,20 +100,23 @@ class WholeInferProcessor:
             return self._run_with_preprocess(
                 data_directories=data_directories,
                 output_directory_base=output_directory_base,
-                save_summary=save_summary
+                save_summary=save_summary,
+                debug_output_directory=debug_output_directory
             )
         else:
             return self.inferer.infer(
                 data_directories=data_directories,
                 output_directory_base=output_directory_base,
-                save_summary=save_summary
+                save_summary=save_summary,
+                debug_output_directory=debug_output_directory
             )
 
     def _run_with_preprocess(
         self,
         data_directories: Union[list[pathlib.Path], pathlib.Path],
         output_directory_base: Optional[pathlib.Path] = None,
-        save_summary: Optional[bool] = True
+        save_summary: Optional[bool] = True,
+        debug_output_directory: Optional[pathlib.Path] = None
     ) -> dict:
         if isinstance(data_directories, pathlib.Path):
             data_directories = [data_directories]
@@ -133,7 +139,8 @@ class WholeInferProcessor:
         return self.inferer.infer_dataset(
             dataset,
             output_directory_base=output_directory_base,
-            save_summary=save_summary
+            save_summary=save_summary,
+            debug_output_directory=debug_output_directory
         )
 
     def run_dict_data(
@@ -141,7 +148,8 @@ class WholeInferProcessor:
         raw_dict_x: dict,
         *,
         answer_raw_dict_y: Optional[dict] = None,
-        perform_preprocess: bool = True
+        perform_preprocess: bool = True,
+        debug_output_directory: Optional[pathlib.Path] = None
     ) -> dict:
         """_summary_
 
@@ -170,7 +178,9 @@ class WholeInferProcessor:
                 scaled_dict_answer = None
 
             results = self.inferer.infer_dict_data(
-                scaled_dict_x, scaled_dict_answer=scaled_dict_answer
+                scaled_dict_x,
+                scaled_dict_answer=scaled_dict_answer,
+                debug_output_directory=debug_output_directory,
             )
             return results
         else:
@@ -294,7 +304,7 @@ class Inferer():
         self,
         main_setting: setting.MainSetting,
         *,
-        scalers: ScalersComposition = None,
+        scalers: Optional[ScalersComposition] = None,
         model_path: Optional[pathlib.Path] = None,
         converter_parameters_pkl: Optional[pathlib.Path] = None,
         load_function: ILoadFunction = None,
@@ -337,6 +347,7 @@ class Inferer():
             decrypt_key=decrypt_key
         )
 
+        self._user_loss_function_dic = user_loss_function_dic
         self.load_function = load_function
         self.data_addition_function = data_addition_function
         self.save_function = save_function
@@ -355,9 +366,6 @@ class Inferer():
         self._model_env = self._inner_setting.create_model_env_setting()
         self._collate_fn = self._create_collate_fn()
         self._dataloader_builder = self._create_data_loader_builder()
-        self._core_inferer = self._create_core_inferer(
-            user_loss_function_dic
-        )
         self._save_processor = SaveProcessor(
             inner_setting=self._inner_setting,
             user_save_function=save_function
@@ -393,7 +401,9 @@ class Inferer():
 
     def _create_core_inferer(
         self,
-        user_loss_function_dic: dict = None
+        inference_start_datetime: str,
+        user_loss_function_dic: Optional[dict] = None,
+        debug_output_directory: Optional[pathlib.Path] = None
     ) -> CoreInferer:
         post_processor = PostProcessor(
             inner_setting=self._inner_setting,
@@ -412,7 +422,9 @@ class Inferer():
             prepare_batch_function=self._collate_fn.prepare_batch,
             loss_function=loss_function,
             post_processor=post_processor,
-            decrypt_key=self._inner_setting.get_crypt_key()
+            decrypt_key=self._inner_setting.get_crypt_key(),
+            inference_start_datetime=inference_start_datetime,
+            debug_output_directory=debug_output_directory
         )
         return _core_inferer
 
@@ -427,10 +439,11 @@ class Inferer():
     def infer(
         self,
         *,
-        data_directories: list[pathlib.Path] = None,
+        data_directories: Optional[list[pathlib.Path]] = None,
         output_directory_base: Optional[pathlib.Path] = None,
         output_all: bool = False,
-        save_summary: Optional[bool] = True
+        save_summary: Optional[bool] = True,
+        debug_output_directory: Optional[pathlib.Path] = None
     ):
         """Perform infererence.
 
@@ -477,7 +490,13 @@ class Inferer():
         inference_loader = self._dataloader_builder.create(
             data_directories=data_directories
         )
-        inference_state = self._core_inferer.run(inference_loader)
+        _core_inferer = self._create_core_inferer(
+            user_loss_function_dic=self._user_loss_function_dic,
+            inference_start_datetime=util.date_string(),
+            debug_output_directory=debug_output_directory
+        )
+
+        inference_state = _core_inferer.run(inference_loader)
 
         records = self._create_post_records(inference_state)
         if self._inner_setting.inferer_setting.save:
@@ -494,7 +513,8 @@ class Inferer():
         self,
         preprocess_dataset: datasets.PreprocessDataset,
         output_directory_base: Optional[pathlib.Path] = None,
-        save_summary: Optional[bool] = True
+        save_summary: Optional[bool] = True,
+        debug_output_directory: Optional[pathlib.Path] = None
     ) -> list[dict]:
         """Perform inference for datasets
 
@@ -535,7 +555,12 @@ class Inferer():
             shuffle=False,
             num_workers=0
         )
-        inference_state = self._core_inferer.run(inference_loader)
+        _core_inferer = self._create_core_inferer(
+            user_loss_function_dic=self._user_loss_function_dic,
+            inference_start_datetime=util.date_string(),
+            debug_output_directory=debug_output_directory
+        )
+        inference_state = _core_inferer.run(inference_loader)
 
         records = self._create_post_records(inference_state)
         if self._inner_setting.inferer_setting.save:
@@ -552,7 +577,9 @@ class Inferer():
         data_directory: pathlib.Path = None,
         scaled_dict_answer: Optional[dict] = None,
         save_summary: Optional[bool] = True,
-        base_fem_data: Optional[femio.FEMData] = None
+        base_fem_data: Optional[femio.FEMData] = None,
+        debug_output_directory: Optional[pathlib.Path] = None,
+        core_inferer: Optional[CoreInferer] = None,
     ):
         """
         Infer with dictionary data.
@@ -569,7 +596,9 @@ class Inferer():
             If True, save summary information of inference
         base_fem_data: femio.FEMData, optional
             If fed, inference results are registered to base_fem_data and
-             saved as a file.
+            saved as a file.
+        core_inferer: CoreInferer, optional
+            If fed, use the given inferer for prediction.
 
 
         Returns
@@ -595,7 +624,13 @@ class Inferer():
             answer_raw_dict_y=scaled_dict_answer,
             data_directories=data_directories
         )
-        inference_state = self._core_inferer.run(inference_loader)
+        if core_inferer is None:
+            core_inferer = self._create_core_inferer(
+                user_loss_function_dic=self._user_loss_function_dic,
+                inference_start_datetime=util.date_string(),
+                debug_output_directory=debug_output_directory
+            )
+        inference_state = core_inferer.run(inference_loader)
 
         records = self._create_post_records(
             inference_state,

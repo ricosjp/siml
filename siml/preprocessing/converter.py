@@ -1,19 +1,23 @@
 from __future__ import annotations
 
 import abc
-import multiprocessing as multi
 import pathlib
+import sys
+import traceback
 from functools import cache, partial, reduce
 from operator import or_
-from typing import Dict, Optional, Tuple, Union
+from typing import Dict, Optional, Union
 
 import femio
 import numpy as np
 
 from siml import setting, util
 from siml.base.siml_enums import DirectoryType
+from siml.preprocessing.converted_objects import (SimlConvertedItem,
+                                                  SimlConvertedItemContainer)
 from siml.services.path_rules import SimlPathRules
-from siml.utils import fem_data_utils
+from siml.utils import fem_data_utils, SimlMultiprocessor
+from siml.utils.errors import SimlSkipNotificationError
 
 
 class IConvertFunction(metaclass=abc.ABCMeta):
@@ -104,18 +108,25 @@ class SingleDataConverter:
                 allowed_type=DirectoryType.RAW
             )
 
-    def run(self) -> Union[tuple[dict, femio.FEMData], None]:
+    def run(self) -> SimlConvertedItem:
 
-        values = self._convert()
-        if values is None:
-            print(
-                f"Conversion process for {self.raw_path} has failed"
-            )
-            return None
+        result = SimlConvertedItem()
+        try:
+            values = self._convert()
+        except SimlSkipNotificationError as ex:
+            print(str(ex))
+            result.skipped(message=str(ex))
+            return result
+        except BaseException as ex2:
+            traceback.print_exc(file=sys.stdout)
+            result.failed(message=str(ex2))
+            return result
 
+        result.successed()
         dict_data, fem_data = values
         if self.return_results:
-            return (dict_data, fem_data)
+            result.register(dict_data=dict_data, fem_data=fem_data)
+            return result
 
         self.save_function(
             fem_data,
@@ -123,10 +134,11 @@ class SingleDataConverter:
             self.output_directory,
             self.force_renew
         )
+        return result
 
     def _convert(
         self
-    ) -> Union[Tuple[dict[str, np.ndarray], femio.FEMData], None]:
+    ) -> tuple[dict[str, np.ndarray], femio.FEMData]:
         """
         conversion process. Convert to feature array from data files
 
@@ -138,9 +150,7 @@ class SingleDataConverter:
                 When success, return dict_data and fem_data.
                 When failed, return empty dictionary and None
         """
-        is_valid = self._check_directory()
-        if not is_valid:
-            return {}, None
+        self._check_directory()
 
         data_files = util.collect_files(
             self.raw_path,
@@ -152,11 +162,11 @@ class SingleDataConverter:
             )
         except BaseException as e:
             raise ValueError(
-                f"{e}\nload_function failed for: {self.raw_path}"
+                f"{e}. load_function failed for: {self.raw_path}"
             )
 
         if not self.filter_function(fem_data, self.raw_path, dict_data):
-            return None
+            raise ValueError('Defined filter function returns False.')
 
         if self.setting.should_load_mandatory_variables:
             wrapped_data = fem_data_utils.FemDataWrapper(fem_data)
@@ -167,54 +177,51 @@ class SingleDataConverter:
             dict_data.update(mandatory_dict)
         return dict_data, fem_data
 
-    def _check_directory(self) -> bool:
+    def _check_directory(self) -> None:
 
         # check raw path
-        valid_raw_path = self._check_raw_path()
-        if not valid_raw_path:
-            return False
+        self._check_raw_path()
 
         if self.return_results:
-            return True
+            return
 
         # check output directory
-        valid_output_directory = self._check_output_direcotry()
-        return valid_output_directory
+        self._check_output_direcotry()
 
-    def _check_raw_path(self) -> bool:
+    def _check_raw_path(self) -> None:
         # Check raw_path
         if self.raw_path.is_file():
-            return True
+            return
 
         if self.raw_path.is_dir():
-            if not util.files_exist(
+            if util.files_exist(
                     self.raw_path,
                     self.setting.required_file_names
             ):
-                print(
-                    "No required files is found in raw_path: "
-                    f"{self.raw_path}"
-                )
-                return False
-            else:
-                return True
+                return
+
+            raise FileNotFoundError(
+                "No required files is found in raw_path: "
+                f"{self.raw_path}"
+            )
 
         raise ValueError(f"raw_path not understandable: {self.raw_path}")
 
-    def _check_output_direcotry(self):
+    def _check_output_direcotry(self) -> None:
         # check output directory
         finished_file = self.output_directory / self.setting.finished_file
         if not finished_file.exists():
-            return True
+            return
 
         if self.force_renew:
-            return True
+            return
 
         if self.raise_when_overwrite:
-            raise ValueError(f"{self.output_directory} already exists.")
+            raise FileExistsError(f"{self.output_directory} already exists.")
 
-        print(f"Already converted. Skipped conversion: {self.raw_path}")
-        return False
+        raise SimlSkipNotificationError(
+            f"Already converted. Skipped conversion: {self.raw_path}"
+        )
 
 
 class RawConverter:
@@ -312,7 +319,7 @@ class RawConverter:
         raw_directory: pathlib.Path = None,
         *,
         return_results: bool = False
-    ) -> dict[str, Union[tuple[dict, femio.FEMData], None]]:
+    ) -> SimlConvertedItemContainer:
         """Perform conversion.
 
         Parameters
@@ -336,17 +343,18 @@ class RawConverter:
         raw_directories = self._search_raw_directories(raw_directory)
         chunksize = max(len(raw_directories) // self.max_process // 16, 1)
 
-        with multi.Pool(self.max_process) as pool:
-            results = pool.map(
-                partial(
-                    self.convert_single_data,
-                    return_results=return_results
-                ),
-                raw_directories,
-                chunksize=chunksize
-            )
+        processor = SimlMultiprocessor(max_process=self.max_process)
+        results = processor.run(
+            raw_directories,
+            target_fn=partial(
+                self.convert_single_data,
+                return_results=return_results
+            ),
+            chunksize=chunksize
+        )
 
-        flatten_results = reduce(lambda x, y: x | y, results)
+        flatten_results: SimlConvertedItemContainer = \
+            reduce(lambda x, y: x.merge(y), results)
         return flatten_results
 
     def convert_single_data(
@@ -356,7 +364,7 @@ class RawConverter:
         output_directory: pathlib.Path = None,
         raise_when_overwrite: bool = False,
         return_results: bool = False
-    ) -> dict[str, Union[tuple[dict, femio.FEMData], None]]:
+    ) -> SimlConvertedItemContainer:
         """Convert single directory.
 
         Parameters
@@ -394,7 +402,7 @@ class RawConverter:
         )
 
         result = single_converter.run()
-        return {str(raw_path): result}
+        return SimlConvertedItemContainer({str(raw_path): result})
 
     def _search_raw_directories(
         self,

@@ -3,6 +3,8 @@ import torch
 
 from . import siml_module
 
+from siml.util import debug_if_necessary
+
 
 class Array2Symmat(siml_module.SimlModule):
     """Convert array to symmetric matrix."""
@@ -42,7 +44,8 @@ class Array2Symmat(siml_module.SimlModule):
         self.indices_array2symmat = [0, 3, 5, 3, 1, 4, 5, 4, 2]
         return
 
-    def forward(self, x, supports=None, original_shapes=None):
+    @debug_if_necessary
+    def forward(self, x, supports=None, original_shapes=None, **kwargs):
         n_feature = x.shape[1] // 6
         if x.shape[1] % 6 != 0:
             raise ValueError(f"Expected (n, 6*m) shape (given: {x.shape}")

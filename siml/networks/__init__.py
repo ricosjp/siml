@@ -38,6 +38,8 @@ from . import threshold
 from . import time_norm
 from . import translator
 from . import upper_limit
+from . import cross_product
+from . import implicit_gnn
 
 
 # Add block information
@@ -71,6 +73,7 @@ blocks = [
     time_norm.TimeNorm,
     translator.Translator,
     upper_limit.UpperLimit,
+    cross_product.CrossProduct,
 
     # Layers with weights
     deepsets.DeepSets,
@@ -92,6 +95,7 @@ blocks = [
     tcn.TCN,
     tcn.EquivariantTCN,
     tensor_operations.EquivariantMLP,
+    implicit_gnn.ImplicitGNN
 ]
 
 for block in blocks:

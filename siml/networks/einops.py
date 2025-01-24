@@ -3,6 +3,8 @@ import einops
 
 from . import siml_module
 
+from siml.util import debug_if_necessary
+
 
 class Rearrange(siml_module.SimlModule):
     """Apply einops.rearrange."""
@@ -31,5 +33,6 @@ class Rearrange(siml_module.SimlModule):
         self.axes_lengths = self.block_setting.optional.get('axes_lengths', {})
         return
 
-    def forward(self, x, supports=None, original_shapes=None):
+    @debug_if_necessary
+    def forward(self, x, supports=None, original_shapes=None, **kwargs):
         return einops.rearrange(x, pattern=self.pattern, **self.axes_lengths)

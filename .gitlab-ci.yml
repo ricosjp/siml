@@ -1,5 +1,5 @@
 variables:
-  IMAGE_VERSION: 0.2.9
+  IMAGE_VERSION: 0.2.10
   SIML_IMAGE: registry.ritc.jp/ricos/machine_learning/siml:$IMAGE_VERSION
   CPU_IMAGE: registry.ritc.jp/ricos/machine_learning/siml/cpu:$IMAGE_VERSION
 
@@ -129,8 +129,10 @@ test_group:
   script:
     - python3.9 -m pytest tests/test_groups.py --capture=no
   tags:
+    - GenuineIntel
     - avx
     - gpu
+    - sm_61
 
 pages:
   stage: deploy

@@ -123,8 +123,8 @@ class Network(torch.nn.Module):
             self.dict_block_information[block_name](block_setting).to(
                 block_setting.device)
             for block_name, block_setting in self.dict_block_setting.items()
-            if (block_setting.reference_block_name is None) and
-            (block_setting.type != 'group')
+            if (block_setting.reference_block_name is None)
+            and (block_setting.type != 'group')
         })
 
         # Update dict_block for blocks depending on other blocks
@@ -177,10 +177,11 @@ class Network(torch.nn.Module):
             self.dict_block[loss_block].reset()
         return
 
-    def forward(self, x_):
+    def forward(self, x_: dict):
         x = x_['x']
         supports = x_.get('supports', None)
         original_shapes = x_.get('original_shapes', None)
+        debug_output_directory = x_.get("debug_output_directory", None)
 
         dict_hidden = {
             block_name: None for block_name in self.call_graph.nodes}
@@ -209,16 +210,26 @@ class Network(torch.nn.Module):
                             for predecessor
                             in self.call_graph.predecessors(graph_node)]
                     elif block_setting.input_keys is not None:
-                        inputs = [
-                            torch.cat(
-                                [
-                                    dict_hidden[predecessor][input_key][
-                                        ..., block_setting.input_selection
-                                    ].to(device)
-                                    for input_key in block_setting.input_keys
-                                ], dim=-1)
-                            for predecessor
-                            in self.call_graph.predecessors(graph_node)]
+                        try:
+                            inputs = [
+                                torch.cat(
+                                    [
+                                        dict_hidden[predecessor][input_key][
+                                            ..., block_setting.input_selection
+                                        ].to(device)
+                                        for input_key
+                                        in block_setting.input_keys
+                                    ], dim=-1)
+                                for predecessor
+                                in self.call_graph.predecessors(graph_node)]
+                        except KeyError:
+                            input_keys = block_setting.input_keys
+                            keys = [
+                                dict_hidden[predecessor].keys()
+                                for predecessor
+                                in self.call_graph.predecessors(graph_node)]
+                            raise KeyError(
+                                f"{input_keys} not found in:\n{keys}")
 
                     elif block_setting.input_names is not None:
                         if set(block_setting.input_names) != set(
@@ -239,8 +250,11 @@ class Network(torch.nn.Module):
 
                     if block_setting.type == 'group':
                         output = self.dict_block[graph_node](
-                            inputs, supports=supports,
-                            original_shapes=original_shapes)
+                            inputs,
+                            supports=supports,
+                            original_shapes=original_shapes,
+                            debug_output_directory=debug_output_directory,
+                        )
                         hidden = output
 
                     elif self.dict_block_information[
@@ -261,11 +275,17 @@ class Network(torch.nn.Module):
                                     in block_setting.support_input_indices]
 
                         hidden = self.dict_block[graph_node](
-                            *inputs, supports=selected_supports,
-                            original_shapes=original_shapes)
+                            *inputs,
+                            supports=selected_supports,
+                            original_shapes=original_shapes,
+                            debug_output_directory=debug_output_directory,
+                        )
                     else:
                         hidden = self.dict_block[graph_node](
-                            *inputs, original_shapes=original_shapes)
+                            *inputs,
+                            original_shapes=original_shapes,
+                            debug_output_directory=debug_output_directory,
+                        )
 
                     if block_setting.coeff is not None:
                         if isinstance(hidden, dict):

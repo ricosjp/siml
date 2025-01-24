@@ -11,6 +11,8 @@ from torch_geometric.nn.conv import MessagePassing
 from torch_geometric.nn.conv.gcn_conv import gcn_norm
 from torch_geometric.typing import Adj, OptTensor
 
+from siml.util import debug_if_necessary
+
 
 # NOTE: Just imported from the original pytorch-geometric since not distributed
 #       yet
@@ -102,8 +104,10 @@ class GCN2Conv(MessagePassing):
         self._cached_edge_index = None
         self._cached_adj_t = None
 
-    def forward(self, x: Tensor, x_0: Tensor, edge_index: Adj,
-                edge_weight: OptTensor = None) -> Tensor:
+    @debug_if_necessary
+    def forward(
+        self, x: Tensor, x_0: Tensor, edge_index: Adj, edge_weight: OptTensor = None, **kwargs
+    ) -> Tensor:
         """"""
 
         if self.normalize:

@@ -13,7 +13,7 @@ class TestInfererGPU(unittest.TestCase):
     def test_infer_gpu(self):
         main_setting = setting.MainSetting.read_settings_yaml(
             Path('tests/data/linear/pretrained/settings.yml'))
-        main_setting.inferer.output_directory_root = Path(
+        main_setting.inferer.output_directory_base = Path(
             'tests/data/linear/inferred')
         main_setting.inferer.gpu_id = 0
         ir = inferer.Inferer(
